@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.GradePriceShipDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.api.entity.GradePriceShipEntity" id="gradePriceShipMap">
+        <result property="lpsId" column="lpsId" jdbcType="BIGINT"/>
+        <result property="privateClassId" column="privateClassId" jdbcType="BIGINT"/>
+        <result property="grade" column="grade" jdbcType="TINYINT"/>
+        <result property="price" column="price" jdbcType="DOUBLE"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.api.entity.GradePriceShipEntity">
+		select * from grade_price_ship where lpsId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.api.entity.GradePriceShipEntity">
+		select * from grade_price_ship
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by lpsId desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from grade_price_ship 
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.GradePriceShipEntity" useGeneratedKeys="true" keyProperty="lpsId">
+		insert into grade_price_ship
+		(
+			`privateClassId`, 
+			`grade`, 
+			`price`
+		)
+		values
+		(
+			#{privateClassId}, 
+			#{grade}, 
+			#{price}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.api.entity.GradePriceShipEntity">
+		update grade_price_ship 
+		<set>
+			<if test="privateClassId != null">`privateClassId` = #{privateClassId}, </if>
+			<if test="grade != null">`grade` = #{grade}, </if>
+			<if test="price != null">`price` = #{price}</if>
+		</set>
+		where lpsId = #{lpsId}
+	</update>
+	
+	<delete id="delete">
+		delete from grade_price_ship where lpsId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from grade_price_ship where lpsId in 
+		<foreach item="lpsId" collection="array" open="(" separator="," close=")">
+			#{lpsId}
+		</foreach>
+	</delete>
+
+</mapper>

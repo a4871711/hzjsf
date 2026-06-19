@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysStoreAddressDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysStoreAddressEntity" id="storeAddressMap">
+        <result property="storeAddrId" column="storeAddrId"/>
+        <result property="storeId" column="storeId"/>
+		<result property="storeName" column="storeName"/>
+		<result property="phone" column="phone"/>
+		<result property="province" column="province"/>
+		<result property="city" column="city"/>
+		<result property="zone" column="zone"/>
+		<result property="storeAddrDetail" column="storeAddrDetail"/>
+		<result property="longitude" column="longitude"/>
+		<result property="latitude" column="latitude"/>
+		<result property="status" column="status"/>
+		<result property="createdDate" column="createdDate"/>
+		<result property="storePhone" column="storePhone"/>
+		<result property="goodsIdStoreId" column="goodsIdStoreId"/>
+		<result property="douyinPoiId" column="douyin_poi_id"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.SysStoreAddressEntity">
+		select * from store_address where storeAddrId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.SysStoreAddressEntity">
+		select sa.storeAddrId,sa.storeId,sa.province,sa.city,sa.zone,sa.storeAddrDetail,
+		sa.longitude,sa.latitude,sa.`status`,sa.createdDate,s.storeName,s.storePhone,sa.goodsIdStoreId,sa.douyin_poi_id
+		from store_address sa INNER JOIN store s ON sa.storeId = s.storeId
+		<where>
+			<if test="storeAddrId != null and storeAddrId != ''">
+				AND sa.storeAddrId = #{storeAddrId}
+			</if>
+			<if test="storeId != null and storeId != ''">
+				AND sa.storeId = #{storeId}
+			</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND sa.storeId in (${storeIds})
+            </if>
+            <if test="goodsIdStoreId != null and goodsIdStoreId != ''">
+                AND sa.goodsIdStoreId = #{goodsIdStoreId}
+            </if>
+			<if test="status !=null and status !=''">
+				AND sa.status = #{status}
+			</if>
+		</where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by createdDate desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from store_address sa INNER JOIN store s ON sa.storeId = s.storeId
+		<where>
+			<if test="storeAddrId != null and storeAddrId != ''">
+				AND sa.storeAddrId = #{storeAddrId}
+			</if>
+			<if test="storeId != null and storeId != ''">
+				AND sa.storeId = #{storeId}
+			</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND sa.storeId in (${storeIds})
+            </if>
+            <if test="goodsIdStoreId != null and goodsIdStoreId != ''">
+                AND sa.goodsIdStoreId = #{goodsIdStoreId}
+            </if>
+			<if test="status !=null and status !=''">
+				AND sa.status = #{status}
+			</if>
+		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.SysStoreAddressEntity" useGeneratedKeys="true" keyProperty="storeAddrId">
+		insert into store_address
+		(
+			`storeId`,
+			`storeName`,
+			`phone`,
+			`province`,
+			`city`,
+			`zone`,
+			`storeAddrDetail`,
+			`longitude`,
+			`latitude`,
+			`createdDate`,
+			`goodsIdStoreId`,
+			`douyin_poi_id`
+		)
+		values
+		(
+			#{storeId},
+			#{storeName},
+			#{phone},
+			#{province},
+			#{city},
+			#{zone},
+			#{storeAddrDetail},
+			#{longitude},
+			#{latitude},
+			#{createdDate},
+			#{goodsIdStoreId},
+			#{douyinPoiId}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.sys.entity.SysStoreAddressEntity">
+		update store_address
+		<set>
+			<if test="province != null">`province` = #{province},</if>
+			<if test="city != null">`city` = #{city},</if>
+			<if test="zone != null">`zone` = #{zone},</if>
+			<if test="storeAddrDetail != null">`storeAddrDetail` = #{storeAddrDetail},</if>
+			<if test="longitude != null">`longitude` = #{longitude},</if>
+			<if test="latitude != null">`latitude` = #{latitude},</if>
+			<if test="status != null">`status` = #{status},</if>
+			<if test="createdDate != null">`createdDate` = #{createdDate},</if>
+			<if test="goodsIdStoreId != null">`goodsIdStoreId` = #{goodsIdStoreId},</if>
+			<if test="douyinPoiId != null">`douyin_poi_id` = #{douyinPoiId},</if>
+		</set>
+		where storeAddrId = #{storeAddrId}
+	</update>
+	<update id="updateStoreNameAndPhone">
+		update store_address
+		<set>
+			<if test="storeName != null">`storeName` = #{storeName},</if>
+			<if test="phone != null">`phone` = #{phone},</if>
+			<if test="province != null">`province` = #{province},</if>
+			<if test="city != null">`city` = #{city},</if>
+			<if test="zone != null">`zone` = #{zone},</if>
+			<if test="storeAddrDetail != null">`storeAddrDetail` = #{storeAddrDetail},</if>
+			<if test="longitude != null">`longitude` = #{longitude},</if>
+			<if test="latitude != null">`latitude` = #{latitude},</if>
+			<if test="status != null">`status` = #{status},</if>
+			<if test="goodsIdStoreId != null">`goodsIdStoreId` = #{goodsIdStoreId},</if>
+			<if test="goodsIdStoreId == null">`goodsIdStoreId` = null,</if>
+			<if test="douyinPoiId != null">`douyin_poi_id` = #{douyinPoiId},</if>
+			<if test="douyinPoiId == null">`douyin_poi_id` = null,</if>
+		</set>
+		where storeId = #{storeId}
+	</update>
+
+	<delete id="delete">
+		delete from store_address where storeAddrId = #{value}
+	</delete>
+
+	<delete id="deleteBatch">
+		delete from store_address where storeAddrId in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+	<select id="queryStoreById" resultType="int">
+		SELECT COUNT(*) FROM store_address WHERE storeId = #{storeId}
+	</select>
+
+</mapper>

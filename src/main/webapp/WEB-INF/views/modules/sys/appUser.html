@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>移动端用户</title>
+<#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+            <div class="row">
+                <div class="form-group col-md-2">
+                    <input type="text" class="form-control" v-model="q.phone" @keyup.enter="query" placeholder="手机号码">
+                </div>
+                <div class="form-group col-md-2">
+                    <input type="text" class="form-control" v-model="q.nickname" @keyup.enter="query" placeholder="姓名">
+                </div>
+<!--                <div class="form-group col-md-2">-->
+<!--                    <select class="form-control" v-model="q.sex" @keyup.enter="query" >-->
+<!--                        <option value="">请选择性别</option>-->
+<!--                        <option value="1" >男</option>-->
+<!--                        <option value="2" >女</option>-->
+<!--                    </select>-->
+<!--                </div>-->
+                <div class="form-group col-md-2">
+                    <select class="form-control" v-model="q.wtState" @keyup.enter="query" >
+                        <option value="">请选择签约状态</option>
+                        <option value="0" >未签约</option>
+                        <option value="1" >已签约</option>
+                        <option value="2" >已解约</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <select class="form-control" v-model="q.auditStatus" @keyup.enter="query" >
+                        <option value="">请选择状态</option>
+                        <option value="1" >正常</option>
+                        <option value="2" >拉黑</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <input id="sdate" class="Wdate" style="width: 100%;padding: 5px 10px;" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',readOnly:true,maxDate:'#F{$dp.$D(\'edate\')}'})"  placeholder="开始时间"  />
+                </div>
+                <div class="form-group col-md-2">
+                    <input id="edate" class="Wdate" style="width: 100%;padding: 5px 10px;" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',readOnly:true,minDate:'#F{$dp.$D(\'sdate\')}',startDate:'#F{$dp.$D(\'sdate\',{d:+1})}'})"  placeholder="结束时间" /><br>
+                </div>
+                <div class="form-group col-md-2">
+                    <input type="text" class="form-control" v-model="q.remark" @keyup.enter="query" placeholder="备注关键词">
+                </div>
+                <a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+            </div>
+            <!--  -->
+            <div style="padding-left: 15px;">
+                <!--<a class="btn btn-primary" @click="pushMessage"><i class="fa fa-commenting"></i>&nbsp;消息推送</a>
+                <a class="btn btn-primary" @click="updateMemberInfo"><i class="fa fa-lock"></i>&nbsp;更新会员信息</a>-->
+            </div>
+		</div>
+
+
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+        <!--<div style="color:#337ab7">*注：用户手机设备token异常时，该用户将收不到系统推送消息。</div>-->
+    </div>
+
+    <div id="anewFileWindow" style="display: none;margin-left: 10%">
+        <div class="form-group">
+            <div class="col-sm-10">
+                标题<input type="text" class="form-control" v-model="messageTemplate.title" name="title" placeholder="请输入模板消息标题15字以内"/>
+            </div>
+            <div class="col-sm-10">
+                内容<textarea class="form-control" rows="5" v-model="messageTemplate.message" name="message" placeholder="请输入模板消息内容100字以内"></textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-4 control-label"></div>
+            <input type="button" class="btn btn-primary" @click="saveOrUpdateMsgTmpType" value="确认"/>
+        </div>
+    </div>
+
+    <div id="messageTmp"  style="width: 700px;">
+        <br/>
+        <div class="form-group col-lg-4">
+            <input type="text" class="form-control" v-model="mq.title" @keyup.enter="queryMsg" placeholder="标题">
+        </div>
+        <a class="btn btn-primary" @click="queryMsg"><i class="fa fa-search-plus"></i>&nbsp;查询</a>
+        <!--<a class="btn btn-primary" @click="addMsgTemp"><i class="fa fa-plus-square"></i>&nbsp;新增</a>
+        <a class="btn btn-primary" @click="pushMsg"><i class="fa fa-comment-o"></i>&nbsp;确认推送</a>-->
+        <div class="col-md-12">
+            <table id="jqGridAddMsg" style="width: 700px"></table>
+            <div id="jqGridPagerAddMsg"></div>
+        </div>
+    </div>
+
+    <!-- 更新会员信息 -->
+    <div id="updateUserinfoWindow" style="display: none; padding: 20px 10px 0 10px; ">
+        <div class="form-group">
+            <div class="form-group">
+                <input type="text" class="form-control" v-model="memberInfo.nickname" placeholder="用户昵称">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" v-model="memberInfo.phone" placeholder="用户手机号">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" v-model="memberInfo.height" placeholder="用户身高">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" v-model="memberInfo.weight" placeholder="用户体重">
+            </div>
+            <div class="form-group">
+                <input id="birthday" class="Wdate" style="width: 100%;padding: 5px 10px;" v-model="memberInfo.birthday" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd',readOnly:true,maxDate:'#F{$dp.$D(\'edate\')}'})"  placeholder="请选择会员生日" />
+            </div>
+            <div class="form-group">
+                <textarea class="form-control" v-model="memberInfo.remark" placeholder="备注信息" style="height: 80px;"></textarea>
+            </div>
+        </div>
+
+        <div class="form-group" style="padding-left: 15px;">
+            <input type="button" class="btn btn-primary" @click="doUpdateUserinfo" value="确认"/>
+        </div>
+    </div>
+
+</div>
+
+<script src="${request.contextPath}/statics/plugins/jquery.form.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/appUser.js?_${.now?long}"></script>
+<script src="${request.contextPath}/statics/plugins/My97DatePicker/WdatePicker.js"></script>
+</body>
+</html>

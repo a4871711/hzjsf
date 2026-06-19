@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysWalletDetailDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.WalletDetailEntity" id="walletDetailMap">
+        <result property="id" column="id"/>
+        <result property="userId" column="userId"/>
+        <result property="type" column="type"/>
+        <result property="money" column="money"/>
+        <result property="AliAccount" column="AliAccount"/>
+        <result property="wxCount" column="wxCount"/>
+        <result property="realName" column="realName"/>
+        <result property="transactionNumber" column="transactionNumber"/>
+        <result property="reason" column="reason"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="createTime"/>
+        <result property="orderNo" column="orderNo"/>
+    </resultMap>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.WalletDetailEntity">
+		select * from wallet_detail where id = #{value}
+	</select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.WalletDetailEntity">
+     SELECT * FROM (SELECT w.*,
+        case when w.type = 2 then
+        (select co.phone from coach co where co.coachId = w.userId)
+        else (select ui.phone from user_info ui where ui.userId=w.userId) end as phone
+        FROM wallet_detail w
+        <where>
+            w.type in (1,2)
+
+            <if test="aliAccount != null and aliAccount != ''">
+                AND w.aliAccount LIKE concat('%',#{aliAccount},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND w.status = #{status}
+            </if>
+            <if test="sdate != null and sdate != '' and edate != null and edate != ''">
+                AND w.createTime between #{sdate} and #{edate}
+            </if>
+        </where>) z
+        <where>
+            <if test="phone != null and phone != ''">
+                AND z.phone  LIKE concat('%',#{phone},'%')
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by z.createTime desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        SELECT count(1) from(
+        SELECT * FROM (
+        SELECT w.*,
+        case when w.type = 2 then
+        (select co.phone from coach co where co.coachId = w.userId)
+        else (select ui.phone from user_info ui where ui.userId=w.userId) end as phone
+        FROM wallet_detail w
+        <where>
+            w.type in (1,2)
+            <if test="aliAccount != null and aliAccount != ''">
+                AND w.aliAccount LIKE concat('%',#{aliAccount},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND w.status = #{status}
+            </if>
+        </where>
+        ) r
+        <where>
+            <if test="phone != null and phone != ''">
+                AND r.phone  LIKE concat('%',trim(#{phone}),'%')
+            </if>
+        </where>
+        ) z
+
+
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.WalletDetailEntity" useGeneratedKeys="true"
+            keyProperty="id">
+		insert into wallet_detail
+		(
+			`userId`, 
+			`type`, 
+			`money`,
+			`AliAccount`,
+			`wxCount`, 
+			`transactionNumber`, 
+			`reason`, 
+			`status`,
+			`orderNo`,
+			`createTime`,
+			`checkedTime`,
+			`transactionTime`
+		)
+		values
+		(
+			#{userId}, 
+			#{type}, 
+			#{money},
+			#{AliAccount},
+			#{wxCount}, 
+			#{transactionNumber}, 
+			#{reason}, 
+			#{status},
+			#{orderNo},
+			#{createTime},
+			#{checkedTime},
+			#{transactionTime}
+		)
+	</insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.WalletDetailEntity">
+        update wallet_detail
+        <set>
+            <if test="userId != null">`userId` = #{userId},</if>
+            <if test="type != null">`type` = #{type},</if>
+            <if test="money != null">`money` = #{money},</if>
+            <if test="AliAccount != null">`AliAccount` = #{AliAccount},</if>
+            <if test="wxCount != null">`wxCount` = #{wxCount},</if>
+            <if test="transactionNumber != null">`transactionNumber` = #{transactionNumber},</if>
+            <if test="reason != null">`reason` = #{reason},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="orderNo != null">`orderNo` = #{orderNo},</if>
+            <if test="createTime != null">`createTime` = #{createTime},</if>
+            <if test="checkedTime != null">`checkedTime` = #{checkedTime},</if>
+            <if test="transactionTime != null">`transactionTime` = #{transactionTime}</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="delete">
+		delete from wallet_detail where id = #{value}
+	</delete>
+	<!--用户钱包退款-->
+	<update id="updateUserMoney" parameterType="java.util.Map">
+		update user_wallet set money = money + #{money} where userId = #{userId}
+	</update>
+	<!--教练钱包退款-->
+    <update id="updateCoachMoney" parameterType="java.util.Map">
+        update coach_wallet set money = money + #{money} where coachId = #{userId}
+    </update>
+    <delete id="deleteBatch">
+        delete from wallet_detail where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="updateById" parameterType="com.dlc.modules.sys.entity.WalletDetailEntity">
+        update wallet_detail set `reason`=#{reason} where id = #{id}
+    </update>
+</mapper>

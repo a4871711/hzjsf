@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>更新记录</title>
+<#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div>
+		<div class="grid-btn">
+			<div class="form-group col-sm-2">
+				<input type="text" class="form-control" v-model="q.phone" @keyup.enter="query" placeholder="用户手机号">
+			</div>
+			<a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+		</div>
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+    
+</div>
+
+<script src="${request.contextPath}/statics/js/modules/sys/userUpdateRecord.js?_${.now?long}"></script>
+</body>
+</html>

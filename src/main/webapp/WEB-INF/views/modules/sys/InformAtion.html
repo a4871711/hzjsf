@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>s-live说</title>
+    <#include "/header.html"/>
+</head>
+<body>
+<script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.config.js"></script>
+<script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.all.js"></script>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <#if shiro.hasPermission("sys:Inform:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:Inform:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:Inform:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>
+        </div>
+        <table id="deptTable" data-mobile-responsive="true" data-click-to-select="true">
+            <thead>
+            <tr>
+                <th data-field="selectItem" data-checkbox="true"></th>
+            </tr>
+            </thead>
+        </table>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" style="width: 60%">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">资讯类型</div>
+                <div class="col-sm-10">
+                    <select class="form-control" v-model="list.infType">
+                        <option selected="selected" value="0">星教练</option>
+                        <option value="1">会员说</option>
+                        <option value="2">HOT资讯</option>
+                        <option value="3">燃干货</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">标题</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.title" placeholder="标题"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">发布时间</div>
+                <div class="col-sm-10">
+                    <input  id="validity" class="Wdate"  style="width: 100%;padding: 5px 10px;" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',readOnly:false,maxDate:'#F{$dp.$D(\'validity\')}'})" @focus="changeTime()"  placeholder="发布时间"  />
+
+                </div>
+            </div>
+            <div id="img" class="form-group">
+                <div class="col-sm-2 control-label">列表显示图</div>
+                <div class="logoImg">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_zhu"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                    <span>*请上传宽220像素，高200像素以内的图片</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">内容</div>
+                <div class="col-sm-10">
+                    <tr>
+                        <td>
+                            <script type="text/javascript">
+                                //初始化ueditor工具
+                                var ue = UE.getEditor('editor');
+                            </script>
+                            <script id="editor" v-model="list.content" name="introduce" type="text/plain" style="width:100%;height:350px;"></script>
+
+                            </td>
+                            </tr>
+                    <span>*内容图片建议请上传宽660像素，高346像素的</span>
+                            </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-2 control-label"></div>
+                                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+                                </div>
+
+                                </form>
+
+                                </div>
+                                </div>
+
+
+                                <script src="${request.contextPath}/statics/js/modules/sys/InformAtion.js?_${.now?long}"></script>
+
+                            <script src="${request.contextPath}/statics/plugins/My97DatePicker/WdatePicker.js"></script>
+                            <script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+
+</body>
+</html>

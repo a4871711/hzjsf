@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>广告表</title>
+    <#include "/header.html"/>
+        <style>
+            .logo {
+                display: inline-block;
+                text-align: center;
+                margin-right: 15px;
+            }
+
+            .logo .logo_img {
+                width: 100px;
+                height: 100px;
+                display: block;
+            }
+
+            .logo .upload_file {
+                position: absolute;
+                top: 0;
+                width: 150px;
+                height: 150px;
+                opacity: 0;
+            }
+
+            .upload {
+                margin: 5px 0 15px 0px;
+            }
+
+            .upload-button {
+                position: fixed;
+                bottom: 0px;
+                right: 20px;
+            }
+
+        </style>
+        </head>
+<body>
+<script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.config.js"></script>
+<script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.all.js"></script>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <#if shiro.hasPermission("sys:advertising:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:advertising:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:advertising:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <div class="row">
+            <div class="col-sm-5 form-horizontal">
+                <div class="form-group ">
+                    <div class="col-sm-2 control-label">广告类型</div>
+                    <div class="col-sm-10">
+                        <select class="form-control" v-model="advertising.advType" @change="changeSize">
+                            <option value="1">首页广告</option>
+                            <option value="2">商城广告</option>
+                            <option value="3">定制广告</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">广告标题</div>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" v-model="advertising.advTitle" placeholder="广告标题"/>
+                    </div>
+                </div>
+                <div id="images" class="form-group">
+                    <div class="col-sm-2 control-label">广告主图</div>
+                    <div class="logo">
+                        <img @click="preview" src="../../statics/img/addPhoto.svg"
+                             layer-src="../../statics/img/addPhoto.svg" class="logo_img" width="150px" height="150px">
+                        <a class="btn btn-primary btn-xs upload">上传</a>
+                        <a class="btn btn-primary btn-xs upload2" style="display: none">上传</a>
+                    </div>
+                    <div>*1. 首页广告和商城广告上传宽660像素，高280像素的图片 <br/>
+                         *2. 定制广告上传宽690像素，高198像素的图片 <br/>
+                        <span style="color: blue">*3. 首页广告、商城广告可选择性设置跳转链接商品，若未设置APP端将展示广告内容详情。
+                            定制广告只跳转展示广告内容详情，无需设置链接商品。</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">链接商品</div>
+                    <div class="col-sm-6">
+                        <input type="text" id="goodsName" class="form-control" v-model="advertising.goodsName"
+                               disabled="disabled" placeholder="链接商品"/>
+                    </div>
+                    <a class="btn btn-primary" @click="selectGoods"><span class="fa fa-plus">&nbsp;</span>选择商品</a>
+                </div>
+                <!--<div>*注: 如果首页广告、商城广告未设置跳转链接商品时，APP端将跳转展示广告内容详情。定制广告只跳转展示广告内容详情</div>-->
+
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group ">
+                    <div class="control-label">广告内容</div>
+                    <div class="">
+                        <tr>
+                            <td>
+                                 <script type="text/javascript">
+                                      //初始化ueditor工具
+                                      var ue = UE.getEditor('editor');
+                                  </script>
+                                  <textarea id="editor" v-model="advertising.advContent" name="introduce" placeholder="广告内容"
+                                          type="text/plain" style="width:110%;height:350px;"></textarea>
+                                  </td>
+                                  </tr>
+                            <span>*广告内容图片建议请上传宽660像素，高346像素的</span>
+                                  </div>
+
+                                  </div>
+                                  </div>
+                                  </div>
+
+
+                                <div v-show="!showList" class="form-group">
+                                    <div class="col-sm-2 control-label"> </div>
+                                        <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>&nbsp;&nbsp;
+                                        <input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+                                    </div>
+                                </div>
+
+    <div id="selectGoods"  style="width: 700px;">
+        <br/>
+        <div class="form-group col-lg-4">
+            <input type="text" class="form-control" v-model="q.name" @keyup.enter="queryGoods" placeholder="商品名称">
+        </div>
+        <a class="btn btn-primary" @click="queryGoods"><i class="fa fa-search-plus"></i>&nbsp;查询</a>
+        <a class="btn btn-primary" @click="selectedGoods"><i class="fa fa fa-link"></i>&nbsp;确认</a>
+        <div class="col-md-12">
+            <table id="jqGridAddMsg" style="width: 700px"></table>
+            <div id="jqGridPagerAddMsg"></div>
+        </div>
+    </div>
+                                <script src = "${request.contextPath}/statics/libs/ajaxupload.js" ></script>
+                                <script src = "${request.contextPath}/statics/js/modules/sys/advertising.js?_${.now?long}" ></script>
+</div>
+</body>
+</html>

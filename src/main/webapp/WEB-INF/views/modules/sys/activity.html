@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>动作训练</title>
+    <#include "/header.html"/>
+    <style>
+        .logo {
+            display: inline-block;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .logo .logo_img {
+            width: 200px;
+            height: 200px;
+            display: block;
+            background-image: url("/statics/img/addPhoto.svg");
+            background-size: cover;
+
+        }
+
+        .logo .upload_file {
+            position: absolute;
+            top: 0;
+            width: 250px;
+            height: 250px;
+            opacity: 0;
+        }
+
+        .upload {
+            margin: 5px 0 15px 0px;
+        }
+
+        .upload-button {
+            position: fixed;
+            bottom: 0px;
+            right: 20px;
+        }
+
+    </style>
+</head>
+<body>
+<script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.config.js"></script>
+<script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.all.js"></script>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <#if shiro.hasPermission("sys:activ:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:activ:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:activ:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>
+        </div>
+        <table id="deptTable" data-mobile-responsive="true" data-click-to-select="true">
+            <thead>
+            <tr>
+                <th data-field="selectItem" data-checkbox="true"></th>
+            </tr>
+            </thead>
+        </table>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div id="anewFileWindow" style="display: none;margin-left: 10%">
+        <div class="form-group">
+            <div class="col-sm-10">
+                <input type="text" class="form-control" v-model="activType.atName" name="atName" placeholder="一级分类名称"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-4 control-label"></div>
+            <input type="button" class="btn btn-primary" @click="saveOrUpdateActivType" value="确认"/>
+        </div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" style="width: 60%">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">一级分类</div>
+                <div class="col-sm-4">
+                    <select class="form-control" v-model="list.atId" >
+                        <option v-for="item in activTypeList" :value="item.atId">
+                            {{ item.atName }}</option>
+                    </select>
+                </div>
+                <div class="btn btn-primary" @click="atDefinedType"><span class="fa fa-plus">&nbsp;自定义分类</span></div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">动作名称</div>
+                <div class="col-sm-6">
+                    <input type="text" class="form-control" v-model="list.trainName" placeholder="动作名称"/>
+                </div>
+            </div>
+            <div id="img" class="form-group">
+                <div class="col-sm-2 control-label">视频链接图</div>
+                <div class="logoImg">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_zhu"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                    <span>*请上传宽750像素，高376像素的图片</span>
+                </div>
+            </div>
+            <div id="images" class="form-group">
+                <div class="col-sm-2 control-label">视频链接</div>
+                <div class="col-sm-2 logo">
+                    <video  @click="preview" src="../../statics/img/addPhoto.svg"
+                            layer-src="../../statics/img/addPhoto.svg" class="logo_img" width="150px" height="150px" style="width=100%; height=100%; object-fit: fill" controls="controls">
+                    </video>
+                    <a class="btn btn-primary btn-xs uploadss">上传</a>
+
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">动作介绍</div>
+                <div class="col-sm-10">
+                    <tr>
+                        <td>
+                            <script type="text/javascript">
+                                //初始化ueditor工具
+                                var ue = UE.getEditor('editor');
+                            </script>
+                            <textarea id="editor" v-model="list.introduce" name="introduce" type="text/plain" style="width:100%;height:350px;"></textarea>
+                            </td>
+                            </tr>
+                    <span>*动作介绍内容图片建议请上传宽660像素，高346像素的</span>
+                            </div>
+                            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+
+    <div id="atDefined"  style="width: 700px;">
+        <br/>
+        <div class="form-group col-lg-4">
+            <input type="text" class="form-control" v-model="qq.atName" @keyup.enter="queryActivType" placeholder="分类名称">
+        </div>
+        <a class="btn btn-primary" @click="queryActivType"><i class="fa fa-search-plus"></i>&nbsp;查询</a>
+        <a class="btn btn-primary" @click="addActivType"><i class="fa fa-plus-square"></i>&nbsp;新增</a>
+        <table id="jqGridAdd" style="width: 700px"></table>
+        <div id="jqGridPagerAdd"></div>
+    </div>
+</div>
+<script src="${request.contextPath}/statics/js/modules/sys/activity.js?_${.now?long}"></script>
+<script src="${request.contextPath}/statics/js/ajaxfileupload.js?_${.now?long}"></script>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+</body>
+</html>

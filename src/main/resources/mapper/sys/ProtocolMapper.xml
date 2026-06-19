@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.sys.dao.SysProtocolMapper" >
+  <resultMap id="ResultMapWithBLOBs" type="com.dlc.modules.sys.entity.Protocol" >
+    <constructor >
+      <idArg column="pId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="type" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="selected" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="protocols" jdbcType="LONGVARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    pId, type, selected
+  </sql>
+  <sql id="Blob_Column_List" >
+    protocols
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from protocol
+    where pId = #{pId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from protocol
+    where pId = #{pId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.sys.entity.Protocol" >
+    insert into protocol (pId, type, selected, 
+      protocols)
+    values (#{pId,jdbcType=BIGINT}, #{type,jdbcType=INTEGER}, #{selected,jdbcType=INTEGER}, 
+      #{protocols,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.sys.entity.Protocol" >
+    insert into protocol
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="pId != null" >
+        pId,
+      </if>
+      <if test="type != null" >
+        type,
+      </if>
+      <if test="selected != null" >
+        selected,
+      </if>
+      <if test="protocols != null" >
+        protocols,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="pId != null" >
+        #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="type != null" >
+        #{type,jdbcType=INTEGER},
+      </if>
+      <if test="selected != null" >
+        #{selected,jdbcType=INTEGER},
+      </if>
+      <if test="protocols != null" >
+        #{protocols,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.sys.entity.Protocol" >
+    update protocol
+    <set >
+      <if test="type != null" >
+        type = #{type,jdbcType=INTEGER},
+      </if>
+      <if test="selected != null" >
+        selected = #{selected,jdbcType=INTEGER},
+      </if>
+      <if test="protocols != null" >
+        protocols = #{protocols,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where pId = #{pId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.dlc.modules.sys.entity.Protocol" >
+    update protocol
+    set type = #{type,jdbcType=INTEGER},
+      selected = #{selected,jdbcType=INTEGER},
+      protocols = #{protocols,jdbcType=LONGVARCHAR}
+    where pId = #{pId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.sys.entity.Protocol" >
+    update protocol
+    set type = #{type,jdbcType=INTEGER},
+      selected = #{selected,jdbcType=INTEGER}
+    where pId = #{pId,jdbcType=BIGINT}
+  </update>
+  <!--分页-->
+  <select id="queryList" resultType="com.dlc.modules.sys.entity.Protocol" parameterType="java.util.Map">
+    SELECT *
+    FROM protocol
+    limit #{offset}, #{limit}
+  </select>
+    <select id="queryTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        SELECT COUNT(*)
+        FROM protocol
+    </select>
+    <!--是否已经存在-->
+    <select id="selectIfExist" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        select count(*) from protocol where type=#{type}
+    </select>
+    <delete id="deleteBatch">
+        DELETE FROM protocol
+        WHERE pId IN
+        <foreach item="pIds" collection="array" open="(" separator="," close=")">
+            #{pIds}
+        </foreach>
+    </delete>
+</mapper>

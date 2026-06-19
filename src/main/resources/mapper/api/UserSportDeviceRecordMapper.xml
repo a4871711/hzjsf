@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.UserSportDeviceRecordMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.UserSportDeviceRecord" >
+    <constructor >
+      <idArg column="id" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="deviceId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="deviceName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="calorie" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="distance" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="startTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, userId, deviceId, deviceName, calorie, distance, startTime, createTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from user_sport_device_record
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from user_sport_device_record
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.UserSportDeviceRecord" >
+    insert into user_sport_device_record (id, userId, deviceId, 
+      deviceName, calorie, distance, 
+      startTime, createTime)
+    values (#{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{deviceId,jdbcType=VARCHAR}, 
+      #{deviceName,jdbcType=VARCHAR}, #{calorie,jdbcType=DECIMAL}, #{distance,jdbcType=DECIMAL}, 
+      #{startTime,jdbcType=TIMESTAMP}, #{createTime,jdbcType=TIMESTAMP})
+  </insert>
+
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.UserSportDeviceRecord">
+        insert into user_sport_device_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                id,
+            </if>
+            <if test="userId != null">
+                userId,
+            </if>
+            <if test="deviceId != null">
+                deviceId,
+            </if>
+            <if test="deviceName != null">
+                deviceName,
+            </if>
+
+            <if test="calorie != null">
+                calorie,
+            </if>
+            <if test="distance != null">
+                distance,
+            </if>
+            <if test="avgSpeed != null">
+                avgSpeed,
+            </if>
+            <if test="avgGradient != null">
+                avgGradient,
+            </if>
+            <if test="bpm != null">
+                bpm,
+            </if>
+            <if test="stepSize != null">
+                stepSize,
+            </if>
+            <if test="stepCount != null">
+                stepCount,
+            </if>
+
+            <if test="startTime != null">
+                startTime,
+            </if>
+            <if test="createTime != null">
+                createTime,
+            </if>
+            <if test="sportTime != null">
+                sportTime,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="userId != null">
+                #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="deviceId != null">
+                #{deviceId,jdbcType=VARCHAR},
+            </if>
+            <if test="deviceName != null">
+                #{deviceName,jdbcType=VARCHAR},
+            </if>
+
+            <if test="calorie != null">
+                #{calorie,jdbcType=DECIMAL},
+            </if>
+            <if test="distance != null">
+                #{distance,jdbcType=DECIMAL},
+            </if>
+            <if test="avgSpeed != null">
+                #{avgSpeed,jdbcType=DECIMAL},
+            </if>
+            <if test="avgGradient != null">
+                #{avgGradient,jdbcType=BIGINT},
+            </if>
+            <if test="bpm != null">
+                #{bpm,jdbcType=BIGINT},
+            </if>
+            <if test="stepSize != null">
+                #{stepSize,jdbcType=DECIMAL},
+            </if>
+            <if test="stepCount != null">
+                #{stepCount,jdbcType=BIGINT},
+            </if>
+
+            <if test="startTime != null">
+                #{startTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="sportTime != null">
+                #{sportTime,jdbcType=BIGINT},
+            </if>
+        </trim>
+    </insert>
+
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.UserSportDeviceRecord" >
+    update user_sport_device_record
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceId != null" >
+        deviceId = #{deviceId,jdbcType=VARCHAR},
+      </if>
+      <if test="deviceName != null" >
+        deviceName = #{deviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="calorie != null" >
+        calorie = #{calorie,jdbcType=DECIMAL},
+      </if>
+      <if test="distance != null" >
+        distance = #{distance,jdbcType=DECIMAL},
+      </if>
+      <if test="startTime != null" >
+        startTime = #{startTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.UserSportDeviceRecord" >
+    update user_sport_device_record
+    set userId = #{userId,jdbcType=BIGINT},
+      deviceId = #{deviceId,jdbcType=VARCHAR},
+      deviceName = #{deviceName,jdbcType=VARCHAR},
+      calorie = #{calorie,jdbcType=DECIMAL},
+      distance = #{distance,jdbcType=DECIMAL},
+      startTime = #{startTime,jdbcType=TIMESTAMP},
+      createTime = #{createTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+
+   <select id="queryUserSportTotal" resultType="Map" parameterType="Map">
+      SELECT SUM(CASE WHEN distance = 0 THEN ifnull(calorie,0) ELSE 0 END ) AS unoxyKcal,
+       SUM(CASE WHEN distance <![CDATA[>]]> 0 THEN ifnull(calorie,0) ELSE 0 END) AS oxyKcal,
+       SUM(ifnull(calorie,0)) as totalCalorie,SUM(ifnull(distance,0)) as totalDistance, SUM(ifnull(sportTime,0)) as totalSportTime
+       FROM user_sport_device_record
+       <where>
+           <if test="userId != null">
+               AND userId = #{userId}
+           </if>
+           <if test="time != null">
+               <if test="time == 1">
+                   AND YEARWEEK(date_format(startTime,'%Y-%m-%d'),1) = YEARWEEK(CURDATE(),1)
+               </if>
+               <if test="time == 2">
+                   AND DATE_FORMAT(startTime, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')
+               </if>
+               <if test="time == 3">
+                   AND YEAR(startTime)=YEAR(NOW())
+               </if>
+           </if>
+       </where>
+   </select>
+    <!--查询课程能量统计-->
+    <select id="queryClassTotal" resultType="Map" parameterType="Map">
+        SELECT
+        SUM(CASE WHEN sportType = 5 THEN ifnull(energy,0) ELSE 0 END ) AS teamClassKcal,
+        SUM(CASE WHEN sportType = 6 THEN ifnull(energy,0) ELSE 0 END) AS privateClassKcal,
+        SUM(ifnull(energy,0)) as totalCalorie, SUM(ifnull(distance,0)) as totalDistance,
+        SUM(ifnull(TIME_TO_SEC(sportTime), 0)) as totalSportTime
+        FROM sport_active
+        <where>
+            sportType IN (5,6)
+            <if test="userId != null">
+                AND userId = #{userId}
+            </if>
+            <if test="time != null">
+                <if test="time == 1">
+                    AND YEARWEEK(date_format(createdDate,'%Y-%m-%d'),1) = YEARWEEK(CURDATE(),1)
+                </if>
+                <if test="time == 2">
+                    AND DATE_FORMAT(createdDate, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')
+                </if>
+                <if test="time == 3">
+                    AND YEAR(createdDate)=YEAR(NOW())
+                </if>
+            </if>
+        </where>
+    </select>
+    <!--数量-->
+    <select id="queryClassCount" resultType="java.lang.Integer" parameterType="Map">
+        SELECT count(*)
+        FROM sport_active
+        <where>
+            sportType IN (5,6)
+            <if test="userId != null">
+                AND userId = #{userId}
+            </if>
+            <if test="time != null">
+                <if test="time == 1">
+                    AND YEARWEEK(date_format(createdDate,'%Y-%m-%d'),1) = YEARWEEK(CURDATE(),1)
+                </if>
+                <if test="time == 2">
+                    AND DATE_FORMAT(createdDate, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')
+                </if>
+                <if test="time == 3">
+                    AND YEAR(createdDate)=YEAR(NOW())
+                </if>
+            </if>
+        </where>
+    </select>
+
+    <select id="queryTotalSportRecord" resultType="int" parameterType="Map">
+        SELECT COUNT(*) FROM user_sport_device_record
+        <where>
+            <if test="userId != null">
+                AND userId = #{userId}
+            </if>
+            <if test="time != null">
+                <if test="time == 1">
+                    AND YEARWEEK(date_format(startTime,'%Y-%m-%d'),1) = YEARWEEK(curdate(),1)
+                </if>
+                <if test="time == 2">
+                    AND DATE_FORMAT(startTime, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+                </if>
+                <if test="time == 3">
+                    AND YEAR(startTime)=YEAR(NOW())
+                </if>
+            </if>
+        </where>
+    </select>
+
+    <select id="queryUserRecordByUserId" resultType="Map" parameterType="Map">
+        SELECT deviceName,CONCAT(calorie,'') AS calorie ,CONCAT(distance,'') AS distance,startTime,sportTime FROM user_sport_device_record
+        <where>
+            <if test="userId != null">
+                AND userId = #{userId}
+            </if>
+            <if test="time != null">
+                <if test="time == 1">
+                    AND YEARWEEK(date_format(startTime,'%Y-%m-%d'),1) = YEARWEEK(curdate(),1)
+                </if>
+                <if test="time == 2">
+                  AND DATE_FORMAT(startTime, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+                </if>
+                <if test="time == 3">
+                  AND YEAR(startTime)=YEAR(NOW())
+                </if>
+            </if>
+        </where>
+        ORDER BY createTime DESC
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryEnergySumByUserId" resultType="java.math.BigDecimal">
+      SELECT ifnull(SUM(calorie),0) FROM user_sport_device_record WHERE userId=#{userId};
+    </select>
+    <select id="queryUnoxyKcalEnergySumByUserId" resultType="java.math.BigDecimal">
+    SELECT ifnull(sum(calorie),0) from `user_sport_device_record`
+     WHERE distance=0 and userId=#{userId} AND date_format(createTime, '%Y-%m-%d') = date_format(now(), '%Y-%m-%d')
+    </select>
+    <select id="queryOXYEnergySumByUserId" resultType="java.math.BigDecimal">
+        SELECT ifnull(sum(calorie),0) from `user_sport_device_record`
+        WHERE distance!=0 and userId=#{userId} AND date_format(createTime, '%Y-%m-%d') = date_format(now(), '%Y-%m-%d')
+    </select>
+    <!--获取当天总能量-->
+    <select id="queryCurrEnergySumByUserId" resultType="java.math.BigDecimal">
+        SELECT ifnull(SUM(calorie),0) FROM user_sport_device_record
+         WHERE userId=#{userId}
+         AND date_format(createTime, '%Y-%m-%d') = date_format(now(), '%Y-%m-%d')
+    </select>
+</mapper>

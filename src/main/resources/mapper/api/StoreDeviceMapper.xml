@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StoreDeviceMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StoreDevice" >
+    <constructor >
+      <idArg column="sdId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="deviceName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="deviceNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    sdId, storeId, deviceName, deviceNo, createTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from store_device
+    where sdId = #{sdId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from store_device
+    where sdId = #{sdId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StoreDevice" >
+    insert into store_device (sdId, storeId, deviceName, 
+      deviceNo, createTime)
+    values (#{sdId,jdbcType=BIGINT}, #{storeId,jdbcType=BIGINT}, #{deviceName,jdbcType=VARCHAR}, 
+      #{deviceNo,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.StoreDevice" >
+    insert into store_device
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="sdId != null" >
+        sdId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="deviceName != null" >
+        deviceName,
+      </if>
+      <if test="deviceNo != null" >
+        deviceNo,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="sdId != null" >
+        #{sdId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceName != null" >
+        #{deviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="deviceNo != null" >
+        #{deviceNo,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.StoreDevice" >
+    update store_device
+    <set >
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceName != null" >
+        deviceName = #{deviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="deviceNo != null" >
+        deviceNo = #{deviceNo,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where sdId = #{sdId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.StoreDevice" >
+    update store_device
+    set storeId = #{storeId,jdbcType=BIGINT},
+      deviceName = #{deviceName,jdbcType=VARCHAR},
+      deviceNo = #{deviceNo,jdbcType=VARCHAR},
+      createTime = #{createTime,jdbcType=TIMESTAMP}
+    where sdId = #{sdId,jdbcType=BIGINT}
+  </update>
+</mapper>

@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.BodysInfoMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.BodysInfo" >
+    <constructor >
+      <idArg column="id" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="scanid" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="weight" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="bodyFat" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="percentBodyFat" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="bmi" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="kcal" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="waistToHip" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="fluid" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="muscle" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="gymEngineId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, scanid, weight, bodyFat, percentBodyFat, bmi, kcal, waistToHip, fluid, muscle, gymEngineId
+    createTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select
+    <include refid="Base_Column_List" />
+    from bodys_info
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from bodys_info
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.BodysInfo" >
+    insert into bodys_info (id, scanid, weight,
+      bodyFat, percentBodyFat, bmi,
+      kcal, waistToHip, fluid,
+      muscle, createTime)
+    values (#{id,jdbcType=BIGINT}, #{scanid,jdbcType=BIGINT}, #{weight,jdbcType=DOUBLE},
+      #{bodyFat,jdbcType=DOUBLE}, #{percentBodyFat,jdbcType=DOUBLE}, #{bmi,jdbcType=DOUBLE},
+      #{kcal,jdbcType=DOUBLE}, #{waistToHip,jdbcType=DOUBLE}, #{fluid,jdbcType=DOUBLE},
+      #{muscle,jdbcType=DOUBLE}, #{createTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.BodysInfo" >
+    insert into bodys_info
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="vid != null" >
+          vid,
+      </if>
+      <if test="scanid != null" >
+        scanid,
+      </if>
+      <if test="weight != null" >
+        weight,
+      </if>
+      <if test="bodyFat != null" >
+        bodyFat,
+      </if>
+      <if test="percentBodyFat != null" >
+        percentBodyFat,
+      </if>
+      <if test="bmi != null" >
+        bmi,
+      </if>
+      <if test="kcal != null" >
+        kcal,
+      </if>
+      <if test="waistToHip != null" >
+        waistToHip,
+      </if>
+      <if test="fluid != null" >
+        fluid,
+      </if>
+      <if test="muscle != null" >
+        muscle,
+      </if>
+      <if test="result != null" >
+        result,
+      </if>
+      <if test="gymEngineId != null" >
+        gymEngineId,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="vid != null" >
+        #{vid,jdbcType=BIGINT},
+      </if>
+      <if test="scanid != null" >
+        #{scanid,jdbcType=VARCHAR},
+      </if>
+      <if test="weight != null" >
+        #{weight,jdbcType=VARCHAR},
+      </if>
+      <if test="bodyFat != null" >
+        #{bodyFat,jdbcType=VARCHAR},
+      </if>
+      <if test="percentBodyFat != null" >
+        #{percentBodyFat,jdbcType=VARCHAR},
+      </if>
+      <if test="bmi != null" >
+        #{bmi,jdbcType=VARCHAR},
+      </if>
+      <if test="kcal != null" >
+        #{kcal,jdbcType=VARCHAR},
+      </if>
+      <if test="waistToHip != null" >
+        #{waistToHip,jdbcType=VARCHAR},
+      </if>
+      <if test="fluid != null" >
+        #{fluid,jdbcType=VARCHAR},
+      </if>
+      <if test="muscle != null" >
+        #{muscle,jdbcType=VARCHAR},
+      </if>
+      <if test="result != null" >
+        #{result,jdbcType=VARCHAR},
+      </if>
+      <if test="gymEngineId != null" >
+        #{gymEngineId,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.BodysInfo" >
+    update bodys_info
+    <set >
+      <if test="scanid != null" >
+        scanid = #{scanid,jdbcType=VARCHAR},
+      </if>
+      <if test="weight != null" >
+        weight = #{weight,jdbcType=VARCHAR},
+      </if>
+      <if test="bodyFat != null" >
+        bodyFat = #{bodyFat,jdbcType=VARCHAR},
+      </if>
+      <if test="percentBodyFat != null" >
+        percentBodyFat = #{percentBodyFat,jdbcType=VARCHAR},
+      </if>
+      <if test="bmi != null" >
+        bmi = #{bmi,jdbcType=VARCHAR},
+      </if>
+      <if test="kcal != null" >
+        kcal = #{kcal,jdbcType=VARCHAR},
+      </if>
+      <if test="waistToHip != null" >
+        waistToHip = #{waistToHip,jdbcType=VARCHAR},
+      </if>
+      <if test="fluid != null" >
+        fluid = #{fluid,jdbcType=VARCHAR},
+      </if>
+      <if test="muscle != null" >
+        muscle = #{muscle,jdbcType=VARCHAR},
+      </if>
+      <if test="result != null" >
+        result = #{result,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.BodysInfo" >
+    update bodys_info
+    set scanid = #{scanid,jdbcType=VARCHAR},
+      weight = #{weight,jdbcType=VARCHAR},
+      bodyFat = #{bodyFat,jdbcType=VARCHAR},
+      percentBodyFat = #{percentBodyFat,jdbcType=VARCHAR},
+      bmi = #{bmi,jdbcType=VARCHAR},
+      kcal = #{kcal,jdbcType=VARCHAR},
+      waistToHip = #{waistToHip,jdbcType=VARCHAR},
+      fluid = #{fluid,jdbcType=VARCHAR},
+      muscle = #{muscle,jdbcType=VARCHAR},
+      createTime = #{createTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+   <select id="queryBodyInfoByUserId" parameterType="map" resultType="com.dlc.modules.api.entity.BodysInfo">
+       SELECT * FROM bodys_info WHERE userId=#{userId} AND date_format(createTime, '%Y-%m-%d')  = #{createTime}
+   </select>
+
+    <select id="queryBodyInfoLastRecord" resultType="map" parameterType="Long">
+        SELECT * from bodys_info where userId = #{userId} ORDER BY createTime DESC LIMIT 0 ,1
+    </select>
+
+    <select id="queryBodyDimensionByUserId" parameterType="map" resultType="com.dlc.modules.api.entity.BodyDimension">
+      SELECT * FROM body_dimension WHERE userId=#{userId} AND date_format(createTime, '%Y-%m-%d')  = #{createTime}
+    </select>
+
+    <select id="queryBodyStatusByUserId" resultType="com.dlc.modules.api.entity.BodyStatus" parameterType="map">
+      SELECT * FROM body_status WHERE userId=#{userId} AND date_format(createTime, '%Y-%m-%d')  = #{createTime}
+    </select>
+</mapper>

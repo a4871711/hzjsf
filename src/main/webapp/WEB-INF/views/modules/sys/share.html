@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>分享表</title>
+    <#include "/header.html">
+        </head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <#if shiro.hasPermission("sys:share:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:share:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:share:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+           <!-- <div class="form-group">
+                <div class="col-sm-2 control-label">用户ID</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="share.userId" placeholder="用户ID"/>
+                </div>
+            </div>-->
+          <!--  <div class="form-group">
+                <div class="col-sm-2 control-label">分享的类型（1.门店分享，2.运动分享）</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="share.shareType"
+                           placeholder="分享的类型（1.门店分享，2.运动分享）"/>
+                </div>
+            </div>-->
+            <div class="form-group">
+                <div class="col-sm-2 control-label">分享标题</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="share.title" placeholder="分享标题"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">分享内容</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="share.content" placeholder="分享内容"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">分享链接</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="share.linkUrl" placeholder="分享链接"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">分享图片</div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_zhu"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                </div>
+
+            </div>
+           <!-- <div class="form-group">
+                <div class="col-sm-2 control-label">分享渠道(1:微信 2：朋友圈 3：QQ 4：QQ空间)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="share.shareChannel"
+                           placeholder="分享渠道(1:微信 2：朋友圈 3：QQ 4：QQ空间)"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">分享时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="share.createdDate" placeholder="分享时间"/>
+                </div>
+            </div>-->
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/share.js?_${.now?long}"></script>
+</body>
+</html>

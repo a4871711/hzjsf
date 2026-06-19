@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>商品管理</title>
+    <#include "/header.html"/>
+    <script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.config.js"></script>
+    <script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.all.js"></script>
+
+</head>
+<style type="text/css">
+
+    .logo {
+        display: inline-block;
+        text-align: center;
+        margin-right: 15px;
+    }
+
+    .logo .logo_img {
+        width: 100px;
+        height: 100px;
+        display: block;
+    }
+
+    .logo .upload_file {
+        position: absolute;
+        top: 0;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+    }
+
+    .logoImg {
+        display: inline-block;
+        text-align: center;
+        margin-right: 15px;
+    }
+
+    .logoImg .logo_img_zhu {
+        width: 100px;
+        height: 100px;
+        display: block;
+    }
+
+    .logoImg .upload_file {
+        position: absolute;
+        top: 0;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+    }
+
+    /*    .logoRemark {
+            display: inline-block;
+            text-align: center;
+            margin-right: 15px;
+        }
+        .logoRemark .logo_img_remark{
+            width: 100px;
+            height: 100px;
+            display: block;
+        }
+        .logoRemark .upload_file {
+            position: absolute;
+            top: 0;
+            width: 150px;
+            height: 150px;
+            opacity: 0;
+        }*/
+
+    .upload {
+        margin: 5px 0 15px 0px;
+    }
+
+    .uploadImg {
+        margin: 5px 0 15px 0px;
+    }
+
+    .uploadRemark {
+        margin: 5px 0 15px 0px;
+    }
+
+    .upload-button {
+        position: fixed;
+        bottom: 0px;
+        right: 20px;
+    }
+
+</style>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="form-group col-sm-2">
+                <input type="text" class="form-control" v-model="q.name" @keyup.enter="query" placeholder="商品名称">
+            </div>
+            <a class="btn btn-default" @click="query">查询</a>
+
+            <#if shiro.hasPermission("sys:goods:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:goods:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:goods:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>
+
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div id="anewFileWindow" style="display: none;margin-left: 10%">
+        <div class="form-group">
+            <div class="col-sm-10">
+                商品颜色（或型号）<input type="text" class="form-control" v-model="Goods.color" name="color" placeholder="请输入商品颜色或型号"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-10" style="padding-top: 5%;">
+                商品尺寸（或规格）<input type="text" class="form-control" v-model="Goods.size" name="size" placeholder="请输入商品尺寸或规格"/>
+            </div>
+        </div>
+
+
+        <div id="imgs" class="form-group">
+            <div class="logoImg" style="padding-top: 3%;padding-left: 5%;">
+                商品主图<img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_zhu">
+                <a class="btn btn-primary btn-xs uploadImg">上传</a>
+
+            </div>
+
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-4 control-label"></div>
+            <input type="button" class="btn btn-primary" @click="saveGoods" value="确认"/>
+            <!--&nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reloadGood" value="返回"/>-->
+        </div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" action="" method="post" style="width: 80%;" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">商品类型</div>
+                <div class="form-group col-sm-10">
+                    <select class="form-control" v-model="Goods.categoryId">
+                        <option v-for="item in resultGoodsCategoryDetailType" :value="item.id">
+                            {{ item.nextCategoryName }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">商品名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="Goods.name" placeholder="商品名称"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">商品价格</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="Goods.price" placeholder="商品价格（单位：元）"/>
+                </div>
+            </div>
+
+            <div class="form-group" v-if="Goods.id==null">
+                <div class="col-sm-2 control-label">商品颜色(或型号)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="Goods.color" placeholder="请输入商品颜色或型号"/>
+                </div>
+            </div>
+
+
+            <div class="form-group" v-if="Goods.id==null">
+                <div class="col-sm-2 control-label">商品尺寸(或规格)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="Goods.size" placeholder="请输入商品尺寸或规格"/>
+                </div>
+            </div>
+
+            <div id="img" class="form-group">
+                <div class="col-sm-2 control-label">商品主图</div>
+                <div class="logoImg">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_zhu">
+                    <a class="btn btn-primary btn-xs uploadImg">上传</a>
+                    <span>*请上传宽330像素，高330像素的图片</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">商品状态</div>
+                <div class="form-group col-sm-10">
+                    <select class="form-control" v-model="Goods.status">
+                        <option value="1">上架</option>
+                        <option value="0">下架</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">运费</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="Goods.freight" placeholder="运费（单位：元）"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">商品描述</div>
+                <div class="col-sm-10">
+                    <div id="editor" v-model="Goods.remark" name="remark" type="text/plain"
+                         style="width:98%;height:350px;">
+
+                    </div>
+                    <span>*商品描述内容图片建议请上传宽660像素，高346像素的</span>
+                </div>
+            </div>
+
+            <div id="image" class="form-group">
+                <div class="col-sm-2 control-label">轮播图</div>
+
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a><br/>
+                    <a class="btn btn-primary btn-xs" @click="removeT">删除</a>
+                </div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a><br/>
+                    <a class="btn btn-primary btn-xs" @click="removeT">删除</a>
+                </div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a><br/>
+                    <a class="btn btn-primary btn-xs" @click="removeT">删除</a>
+                </div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a><br/>
+                    <a class="btn btn-primary btn-xs" @click="removeT">删除</a>
+                </div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a><br/>
+                    <a class="btn btn-primary btn-xs" @click="removeT">删除</a>
+                </div>
+                <div class="logo">
+                    <span>*请上传宽750像素，高445像素的图片</span>
+                </div>
+            </div>
+
+            <br/>
+            <div class="form-group">
+                <div class="col-sm-6 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/plugins/jquery.form.js"></script>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/goods.js?_${.now?long}"></script>
+<script type="text/javascript">
+    //初始化ueditor工具
+    var ue = UE.getEditor('editor');
+    vm.ue = ue;
+</script>
+</body>
+</html>

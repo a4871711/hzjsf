@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.UserInfoMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.UserInfo" >
+    <constructor >
+      <idArg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="openId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="gzhOpenId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="zfbOpenId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="nickname" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="headImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="level" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="qrCode" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="wristId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="sex" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="height" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="weight" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="birthday" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="phone" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="interest" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="deviceToken" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="userSign" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="faceStatus" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="wtOpenId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="wtState" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="contractId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="contractTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="auditStatus" jdbcType="INTEGER" javaType="java.lang.Integer" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    userId, openId, gzhOpenId, zfbOpenId, nickname, headImgUrl, level, qrCode, wristId, sex, height, weight,
+    phone, interest, userSign, faceStatus, auditStatus, createdDate,nowStoreId
+  </sql>
+  <select id="selectByPrimaryKey" resultType="com.dlc.modules.api.entity.UserInfo" parameterType="java.lang.Long" >
+    select 
+      userId, openId, gzhOpenId, zfbOpenId, nickname, headImgUrl, level, qrCode, wristId, sex, height, weight,
+      phone, interest, userSign, faceStatus,auditStatus,deviceToken, iosUserId, createdDate, wtOpenId, wtState, contractId, contractTime,nowStoreId
+    from user_info
+    where userId = #{userId,jdbcType=BIGINT} and isDel=0
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from user_info
+    where userId = #{userId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.UserInfo" >
+    insert into user_info (userId, openId, nickname, 
+      headImgUrl, level, qrCode, 
+      wristId, sex, height, 
+      weight, phone, interest, 
+      userSign, createdDate)
+    values (#{userId,jdbcType=BIGINT}, #{openId,jdbcType=VARCHAR}, #{nickname,jdbcType=VARCHAR}, 
+      #{headImgUrl,jdbcType=VARCHAR}, #{level,jdbcType=TINYINT}, #{qrCode,jdbcType=VARCHAR}, 
+      #{wristId,jdbcType=VARCHAR}, #{sex,jdbcType=TINYINT}, #{height,jdbcType=VARCHAR}, 
+      #{weight,jdbcType=VARCHAR}, #{phone,jdbcType=VARCHAR}, #{interest,jdbcType=VARCHAR}, 
+      #{userSign,jdbcType=VARCHAR}, #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" useGeneratedKeys="true" keyProperty="userId" parameterType="com.dlc.modules.api.entity.UserInfo" >
+    insert into user_info
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="openId != null" >
+        openId,
+      </if>
+      <if test="gzhOpenId != null" >
+          gzhOpenId,
+      </if>
+      <if test="zfbOpenId != null" >
+        zfbOpenId,
+      </if>
+      <if test="nickname != null" >
+        nickname,
+      </if>
+      <if test="headImgUrl != null" >
+        headImgUrl,
+      </if>
+      <if test="level != null" >
+        level,
+      </if>
+      <if test="qrCode != null" >
+        qrCode,
+      </if>
+      <if test="wristId != null" >
+        wristId,
+      </if>
+      <if test="sex != null" >
+        sex,
+      </if>
+      <if test="height != null" >
+        height,
+      </if>
+      <if test="weight != null" >
+        weight,
+      </if>
+      <if test="phone != null" >
+        phone,
+      </if>
+        <if test="password != null" >
+            password,
+        </if>
+      <if test="interest != null" >
+        interest,
+      </if>
+      <if test="userSign != null" >
+        userSign,
+      </if>
+      <if test="iosUserId != null" >
+        iosUserId,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="nowStoreId != null" >
+        nowStoreId,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="openId != null" >
+        #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="gzhOpenId != null" >
+        #{gzhOpenId,jdbcType=VARCHAR},
+      </if>
+      <if test="zfbOpenId != null" >
+        #{zfbOpenId,jdbcType=VARCHAR},
+      </if>
+      <if test="nickname != null" >
+        #{nickname,jdbcType=VARCHAR},
+      </if>
+      <if test="headImgUrl != null" >
+        #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="level != null" >
+        #{level,jdbcType=TINYINT},
+      </if>
+      <if test="qrCode != null" >
+        #{qrCode,jdbcType=VARCHAR},
+      </if>
+      <if test="wristId != null" >
+        #{wristId,jdbcType=VARCHAR},
+      </if>
+      <if test="sex != null" >
+        #{sex,jdbcType=TINYINT},
+      </if>
+      <if test="height != null" >
+        #{height,jdbcType=VARCHAR},
+      </if>
+      <if test="weight != null" >
+        #{weight,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        #{phone,jdbcType=VARCHAR},
+      </if>
+        <if test="password != null" >
+            #{password,jdbcType=VARCHAR},
+        </if>
+      <if test="interest != null" >
+        #{interest,jdbcType=VARCHAR},
+      </if>
+      <if test="userSign != null" >
+        #{userSign,jdbcType=VARCHAR},
+      </if>
+      <if test="iosUserId != null" >
+        #{iosUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="nowStoreId != null" >
+        #{nowStoreId,jdbcType=BIGINT},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.UserInfo" >
+    update user_info
+    <set >
+      <if test="openId != null" >
+        openId = #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="nickname != null" >
+        nickname = #{nickname,jdbcType=VARCHAR},
+      </if>
+      <if test="headImgUrl != null" >
+        headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="level != null" >
+        level = #{level,jdbcType=TINYINT},
+      </if>
+      <if test="qrCode != null" >
+        qrCode = #{qrCode,jdbcType=VARCHAR},
+      </if>
+      <if test="wristId != null" >
+        wristId = #{wristId,jdbcType=VARCHAR},
+      </if>
+      <if test="sex != null" >
+        sex = #{sex,jdbcType=TINYINT},
+      </if>
+      <if test="height != null" >
+        height = #{height,jdbcType=VARCHAR},
+      </if>
+      <if test="weight != null" >
+        weight = #{weight,jdbcType=VARCHAR},
+      </if>
+      <if test="birthday != null" >
+        birthday = #{birthday,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        phone = #{phone,jdbcType=VARCHAR},
+      </if>
+        <if test="password != null" >
+            password = #{password,jdbcType=VARCHAR},
+        </if>
+
+        <if test="rongCloudId != null" >
+            rongCloudId = #{rongCloudId,jdbcType=VARCHAR},
+        </if>
+        <if test="rongCloudToken != null" >
+            rongCloudToken = #{rongCloudToken,jdbcType=VARCHAR},
+        </if>
+        <if test="deviceToken != null">
+            deviceToken = #{deviceToken,jdbcType=VARCHAR},
+        </if>
+      <if test="interest != null" >
+        interest = #{interest,jdbcType=VARCHAR},
+      </if>
+      <if test="userSign != null" >
+        userSign = #{userSign,jdbcType=VARCHAR},
+      </if>
+      <if test="faceStatus != null" >
+        faceStatus = #{faceStatus,jdbcType=INTEGER},
+      </if>
+      <if test="auditStatus != null" >
+        auditStatus = #{auditStatus,jdbcType=INTEGER},
+      </if>
+      <if test="iosUserId != null" >
+        iosUserId = #{iosUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="nowStoreId != null" >
+        nowStoreId = #{nowStoreId,jdbcType=BIGINT},
+      </if>
+    </set>
+    where userId = #{userId,jdbcType=BIGINT}
+  </update>
+    <!--更新融云信息-->
+  <update id="updateRongYunInfo" parameterType="com.dlc.modules.api.entity.UserInfo" >
+    update user_info
+    <set >
+        <if test="rongCloudId != null" >
+            rongCloudId = #{rongCloudId,jdbcType=VARCHAR},
+        </if>
+        <if test="rongCloudToken != null" >
+            rongCloudToken = #{rongCloudToken,jdbcType=VARCHAR},
+        </if>
+    </set>
+    where userId = #{userId,jdbcType=BIGINT}
+  </update>
+    <!--更新账户-->
+  <update id="updateUserAccount" parameterType="com.dlc.modules.api.entity.UserInfo" >
+    update user_info
+    <set >
+      <if test="openId != null" >
+        openId = #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="gzhOpenId != null" >
+        gzhOpenId = #{gzhOpenId,jdbcType=VARCHAR},
+      </if>
+      <if test="zfbOpenId != null" >
+        zfbOpenId = #{zfbOpenId,jdbcType=VARCHAR},
+      </if>
+      <if test="iosUserId != null" >
+        iosUserId = #{iosUserId,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        phone = #{phone,jdbcType=VARCHAR},
+      </if>      
+      <if test="nowStoreId != null" >
+        nowStoreId = #{nowStoreId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceToken != null">
+        deviceToken = #{deviceToken,jdbcType=VARCHAR},
+      </if>
+      <if test="auditStatus != null">
+        auditStatus = #{auditStatus,jdbcType=INTEGER},
+      </if>
+      <if test="wtState != null">
+        wtState = #{wtState,jdbcType=INTEGER},
+      </if>
+      <if test="contractId != null">
+        contractId = #{contractId,jdbcType=VARCHAR},
+      </if>
+      <if test="contractTime != null">
+        contractTime = #{contractTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="nickname != null">
+        nickname = #{nickname,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where userId = #{userId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.UserInfo" >
+    update user_info
+    set openId = #{openId,jdbcType=VARCHAR},
+      nickname = #{nickname,jdbcType=VARCHAR},
+      headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      level = #{level,jdbcType=TINYINT},
+      qrCode = #{qrCode,jdbcType=VARCHAR},
+      wristId = #{wristId,jdbcType=VARCHAR},
+      sex = #{sex,jdbcType=TINYINT},
+      height = #{height,jdbcType=VARCHAR},
+      weight = #{weight,jdbcType=VARCHAR},
+      phone = #{phone,jdbcType=VARCHAR},
+      interest = #{interest,jdbcType=VARCHAR},
+      userSign = #{userSign,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}          
+      <if test="nowStoreId != null" >
+        ,nowStoreId = #{nowStoreId,jdbcType=BIGINT}
+      </if>
+    where userId = #{userId,jdbcType=BIGINT}
+  </update>
+  <!-- 查詢個人中心信息-->
+  <select id="queryUserInfoById" resultType="java.util.Map" parameterType="java.util.Map" >
+    select
+      userId,
+      nickname,
+      qrCode,
+      headImgUrl,
+      sex,
+      wtState,
+      contractId,
+      ui.userSign,
+      ui.auditStatus,ui.nowStoreId,
+      (select attentionStatus from user_attention ua where ua.attentedId = ui.userId
+        and ua.observerId = #{myId} and ua.attentionStatus=1) as attentionStatus,
+      (select ifnull(sumPoints,0) from user_points up where up.userId = ui.userId) points,
+      (select count(*) from user_attention ua where ua.observerId = ui.userId and ua.attentionStatus = 1 ) attentions,
+      (select count(*) from user_attention ua where ua.attentedId = ui.userId and ua.attentionStatus = 1 ) fans,
+      (select service_tel from about_us limit 1) as csPhone,
+      (select count(*) from store_attention sa where sa.observerId = ui.userId and sa.attentionStatus = 1 ) groups
+    from user_info ui
+    where ui.userId = #{userId,jdbcType=BIGINT} and ui.isDel=0
+  </select>
+  <!-- 個人等級查詢-->
+  <select id="queryUserLevel" resultType="java.lang.Integer" parameterType="java.lang.Integer" >
+    select
+        dm.price
+      from data_map dm
+      where dm.idxLabel = 2 and dm.nextLabel = 2
+      and dm.val <![CDATA[<=]]> #{userEnergy} order by dm.val desc LIMIT 1
+  </select>
+  <!-- 個人等級查詢-->
+  <select id="queryLevel" resultType="java.util.Map" parameterType="java.lang.Integer">
+      select
+        dm.price,
+        dm.dataName,
+        dm.val,
+        ifnull(((select d.val from data_map d
+          where d.idxLabel = 2 and d.nextLabel = 2 and d.price=(dm.price+1) limit 1) - #{userEnergy}),0) as proEnergy,
+        ifnull((select ROUND(1-proEnergy/(d.val-dm.val),2) from data_map d
+          where d.idxLabel = 2 and d.nextLabel = 2 and d.price=(dm.price+1) limit 1),0) as percent,
+        (select description from data_map where idxLabel = 2 and nextLabel = 1) as rule
+      from data_map dm
+      where dm.idxLabel = 2 and dm.nextLabel = 2
+      and dm.val <![CDATA[<=]]> #{userEnergy} order by dm.val desc LIMIT 1
+  </select>
+
+    <select id="findUserInfoByPhone" parameterType="java.lang.String" resultType="map">
+        select userId,nickname,headImgUrl from user_info
+        where phone = #{phone,jdbcType=VARCHAR} and isDel=0
+    </select>
+
+    <select id="queryByIosUserId" parameterType="java.lang.String" resultType="com.dlc.modules.api.vo.UserInfoVo">
+        select
+          userId, openId, nickname, phone, password, sex,headImgUrl,wristId,
+          rongCloudId,rongCloudToken,height,weight, faceStatus,auditStatus,iosUserId,nowStoreId
+        from user_info
+        where iosUserId = #{iosUserId,jdbcType=VARCHAR} and isDel=0
+    </select>
+    
+    <select id="queryByUserId" parameterType="java.lang.String" resultType="com.dlc.modules.api.vo.UserInfoVo">
+        select
+          *
+        from user_info
+        where userId = #{userId,jdbcType=VARCHAR} and isDel=0
+    </select>
+
+    <select id="findUserByPhoneAndPwd" parameterType="com.dlc.modules.api.entity.UserInfo" resultType="com.dlc.modules.api.vo.UserInfoVo">
+        select
+        userId, nickname, phone, password,wristId, sex,headImgUrl,rongCloudId,rongCloudToken, deviceToken, height,weight, faceStatus,auditStatus,nowStoreId
+        from user_info
+        where phone = #{phone,jdbcType=VARCHAR} AND password = #{password,jdbcType=VARCHAR} and isDel=0
+    </select>
+
+    <select id="findUserInfoById" parameterType="java.lang.Long" resultType="map">
+        SELECT userId, userType,nickname,phone, height,weight,sex, birthday,wristId,faceStatus,headImgUrl,interest,userSign,birthday,auditStatus,nowStoreId FROM user_info
+        where  userId= #{userId} and isDel=0
+    </select>
+    <!--微信openId-->
+    <select id="findUserInfoByOpenId" resultType="com.dlc.modules.api.vo.UserInfoVo" parameterType="java.lang.String">
+        select userId, openId, nickname, phone, password, sex,headImgUrl,wristId,rongCloudId,rongCloudToken,height,weight, faceStatus,auditStatus,nowStoreId
+        from user_info
+        where openId = #{openId} and isDel=0
+    </select>
+    <!--支付宝的openid-->
+    <select id="findUserInfoByZfbOpenId" resultType="com.dlc.modules.api.vo.UserInfoVo" parameterType="java.lang.String">
+        select userId, zfbOpenId as openId, nickname, phone, password, sex,headImgUrl,wristId,rongCloudId,rongCloudToken,height,weight, faceStatus,auditStatus,nowStoreId
+        from user_info
+        where zfbOpenId = #{openId} and isDel=0
+    </select>
+    <!--公众号的openid-->
+    <select id="findUserInfoByGzhOpenId" resultType="com.dlc.modules.api.vo.UserInfoVo" parameterType="java.lang.String">
+        select userId, gzhOpenId as openId, nickname, phone, password, sex,headImgUrl,wristId,rongCloudId,rongCloudToken,height,weight, faceStatus,auditStatus,nowStoreId
+        from user_info
+        where gzhOpenId = #{openId} and isDel=0
+    </select>
+  <!--查询该手机号是否存在-->
+  <select id="querySamePhoneUser" resultType="com.dlc.modules.api.entity.UserInfo" parameterType="java.lang.String">
+    select
+      userId, nickname, phone, headImgUrl
+      from user_info where phone = #{phone,jdbcType=VARCHAR} and isDel=0
+  </select>
+
+    <select id="queryUserIdByCardid" resultType="com.dlc.modules.api.entity.UserInfo" parameterType="String">
+        SELECT * FROM user_info WHERE wristId = #{cardid} and isDel=0
+    </select>
+  <!--人脸认证状态修改1已认证-->
+  <update id="updateFaceStatus" parameterType="java.lang.Long">
+    update user_info set faceStatus = 1 where userId = #{userId} and isDel=0
+  </update>
+  <!--获取购卡记录-->
+  <select id="getCardStatus" resultType="java.util.Map" parameterType="java.lang.Long">
+    select faceStatus, wristId,nickname,phone from user_info where userId = #{userId} and isDel=0
+  </select>
+  <!--查询门店id根据userId-->
+  <select id="queryStoreIdByUserId" resultType="java.lang.Long" parameterType="java.lang.Long">
+      select storeId from device where proxyId = #{userId} and status <![CDATA[<>]]> 3 limit 1
+  </select>
+    <!--查询门店地址id根据userId-->
+  <select id="queryStoreAddrIdByUserId" resultType="java.lang.Long" parameterType="java.lang.Long">
+      select storeAddressId from device where proxyId = #{userId} and status in (0,1,2) limit 1
+  </select>
+
+  <!--更新签约信息-->
+  <update id="updateContract" parameterType="com.dlc.modules.api.entity.UserInfo" >
+    update user_info
+    <set >
+      <if test="wtOpenId != null" >
+        wtOpenId = #{wtOpenId,jdbcType=VARCHAR},
+      </if>
+      <if test="wtState != null" >
+        wtState = #{wtState,jdbcType=INTEGER},
+      </if>
+      <if test="contractId != null" >
+        contractId = #{contractId,jdbcType=VARCHAR},
+      </if>
+      contractTime = now()
+    </set>
+    where userId = #{userId,jdbcType=BIGINT}
+  </update>
+    <!--解除签约-->
+    <update id="updateCancelContract" parameterType="com.dlc.modules.api.entity.UserInfo" >
+        update user_info
+        <set >
+            <if test="wtState != null" >
+                wtState = #{wtState,jdbcType=INTEGER},
+            </if>
+            <if test="contractId != null" >
+                contractId = #{contractId,jdbcType=VARCHAR},
+            </if>
+            contractTime = now()
+        </set>
+        where wtOpenId = #{wtOpenId,jdbcType=VARCHAR}
+    </update>
+
+  <!--更新签约信息-->
+  <update id="cancelContractV2" parameterType="java.lang.Long" >
+    update user_info
+    set wtState = 0, contractId = null, contractTime = null
+    where userId = #{userId,jdbcType=BIGINT}
+  </update>
+
+  <!--根据协议ID查询用户ID-->
+  <select id="getUserIdByContractId" resultType="java.lang.Long" parameterType="string">
+    select userId from user_info where contractId = #{contractId,jdbcType=VARCHAR} and isDel=0 limit 1
+  </select>
+  
+  <select id="userStats" resultType="map" parameterType="map">
+    SELECT 
+        (SELECT COUNT(*) FROM store_address s inner join device d on d.storeAddressId=s.storeAddrId
+        inner join user_info u on u.userId=d.proxyId 
+         <where>
+             and u.isDel = 0
+             <if test="storeAddressId != null and storeAddressId != ''">
+                 and s.storeAddrId = #{storeAddressId}
+             </if>
+             <if test="storeAddressIds != null and storeAddressIds != ''">
+                AND HaveCommonElements(s.storeAddrId, #{storeAddressIds})
+             </if> 
+         </where>
+        ) AS userCount,
+        
+        (SELECT COUNT(DISTINCT proxyId) FROM device 
+         <where>
+         	 and validityDate <![CDATA[ > ]]> CURDATE()
+             <if test="storeAddressId != null and storeAddressId != ''">
+                 and find_in_set(#{storeAddressId}, storeAddrIds)
+             </if>
+             <if test="storeAddressIds != null and storeAddressIds != ''">
+                AND HaveCommonElements(storeAddrIds, #{storeAddressIds})
+             </if> 
+         </where>
+        ) AS cardCount,
+        
+        (SELECT COUNT(DISTINCT proxyId) FROM device 
+         <where>
+         	 and validityDate <![CDATA[ > ]]> CURDATE()
+         	 and buyCount <![CDATA[ > ]]> 1
+             <if test="storeAddressId != null and storeAddressId != ''">
+                 and find_in_set(#{storeAddressId}, storeAddrIds)
+             </if>
+             <if test="storeAddressIds != null and storeAddressIds != ''">
+                AND HaveCommonElements(storeAddrIds, #{storeAddressIds})
+             </if>
+         </where>
+        ) AS cardReNewCount
+	</select>
+
+
+
+</mapper>

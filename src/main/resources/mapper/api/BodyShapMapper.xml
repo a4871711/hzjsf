@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.BodyShapeMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.BodyShape" >
+    <constructor >
+      <idArg column="id" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="scanId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="result" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="gymEngineId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+
+
+
+
+
+
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.BodyShape" >
+    insert into body_shape
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="scanId != null" >
+        scanid,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="result != null" >
+        result,
+      </if>
+      <if test="gymEngineId != null" >
+        gymEngineId,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="scanId != null" >
+        #{scanId,jdbcType=VARCHAR},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="result != null" >
+        #{result,jdbcType=VARCHAR},
+      </if>
+      <if test="gymEngineId != null" >
+        #{gymEngineId,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.BodyShape" >
+    update body_shape
+    <set>
+      <if test="scanId != null" >
+        scanId = #{scanId,jdbcType=VARCHAR},
+      </if>
+      <if test="result != null" >
+        result = #{result,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <select id="queryBodyShapeByUserId" resultType="com.dlc.modules.api.entity.BodyShape" parameterType="map">
+    SELECT * FROM body_shape WHERE userId=#{userId} AND date_format(createTime, '%Y-%m-%d')  = #{createTime}
+  </select>
+
+  <select id="queryBodyShapeLastRecord" resultType="map" parameterType="Long">
+    SELECT * FROM body_shape WHERE userId = #{userId} ORDER BY id DESC LIMIT 0 ,1
+  </select>
+
+</mapper>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.BodyDimensionMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.BodyDimension" >
+    <constructor >
+      <idArg column="id" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="vid" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="scanId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="height" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="leftUpperArmGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="rightUpperArmGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="bustGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="waistGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="hipGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="rightThighGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="leftThighGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="rightCalfGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="leftCalfGirth" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="gymEngineId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, vid, userId, scanId, height, leftUpperArmGirth, rightUpperArmGirth, bustGirth, 
+    waistGirth, hipGirth, rightThighGirth, leftThighGirth, rightCalfGirth, leftCalfGirth, 
+    gymEngineId, createTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from body_dimension
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from body_dimension
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.BodyDimension" >
+    insert into body_dimension (id, vid, userId, 
+      scanId, height, leftUpperArmGirth, 
+      rightUpperArmGirth, bustGirth, waistGirth, 
+      hipGirth, rightThighGirth, leftThighGirth, 
+      rightCalfGirth, leftCalfGirth, createTime
+      )
+    values (#{id,jdbcType=BIGINT}, #{vid,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, 
+      #{scanId,jdbcType=VARCHAR}, #{height,jdbcType=VARCHAR}, #{leftUpperArmGirth,jdbcType=VARCHAR}, 
+      #{rightUpperArmGirth,jdbcType=VARCHAR}, #{bustGirth,jdbcType=VARCHAR}, #{waistGirth,jdbcType=VARCHAR}, 
+      #{hipGirth,jdbcType=VARCHAR}, #{rightThighGirth,jdbcType=VARCHAR}, #{leftThighGirth,jdbcType=VARCHAR}, 
+      #{rightCalfGirth,jdbcType=VARCHAR}, #{leftCalfGirth,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.BodyDimension" >
+    insert into body_dimension
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="vid != null" >
+        vid,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="scanId != null" >
+        scanId,
+      </if>
+      <if test="height != null" >
+        height,
+      </if>
+      <if test="leftUpperArmGirth != null" >
+        leftUpperArmGirth,
+      </if>
+      <if test="rightUpperArmGirth != null" >
+        rightUpperArmGirth,
+      </if>
+      <if test="bustGirth != null" >
+        bustGirth,
+      </if>
+      <if test="waistGirth != null" >
+        waistGirth,
+      </if>
+      <if test="hipGirth != null" >
+        hipGirth,
+      </if>
+      <if test="rightThighGirth != null" >
+        rightThighGirth,
+      </if>
+      <if test="leftThighGirth != null" >
+        leftThighGirth,
+      </if>
+      <if test="rightCalfGirth != null" >
+        rightCalfGirth,
+      </if>
+      <if test="leftCalfGirth != null" >
+        leftCalfGirth,
+      </if>
+      <if test="gymEngineId != null" >
+        gymEngineId,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="vid != null" >
+        #{vid,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="scanId != null" >
+        #{scanId,jdbcType=VARCHAR},
+      </if>
+      <if test="height != null" >
+        #{height,jdbcType=VARCHAR},
+      </if>
+      <if test="leftUpperArmGirth != null" >
+        #{leftUpperArmGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="rightUpperArmGirth != null" >
+        #{rightUpperArmGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="bustGirth != null" >
+        #{bustGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="waistGirth != null" >
+        #{waistGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="hipGirth != null" >
+        #{hipGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="rightThighGirth != null" >
+        #{rightThighGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="leftThighGirth != null" >
+        #{leftThighGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="rightCalfGirth != null" >
+        #{rightCalfGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="leftCalfGirth != null" >
+        #{leftCalfGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="gymEngineId != null" >
+        #{gymEngineId,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.BodyDimension" >
+    update body_dimension
+    <set >
+      <if test="vid != null" >
+        vid = #{vid,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="scanId != null" >
+        scanId = #{scanId,jdbcType=VARCHAR},
+      </if>
+      <if test="height != null" >
+        height = #{height,jdbcType=VARCHAR},
+      </if>
+      <if test="leftUpperArmGirth != null" >
+        leftUpperArmGirth = #{leftUpperArmGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="rightUpperArmGirth != null" >
+        rightUpperArmGirth = #{rightUpperArmGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="bustGirth != null" >
+        bustGirth = #{bustGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="waistGirth != null" >
+        waistGirth = #{waistGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="hipGirth != null" >
+        hipGirth = #{hipGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="rightThighGirth != null" >
+        rightThighGirth = #{rightThighGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="leftThighGirth != null" >
+        leftThighGirth = #{leftThighGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="rightCalfGirth != null" >
+        rightCalfGirth = #{rightCalfGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="leftCalfGirth != null" >
+        leftCalfGirth = #{leftCalfGirth,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.BodyDimension" >
+    update body_dimension
+    set vid = #{vid,jdbcType=BIGINT},
+      userId = #{userId,jdbcType=BIGINT},
+      scanId = #{scanId,jdbcType=VARCHAR},
+      height = #{height,jdbcType=VARCHAR},
+      leftUpperArmGirth = #{leftUpperArmGirth,jdbcType=VARCHAR},
+      rightUpperArmGirth = #{rightUpperArmGirth,jdbcType=VARCHAR},
+      bustGirth = #{bustGirth,jdbcType=VARCHAR},
+      waistGirth = #{waistGirth,jdbcType=VARCHAR},
+      hipGirth = #{hipGirth,jdbcType=VARCHAR},
+      rightThighGirth = #{rightThighGirth,jdbcType=VARCHAR},
+      leftThighGirth = #{leftThighGirth,jdbcType=VARCHAR},
+      rightCalfGirth = #{rightCalfGirth,jdbcType=VARCHAR},
+      leftCalfGirth = #{leftCalfGirth,jdbcType=VARCHAR},
+      createTime = #{createTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+    <select id="queryBodyDimensionList" parameterType="long" resultType="map">
+        select leftUpperArmGirth,rightUpperArmGirth,bustGirth,waistGirth,hipGirth,rightThighGirth,leftThighGirth,rightCalfGirth,leftCalfGirth, gymEngineId
+        from body_dimension
+        where userId = #{userId}
+        ORDER BY createTime DESC
+        LIMIT 2
+    </select>
+
+    <select id="queryBodyDimensionScanId" resultType="map" parameterType="Long">
+        SELECT scanId FROM body_dimension WHERE userId = #{userId}  ORDER BY createTime DESC LIMIT 1
+    </select>
+</mapper>

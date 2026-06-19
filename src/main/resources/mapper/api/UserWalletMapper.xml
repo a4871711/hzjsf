@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.UserWalletMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.UserWallet" >
+    <constructor >
+      <idArg column="userWalletId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="money" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="alipay" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="realName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="updateDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    userWalletId, userId, money, alipay, realName, updateDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from user_wallet
+    where userWalletId = #{userWalletId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from user_wallet
+    where userWalletId = #{userWalletId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.UserWallet" >
+    insert into user_wallet (userWalletId, userId, money, 
+      alipay, updateDate)
+    values (#{userWalletId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{money,jdbcType=INTEGER}, 
+      #{alipay,jdbcType=VARCHAR}, #{updateDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.UserWallet" >
+    insert into user_wallet
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="userWalletId != null" >
+        userWalletId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="money != null" >
+        money,
+      </if>
+      <if test="alipay != null" >
+        alipay,
+      </if>
+      <if test="updateDate != null" >
+        updateDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="userWalletId != null" >
+        #{userWalletId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="money != null" >
+        #{money,jdbcType=INTEGER},
+      </if>
+      <if test="alipay != null" >
+        #{alipay,jdbcType=VARCHAR},
+      </if>
+      <if test="updateDate != null" >
+        #{updateDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.UserWallet" >
+    update user_wallet
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="money != null" >
+        money = #{money,jdbcType=INTEGER},
+      </if>
+      <if test="alipay != null" >
+        alipay = #{alipay,jdbcType=VARCHAR},
+      </if>
+      <if test="updateDate != null" >
+        updateDate = #{updateDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where userWalletId = #{userWalletId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.UserWallet" >
+    update user_wallet
+    set userId = #{userId,jdbcType=BIGINT},
+      money = #{money,jdbcType=INTEGER},
+      alipay = #{alipay,jdbcType=VARCHAR},
+      updateDate = #{updateDate,jdbcType=TIMESTAMP}
+    where userWalletId = #{userWalletId,jdbcType=BIGINT}
+  </update>
+
+  <!--LXK余额支付-->
+  <update id="balancePay">
+    UPDATE user_wallet SET money=#{realPayment},updateDate=NOW()
+    WHERE userId = #{userId,jdbcType=BIGINT}
+  </update>
+  <select id="queryUserMoney" parameterType="java.lang.Long" resultType="java.math.BigDecimal">
+    SELECT money FROM user_wallet WHERE userId = #{userId}
+  </select>
+  <!--"钱包"查询我的总余额-->
+  <select id="queryWalletByUserId" resultType="java.util.Map" parameterType="java.lang.Long">
+      select
+        concat(money,'') as money,
+        (select price from data_map where idxLabel=7 and nextLabel=1) as leastMoney
+      from user_wallet
+      where userId = #{userId,jdbcType=BIGINT}
+  </select>
+  <!--查询提现设置-->
+  <select id="queryWalletAccount" resultType="java.util.Map" parameterType="java.lang.Long">
+    select
+        alipay,
+        realName,
+        concat(money,'') as money
+      from user_wallet
+      where userId = #{userId,jdbcType=BIGINT}
+  </select>
+  <!--提现设置-->
+  <update id="updateAccountByUserId" parameterType="java.util.Map">
+    update user_wallet
+    <set >
+      <if test="alipay != null" >
+        alipay = #{alipay,jdbcType=VARCHAR},
+      </if>
+      <if test="realName != null" >
+        realName = #{realName,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where userId = #{userId,jdbcType=BIGINT}
+  </update>
+    <!--账户余额进出-->
+    <update id="updateMyMoney">
+        update user_wallet uw
+         set uw.money = uw.money + #{money,jdbcType=DOUBLE},
+         uw.updateDate = now()
+         where uw.userId = #{userId, jdbcType=BIGINT}
+    </update>
+  <!--实时查询用户账户金额-->
+  <select id="queryWalletMoney" resultType="java.math.BigDecimal" parameterType="java.lang.Long">
+    select
+      money
+      from user_wallet
+      where userId = #{userId}
+  </select>
+  <!--根据用户id查询钱包返回整个实体-->
+  <select id="selectWalletByUserId" resultType="com.dlc.modules.api.entity.UserWallet" parameterType="java.lang.Long">
+    SELECT userWalletId, userId, money, realName, alipay, updateDate FROM user_wallet WHERE userId = #{userId}
+  </select>
+    <update id="updateUserWallet">
+        UPDATE user_wallet
+        SET money = #{money}
+        WHERE userId = #{userId}
+    </update>
+</mapper>

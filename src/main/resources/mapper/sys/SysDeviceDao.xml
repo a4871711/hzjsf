@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysDeviceDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysDeviceEntity" id="deviceMap">
+        <result property="deviceId" column="deviceId"/>
+        <result property="deviceNo" column="deviceNo"/>
+        <result property="deviceName" column="deviceName"/>
+        <result property="proxyId" column="proxyId"/>
+        <result property="deviceImgUrl" column="deviceImgUrl"/>
+        <result property="storeId" column="storeId"/>
+        <result property="storeAddressId" column="storeAddressId"/>
+        <result property="proxyName" column="proxyName"/>
+        <result property="phone" column="phone"/>
+        <result property="devicePrice" column="devicePrice"/>
+        <result property="imei" column="imei"/>
+        <result property="addressDetail" column="addressDetail"/>
+        <result property="addressId" column="addressId"/>
+        <result property="status" column="status"/>
+        <result property="type" column="type"/>
+        <result property="validityDate" column="validityDate"/>
+        <result property="inventory" column="inventory"/>
+        <result property="onLineTime" column="onLineTime"/>
+        <result property="createTime" column="createTime"/>
+        <result property="fitCardId" column="fitCardId"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        deviceNo,deviceName,proxyId,deviceImgUrl,storeId,proxyName,phone,devicePrice,imei,addressDetail,addressId,status,inventory,onLineTime,createTime
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysDeviceEntity" parameterType="map">
+        SELECT
+          d.*
+        FROM device d inner join store_address s on s.storeAddrId= d.storeAddressId
+        where 1=1
+        <if test="storeId != null and storeId != ''">
+            AND s.storeId=#{storeId}
+        </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+        <if test="deviceNo != null and deviceNo != ''">
+            AND d.deviceNo LIKE concat('%',#{deviceNo},'%')
+        </if>
+        <if test="phone != null and phone != ''">
+            AND d.phone LIKE concat('%',#{phone},'%')
+        </if>
+        <if test="status != null and status != ''">
+            AND d.status = #{status}
+        </if>
+        order BY d.createTime desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT
+          count(*)
+        FROM device d inner join store_address s on s.storeAddrId= d.storeAddressId
+        where 1=1
+        <if test="storeId != null and storeId != ''">
+            AND s.storeId=#{storeId}
+        </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+        <if test="deviceNo != null and deviceNo != ''">
+            AND d.deviceNo LIKE concat('%',#{deviceNo},'%')
+        </if>
+        <if test="phone != null and phone != ''">
+            AND d.phone LIKE concat('%',#{phone},'%')
+        </if>
+        <if test="status != null and status != ''">
+            AND d.status = #{status}
+        </if>
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysDeviceEntity" parameterType="long">
+        SELECT
+        *
+        FROM device
+        WHERE deviceId=#{deviceId}
+    </select>
+    <!--查询过期用户-->
+    <select id="selectOverdueMember" resultType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        select * from device
+          where status in (0,1,2) and date_format(validityDate, '%Y-%m-%d') <![CDATA[<]]> date_format(now(), '%Y-%m-%d')
+    </select>
+    <!--查询正常使用的用户卡信息-->
+    <select id="queryDeviceById" resultType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        select * from device where proxyId=#{userId} and storeAddressId=#{storeAddressId} and status in (0,1,2)
+    </select>
+    <!--查门店会员-->
+    <select id="queryDeviceMemberById" resultType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        select * from device where proxyId=#{userId} and storeAddressId=#{storeAddressId}
+    </select>
+    <!--查询正常使用的用户卡信息-->
+    <select id="selectOtherCard" resultType="java.lang.Integer">
+        select count(*) from device where proxyId=#{userId} and storeId <![CDATA[<>]]> #{storeId}
+    </select>
+
+    <!--查询所有状态的用户卡信息-->
+    <select id="queryDeviceHistoryById" resultType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        select * from device where proxyId=#{userId} and storeAddressId=#{storeAddressId}
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        INSERT INTO device
+        (
+        <include refid="Base_Column_List"/>
+        )
+        VALUES
+        (
+        #{deviceNo},
+        #{deviceName},
+        #{proxyId},
+        #{deviceImgUrl},
+        #{storeId},
+        #{proxyName},
+        #{phone},
+        #{devicePrice},
+        #{imei},
+        #{addressDetail},
+        #{addressId},
+        #{status},
+        #{inventory},
+        #{onLineTime},
+        #{createTime}
+        )
+    </insert>
+    <!--插入新数据-->
+    <insert id="insertDeviceSelective" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity" >
+        insert into device
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="deviceNo != null" >
+                deviceNo,
+            </if>
+            <if test="deviceName != null" >
+                deviceName,
+            </if>
+            <if test="proxyId != null" >
+                proxyId,
+            </if>
+            <if test="deviceImgUrl != null" >
+                deviceImgUrl,
+            </if>
+            <if test="storeId != null" >
+                storeId,
+            </if>
+            <if test="storeAddressId != null" >
+                storeAddressId,
+            </if>
+            <if test="proxyName != null" >
+                proxyName,
+            </if>
+            <if test="phone != null" >
+                phone,
+            </if>
+            <if test="devicePrice != null" >
+                devicePrice,
+            </if>
+            <if test="imei != null" >
+                imei,
+            </if>
+            <if test="addressDetail != null" >
+                addressDetail,
+            </if>
+            <if test="addressId != null" >
+                addressId,
+            </if>
+            <if test="status != null" >
+                status,
+            </if>
+            <if test="inventory != null" >
+                inventory,
+            </if>
+            <if test="type != null" >
+                type,
+            </if>
+            <if test="validityDate != null" >
+                validityDate,
+            </if>
+            <if test="onLineTime != null" >
+                onLineTime,
+            </if>
+            <if test="createTime != null" >
+                createTime,
+            </if>
+            <if test="fitCardId != null" >
+                fitCardId,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="deviceNo != null" >
+                #{deviceNo,jdbcType=VARCHAR},
+            </if>
+            <if test="deviceName != null" >
+                #{deviceName,jdbcType=VARCHAR},
+            </if>
+            <if test="proxyId != null" >
+                #{proxyId,jdbcType=BIGINT},
+            </if>
+            <if test="deviceImgUrl != null" >
+                #{deviceImgUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="storeId != null" >
+                #{storeId,jdbcType=BIGINT},
+            </if>
+            <if test="storeAddressId != null" >
+                #{storeAddressId,jdbcType=BIGINT},
+            </if>
+            <if test="proxyName != null" >
+                #{proxyName,jdbcType=VARCHAR},
+            </if>
+            <if test="phone != null" >
+                #{phone,jdbcType=VARCHAR},
+            </if>
+            <if test="devicePrice != null" >
+                #{devicePrice,jdbcType=DECIMAL},
+            </if>
+            <if test="imei != null" >
+                #{imei,jdbcType=VARCHAR},
+            </if>
+            <if test="addressDetail != null" >
+                #{addressDetail,jdbcType=VARCHAR},
+            </if>
+            <if test="addressId != null" >
+                #{addressId,jdbcType=BIGINT},
+            </if>
+            <if test="status != null" >
+                #{status,jdbcType=TINYINT},
+            </if>
+            <if test="inventory != null" >
+                #{inventory,jdbcType=INTEGER},
+            </if>
+            <if test="type != null" >
+                #{type,jdbcType=INTEGER},
+            </if>
+            <if test="validityDate != null" >
+                #{validityDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="onLineTime != null" >
+                #{onLineTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fitCardId != null" >
+                #{fitCardId,jdbcType=BIGINT},
+            </if>
+        </trim>
+    </insert>
+
+    <delete id="deleteBatch">
+        delete from device where deviceId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity">
+      UPDATE  device SET deviceNo=#{deviceNo},
+        deviceName= #{deviceName},
+        proxyId= #{proxyId},
+        deviceImgUrl=  #{deviceImgUrl},
+        storeId= #{storeId},
+        proxyName= #{proxyName},
+        phone=#{phone},
+        devicePrice=#{devicePrice},
+        imei= #{imei},
+        addressDetail=  #{addressDetail},
+        addressId= #{addressId},
+        status= #{status},
+        inventory= #{inventory},
+        onLineTime= #{onLineTime},
+        createTime=  #{createTime}
+        where deviceId=#{deviceId}
+         </update>
+    <!--更新设备信息-->
+    <update id="updateDevice" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity">
+      UPDATE  device SET deviceNo= trim(#{deviceNo}),
+        deviceName= #{deviceName},
+        deviceImgUrl=  #{deviceImgUrl},
+        proxyName= #{proxyName},
+        phone=#{phone},
+        addressDetail=  #{addressDetail},
+        status= #{status}
+        where deviceId=#{deviceId}
+      </update>
+    <select id="queryDeviceByUserId" resultType="java.util.Map" parameterType="java.lang.Long">
+        select
+          deviceName,
+          deviceNo
+        from device
+        where proxyId = #{userId, jdbcType=BIGINT}
+    </select>
+    <!--更新用户手环id-->
+    <update id="updateUserInfoWrist" parameterType="java.util.Map">
+        update user_info set wristId=trim(#{deviceNo})
+        where userId = #{userId}
+    </update>
+    <!--batchForbidden批量禁用设备(已确认状态的)-->
+    <update id="batchForbidden">
+        update device
+          set status = 2
+        where status = 1
+        and deviceId in
+        <foreach item="deviceId" collection="array" open="(" separator="," close=")">
+            #{deviceId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--batchUnForbidden批量解除禁用设备(已确认状态的)-->
+    <update id="batchUnForbidden">
+        update device
+          set status = 1
+        where status = 2
+        and deviceId in
+        <foreach item="deviceId" collection="array" open="(" separator="," close=")">
+            #{deviceId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--batchUpdateMemberStatus根据用户id批量更新状态-->
+    <update id="batchUpdateMemberStatus">
+        update device
+        set status = #{status}
+        where deviceId in
+        <foreach item="deviceId" collection="deviceIds" open="(" separator="," close=")">
+            #{deviceId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--batchUpdateMemberStatusStart根据用户id批量更新状态-->
+    <update id="batchUpdateMemberStatusStart">
+        update device
+        set status = (CASE WHEN deviceNo IS NULL THEN 1 ELSE 1 END)
+        where deviceId in
+        <foreach item="deviceId" collection="array" open="(" separator="," close=")">
+            #{deviceId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--查询该手环编号是否已经存在-->
+    <select id="queryIfExistDeciceNo" resultType="java.lang.Integer" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        select count(*) from device where deviceNo=#{deviceNo} AND deviceId <![CDATA[<>]]> #{deviceId}
+    </select>
+    <!--解绑手环-->
+    <update id="updateDeviceInit" parameterType="java.lang.String">
+        update device set deviceNo=null where deviceNo=#{deviceNo}
+    </update>
+    <!--解绑手环-->
+    <update id="updateWristIdInit" parameterType="java.lang.String">
+        update user_info set wristId='0' where wristId=#{deviceNo}
+    </update>
+    <!--更新结转人信息手环和刷脸,已购卡未认证-->
+    <update id="updateUserStatusByUid" parameterType="java.lang.Long">
+         update user_info set wristId='0', faceStatus=(case when faceStatus=1 then 1 else 2 end)
+          where userId=#{userId}
+    </update>
+
+    <!--更新设备_已转卡-->
+    <update id="updateDeviceStatusById" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        UPDATE  device SET
+          status= 3, onLineTime=#{onLineTime}
+        where proxyId=#{proxyId} AND storeAddressId=#{storeAddressId}
+    </update>
+    <!--更新接转人有效期-->
+    <update id="updateDeviceValidate" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        UPDATE device SET validityDate=#{validityDate}, onLineTime=#{onLineTime}
+          WHERE proxyId=#{proxyId} AND storeAddressId=#{storeAddressId}
+    </update>
+    <!--更新历史数据-->
+    <update id="updateDeviceSelective" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity" >
+        update device
+        <set >
+            <if test="deviceNo != null" >
+                deviceNo = #{deviceNo,jdbcType=VARCHAR},
+            </if>
+            <if test="deviceName != null" >
+                deviceName = #{deviceName,jdbcType=VARCHAR},
+            </if>
+            <if test="proxyId != null" >
+                proxyId = #{proxyId,jdbcType=BIGINT},
+            </if>
+            <if test="deviceImgUrl != null" >
+                deviceImgUrl = #{deviceImgUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="storeId != null" >
+                storeId = #{storeId,jdbcType=BIGINT},
+            </if>
+            <if test="storeAddressId != null" >
+                storeAddressId = #{storeAddressId,jdbcType=BIGINT},
+            </if>
+            <if test="proxyName != null" >
+                proxyName = #{proxyName,jdbcType=VARCHAR},
+            </if>
+            <if test="phone != null" >
+                phone = #{phone,jdbcType=VARCHAR},
+            </if>
+            <if test="devicePrice != null" >
+                devicePrice = #{devicePrice,jdbcType=DECIMAL},
+            </if>
+            <if test="imei != null" >
+                imei = #{imei,jdbcType=VARCHAR},
+            </if>
+            <if test="addressDetail != null" >
+                addressDetail = #{addressDetail,jdbcType=VARCHAR},
+            </if>
+            <if test="addressId != null" >
+                addressId = #{addressId,jdbcType=BIGINT},
+            </if>
+            <if test="status != null" >
+                status = #{status,jdbcType=TINYINT},
+            </if>
+            <if test="inventory != null" >
+                inventory = #{inventory,jdbcType=INTEGER},
+            </if>
+            <if test="validityDate != null" >
+                validityDate = #{validityDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="onLineTime != null" >
+                onLineTime = #{onLineTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="createTime != null" >
+                createTime = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="fitCardId != null" >
+                fitCardId = #{fitCardId,jdbcType=BIGINT},
+            </if>
+            <if test="type != null" >
+                type = #{type,jdbcType=INTEGER},
+            </if>
+            <if test="storeAddrIds != null" >
+                storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where deviceId = #{deviceId,jdbcType=BIGINT}
+    </update>
+    <!--定时任务更新会员已过期-->
+    <update id="updateBatchDeviceOverTime">
+        UPDATE device SET status = 4 where deviceId IN
+        <foreach item="deviceId" collection="list" open="(" separator="," close=")">
+            #{deviceId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--更新用户手环信息为无效null-->
+    <update id="updateBatchUserWristByUid">
+        UPDATE user_info SET wristId = null WHERE userId IN
+        <foreach item="proxyId" collection="list" open="(" separator="," close=")">
+            #{proxyId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--更新有效期-->
+    <update id="updateMemberValidity" parameterType="java.util.Map">
+         UPDATE device SET validityDate = #{validityDate,jdbcType=TIMESTAMP}
+         WHERE deviceId = #{deviceId,jdbcType=BIGINT}
+    </update>
+    <!--更新有效期和状态-->
+    <update id="updateValidityAndSta" parameterType="java.util.Map">
+         UPDATE device SET validityDate = #{validityDate,jdbcType=TIMESTAMP}, status = 1
+         WHERE deviceId = #{deviceId,jdbcType=BIGINT}
+    </update>
+    <!--更新自动续费状态-->
+    <update id="updateAutoPayStatus" parameterType="com.dlc.modules.sys.entity.SysDeviceEntity">
+        UPDATE device SET autoPay = #{autoPay,jdbcType=INTEGER}
+          WHERE deviceId = #{deviceId,jdbcType=BIGINT}
+    </update>
+
+    <select id="getUserIdsByDeviceId" resultType="java.lang.Long" >
+        select proxyId
+        FROM device
+        where deviceId in
+        <foreach item="deviceId" collection="deviceIds" open="(" separator="," close=")">
+            #{deviceId,jdbcType=BIGINT}
+        </foreach>
+    </select>
+    
+    <!--门店统计-->
+    <select id="selectStoreStats" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT 
+        	SUM(CASE WHEN validityDate BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND LAST_DAY(CURDATE()) THEN 1 ELSE 0 END) AS monthCount,
+    		SUM(CASE WHEN validityDate BETWEEN DATE_ADD(CURDATE(), INTERVAL 1 DAY) and DATE_ADD(CURDATE(), INTERVAL 2 DAY) THEN 1 ELSE 0 END) AS nextCount,
+        	COUNT(DISTINCT CASE WHEN validityDate <![CDATA[<]]> NOW() THEN proxyId END) AS expireCount,
+        	COUNT(DISTINCT CASE WHEN validityDate <![CDATA[>=]]> NOW() THEN proxyId END) AS validityCount
+        FROM device
+        <where>
+        	status = 1
+            <if test="storeAddressId != null  and storeAddressId != ''"> and storeAddressId = #{storeAddressId}</if>
+            <if test="storeAddrIds != null  and storeAddrIds != ''"> and find_in_set(#{storeAddrIds}, storeAddrIds)</if>
+        </where>
+    </select>
+
+</mapper>

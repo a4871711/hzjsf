@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StudentTeamclassShipMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StudentTeamclassShip" >
+    <constructor >
+      <idArg column="stuTeamClassId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="studentId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="classId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="classType" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="classStatus" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="orderNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="coachName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classTime" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classroom" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classplaceId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="className" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classLabel" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classPrice" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="energy" jdbcType="DOUBLE" javaType="java.lang.Double" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    stuTeamClassId, studentId, classId, classType, classStatus, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from stu_teamclass_ship
+    where stuTeamClassId = #{stuTeamClassId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from stu_teamclass_ship
+    where stuTeamClassId = #{stuTeamClassId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StudentTeamclassShip" >
+    insert into stu_teamclass_ship (stuTeamClassId, studentId, classId, 
+      classType, classStatus, createdDate
+      )
+    values (#{stuTeamClassId,jdbcType=BIGINT}, #{studentId,jdbcType=BIGINT}, #{classId,jdbcType=BIGINT}, 
+      #{classType,jdbcType=INTEGER}, #{classStatus,jdbcType=INTEGER}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.StudentTeamclassShip" >
+    insert into stu_teamclass_ship
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="stuTeamClassId != null" >
+        stuTeamClassId,
+      </if>
+      <if test="studentId != null" >
+        studentId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="coachName != null" >
+        coachName,
+      </if>
+      <if test="classId != null" >
+        classId,
+      </if>
+      <if test="classType != null" >
+        classType,
+      </if>
+      <if test="classStatus != null" >
+        classStatus,
+      </if>
+      <if test="orderNo != null" >
+          orderNo,
+      </if>
+      <if test="classTime != null" >
+          classTime,
+      </if>
+      <if test="energy != null" >
+        energy,
+      </if>
+      <if test="classroom != null" >
+          classroom,
+      </if>
+      <if test="classAddress != null" >
+          classAddress,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="className != null" >
+          className,
+      </if>
+      <if test="classPrice != null" >
+          classPrice,
+      </if>
+      <if test="classImgUrl != null" >
+          classImgUrl,
+      </if>
+      <if test="classLabel != null" >
+          classLabel,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="stuTeamClassId != null" >
+        #{stuTeamClassId,jdbcType=BIGINT},
+      </if>
+      <if test="studentId != null" >
+        #{studentId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="coachName != null" >
+        #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="classId != null" >
+        #{classId,jdbcType=BIGINT},
+      </if>
+      <if test="classType != null" >
+        #{classType,jdbcType=INTEGER},
+      </if>
+      <if test="classStatus != null" >
+        #{classStatus,jdbcType=INTEGER},
+      </if>
+        <if test="orderNo != null" >
+            #{orderNo,jdbcType=VARCHAR},
+        </if>
+        <if test="classTime != null" >
+            #{classTime,jdbcType=VARCHAR},
+        </if>
+        <if test="energy != null" >
+          #{energy,jdbcType=DOUBLE},
+        </if>
+        <if test="classroom != null" >
+            #{classroom,jdbcType=VARCHAR},
+        </if>
+        <if test="classAddress != null" >
+            #{classAddress,jdbcType=VARCHAR},
+        </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+        <if test="className != null" >
+            #{className,jdbcType=VARCHAR},
+        </if>
+        <if test="classPrice != null" >
+            #{classPrice,jdbcType=DOUBLE},
+        </if>
+        <if test="classImgUrl != null" >
+            #{classImgUrl,jdbcType=VARCHAR},
+        </if>
+        <if test="classLabel != null" >
+            #{classLabel,jdbcType=VARCHAR},
+        </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.StudentTeamclassShip" >
+    update stu_teamclass_ship
+    <set >
+      <if test="studentId != null" >
+        studentId = #{studentId,jdbcType=BIGINT},
+      </if>
+      <if test="classId != null" >
+        classId = #{classId,jdbcType=BIGINT},
+      </if>
+      <if test="classType != null" >
+        classType = #{classType,jdbcType=INTEGER},
+      </if>
+      <if test="classStatus != null" >
+        classStatus = #{classStatus,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where stuTeamClassId = #{stuTeamClassId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.StudentTeamclassShip" >
+    update stu_teamclass_ship
+    set studentId = #{studentId,jdbcType=BIGINT},
+      classId = #{classId,jdbcType=BIGINT},
+      classType = #{classType,jdbcType=INTEGER},
+      classStatus = #{classStatus,jdbcType=INTEGER},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where stuTeamClassId = #{stuTeamClassId,jdbcType=BIGINT}
+  </update>
+  <!--查詢我的團教課-->
+  <select id="queryTeamClassByUserId" resultType="java.util.Map" parameterType="java.util.Map" >
+    select
+      sts.studentId,
+      sts.classId,
+      sts.classStatus,
+      sts.classType as teamClassType,
+      concat(sts.classPrice,'') as classPrice,
+      sts.className as teamClassName,
+      sts.classImgUrl as classImgUrl,
+      sts.classLabel,
+      sts.classTime
+    from stu_teamclass_ship sts
+    where sts.studentId = #{userId,jdbcType=BIGINT}
+    order by sts.createdDate desc LIMIT #{offset},${limit}
+  </select>
+  <!--查詢我的團教課-->
+  <select id="queryTeamClassCount" resultType="java.lang.Integer" parameterType="java.util.Map" >
+    select
+      count(*)
+    from stu_teamclass_ship sts
+    where sts.studentId = #{userId,jdbcType=BIGINT}
+  </select>
+  <select id="selectByStoreId" resultType="com.dlc.modules.api.entity.StudentTeamclassShip" parameterType="java.lang.Long">
+    SELECT stuTeamClassId, studentId, classId, classType, classStatus, createdDate
+    FROM stu_teamclass_ship
+    WHERE classId = #{teamClassId}
+  </select>
+  <select id="selectCountById" resultType="java.lang.Integer">
+    SELECT COUNT(*)
+    FROM stu_teamclass_ship
+    WHERE classId = #{teamClassId} AND studentId = #{userId}
+  </select>
+</mapper>

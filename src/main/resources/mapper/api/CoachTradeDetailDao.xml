@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.CoachTradeDetailDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.api.entity.CoachTradeDetailEntity" id="coachTradeDetailMap">
+        <result property="id" column="id" jdbcType="BIGINT"/>
+        <result property="coachId" column="coachId" jdbcType="BIGINT"/>
+        <result property="tradeType" column="tradeType" jdbcType="INTEGER"/>
+        <result property="money" column="money" jdbcType="DECIMAL"/>
+        <result property="origMoney" column="origMoney" jdbcType="DECIMAL"/>
+        <result property="percent" column="percent" jdbcType="DOUBLE"/>
+        <result property="aliAccount" column="AliAccount" jdbcType="VARCHAR"/>
+        <result property="wxCount" column="wxCount" jdbcType="VARCHAR"/>
+        <result property="transactionNumber" column="transactionNumber" jdbcType="VARCHAR"/>
+        <result property="reason" column="reason" jdbcType="VARCHAR"/>
+        <result property="orderNo" column="orderNo" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="checkedTime" column="checkedTime" jdbcType="TIMESTAMP"/>
+        <result property="transactionTime" column="transactionTime" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.api.entity.CoachTradeDetailEntity">
+		select * from coach_trade_detail where id = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.api.entity.CoachTradeDetailEntity">
+		select * from coach_trade_detail
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by id desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from coach_trade_detail 
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.CoachTradeDetailEntity" useGeneratedKeys="true" keyProperty="id">
+		insert into coach_trade_detail
+		(
+			`coachId`, 
+			`tradeType`, 
+			`money`, 
+			`origMoney`,
+			`percent`,
+			`AliAccount`,
+			`wxCount`, 
+			`transactionNumber`, 
+			`reason`, 
+			`orderNo`, 
+			`status`, 
+			`checkedTime`, 
+			`transactionTime`, 
+			`createTime`
+		)
+		values
+		(
+			#{coachId}, 
+			#{tradeType}, 
+			#{money}, 
+			#{origMoney},
+			#{percent},
+			#{aliAccount},
+			#{wxCount}, 
+			#{transactionNumber}, 
+			#{reason}, 
+			#{orderNo}, 
+			#{status}, 
+			#{checkedTime}, 
+			#{transactionTime}, 
+			#{createTime}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.api.entity.CoachTradeDetailEntity">
+		update coach_trade_detail 
+		<set>
+			<if test="coachId != null">`coachId` = #{coachId}, </if>
+			<if test="tradeType != null">`tradeType` = #{tradeType}, </if>
+			<if test="money != null">`money` = #{money}, </if>
+			<if test="aliAccount != null">`AliAccount` = #{aliAccount}, </if>
+			<if test="wxCount != null">`wxCount` = #{wxCount}, </if>
+			<if test="transactionNumber != null">`transactionNumber` = #{transactionNumber}, </if>
+			<if test="reason != null">`reason` = #{reason}, </if>
+			<if test="orderNo != null">`orderNo` = #{orderNo}, </if>
+			<if test="status != null">`status` = #{status}, </if>
+			<if test="checkedTime != null">`checkedTime` = #{checkedTime}, </if>
+			<if test="transactionTime != null">`transactionTime` = #{transactionTime}, </if>
+			<if test="createTime != null">`createTime` = #{createTime}</if>
+		</set>
+		where id = #{id}
+	</update>
+	
+	<delete id="delete">
+		delete from coach_trade_detail where id = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from coach_trade_detail where id in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+</mapper>

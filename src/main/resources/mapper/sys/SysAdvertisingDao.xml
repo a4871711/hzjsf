@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysAdvertisingDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysAdvertisingEntity" id="advertisingMap">
+        <result property="advId" column="advId"/>
+        <result property="advType" column="advType"/>
+        <result property="advTitle" column="advTitle"/>
+        <result property="advMainImg" column="advMainImg"/>
+        <result property="goodsId" column="goodsId"/>
+        <result property="advContent" column="advContent"/>
+        <result property="figureImg" column="figureImg"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        advType,advTitle,advMainImg,advContent,figureImg,createdDate
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysAdvertisingEntity" parameterType="map">
+        SELECT
+        advId,
+        goodsId,
+        <include refid="Base_Column_List"/>
+        FROM advertising
+        order BY createdDate desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM  advertising
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysAdvertisingEntity" parameterType="long">
+        SELECT
+        a.advId,
+        a.goodsId,
+        ifnull((select g.name from goods g where g.goodsId = a.goodsId limit 1), '') as goodsName,
+        a.advType,a.advTitle,a.advMainImg,a.advContent,a.figureImg,a.createdDate
+        FROM advertising a
+        WHERE a.advId=#{advId}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysAdvertisingEntity">
+        INSERT INTO advertising
+        (
+        goodsId,advType,advTitle,advMainImg,advContent,figureImg,createdDate
+        )
+        VALUES
+        (
+        #{goodsId},
+        #{advType},
+        #{advTitle},
+        #{advMainImg},
+        #{advContent},
+        #{figureImg},
+        #{createdDate}
+        )
+    </insert>
+    <delete id="deleteBatch">
+        delete from advertising where advId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysAdvertisingEntity">
+
+        UPDATE advertising SET
+        goodsId=#{goodsId},
+        advType=#{advType},
+        advTitle=#{advTitle},
+        advMainImg=#{advMainImg},
+        advContent=#{advContent},
+        figureImg=#{figureImg}
+        WHERE  advId=#{advId}
+    </update>
+
+</mapper>

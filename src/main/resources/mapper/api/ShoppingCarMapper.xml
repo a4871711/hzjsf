@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.ShoppingCarMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.ShoppingCar" >
+    <constructor >
+      <idArg column="shoppingCarId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="goodsId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="goodsNum" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="categoryId" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="categoryName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="goodsName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="goodsImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="price" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="freight" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    shoppingCarId, userId, goodsId, goodsNum, categoryName, goodsName, goodsImgUrl, price, size,color,
+    createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from shopping_car
+    where shoppingCarId = #{shoppingCarId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from shopping_car
+    where pkId = #{pkId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.ShoppingCar" >
+    insert into shopping_car (shoppingCarId, userId, goodsId, 
+      goodsNum, categoryName, goodsName, 
+      goodsImgUrl, price, createdDate
+      )
+    values (#{shoppingCarId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{goodsId,jdbcType=BIGINT}, 
+      #{goodsNum,jdbcType=INTEGER}, #{categoryName,jdbcType=VARCHAR}, #{goodsName,jdbcType=VARCHAR}, 
+      #{goodsImgUrl,jdbcType=VARCHAR}, #{price,jdbcType=DECIMAL}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.ShoppingCar" >
+    insert into shopping_car
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="pkId != null" >
+        pkId,
+      </if>
+      <if test="shoppingCarId != null" >
+        shoppingCarId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="goodsId != null" >
+        goodsId,
+      </if>
+      <if test="goodsNum != null" >
+        goodsNum,
+      </if>
+      <if test="categoryId != null" >
+        categoryId,
+      </if>
+      <if test="categoryName != null" >
+        categoryName,
+      </if>
+      <if test="goodsName != null" >
+        goodsName,
+      </if>
+      <if test="goodsImgUrl != null" >
+        goodsImgUrl,
+      </if>
+      <if test="price != null" >
+        price,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="size != null" >
+        size,
+      </if>
+      <if test="color != null" >
+        color,
+      </if>
+      <if test="style != null" >
+        style,
+      </if>
+      <if test="freight != null" >
+        freight,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="pkId != null" >
+        #{pkId,jdbcType=BIGINT},
+      </if>
+      <if test="shoppingCarId != null" >
+        #{shoppingCarId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="goodsId != null" >
+        #{goodsId,jdbcType=BIGINT},
+      </if>
+      <if test="goodsNum != null" >
+        #{goodsNum,jdbcType=INTEGER},
+      </if>
+      <if test="categoryId != null" >
+        #{categoryId,jdbcType=INTEGER},
+      </if>
+      <if test="categoryName != null" >
+        #{categoryName,jdbcType=VARCHAR},
+      </if>
+      <if test="goodsName != null" >
+        #{goodsName,jdbcType=VARCHAR},
+      </if>
+      <if test="goodsImgUrl != null" >
+        #{goodsImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="price != null" >
+        #{price,jdbcType=DECIMAL},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="size != null" >
+        #{size,jdbcType=VARCHAR},
+      </if>
+      <if test="color != null" >
+        #{color,jdbcType=VARCHAR},
+      </if>
+      <if test="style != null" >
+        #{style,jdbcType=VARCHAR},
+      </if>
+      <if test="freight != null" >
+        #{freight,jdbcType=DECIMAL},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.ShoppingCar" >
+    update shopping_car
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="goodsId != null" >
+        goodsId = #{goodsId,jdbcType=BIGINT},
+      </if>
+      <if test="goodsNum != null" >
+        goodsNum = #{goodsNum,jdbcType=INTEGER},
+      </if>
+      <if test="categoryName != null" >
+        categoryName = #{categoryName,jdbcType=VARCHAR},
+      </if>
+      <if test="goodsName != null" >
+        goodsName = #{goodsName,jdbcType=VARCHAR},
+      </if>
+      <if test="goodsImgUrl != null" >
+        goodsImgUrl = #{goodsImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="price != null" >
+        price = #{price,jdbcType=DECIMAL},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where shoppingCarId = #{shoppingCarId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.ShoppingCar" >
+    update shopping_car
+    set userId = #{userId,jdbcType=BIGINT},
+      goodsId = #{goodsId,jdbcType=BIGINT},
+      goodsNum = #{goodsNum,jdbcType=INTEGER},
+      categoryName = #{categoryName,jdbcType=VARCHAR},
+      goodsName = #{goodsName,jdbcType=VARCHAR},
+      goodsImgUrl = #{goodsImgUrl,jdbcType=VARCHAR},
+      price = #{price,jdbcType=DECIMAL},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where shoppingCarId = #{shoppingCarId,jdbcType=BIGINT}
+  </update>
+
+  <!--购物车列表LXK-->
+  <select id="selectByUserId" parameterType="java.lang.Long" resultType="map">
+    select
+    pkId,s.shoppingCarId, s.userId, s.goodsId, s.goodsNum, s.categoryName, s.goodsName, s.goodsImgUrl, concat(s.price,'') as price, s.size,
+    s.createdDate,concat(s.freight,'') as freight,s.color,s.style,s.categoryId
+    from shopping_car s
+    where userId = #{userId,jdbcType=BIGINT} ORDER BY createdDate DESC
+  </select>
+
+  <!--修改购物车-->
+  <update id="updateShoppingCar" parameterType="map">
+    update shopping_car
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="goodsId != null" >
+        goodsId = #{goodsId,jdbcType=BIGINT},
+      </if>
+      <if test="goodsNum != null" >
+        goodsNum = #{goodsNum,jdbcType=INTEGER},
+      </if>
+      <if test="categoryName != null" >
+        categoryName = #{categoryName,jdbcType=VARCHAR},
+      </if>
+      <if test="goodsName != null" >
+        goodsName = #{goodsName,jdbcType=VARCHAR},
+      </if>
+      <if test="goodsImgUrl != null" >
+        goodsImgUrl = #{goodsImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="price != null" >
+        price = #{price,jdbcType=DECIMAL},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP}
+      </if>
+    </set>
+    where pkId = #{pkId,jdbcType=BIGINT} AND userId = #{userId,jdbcType=BIGINT}
+  </update>
+
+  <delete id="delShoppingCar">
+    delete from shopping_car
+    where userId = #{userId} AND goodsId = #{goodsId}
+  </delete>
+
+  <select id="queryShCarByGoodsId" parameterType="java.lang.Long" resultType="map">
+    SELECT * FROM  shopping_car WHERE goodsId = #{goodsId} AND userId = #{uId}
+  </select>
+
+  <update id="addGoodsNum">
+    UPDATE shopping_car SET
+    goodsNum = #{goodsNum}+goodsNum WHERE pkId = #{pkId}
+  </update>
+  <!--查询商品信息-->
+  <select id="selectGoodsInfo" parameterType="java.lang.Long" resultType="map">
+      select categoryId, freight from goods where goodsId = #{goodsId} limit 1
+  </select>
+</mapper>

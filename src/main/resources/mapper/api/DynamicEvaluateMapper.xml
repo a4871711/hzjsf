@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.DynamicEvaluateMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.DynamicEvaluate" >
+    <constructor >
+      <idArg column="dyEvaluatId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="dynamicId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="reviewerId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="headImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="nickname" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="evContent" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="evaluatImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="evaluatDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    dyEvaluatId, dynamicId, reviewerId, evContent, evaluatImgUrl, evaluatDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from dynamic_evaluate
+    where dyEvaluatId = #{dyEvaluatId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from dynamic_evaluate
+    where dyEvaluatId = #{dyEvaluatId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.DynamicEvaluate" >
+    insert into dynamic_evaluate (dyEvaluatId, dynamicId, reviewerId, 
+      evContent, evaluatImgUrl, evaluatDate
+      )
+    values (#{dyEvaluatId,jdbcType=BIGINT}, #{dynamicId,jdbcType=BIGINT}, #{reviewerId,jdbcType=BIGINT}, 
+      #{evContent,jdbcType=VARCHAR}, #{evaluatImgUrl,jdbcType=VARCHAR}, #{evaluatDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.DynamicEvaluate" >
+    insert into dynamic_evaluate
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="dyEvaluatId != null" >
+        dyEvaluatId,
+      </if>
+      <if test="dynamicId != null" >
+        dynamicId,
+      </if>
+      <if test="reviewerId != null" >
+        reviewerId,
+      </if>
+      <if test="headImgUrl != null">
+        headImgUrl,
+      </if>
+      <if test="nickname != null">
+        nickname,
+      </if>
+      <if test="evContent != null" >
+        evContent,
+      </if>
+      <if test="evaluatImgUrl != null" >
+        evaluatImgUrl,
+      </if>
+      <if test="evaluatDate != null" >
+        evaluatDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="dyEvaluatId != null" >
+        #{dyEvaluatId,jdbcType=BIGINT},
+      </if>
+      <if test="dynamicId != null" >
+        #{dynamicId,jdbcType=BIGINT},
+      </if>
+      <if test="reviewerId != null" >
+        #{reviewerId,jdbcType=BIGINT},
+      </if>
+      <if test="headImgUrl != null">
+        #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="nickname != null">
+        #{nickname,jdbcType=VARCHAR},
+      </if>
+      <if test="evContent != null" >
+        #{evContent,jdbcType=VARCHAR},
+      </if>
+      <if test="evaluatImgUrl != null" >
+        #{evaluatImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="evaluatDate != null" >
+        #{evaluatDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.DynamicEvaluate" >
+    update dynamic_evaluate
+    <set >
+      <if test="dynamicId != null" >
+        dynamicId = #{dynamicId,jdbcType=BIGINT},
+      </if>
+      <if test="reviewerId != null" >
+        reviewerId = #{reviewerId,jdbcType=BIGINT},
+      </if>
+      <if test="evContent != null" >
+        evContent = #{evContent,jdbcType=VARCHAR},
+      </if>
+      <if test="evaluatImgUrl != null" >
+        evaluatImgUrl = #{evaluatImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="evaluatDate != null" >
+        evaluatDate = #{evaluatDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where dyEvaluatId = #{dyEvaluatId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.DynamicEvaluate" >
+    update dynamic_evaluate
+    set dynamicId = #{dynamicId,jdbcType=BIGINT},
+      reviewerId = #{reviewerId,jdbcType=BIGINT},
+      evContent = #{evContent,jdbcType=VARCHAR},
+      evaluatImgUrl = #{evaluatImgUrl,jdbcType=VARCHAR},
+      evaluatDate = #{evaluatDate,jdbcType=TIMESTAMP}
+    where dyEvaluatId = #{dyEvaluatId,jdbcType=BIGINT}
+  </update>
+  <!--根据动态id查动态评论列表-->
+  <select id="queryEvaluatList" resultType="java.util.Map" parameterType="java.util.Map">
+    select
+      de.reviewerId,
+      de.evContent,
+      de.evaluatImgUrl,
+      date_format(de.evaluatDate, '%Y-%m-%d %H:%i') as evaluatDate,
+      ui.nickname,
+      ui.headImgUrl
+    from dynamic_evaluate de inner join user_info ui on ui.userId = de.reviewerId
+    where de.dynamicId = #{dynamicId,jdbcType=BIGINT}
+    order by de.evaluatDate desc LIMIT #{offset}, #{limit}
+  </select>
+  <!--根据动态id查动态评论列表-->
+  <select id="queryEvaluatListCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+    select
+    count(*)
+    from dynamic_evaluate de inner join user_info ui on ui.userId = de.reviewerId
+    where de.dynamicId = #{dynamicId,jdbcType=BIGINT}
+  </select>
+</mapper>

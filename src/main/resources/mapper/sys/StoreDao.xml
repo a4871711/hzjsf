@@ -1,0 +1,605 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysStoreDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysStoreEntity" id="storeMap">
+        <result property="storeId" column="storeId"/>
+        <result property="storeName" column="storeName"/>
+        <result property="storeAddrId" column="storeAddrId"/>
+        <result property="storeImgUrl" column="storeImgUrl"/>
+        <result property="storePhone" column="storePhone"/>
+        <result property="hours" column="hours"/>
+        <result property="currentNum" column="currentNum"/>
+        <result property="storeArea" column="storeArea"/>
+        <result property="status" column="status"/>
+        <result property="createdDate" column="createdDate"/>
+        <result property="agent5Ids" column="agent5Ids"/>
+        <result property="agent6Ids" column="agent6Ids"/>
+        <result property="goodsIdStoreId" column="goodsIdStoreId"/>
+        <result property="douyinPoiId" column="douyin_poi_id"/>
+    </resultMap>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysStoreEntity">
+		select * from store
+		<where>
+            <if test="value != null and value != ''">
+                AND storeId in (${value})
+            </if>
+            <if test="value == null or value == ''">
+                AND storeId in (-1)
+            </if>
+        </where>
+	</select>
+	
+	<select id="queryObjectByAddr" resultType="com.dlc.modules.sys.entity.SysStoreEntity">
+		select * from store
+		<where>
+            <if test="value != null and value != ''">
+                AND storeAddrId in (${value})
+            </if>
+            <if test="value == null or value == ''">
+                AND storeAddrId in (-1)
+            </if>
+        </where>
+	</select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysStoreEntity">
+        select s.storeId,s.storeName,s.storeAddrId,s.storeImgUrl,s.storePhone,s.hours,s.storeArea,s.createdDate,s.status,
+        s.agent5Ids,agent6Ids,
+        concat(sa.province,sa.city,sa.zone,sa.storeAddrDetail) as storeAddr,
+        sa.province,sa.city,sa.zone,sa.storeAddrDetail,sa.longitude,sa.latitude,sa.goodsIdStoreId,sa.douyin_poi_id as douyinPoiId,
+        (select count(*) from store_device sd 
+        inner join face_identy_record fir on sd.deviceNo=fir.deviceNo        
+          where sd.storeId=#{storeId}) as currentNum
+          from store s
+          inner join store_address sa on sa.storeAddrId=s.storeAddrId
+        <where>
+            <if test="storeId != null and storeId != ''">
+                AND s.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName LIKE concat('%',#{storeName},'%')
+            </if>
+            <if test="storePhone != null and storePhone != ''">
+                AND s.storePhone LIKE concat('%',#{storePhone},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND s.status = #{status}
+            </if>
+            <if test="goodsIdStoreId != null and goodsIdStoreId != ''">
+                AND sa.goodsIdStoreId = #{goodsIdStoreId}
+            </if>
+            <if test="douyinPoiId != null and douyinPoiId != ''">
+                AND sa.douyin_poi_id = #{douyinPoiId}
+            </if>
+            <if test="agent5Ids != null and agent5Ids != ''">
+                AND find_in_set(#{agent5Ids}, agent5Ids)
+            </if>
+            <if test="agent6Ids != null and agent6Ids != ''">
+                AND find_in_set(#{agent6Ids}, agent6Ids)
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by s.createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from store s
+        inner join store_address sa on sa.storeAddrId=s.storeAddrId
+        <where>            
+            <if test="storeId != null and storeId != ''">
+                AND s.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName LIKE concat('%',#{storeName},'%')
+            </if>
+            <if test="storePhone != null and storePhone != ''">
+                AND s.storePhone LIKE concat('%',#{storePhone},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND s.status = #{status}
+            </if>
+            <if test="goodsIdStoreId != null and goodsIdStoreId != ''">
+                AND sa.goodsIdStoreId = #{goodsIdStoreId}
+            </if>
+            <if test="douyinPoiId != null and douyinPoiId != ''">
+                AND sa.douyin_poi_id = #{douyinPoiId}
+            </if>
+            <if test="agent5Ids != null and agent5Ids != ''">
+                AND find_in_set(#{agent5Ids}, agent5Ids)
+            </if>
+            <if test="agent6Ids != null and agent6Ids != ''">
+                AND find_in_set(#{agent6Ids}, agent6Ids)
+            </if>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysStoreEntity" useGeneratedKeys="true"
+            keyProperty="storeId">
+        insert into store
+        (
+        `storeName`,
+        `storeImgUrl`,
+        `storePhone`,
+        `hours`,
+        <if test="currentNum != null">`currentNum`,</if>
+        <if test="agent5Ids != null">`agent5Ids`,</if>
+        <if test="agent6Ids != null">`agent6Ids`,</if>
+        <if test="status != null">`status`,</if>
+        `storeArea`,
+        `createdDate`
+        )
+        values
+        (
+        #{storeName},
+        #{storeImgUrl},
+        #{storePhone},
+        #{hours},
+        <if test="currentNum != null">#{currentNum},</if>
+        <if test="agent5Ids != null">#{agent5Ids},</if>
+        <if test="agent6Ids != null">#{agent6Ids},</if>
+        <if test="status != null">#{status},</if>
+        #{storeArea},
+        #{createdDate}
+        )
+    </insert>
+
+    <!--添加门店信息-->
+    <insert id="insertStore" parameterType="map" useGeneratedKeys="true"
+            keyProperty="storeId">
+        insert into store
+        (
+        `storeName`,
+        `storeImgUrl`,
+        `storePhone`,
+        `hours`,
+        <if test="currentNum != null">`currentNum`,</if>
+        <if test="agent5Ids != null">`agent5Ids`,</if>
+        <if test="agent6Ids != null">`agent6Ids`,</if>
+        <if test="status != null">`status`,</if>
+        `storeArea`,
+        `createdDate`
+        )
+        values
+        (
+        #{storeName},
+        #{storeImgUrl},
+        #{storePhone},
+        #{hours},
+        <if test="currentNum != null">#{currentNum},</if>
+        <if test="agent5Ids != null">#{agent5Ids},</if>
+        <if test="agent6Ids != null">#{agent6Ids},</if>
+        <if test="status != null">#{status},</if>
+        #{storeArea},
+        #{createdDate}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysStoreEntity">
+        update store
+        <set>
+            <if test="storeName != null">`storeName` = #{storeName},</if>
+            <if test="storeImgUrl != null">`storeImgUrl` = #{storeImgUrl},</if>
+            <if test="storePhone != null">`storePhone` = #{storePhone},</if>
+            <if test="hours != null">`hours` = #{hours},</if>
+            <if test="currentNum != null">`currentNum` = #{currentNum},</if>
+            <if test="agent5Ids != null">`agent5Ids` = #{agent5Ids},</if>
+            <if test="agent6Ids != null">`agent6Ids` = #{agent6Ids},</if>
+            <if test="storeArea != null">`storeArea` = #{storeArea},</if>
+            <if test="createdDate != null">`createdDate` = #{createdDate},</if>
+            <if test="status != null">`status` = #{status},</if>
+        </set>
+        where storeId = #{storeId}
+    </update>
+    <!--获取教练提成后的金额-->
+    <select id="getPercentMoney" resultType="java.math.BigDecimal">
+        select TRUNCATE(#{money}*nextVal/100,2) from data_map where idxLabel=2 and nextLabel=3 and price=#{grade}
+    </select>
+    <!--获取提成比例-->
+    <select id="getCoachPercent" resultType="java.lang.Double">
+        select nextVal from data_map where idxLabel=2 and nextLabel=3 and price=#{grade}
+    </select>
+    <!--添加的时候把id带到storeAddId字段-->
+    <update id="updateStoreAddId" parameterType="com.dlc.modules.sys.entity.SysStoreEntity">
+		UPDATE store SET storeAddrId = #{storeId} WHERE storeId = #{storeId}
+	</update>
+
+    <delete id="delete">
+		delete from store where storeId = #{value}
+	</delete>
+
+    <delete id="deleteBatch">
+        delete from store where storeId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!--根据门店电话号码判断是否存在-->
+    <select id="queryStoreByCondition" resultType="map">
+		SELECT *
+		FROM store
+		WHERE storePhone = #{storePhone}
+	</select>
+    <!--根据门店id查询约课课程-->
+    <select id="queryClassList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        ac.arrangeClassId,
+        ac.classPlace as storeName,
+        ac.className,
+        ac.classTime,
+        date_format(ac.validityDate, '%Y-%m-%d %H:%i') as validityDate,
+        ac.duration,
+        ac.price,
+        ac.classStatus,
+        sps.orderNo,
+        sps.askNumber,
+        sps.buyNumber,
+        sps.energy,
+        co.coachName,
+        co.phone as coachPhone,
+        ui.nickname,
+        ui.phone as stuPhone
+        from arrange_class ac
+        inner join stu_privateclass_ship sps on sps.spsId = ac.spsId
+        left join coach co on co.coachId = ac.coachId
+        left join user_info ui on ui.userId = ac.studentId
+        <where>
+            <if test="classPlaceId != null">
+                ac.classPlaceId = #{classPlaceId}
+            </if>
+            <if test="classStatus != -1">
+                and ac.classStatus = #{classStatus}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND co.storeId in (${storeIds})
+            </if>
+            <if test="orderNo != null and orderNo.trim() != ''">
+                and sps.orderNo like concat('%', trim(#{orderNo}),'%')
+            </if>
+            <if test="stuPhone != null and stuPhone.trim() != ''">
+                and ui.phone like concat('%',  trim(#{stuPhone}),'%')
+            </if>
+            <if test="coachPhone != null and coachPhone.trim() != ''">
+                and co.phone  like concat('%', trim(#{coachPhone}),'%')
+            </if>
+        </where>
+        order by STR_TO_DATE(ac.classTime, '%Y-%m-%d %H:%i') desc
+        LIMIT #{offset}, #{limit}
+    </select>
+    <!--查总数-->
+    <select id="queryClassTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from arrange_class ac
+        inner join stu_privateclass_ship sps on sps.spsId = ac.spsId
+        left join coach co on co.coachId = ac.coachId
+        left join user_info ui on ui.userId = ac.studentId
+        <where>
+            <if test="classPlaceId != null">
+                ac.classPlaceId = #{classPlaceId}
+            </if>
+            <if test="classStatus != null">
+                and ac.classStatus = #{classStatus}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND co.storeId in (${storeIds})
+            </if>
+            <if test="orderNo != null and orderNo.trim() != ''">
+                and sps.orderNo = trim(#{orderNo})
+            </if>
+            <if test="stuPhone != null and stuPhone.trim() != ''">
+                and ui.phone = trim(#{stuPhone})
+            </if>
+            <if test="coachPhone != null and coachPhone.trim() != ''">
+                and co.phone = trim(#{coachPhone})
+            </if>
+        </where>
+    </select>
+
+    <!--查询团体课列表-->
+    <select id="queryTeamClassList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        sts.stuTeamClassId,
+        sts.classId,
+        sts.orderNo,
+        sts.className,
+        sts.classroom,
+        sts.classAddress,
+        sts.classTime,
+        sts.classStatus,
+        sts.coachName,
+        sts.energy,
+        ui.nickname,
+        ui.phone as stuPhone
+        from stu_teamclass_ship sts
+        left join user_info ui on ui.userId = sts.studentId
+        <where>
+            <if test="storeId != null">
+                sts.storeId = #{storeId}
+            </if>
+            <if test="classId != null">
+                and sts.classId like concat('%',#{classId},'%')
+            </if>
+            <if test="classStatus != -1">
+                and sts.classStatus = #{classStatus}
+            </if>
+            <if test="orderNo != null and orderNo.trim() != ''">
+                and sts.orderNo like concat('%',trim(#{orderNo}),'%')
+            </if>
+            <if test="stuPhone != null and stuPhone.trim() != ''">
+                and ui.phone like concat('%', trim(#{stuPhone}),'%')
+            </if>
+        </where>
+        order by STR_TO_DATE(sts.createdDate, '%Y-%m-%d %H:%i') desc
+        LIMIT #{offset}, #{limit}
+    </select>
+    <!--查总数-->
+    <select id="queryTeamClassTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from stu_teamclass_ship sts
+        left join user_info ui on ui.userId = sts.studentId
+        <where>
+            <if test="storeId != null">
+                sts.storeId = #{storeId}
+            </if>
+            <if test="classId != null">
+                and sts.classId = #{classId}
+            </if>
+            <if test="classStatus != null">
+                and sts.classStatus = #{classStatus}
+            </if>
+            <if test="orderNo != null and orderNo.trim() != ''">
+                and sts.orderNo = trim(#{orderNo})
+            </if>
+            <if test="stuPhone != null and stuPhone.trim() != ''">
+                and ui.phone = trim(#{stuPhone})
+            </if>
+        </where>
+    </select>
+
+    <!--查询 -根据约课id 且状态为进行中-->
+    <select id="queryArrClassByAcIdStatus" resultType="java.util.Map" parameterType="java.lang.Long">
+		select
+		ac.arrangeClassId,
+		sps.orderNo,
+		sps.orderType,
+		sps.energy,
+		ac.className,
+		ac.coachId,
+		co.userId,
+		co.grade,
+		ac.price,
+		ac.duration,
+		ac.studentId
+		from arrange_class ac
+		inner join stu_privateclass_ship sps on sps.spsId=ac.spsId
+		inner join coach co on co.coachId = ac.coachId
+		where ac.arrangeClassId = #{arrangeClassId,jdbcType=BIGINT}
+		and ac.classStatus = 0
+	</select>
+    <!--查教练列表-->
+    <select id="queryCoachList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        cp.cpsId,
+        cp.grade,
+        cp.storeName,
+        cp.createdDate,
+        co.coachName,
+        co.phone as coachPhone,
+        co.sex,
+        (select ui.userSign from user_info ui where ui.userId=co.userId) as introduction
+        from coach_place_ship cp
+        inner join coach co on co.coachId = cp.coachId
+        <where>
+            <if test="storeId != null">
+                cp.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND cp.storeId in (${storeIds})
+            </if>
+            <if test="storeName != null and storeName.trim() != ''">
+                and cp.storeName like concat ('%',trim(#{storeName}),'%')
+            </if>
+            <if test="coachName != null and coachName.trim() != ''">
+                and co.coachName like concat ('%',trim(#{coachName}),'%')
+            </if>
+            <if test="coachPhone != null and coachPhone.trim() != ''">
+                and co.phone like concat ('%',trim(#{coachPhone}),'%')
+            </if>
+        </where>
+        order by cp.createdDate desc
+        LIMIT #{offset}, #{limit}
+    </select>
+    <!--查教练列表总数-->
+    <select id="queryCoachTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from coach_place_ship cp
+        inner join coach co on co.coachId = cp.coachId
+        <where>
+            <if test="storeId != null">
+                cp.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND cp.storeId in (${storeIds})
+            </if>
+            <if test="coachName != null and coachName.trim() != ''">
+                and co.coachName = trim(#{coachName})
+            </if>
+            <if test="coachPhone != null and coachPhone.trim() != ''">
+                and co.phone = trim(#{coachPhone})
+            </if>
+        </where>
+    </select>
+    <!--修改等级-->
+    <update id="updateGrade" parameterType="java.util.Map">
+        update coach_place_ship
+        set grade = #{grade}
+        where cpsId = #{cpsId}
+    </update>
+    <!--查询门店地址id-->
+    <select id="queryStoreAddrId" resultType="java.lang.Long" parameterType="java.lang.Long">
+		select storeAddrId from store_address where storeId = #{storeId}
+	</select>
+    <!--批量更新团体课状态 进行中2-->
+    <update id="batchUpdateStatusT">
+        update stu_teamclass_ship
+        set classStatus = 2
+        where stuTeamClassId in
+        <foreach item="stuTeamClassId" collection="list" open="(" separator="," close=")">
+            #{stuTeamClassId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <!--批量更新团体课状态 已完成1-->
+    <update id="batchUpdateStatusO">
+        update stu_teamclass_ship
+        set classStatus = 1
+        where stuTeamClassId in
+        <foreach item="stuTeamClassId" collection="array" open="(" separator="," close=")">
+            #{stuTeamClassId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--查学员id和课程能量-->
+    <select id="queryStuTeamClassShip" resultType="java.util.Map" parameterType="java.lang.Long">
+		select
+			sts.studentId,
+			sts.classTime,
+			tc.energy
+			from stu_teamclass_ship sts INNER JOIN team_class tc on tc.teamClassId=sts.classId
+			where sts.stuTeamClassId = #{stuTeamClassId,jdbcType=BIGINT}
+	</select>
+    <!--更新门店地址id-->
+    <update id="updateStoreAddIdByMap" parameterType="java.util.Map">
+        update store
+          set storeAddrId = #{storeAddrId}
+          where storeId = #{storeId}
+    </update>
+    <!--查询团体课学员列表-->
+    <select id="queryTeamClassStuList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+            sts.stuTeamClassId,
+            sts.classStatus,
+            ui.nickname,
+            ui.phone
+        from stu_teamclass_ship sts
+        inner join user_info ui on ui.userId = sts.studentId
+        <where>
+            sts.classId = #{classId}
+            <if test="phone != null and phone.trim() != ''">
+                and ui.phone like concat ('%',trim(#{phone}),'%')
+            </if>
+        </where>
+        ORDER BY sts.createdDate DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+    <!--查询总数-->
+    <select id="queryTeamClassStuTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from stu_teamclass_ship sts
+        inner join user_info ui on ui.userId = sts.studentId
+        <where>
+            sts.classId = #{classId}
+            <if test="phone != null and phone.trim() != ''">
+                and ui.phone like concat ('%',trim(#{phone}),'%')
+            </if>
+        </where>
+    </select>
+    <!--删除教练门店关系-->
+    <delete id="deleteCoachPlace" parameterType="java.lang.Long">
+        delete from coach_place_ship where storeId=#{storeId}
+    </delete>
+    <!--删除门店会员卡相关数据-->
+    <delete id="deleteCardOrder" parameterType="java.lang.Long">
+        delete from card_order
+          where storeAddressId = (select s.storeAddrId from store_address s where s.storeId=#{storeId})
+    </delete>
+    <!--更新用户设备信息-->
+    <update id="updateUserDevice" parameterType="java.lang.Long">
+        update user_info set wristId=null,faceStatus=0
+          where wristId in (select d.deviceNo from device d inner join store_address s
+           on s.storeAddrId=d.storeAddressId where s.storeId=#{storeId})
+    </update>
+    <!--删除门店设备-->
+    <delete id="deleteStoreDevice" parameterType="java.lang.Long">
+        delete from device
+          where storeAddressId = (select s.storeAddrId from store_address s where s.storeId=#{storeId})
+    </delete>
+    <!--删除团课订单-->
+    <delete id="deleteTeamClassOrder" parameterType="java.lang.Long">
+        delete from team_class_order where storeId=#{storeId}
+    </delete>
+    <!--删除课程安排-->
+    <delete id="deleteTeamClaasArr" parameterType="java.lang.Long">
+        delete from stu_teamclass_ship where storeId=#{storeId}
+    </delete>
+    <!--删除团体课-->
+    <delete id="deleteTeamClass" parameterType="java.lang.Long">
+        delete from team_class where storeId=#{storeId}
+    </delete>
+    <!--删除删除门店私教课数据-->
+    <delete id="deleteStorePrivateArr" parameterType="java.lang.Long">
+        delete from arrange_class where classPlaceId = (select s.storeAddrId from store_address s where s.storeId=#{storeId})
+    </delete>
+    <!--删除门店社群关注-->
+    <delete id="deleteGroupAttion" parameterType="java.lang.Long">
+        delete from store_attention where storeGroupId = (select s.storeGroupId from store_group s where s.storeId=#{storeId})
+    </delete>
+    <!--删除动态评论-->
+    <delete id="deleteDyPl" parameterType="java.lang.Long">
+        delete from dynamic_evaluate
+          where dynamicId in (select d.dynamicId from dynamic d inner join store_group s
+            on s.storeGroupId=d.socialGroupId where s.storeId=#{storeId})
+    </delete>
+    <!--删除门店社群关联动态-->
+    <delete id="deleteGroupDy" parameterType="java.lang.Long">
+       delete from dynamic where socialGroupId = (select s.storeGroupId from store_group s where s.storeId=#{storeId})
+    </delete>
+    <!--删除门店社群-->
+    <delete id="deleteStoreGroup" parameterType="java.lang.Long">
+        delete from store_group where storeId=#{storeId}
+    </delete>
+    <!--删除门店地址-->
+    <delete id="deleteStoreAddr" parameterType="java.lang.Long">
+        delete from store_address where storeId=#{storeId}
+    </delete>
+    <!--删除门店管理员-->
+    <delete id="deleteSysUser" parameterType="java.lang.Long">
+        delete from sys_user where storeId=#{storeId}
+    </delete>
+    <!--更新门店状态-->
+    <update id="updateStoreStatus" parameterType="java.util.Map">
+        update store set status=#{status} where storeId=#{storeId}
+    </update>
+    <!--更新门店地址状态-->
+    <update id="updateStoreAddr" parameterType="java.util.Map">
+        update store_address set status=#{status} where storeId=#{storeId}
+    </update>
+    <!--更新门店社群状态-->
+    <update id="updateStoreGroup" parameterType="java.util.Map">
+        update store_group set status=#{status} where storeId=#{storeId}
+    </update>
+    <!--查询该等级是否存在-->
+    <select id="queryCoachGradeHas" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        select count(*) from data_map where idxLabel=2 and nextLabel=3 and price=#{grade}
+    </select>
+</mapper>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.UserTokenLoginLogsMapper">
+
+    <insert id="insert" parameterType="java.util.Map">
+        insert into user_token_login_logs (userId, deviceToken, createTime, state) VALUES (
+            #{userId,jdbcType=VARCHAR},
+            #{deviceToken,jdbcType=VARCHAR},
+            now(),
+            #{state,jdbcType=TINYINT}
+        )
+    </insert>
+
+    <select id="getWhiteLoginLog" resultType="java.util.Map" parameterType="java.util.Map">
+        select *
+        from user_token_login_logs
+        where userId = #{userId,jdbcType=VARCHAR} and deviceToken = #{deviceToken,jdbcType=VARCHAR} and state = 0
+        order by id desc
+        limit 1
+    </select>
+
+    <select id="queryRiskList" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT L.id, L.userId, date_format(L.createTime, '%Y-%m-%d %H:%i:%s') as createTime, L.state, L.check,
+            u.nickname, u.phone, s.storeName
+        FROM user_token_login_logs as L
+        LEFT JOIN user_info as u on u.userId = L.userId
+        LEFT JOIN device as d on d.proxyId = L.userId
+        LEFT JOIN store as s on s.storeId = d.storeId
+        WHERE L.state = 1
+        <if test="phone != null and phone != ''">
+            and u.phone = #{phone}
+        </if>
+        <if test="store_id != null and store_id != ''">
+            and d.storeId = #{store_id}
+        </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND d.storeId in (${storeIds})
+            </if>
+        ORDER BY L.id desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryRiskTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        SELECT count(*)
+        FROM user_token_login_logs
+        where state = 1
+        <if test="phone != null and phone != ''">
+            and u.phone = #{phone}
+        </if>
+        <if test="store_id != null and store_id != ''">
+            and d.storeId = #{store_id}
+        </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND d.storeId in (${storeIds})
+            </if>
+        ORDER BY L.id desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <update id="checkRisk">
+        UPDATE user_token_login_logs SET `check` = #{check} WHERE id = #{id}
+    </update>
+
+</mapper>

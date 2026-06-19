@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<html xmlns:v-bind="http://www.w3.org/1999/xhtml">
+<head>
+<title>门店管理</title>
+    <#include "/header.html"/>
+
+</head>
+<style type="text/css">
+    .logo_group {
+        display: inline-block;
+        text-align: center;
+        margin-right: 15px;
+    }
+    .logo_group .logo_img_group{
+        width: 100px;
+        height: 100px;
+        display: block;
+    }
+    .logo_group .upload_file {
+        position: absolute;
+        top: 0;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+    }
+
+    .logo {
+        display: inline-block;
+        text-align: center;
+        margin-right: 15px;
+    }
+    .logo .logo_img{
+        width: 100px;
+        height: 100px;
+        display: block;
+    }
+    .logo .upload_file {
+        position: absolute;
+        top: 0;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+    }
+
+    .upload {
+        margin: 5px 0 15px 0px;
+    }
+    .uploadGroup {
+        margin: 5px 0 15px 0px;
+    }
+    #allmap {width: 100%;height: 100%;overflow: hidden;margin:0;font-family:"微软雅黑";}
+</style>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=6qSpmqH1LqV54G8gcOkH6aPSjb7rBIj6"></script>
+<script>
+	window._AMapSecurityConfig = {
+		securityJsCode:'056b3056aafac6893c4018ff10b1bf93'
+	};
+</script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=f773db7993fa1c66eebe78e8265e859d"></script>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+            <div class="form-group col-sm-2">
+                <input type="text" class="form-control" v-model="q.storeName" @keyup.enter="query" placeholder="门店名称">
+            </div>
+            <a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+
+            <#if shiro.hasPermission("sys:store:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:store:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:store:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>
+            <#if shiro.hasPermission("sys:store:start")>
+                <a class="btn btn-primary" @click="start"><i class="fa fa-check"></i>&nbsp;营业</a>
+            </#if>
+            <#if shiro.hasPermission("sys:store:pause")>
+                <a class="btn btn-primary" @click="pause"><i class="fa fa-window-close"></i>&nbsp;停业</a>
+            </#if>
+		</div>
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal"  action="" style="width: 60%;" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">门店名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.storeName" placeholder="分类名称"/>
+                </div>
+            </div>
+
+            <!--<div id="image" class="form-group">
+                <div class="col-sm-2 control-label">门店详情图（首张将作门店封面图）</div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg" layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                </div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg" layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                </div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg" layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                </div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg" layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                </div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg" layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                </div>
+            </div>-->
+
+            <!--屏幕广告类型图片上传-->
+            <div class="form-group">
+                <div class="col-sm-2 control-label">门店详情图：</div>
+                <div class="col-sm-10" class="form-horizontal">
+                    <input type="button" value="➕ 新增一张" @click="uploadT" class="btn btn-default"/>
+                </div>
+                <div class="col-sm-2 control-label">
+                </div>
+                <div class="col-sm-10">
+                    <div class="row" style="border: none">
+                        <div v-for="item in ad1ImgsList " class="col-sm-3">
+                            <img :src="item" width="100px" height="100px" style="margin: 5px"/>
+                            <input type="file" name="file" class="upload_file" @change="uploadImage1"
+                                   style="position: absolute;bottom:3px;right:40px;width: 40px;height: 20px;opacity: 0"/><br/>
+                            &nbsp;&nbsp;<input type="button" style="color:red;" @click="removeT" value="删除"/>&nbsp;<input
+                                type="button" style="color:blue;" value="上传"/>
+                        </div>
+                        <span>*请上传宽750像素，高413像素的图片</span>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">门店电话</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.storePhone" placeholder="门店电话"/>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="col-sm-2 control-label">营业时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.hours" placeholder="营业时间"/>
+                </div>
+            </div>
+<!--
+            <div class="form-group">
+                <div class="col-sm-2 control-label">场内实时人数</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.currentNum" placeholder="场内实时人数"/>
+                </div>
+            </div>-->
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">门店大小(平方米)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.storeArea" placeholder="门店大小(平方米)"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">美团门店ID</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.goodsIdStoreId" placeholder="美团核销 storeId"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">抖音门店ID</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.douyinPoiId" placeholder="抖音核销 poi_id"/>
+                </div>
+            </div>
+
+            <div class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">省、市、区</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" @click="selectAddress" placeholder="单击选择门店地址" readonly="readonly"/>
+                </div>
+            </div>
+            <div class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">省</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.province" disabled="disabled" placeholder="省"/>
+                </div>
+            </div>
+            <div class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">市</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.city" disabled="disabled" placeholder="市"/>
+                </div>
+            </div>
+            <div class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">区</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.zone" id="area" disabled="disabled" placeholder="区"/>
+                </div>
+            </div>
+
+            <div class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">街道详细地址</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.storeAddrDetail" placeholder="街道详细地址"/>
+                </div>
+            </div>
+            <div class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">经度</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="jing_du" name="longitude" v-model="store.longitude" disabled="disabled" placeholder="单击地图获取经度或纬度"/>
+                </div>
+            </div>
+            <div class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">纬度</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="wei_du" name="latitude" v-model="store.latitude" disabled="disabled" placeholder="单击地图获取经度或纬度"/>
+                </div>
+                <button class="btn btn-sm btn-danger" style="margin-left: 750px;" type="button" onclick="showOrHide()">地图</button>
+            </div>
+
+            <div id="test" style="display: block;margin-left: 180px;" v-if="store.storeId == null">
+                <div id="r-result"> <strong>请输入要找的地址:</strong>
+                    <input type="text" id="suggestId" class="form-control" size="20" value="百度" style="width:150px;width: 350px;" />
+                    <div id="searchResultPanel" style="border:1px solid #C0C0C0;width:150px;height:auto; display:none;"></div>
+                </div><br/>
+                <div id="allmap" style="width: 1200px;height: 550px;"></div>
+            </div>
+
+            <div id="imageGroup" class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">社群详情图</div>
+                <div class="logo_group">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg" layer-src="../../statics/img/addPhoto.svg" class="logo_img_group">
+                    <a class="btn btn-primary btn-xs uploadGroup">上传</a>
+                    <span>*请上传宽160像素，高160像素的图片</span>
+                </div>
+            </div>
+
+            <div class="form-group" v-if="store.storeId == null">
+                <div class="col-sm-2 control-label">社群名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="store.groupName" placeholder="社群名称"/>
+                </div>
+            </div>
+
+
+
+            <!--<div class="form-group">
+                <div class="col-sm-2 control-label">状态</div>
+                <label class="radio-inline">
+                    <input type="radio" name="status" value="1" v-model="storeAddress.status"/> 有效
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="status" value="0" v-model="storeAddress.status"/> 无效
+                </label>
+            </div>-->
+
+            <div id="addressLayer" style="display: none;padding:10px;">
+                <ul class="list-unstyled" v-for="(e,i) in addressData">
+                    <li @click="liClick" v-bind:data-index="i">{{e.name}}</li>
+                </ul>
+            </div>
+            <br/>
+
+
+            <div class="form-group">
+                <div class="col-sm-6 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/plugins/jquery.form.js"></script>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/store.js"></script>
+<script src="${request.contextPath}/statics/libs/ajaxfileupload.js"></script>
+
+<script type="text/javascript">
+    function showOrHide(){
+        var obj=document.getElementById('test')
+        if(obj.style.display=="none"){
+            obj.style.display="";
+        }else{
+            obj.style.display="none";
+        }
+    }
+
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,193 @@
+package com.dlc.common.utils;
+
+import java.util.Random;
+
+/**
+ * @author LXK
+ * 邀请码生成器，基本原理：<br/>
+ * 1）入参用户ID：1 <br/>
+ * 2）使用自定义进制转换之后为：V <br/>
+ * 3）转换未字符串，并在后面添加'A'：VA <br/>
+ * 4）在VA后面再随机补足4位，得到：VAHKHE <br/>
+ * 5）反向转换时以'A'为分界线，'A'后面的不再解析 <br/>
+ */
+public class InviteCodeUtils {
+
+    /**
+     * 自定义进制(0,1没有加入,容易与o,l混淆)，数组顺序可进行调整增加反推难度，A用来补位因此此数组不包含A，共31个字符。
+     */
+    private static final char[] BASE = new char[]{'H', 'V', 'E', '8', 'S', '2', 'D', 'Z', 'X', '9', 'C', '7', 'P',
+            '5', 'I', 'K', '3', 'M', 'J', 'U', 'F', 'R', '4', 'W', 'Y', 'L', 'T', 'N', '6', 'B', 'G', 'Q'};
+
+    /**
+     * A补位字符，不能与自定义重复
+     */
+    private static final char SUFFIX_CHAR = 'A';
+
+    /**
+     * 进制长度
+     */
+    private static final int BIN_LEN = BASE.length;
+
+    /**
+     * 生成邀请码最小长度
+     */
+    private static final int CODE_LEN = 11;
+
+    /** 用户id和随机数总长度 */
+    private static final int maxLength = 11;
+    /** 订单号随机数总长度 */
+    private static final int maxLengthTwo = 18;
+    /**十五位**/
+    private static final int maxLengthThr = 15;
+
+    private static final int maxLengthFour = 20;
+
+    /** 随即编码 */
+    private static final int[] code = new int[]{7, 9, 6, 2, 8 , 1, 3, 0, 5, 4};
+
+    private static final int[] codeTwo = new int[]{6, 9, 7, 2, 8 , 1, 3, 0, 5, 4};
+
+    private static final int[] codeThr = new int[]{2, 6, 7, 9, 8 , 1, 3, 0, 5, 4};
+
+    private static final int[] codeFour = new int[]{1, 0, 2, 9, 8 , 7, 3, 6, 5, 4};
+
+    /**
+     * ID转换为邀请码
+     *
+     * @param id
+     * @return
+     */
+    public static String idToCode(Long id) {
+        char[] buf = new char[BIN_LEN];
+        int charPos = BIN_LEN;
+
+        // 当id除以数组长度结果大于0，则进行取模操作，并以取模的值作为数组的坐标获得对应的字符
+        while (id / BIN_LEN > 0) {
+            int index = (int) (id % BIN_LEN);
+            buf[--charPos] = BASE[index];
+            id /= BIN_LEN;
+        }
+
+        buf[--charPos] = BASE[(int) (id % BIN_LEN)];
+        // 将字符数组转化为字符串
+        String result = new String(buf, charPos, BIN_LEN - charPos);
+
+        // 长度不足指定长度则随机补全
+        int len = result.length();
+        if (len < CODE_LEN) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(SUFFIX_CHAR);
+            Random random = new Random();
+            // 去除SUFFIX_CHAR本身占位之后需要补齐的位数
+            for (int i = 0; i < CODE_LEN - len - 1; i++) {
+                sb.append(BASE[random.nextInt(BIN_LEN)]);
+            }
+
+            result += sb.toString();
+        }
+
+        return result;
+    }
+
+    /**
+     * 邀请码解析出ID<br/>
+     * 基本操作思路恰好与idToCode反向操作。
+     *
+     * @param code
+     * @return
+     */
+    public static Long codeToId(String code) {
+        char[] charArray = code.toCharArray();
+        long result = 0L;
+        for (int i = 0; i < charArray.length; i++) {
+            int index = 0;
+            for (int j = 0; j < BIN_LEN; j++) {
+                if (charArray[i] == BASE[j]) {
+                    index = j;
+                    break;
+                }
+            }
+
+            if (charArray[i] == SUFFIX_CHAR) {
+                break;
+            }
+
+            if (i > 0) {
+                result = result * BIN_LEN + index;
+            } else {
+                result = index;
+            }
+        }
+
+        return result;
+
+    }
+
+    /**
+     * 根据id进行加密+加随机数组成固定长度编码
+     */
+    public static String toCode(Long id) {
+        String idStr = id.toString();
+        StringBuilder idsbs = new StringBuilder();
+        for (int i = idStr.length() - 1 ; i >= 0; i--) {
+            idsbs.append(code[idStr.charAt(i)-'0']);
+        }
+        return idsbs.append(getRandom(maxLength - idStr.length())).toString();
+    }
+    /**
+     * 根据id进行加密+加随机数组成固定长度编码订单号
+     */
+    public static String toOrderCode(Long id) {
+        String idStr = id.toString();
+        StringBuilder idsbs = new StringBuilder();
+        for (int i = idStr.length() - 1 ; i >= 0; i--) {
+            idsbs.append(codeTwo[idStr.charAt(i)-'0']);
+        }
+        return idsbs.append(getRandom(maxLengthTwo - idStr.length())).toString();
+    }
+    /**
+     * 根据id进行加密+加随机数组成固定长度编码消费券码
+     */
+    public static String toConsumeCode(Long id) {
+        String idStr = id.toString();
+        StringBuilder idsbs = new StringBuilder();
+        for (int i = idStr.length() - 1 ; i >= 0; i--) {
+            idsbs.append(codeThr[idStr.charAt(i)-'0']);
+        }
+        return idsbs.append(getRandom(maxLengthThr - idStr.length())).toString();
+    }
+    /**
+     * 根据id进行加密+加随机数组成固定长度编码流水20位
+     */
+    public static String toSerialCode(Long id) {
+        String idStr = id.toString();
+        StringBuilder idsbs = new StringBuilder();
+        for (int i = idStr.length() - 1 ; i >= 0; i--) {
+            idsbs.append(codeFour[idStr.charAt(i)-'0']);
+        }
+        return idsbs.append(getRandom(maxLengthFour - idStr.length())).toString();
+    }
+    /**
+     * 生成固定长度随机码
+     * @param len 长度
+     */
+    private static long getRandom(long len) {
+        long min = 1,max = 9;
+        for (int i = 1; i < len; i++) {
+            min *= 10;
+            max *= 10;
+        }
+        long rangeLong = (((long) (new Random().nextDouble() * (max - min)))) + min ;
+        return rangeLong;
+    }
+
+    /*public static void main(String[] args) {
+        System.out.println(code[2]);
+        System.out.println(toCode(266l));   //16809525491
+        String code = idToCode(System.currentTimeMillis());
+        System.out.println(code);
+        System.out.println(codeToId(code));
+    }*/
+
+}

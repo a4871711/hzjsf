@@ -1,0 +1,559 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysIncomePayDetailDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysIncomePayDetailEntity" id="incomePayDetailMap">
+        <result property="incomePayDetailId" column="incomePayDetailId"/>
+        <result property="userId" column="userId"/>
+        <result property="orderNo" column="orderNo"/>
+        <result property="transactionNumber" column="transactionNumber"/>
+        <result property="payType" column="payType"/>
+        <result property="money" column="money"/>
+        <result property="tradeDate" column="tradeDate"/>
+        <result property="tradeType" column="tradeType"/>
+        <result property="openId" column="openId"/>
+        <result property="storeId" column="storeId"/>
+        <result property="tradeStatus" column="tradeStatus"/>
+        <result property="checkedTime" column="checkedTime"/>
+        <result property="transactionTime" column="transactionTime"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+    <sql id="base_col">
+        userId,  orderNo, transactionNumber, payType,  money, tradeDate,tradeType,openId,  tradeStatus, checkedTime, transactionTime,  createdDate
+     </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysIncomePayDetailEntity" parameterType="map">
+        select ipd.*,ui.nickname userName,ui.phone,s.storeName,
+        c.autoPay,c.oldValidityDate,c.validityDate,c.buyCount,c.type as cardType,c.paySum,
+        CASE
+            WHEN ipd.payType = 13 OR ipd.tradeType = 13 OR c.payType = 13 THEN '自动'
+            WHEN ipd.tradeType IN (1, 2, 3) OR c.payType IN (1, 2, 3) THEN '用户'
+            ELSE '后台'
+        END as renewSourceDesc
+        from income_pay_detail ipd
+        LEFT JOIN user_info ui ON ui.userId=ipd.userId
+        LEFT JOIN store_address s ON s.storeId = ipd.storeId
+        LEFT JOIN card_order c ON c.orderNo = ipd.orderNo
+        <where>
+            ipd.payType in (2,3,4,5,6,9,10,11,13)
+            <if test="userName!=null and userName!=''">
+                AND ui.nickname LIKE concat('%',#{userName},'%')
+            </if>
+            <if test="phone!=null and phone!=''">
+                AND ui.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="orderNo!=null and orderNo!=''">
+                AND ipd.orderNo LIKE concat('%',#{orderNo},'%')
+            </if>
+            <if test="payType!=null and payType!=''">
+                AND ipd.payType =#{payType}
+            </if>
+            <if test="cardType!=null and cardType!=''">
+                AND c.type =#{cardType}
+            </if>
+            <if test="autoPay!=null and autoPay=='0'">
+                AND c.autoPay =#{autoPay}
+            </if>
+            <if test="autoPay!=null and autoPay!='' and autoPay!='0'">
+                AND c.autoPay > 0
+            </if>
+            <if test="tradeType!=null and tradeType!=''">
+                AND ipd.tradeType =#{tradeType}
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName LIKE concat('%',#{storeName},'%')
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND ipd.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND ipd.storeId in (${storeIds})
+            </if>
+            <if test="tradeStatus!=null and tradeStatus!=''">
+                <choose>
+                    <when test="tradeStatus==-1">
+                        AND ipd.tradeStatus !=3
+                    </when>
+                    <otherwise>
+                        AND ipd.tradeStatus =3
+                    </otherwise>
+                </choose>
+
+            </if>
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND ipd.transactionTime BETWEEN #{sdate} AND #{edate}
+            </if>
+            <if test="ids!=null and ids!=''">
+                and ipd.incomePayDetailId
+                IN
+                <foreach collection="ids" item="ids" open="(" close=")" separator=",">
+                    #{ids}
+                </foreach>
+            </if>
+        </where>
+
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by ipd.createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="integer" parameterType="map">
+        select count(1) from income_pay_detail ipd
+        INNER JOIN user_info ui ON ui.userId=ipd.userId
+        LEFT JOIN store_address s ON s.storeId = ipd.storeId
+        <where>
+            payType in (2,3,4,5,6,9,10,11,13)
+            <if test="userName!=null and userName!=''">
+                AND ui.nickname LIKE concat('%',#{userName},'%')
+            </if>
+            <if test="phone!=null and phone!=''">
+                AND ui.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="orderNo!=null and orderNo!=''">
+                AND ipd.orderNo LIKE concat('%',#{orderNo},'%')
+            </if>
+            <if test="payType!=null and payType!=''">
+                AND ipd.payType =#{payType}
+            </if>
+            <if test="tradeType!=null and tradeType!=''">
+                AND ipd.tradeType =#{tradeType}
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName LIKE concat('%',#{storeName},'%')
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND ipd.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND ipd.storeId in (${storeIds})
+            </if>
+            <if test="tradeStatus!=null and tradeStatus!=''">
+                <choose>
+                    <when test="tradeStatus==-1">
+                        AND ipd.tradeStatus !=3
+                    </when>
+                    <otherwise>
+                        AND ipd.tradeStatus =3
+                    </otherwise>
+                </choose>
+
+            </if>
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND ipd.transactionTime BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+    </select>
+    <select id="queryObject" parameterType="long" resultType="com.dlc.modules.sys.entity.SysIncomePayDetailEntity">
+        select * from income_pay_detail WHERE incomePayDetailId=#{id}
+    </select>
+    <insert id="insertBack" parameterType="com.dlc.modules.sys.entity.SysIncomePayDetailEntity">
+        insert into income_pay_detail(
+            userId,
+            orderNo,
+            payType,
+            money,
+            tradeDate,
+            tradeType,
+            tradeStatus,
+            checkedTime,
+            transactionTime,
+            createdDate
+        ) values (
+            #{userId},
+            #{orderNo},
+            #{payType},
+            #{money},
+            #{tradeDate},
+            #{tradeType},
+            #{tradeStatus},
+            #{checkedTime},
+            #{transactionTime},
+            #{createdDate}
+        );
+    </insert>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysIncomePayDetailEntity">
+        update income_pay_detail
+        SET
+         userId=#{userId},
+         orderNo=#{orderNo},
+        transactionNumber=#{transactionNumber},
+         payType=#{payType},
+           money=#{money},
+            tradeDate=#{tradeDate},
+           tradeType=#{tradeType},
+          openId=#{openId},
+           tradeStatus=#{tradeStatus},
+          checkedTime=#{checkedTime},
+          transactionTime=#{transactionTime},
+          createdDate=#{createdDate}
+           where incomePayDetailId=#{incomePayDetailId};
+    </update>
+    <delete id="deleteBatch">
+        DELETE FROM income_pay_detail
+        WHERE incomePayDetailId
+        IN
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="countMoney" resultType="string">
+    /*  select sum(money)-(select sum(money) FROM income_pay_detail where payType  in (1,8,9) and tradeStatus=3)
+    FROM income_pay_detail where payType in (2,3,4,5,6,7,10,11) and tradeStatus=3
+    */
+    select sum(money)
+    FROM income_pay_detail where
+
+    payType in (2,3,4,5,6,10,13) and tradeStatus=3 and tradeType in (2,3)
+</select>
+    <!--钱包退款-->
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysIncomePayDetailEntity">
+        insert into income_pay_detail(
+        <include refid="base_col"/>
+        ) values (
+        userId,
+        orderNo,
+        transactionNumber,
+        payType,
+        money,
+        tradeDate,
+        tradeType,
+        openId,
+        tradeStatus,
+        checkedTime,
+        transactionTime,
+        createdDate
+        );
+    </insert>
+    <!--门店的收支总数-->
+    <select id="queryStoredTotal" parameterType="map" resultType="integer">
+        select count(1) from income_pay_detail ipd
+        LEFT JOIN user_info ui ON ui.userId = ipd.userId
+        <where>
+            payType = 7 and tradeStatus = 3            
+            <if test="storeId != null and storeId != ''">
+                AND ipd.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND ipd.storeId in (${storeIds})
+            </if>
+            <if test="userName!=null and userName!=''">
+                AND ui.nickname LIKE concat('%',trim(#{userName}),'%')
+            </if>
+            <if test="orderNo!=null and orderNo!=''">
+                AND ipd.orderNo LIKE concat('%',trim(#{orderNo}),'%')
+            </if>
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND ipd.createdDate BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+    </select>
+    <select id="queryStoredList" parameterType="map" resultType="com.dlc.modules.sys.entity.SysIncomePayDetailEntity">
+        select ipd.incomePayDetailId ,ui.nickname userName,ipd.orderNo,money,ipd.createdDate,ipd.payType
+        from income_pay_detail ipd
+        LEFT JOIN user_info ui ON ui.userId = ipd.userId
+        <where>
+            payType = 7 and tradeStatus = 3
+            <if test="storeId != null and storeId != ''">
+                AND ipd.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND ipd.storeId in (${storeIds})
+            </if>
+            <if test="userName!=null and userName!=''">
+                AND ui.nickname LIKE concat('%',#{userName},'%')
+            </if>
+            <if test="orderNo!=null and orderNo!=''">
+                AND ipd.orderNo LIKE concat('%',#{orderNo},'%')
+            </if>
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND ipd.createdDate BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by ipd.createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询全部门店商品交易-->
+    <select id="queryAllStoredList" parameterType="map" resultType="com.dlc.modules.sys.entity.SysIncomePayDetailEntity">
+        select ipd.incomePayDetailId , s.storeName,ui.nickname userName,ipd.orderNo,money,ipd.createdDate,ipd.payType
+        from income_pay_detail ipd
+        INNER JOIN user_info ui ON ui.userId = ipd.userId
+        INNER JOIN store s ON s.storeId = ipd.storeId
+        <where>
+            payType = 7 and tradeStatus = 3
+            <if test="userName!=null and userName!=''">
+                AND ui.nickname LIKE concat('%',#{userName},'%')
+            </if>
+            <if test="orderNo!=null and orderNo!=''">
+                AND ipd.orderNo LIKE concat('%',#{orderNo},'%')
+            </if>
+            <if test="storeName!=null and storeName!=''">
+                AND s.storeName LIKE concat('%',#{storeName},'%')
+            </if>
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND ipd.createdDate BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by ipd.createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryAllStoredTotal" parameterType="java.util.Map" resultType="java.lang.Integer">
+        select count(*)
+        from income_pay_detail ipd
+        INNER JOIN user_info ui ON ui.userId = ipd.userId
+        INNER JOIN store s ON s.storeId = ipd.storeId
+        <where>
+            payType = 7 and tradeStatus = 3
+            <if test="userName!=null and userName!=''">
+                AND ui.nickname LIKE concat('%',#{userName},'%')
+            </if>
+            <if test="orderNo!=null and orderNo!=''">
+                AND ipd.orderNo LIKE concat('%',#{orderNo},'%')
+            </if>
+            <if test="storeName!=null and storeName!=''">
+                AND s.storeName LIKE concat('%',#{storeName},'%')
+            </if>
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND ipd.createdDate BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+    </select>
+
+    <select id="storedCountMoney" resultType="string">
+        select sum(money)
+        FROM income_pay_detail
+        <where>
+            payType = 7
+            and tradeStatus = 3
+            <if test="storeId != null and storeId != ''">
+                AND storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND storeId in (${storeIds})
+            </if>
+        </where>
+
+    </select>
+    <!--queryOrderInfo查询订单列表-->
+    <select id="queryOrderInfo" resultType="java.util.Map" parameterType="java.lang.Long">
+        select sgo.orderNo, sgo.barCode, sgo.name, sgo.price,sgo.style,sgo.num
+          from income_pay_detail ipd inner join store_goods_order sgo on sgo.orderNo=ipd.orderNo
+          where ipd.incomePayDetailId=#{id}
+    </select>
+    <!--查转卡记录-->
+    <select id="selectTransList" resultType="java.util.Map" parameterType="java.util.Map">
+        select ipd.incomePayDetailId, s.storeName,ui.nickname,ipd.money, ui.phone, ipd.orderNo,ipd.createdDate,
+        (select u.nickname from user_info u where u.userId=ipd.anotherId) as takeName,
+        (select us.phone from user_info us where us.userId=ipd.anotherId) as takePhone
+        from income_pay_detail ipd
+        INNER JOIN user_info ui ON ui.userId = ipd.userId
+        INNER JOIN store s ON s.storeId = ipd.storeId
+        <where>
+            payType = 12
+            <if test="storeId != null and storeId != ''">
+                AND ipd.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND ipd.storeId in (${storeIds})
+            </if>
+            <if test="userName!=null and userName!=''">
+                AND ui.nickname LIKE concat('%',#{userName},'%')
+            </if>
+            <if test="orderNo!=null and orderNo!=''">
+                AND ipd.orderNo LIKE concat('%',#{orderNo},'%')
+            </if>
+            <if test="storeName!=null and storeName!=''">
+                AND s.storeName LIKE concat('%',#{storeName},'%')
+            </if>
+            <if test="phone!=null and phone!=''">
+                AND ui.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND ipd.createdDate BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by ipd.createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--转卡总数-->
+    <select id="selectTransListTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select count(*)
+        from income_pay_detail ipd
+        INNER JOIN user_info ui ON ui.userId = ipd.userId
+        INNER JOIN store s ON s.storeId = ipd.storeId
+        <where>
+            payType = 12
+            <if test="storeId != null and storeId != ''">
+                AND ipd.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND ipd.storeId in (${storeIds})
+            </if>
+            <if test="userName!=null and userName!=''">
+                AND ui.nickname LIKE concat('%',#{userName},'%')
+            </if>
+            <if test="orderNo!=null and orderNo!=''">
+                AND ipd.orderNo LIKE concat('%',#{orderNo},'%')
+            </if>
+            <if test="storeName!=null and storeName!=''">
+                AND s.storeName LIKE concat('%',#{storeName},'%')
+            </if>
+            <if test="phone!=null and phone!=''">
+                AND ui.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND ipd.createdDate BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+
+    </select>
+
+    <update id="updateTradeStatus">
+        UPDATE income_pay_detail SET tradeStatus = #{tradeStatus} WHERE incomePayDetailId = #{incomePayDetailId}
+    </update>
+    
+    <!--门店统计-->
+    <select id="selectStoreStats" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT 
+        	count(DISTINCT if(DATE_FORMAT(finishTime, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m') and buyCount = 1, userId, null)) as userMonth,
+        	count(DISTINCT if(DATE_FORMAT(finishTime, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m') and buyCount > 1, userId, null)) as payUserMonth,
+        	count(DISTINCT if(DATEDIFF(finishTime, NOW()) = 0, userId, null)) as cardToday,
+        	sum(if(DATEDIFF(finishTime, NOW()) = 0, realPayment, 0)) as moneyToday,
+        	sum(if(DATE_FORMAT(finishTime, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m'), realPayment, 0)) as moneyMonth,
+        	sum(realPayment) as moneyTotal
+        FROM card_order
+        <where>
+        	status=4
+            <if test="storeAddressId != null  and storeAddressId != ''"> and storeAddressId = #{storeAddressId}</if>
+            <if test="storeAddrIds != null  and storeAddrIds != ''"> and find_in_set(#{storeAddrIds}, storeAddrIds)</if>
+        </where>
+    </select>
+    
+    <!--小程序管理端门店统计-->
+    <select id="selectStoreStatsByCard" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT         	
+        	sum(c.realPayment) as moneyTotal,
+        	f.fitCardId,
+        	f.cardName,
+        	f.autoPay
+        FROM card_order c
+        left join fit_card f on f.fitCardId = c.cardId
+        <where>
+        	c.status=4
+            <if test="storeAddressId != null  and storeAddressId != ''"> and c.storeAddressId = #{storeAddressId}</if>
+            <if test="storeAddressIds != null  and storeAddressIds != ''"> and c.storeAddressId in (${storeAddressIds})</if>
+            <if test="storeAddrIds != null  and storeAddrIds != ''"> and find_in_set(#{storeAddrIds}, c.storeAddrIds)</if>            
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND c.finishTime BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+        group by f.fitCardId
+    </select>
+    
+    <!--小程序管理端门店统计
+    <select id="selectStoreStatsCountByCard" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT         	
+        	COUNT(DISTINCT c.deviceId) AS newTotal,
+        	COUNT(DISTINCT CASE WHEN d.status in (0, 1) and date_format(d.validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d') THEN d.deviceId END) AS buyTotal,
+        	f.fitCardId,
+        	f.cardName,
+        	c.buyCount
+        FROM card_order c
+        left join fit_card f on f.fitCardId = c.cardId
+        left join device d on d.deviceId = c.deviceId
+        <where>
+        	c.status=4
+            <if test="storeAddressId != null  and storeAddressId != ''"> and c.storeAddressId = #{storeAddressId}</if>
+            <if test="storeAddressIds != null  and storeAddressIds != ''"> and c.storeAddressId in (${storeAddressIds})</if>
+            <if test="storeAddrIds != null  and storeAddrIds != ''"> and find_in_set(#{storeAddrIds}, c.storeAddrIds)</if>            
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND c.finishTime BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+        group by f.fitCardId
+    </select>-->
+    <select id="selectStoreStatsCountByCard" resultType="java.util.Map" parameterType="java.util.Map">
+	    SELECT
+	        <choose>
+	            <when test="sdate != null and sdate != '' and edate != null and edate != ''">
+	                COUNT(DISTINCT CASE WHEN c.finishTime BETWEEN #{sdate} AND #{edate} THEN c.deviceId END) AS newTotal,
+	            </when>
+	            <otherwise>
+	                COUNT(DISTINCT c.deviceId) AS newTotal,
+	            </otherwise>
+	        </choose>
+	        COUNT(DISTINCT CASE WHEN d.status IN (0, 1) AND DATE_FORMAT(d.validityDate, '%Y-%m-%d') >= DATE_FORMAT(NOW(), '%Y-%m-%d') THEN d.deviceId END) AS buyTotal,
+	        f.fitCardId,
+	        f.cardName,
+	        c.buyCount
+	    FROM card_order c
+	    LEFT JOIN fit_card f ON f.fitCardId = c.cardId
+	    LEFT JOIN device d ON d.deviceId = c.deviceId
+	    <where>
+	        c.status = 4
+	        <if test="storeAddressId != null and storeAddressId != ''"> AND c.storeAddressId = #{storeAddressId}</if>
+	        <if test="storeAddressIds != null and storeAddressIds != ''"> AND c.storeAddressId IN (${storeAddressIds})</if>
+	        <if test="storeAddrIds != null and storeAddrIds != ''"> AND FIND_IN_SET(#{storeAddrIds}, c.storeAddrIds)</if>
+	    </where>
+	    GROUP BY f.fitCardId having buyTotal>0
+	</select>
+
+    <!-- 会员购卡记录（与收支明细列表一致：有效支付类型且交易已完成；同手机号/openid 视为同一客户） -->
+    <select id="countValidCardPurchaseByUserId" resultType="int">
+        SELECT COUNT(1)
+        FROM income_pay_detail ipd
+        INNER JOIN user_info u ON ipd.userId = u.userId AND u.isDel = 0
+        CROSS JOIN user_info cur
+        WHERE cur.userId = #{userId} AND cur.isDel = 0
+          AND ipd.payType IN (2,3,4,5,6,9,10,11,13)
+          AND ipd.tradeStatus = 3
+          AND (
+            u.userId = cur.userId
+            OR (IFNULL(cur.phone, '') != '' AND u.phone = cur.phone)
+            OR (IFNULL(cur.openId, '') != '' AND (
+              u.openId = cur.openId OR u.gzhOpenId = cur.openId OR u.zfbOpenId = cur.openId OR u.wtOpenId = cur.openId))
+            OR (IFNULL(cur.gzhOpenId, '') != '' AND (
+              u.openId = cur.gzhOpenId OR u.gzhOpenId = cur.gzhOpenId OR u.zfbOpenId = cur.gzhOpenId OR u.wtOpenId = cur.gzhOpenId))
+            OR (IFNULL(cur.zfbOpenId, '') != '' AND (
+              u.openId = cur.zfbOpenId OR u.gzhOpenId = cur.zfbOpenId OR u.zfbOpenId = cur.zfbOpenId OR u.wtOpenId = cur.zfbOpenId))
+            OR (IFNULL(cur.wtOpenId, '') != '' AND (
+              u.openId = cur.wtOpenId OR u.gzhOpenId = cur.wtOpenId OR u.zfbOpenId = cur.wtOpenId OR u.wtOpenId = cur.wtOpenId))
+          )
+    </select>
+
+</mapper>

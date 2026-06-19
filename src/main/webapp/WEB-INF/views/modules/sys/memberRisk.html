@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>风控账户</title>
+<#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div>
+		<div class="grid-btn">
+			<div class="row">
+				<div class="form-group col-sm-2">
+					<input type="text" class="form-control" v-model="q.phone" @keyup.enter="query" placeholder="手机号">
+				</div>
+				<a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+				<a class="btn btn-default" onclick="vm.checkRisk()"><i class="fa fa-upload"></i>&nbsp;更新核实结果</a>
+			</div>
+			<!--  -->
+			<div style="padding-left: 15px;">
+
+			</div>
+		</div>
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+
+	<!-- 更新异常登录核实结果 -->
+	<div id="checkWindow" style="display: none; padding: 20px 20px 0 20px; ">
+		<div class="form-group">
+			<div class="form-group">
+				<select class="form-control" v-model="log.check">
+					<option value="0">请选择</option>
+					<option value="1">有效</option>
+					<option value="2">无效</option>
+				</select>
+			</div>
+		</div>
+		<div class="form-group">
+			<input type="button" class="btn btn-primary" @click="doCheckIds" value="确认"/>
+		</div>
+	</div>
+
+
+</div>
+
+<script src="${request.contextPath}/statics/js/modules/sys/memberRisk.js?_${.now?long}"></script>
+</body>
+</html>

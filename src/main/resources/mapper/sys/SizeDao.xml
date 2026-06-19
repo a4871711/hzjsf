@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SizeDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SizeEntity" id="sizeMap">
+        <result property="sizeId" column="sizeId"/>
+        <result property="size" column="size"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.SizeEntity">
+		select * from size where sizeId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.SizeEntity">
+		select * from size s
+		<where>
+			<if test="size != null and size != ''">
+				AND s.size LIKE concat('%',#{size},'%')
+			</if>
+		</where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by sizeId desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from size s
+		<where>
+			<if test="size != null and size != ''">
+				AND s.size LIKE concat('%',#{size},'%')
+			</if>
+		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.SizeEntity" useGeneratedKeys="true" keyProperty="colorId">
+		insert into size
+		(
+			`size`
+		)
+		values
+		(
+			#{size}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.sys.entity.SizeEntity">
+		update size
+		<set>
+			<if test="size != null">`size` = #{size}</if>
+		</set>
+		where sizeId = #{sizeId}
+	</update>
+	
+	<delete id="delete">
+		delete from size where sizeId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from size where sizeId in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+	<select id="selectSizeDetail" resultType="com.dlc.modules.sys.entity.SizeEntity">
+		SELECT sizeId,s.size FROM size s
+	</select>
+
+	<select id="getExistsSize" resultType="map">
+		SELECT * FROM size s WHERE s.size = #{size}
+	</select>
+</mapper>

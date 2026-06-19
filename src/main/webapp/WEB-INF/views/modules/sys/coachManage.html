@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>教练管理</title>
+	<#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+            <div class="form-group col-lg-2">
+                <input type="text" class="form-control" v-model="q.storeName" @keyup.enter="query" placeholder="服务门店">
+            </div>
+            <div class="form-group col-lg-2">
+                <input type="text" class="form-control" v-model="q.coachName" @keyup.enter="query" placeholder="教练姓名">
+            </div>
+            <div class="form-group col-lg-2">
+                <input type="text" class="form-control" v-model="q.coachPhone" @keyup.enter="query" placeholder="教练手机号">
+            </div>
+
+            <a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+            <#if shiro.hasPermission("sys:storeCoach:update")>
+                <a class="btn btn-primary" @click="pass"><i class="fa fa-check"></i>&nbsp;审核通过</a>
+            </#if>
+            <#if shiro.hasPermission("sys:storeCoach:update")>
+                <a class="btn btn-primary" @click="unPass"><i class="fa fa-times"></i>&nbsp;审核失败</a>
+            </#if>
+		</div>
+
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+
+</div>
+<script src="${request.contextPath}/statics/js/modules/sys/coachManage.js?_${.now?long}"></script>
+</body>
+</html>

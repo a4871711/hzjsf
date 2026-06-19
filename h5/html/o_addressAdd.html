@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="../css/aui.css" />
+    <link rel="stylesheet" type="text/css" href="../css/o_base.css">
+    <link rel="stylesheet" type="text/css" href="../css/o_style.css">
+    <title>收货地址</title>
+    <style>
+        .aui-list .aui-list-item {
+            border-bottom: 1px solid #dddddd;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="address">
+        <div class="aui-content aui-margin-b-15">
+            <ul class="aui-list aui-form-list">
+                <li class="aui-list-item">
+                    <div class="aui-list-item-inner pd-10">
+                        <div class="aui-list-item-label">
+                            收件人
+                        </div>
+                        <div class="aui-list-item-input">
+                            <input type="text" class="name" placeholder="请输入收件人姓名">
+                        </div>
+                    </div>
+                </li>
+                <li class="aui-list-item">
+                    <div class="aui-list-item-inner pd-10">
+                        <div class="aui-list-item-label">
+                            联系电话
+                        </div>
+                        <div class="aui-list-item-input">
+                            <input type="text" class="phone" name="phone" placeholder="请输入您的手机号码" onkeyup="this.value=this.value.replace(/[^0-9]/g,'')"
+                                maxlength="11" />
+                        </div>
+                    </div>
+                </li>
+                <li class="aui-list-item">
+                    <div class="aui-list-item-inner pd-10">
+                        <div class="aui-list-item-label">
+                            所在地区
+                        </div>
+                        <div class="aui-list-item-input">
+                            <input type="text" id="picker" placeholder="请选择地区" readonly>
+                        </div>
+                    </div>
+                </li>
+                <li class="aui-list-item">
+                    <div class="aui-list-item-inner pd-10">
+                        <div class="aui-list-item-label">
+                            详细地址
+                        </div>
+                        <div class="aui-list-item-input">
+                            <input type="text" class="addr" placeholder="请输入收件人详细地址">
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="btn mainBtn wd-90 mg-t-50" onclick="addAddress()">添加收货地址</div>
+    </div>
+</body>
+<script type="text/javascript" src="../js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="../js/picker.min.js"></script>
+<script type="text/javascript" src="../js/city.js"></script>
+<script type="text/javascript" src="../js/index.js"></script>
+<script type="text/javascript" src="../js/layer.js"></script>
+<script type="text/javascript" src="../js/dlc.js"></script>
+<script type="text/javascript" src="../js/o_base.js"></script>
+<script>
+    var addressData, param = {};
+    init();
+
+    function init() {
+        if (getParam().addressId) {
+            addressData = JSON.parse(getItem("editAddress"));
+            $(".name").val(addressData.userName)
+            $(".phone").val(addressData.phone)
+            $("#picker").val(addressData.province + " " + addressData.city + " " + addressData.zone)
+            $(".addr").val(addressData.addr);
+            $(".mainBtn").text("修改收货地址")
+        }
+    }
+
+    function addAddress() {
+        var userName = $(".name").val(),
+            phone = $(".phone").val(),
+            addr = $(".addr").val(),
+            province = $("#picker").val().split(" ")[0],
+            city = $("#picker").val().split(" ")[1],
+            zone = $("#picker").val().split(" ")[2];
+        if (zone == "") {
+            zone = city;
+            city = province
+        }
+
+        if (isNull(userName)) return layer_msg("请填写收件人");
+        if (isNull(phone)) return layer_msg("请填写联系电话");
+        if (isNull(province)) return layer_msg("请选择地区");
+        if (isNull(addr)) return layer_msg("请填写详细地址");
+
+        param = {
+            userName: userName,
+            phone: phone,
+            province: province,
+            city: city,
+            zone: zone,
+            addr: addr,
+        }
+        if (getParam().addressId) {
+            param.userAddressId = getParam().addressId;
+        } else {
+            param.province = $("#picker").val().split(" ")[0];
+            param.city = $("#picker").val().split(" ")[1];
+            param.zone = $("#picker").val().split(" ")[2];
+        }
+        ajaxPost(param, "api/address/saveOrUpdate", function (res) {
+            if (res.code == 101) {
+                moveItem("userInfo")
+                getToken();
+            }
+            layer_msg(res.msg)
+            if (res.code == 1) {
+                setTimeout(() => {
+                    goTo("o_address.html");
+                }, 1500);
+            }
+            console.log(res)
+        });
+
+    }
+</script>
+
+</html>

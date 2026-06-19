@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.ColorDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.ColorEntity" id="colorMap">
+        <result property="colorId" column="colorId"/>
+        <result property="color" column="color"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.ColorEntity">
+		select * from color where colorId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.ColorEntity">
+		select * from color
+		<where>
+			<if test="color != null and color != ''">
+				AND color LIKE concat('%',#{color},'%')
+			</if>
+		</where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by colorId desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from color
+		<where>
+			<if test="color != null and color != ''">
+				AND color LIKE concat('%',#{color},'%')
+			</if>
+		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.ColorEntity" useGeneratedKeys="true" keyProperty="colorId">
+		insert into color
+		(
+			`color`
+		)
+		values
+		(
+			#{color}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.sys.entity.ColorEntity">
+		update color
+		<set>
+			<if test="color != null">`color` = #{color}</if>
+		</set>
+		where colorId = #{colorId}
+	</update>
+	
+	<delete id="delete">
+		delete from color where colorId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from color where colorId in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+	<select id="selectColorDetail" resultType="com.dlc.modules.sys.entity.ColorEntity">
+		SELECT colorId,color FROM color
+	</select>
+	
+	<select id="getExistsColor" resultType="map">
+		SELECT * FROM color c WHERE c.color = #{color}
+	</select>
+
+</mapper>

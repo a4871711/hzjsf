@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.AboutUsMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.AboutUs" >
+    <constructor >
+      <idArg column="id" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="app_img_url" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="app_name" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="app_url" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="service_tel" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="create_time" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="version" jdbcType="VARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, app_img_url, app_name, app_url, service_tel, create_time,version
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    from about_us
+    where id = #{type,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from about_us
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.AboutUs" >
+    insert into about_us (id, app_img_url, app_name, app_url, service_tel, create_time)
+    values (#{id,jdbcType=INTEGER}, #{app_Img_Url,jdbcType=VARCHAR}, #{app_Name,jdbcType=VARCHAR}, #{app_Url,jdbcType=VARCHAR},
+      #{service_Tel,jdbcType=VARCHAR}, #{create_Time,jdbcType=TIMESTAMP}, #{version,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.AboutUs" >
+    insert into about_us
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="app_Img_Url != null" >
+        app_img_url,
+      </if>
+      <if test="app_Name != null" >
+        app_name,
+      </if>
+      <if test="app_Url != null" >
+        app_url,
+      </if>
+      <if test="service_Tel != null" >
+        service_tel,
+      </if>
+      <if test="create_Time != null" >
+        create_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="app_Img_Url != null" >
+        #{app_Img_Url,jdbcType=VARCHAR},
+      </if>
+      <if test="app_Name != null" >
+        #{app_Name,jdbcType=VARCHAR},
+      </if>
+      <if test="app_Url != null" >
+        #{app_Url,jdbcType=VARCHAR},
+      </if>
+      <if test="service_Tel != null" >
+        #{service_Tel,jdbcType=VARCHAR},
+      </if>
+      <if test="create_Time != null" >
+        #{create_Time,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.AboutUs" >
+    update about_us
+    <set >
+      <if test="app_Img_Url != null" >
+        app_img_url = #{app_Img_Url,jdbcType=VARCHAR},
+      </if>
+      <if test="app_Name != null" >
+        app_name = #{app_Name,jdbcType=VARCHAR},
+      </if>
+      <if test="app_Url != null" >
+        app_url = #{app_Url,jdbcType=VARCHAR},
+      </if>
+      <if test="service_Tel != null" >
+        service_tel = #{service_Tel,jdbcType=VARCHAR},
+      </if>
+      <if test="create_Time != null" >
+        create_time = #{create_Time,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.AboutUs" >
+    update about_us
+    set app_img_url = #{app_Img_Url,jdbcType=VARCHAR},
+      app_name = #{app_Name,jdbcType=VARCHAR},
+      service_tel = #{service_Tel,jdbcType=VARCHAR},
+      create_time = #{create_Time,jdbcType=TIMESTAMP}
+       version = #{version,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+    <select id="queryList" resultType="com.dlc.modules.api.entity.AboutUs">
+        SELECT *
+        FROM about_us
+    </select>
+</mapper>

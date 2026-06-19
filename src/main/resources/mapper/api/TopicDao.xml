@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.TopicDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.api.entity.TopicEntity" id="topicMap">
+        <result property="topicId" column="topicId" jdbcType="BIGINT"/>
+        <result property="topicName" column="topicName" jdbcType="VARCHAR"/>
+        <result property="firstImgUrl" column="firstImgUrl" jdbcType="VARCHAR"/>
+        <result property="dyNum" column="dyNum" jdbcType="INTEGER"/>
+        <result property="attentionNum" column="attentionNum" jdbcType="INTEGER"/>
+        <result property="topicIntroduce" column="topicIntroduce" jdbcType="VARCHAR"/>
+        <result property="createdDate" column="createdDate" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.api.entity.TopicEntity">
+		select * from topic where topicId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.api.entity.TopicEntity">
+		select * from topic
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by topicId desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from topic 
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.TopicEntity" useGeneratedKeys="true" keyProperty="topicId">
+		insert into topic
+		(
+			`topicName`, 
+			`firstImgUrl`, 
+			`dyNum`, 
+			`attentionNum`, 
+			`topicIntroduce`, 
+			`createdDate`
+		)
+		values
+		(
+			#{topicName}, 
+			#{firstImgUrl}, 
+			#{dyNum}, 
+			#{attentionNum}, 
+			#{topicIntroduce}, 
+			#{createdDate}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.api.entity.TopicEntity">
+		update topic 
+		<set>
+			<if test="topicName != null">`topicName` = #{topicName}, </if>
+			<if test="firstImgUrl != null">`firstImgUrl` = #{firstImgUrl}, </if>
+			<if test="dyNum != null">`dyNum` = #{dyNum}, </if>
+			<if test="attentionNum != null">`attentionNum` = #{attentionNum}, </if>
+			<if test="topicIntroduce != null">`topicIntroduce` = #{topicIntroduce}, </if>
+			<if test="createdDate != null">`createdDate` = #{createdDate}</if>
+		</set>
+		where topicId = #{topicId}
+	</update>
+	
+	<delete id="delete">
+		delete from topic where topicId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from topic where topicId in 
+		<foreach item="topicId" collection="array" open="(" separator="," close=")">
+			#{topicId}
+		</foreach>
+	</delete>
+	<!--查询热门话题-->
+	<select id="queryHotTopic" resultType="java.util.Map">
+		select
+			topicId,
+			topicName,
+			firstImgUrl
+		from topic
+			order by attentionNum desc limit 0, 2
+	</select>
+	<!--分页查询话题列表-->
+	<select id="queryTopicList" resultType="java.util.Map" parameterType="java.util.Map">
+		select
+		  tp.topicId,
+		  tp.topicName,
+          tp.firstImgUrl,
+          tp.topicIntroduce,
+          case when ta.attentionStatus = 1 then 1 else 0 end as attentionStatus
+		from topic tp left join topic_attention ta on ta.topicId = tp.topicId and ta.observerId = #{userId,jdbcType=BIGINT}
+		order by tp.createdDate desc limit #{offset}, #{limit}
+	</select>
+	<!--分页查询话题列表-->
+	<select id="queryTopicListCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+		select
+		  count(*)
+		from topic tp left join topic_attention ta on ta.topicId = tp.topicId and ta.observerId = #{userId,jdbcType=BIGINT}
+	</select>
+    <!--查询话题详情-->
+    <select id="queryTopicById" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+          tp.topicName,
+          tp.firstImgUrl,
+          tp.topicIntroduce,
+          case when ta.attentionStatus = 1 then 1 else 0 end as attentionStatus,
+          (select count(*) from topic_attention ta inner join user_info ui on ui.userId = ta.observerId
+              where ta.topicId = tp.topicId and ta.attentionStatus = 1) as attentionNum
+        from topic tp left join topic_attention ta on ta.topicId = tp.topicId and ta.observerId = #{userId,jdbcType=BIGINT}
+        where tp.topicId = #{topicId, jdbcType=BIGINT}
+    </select>
+	<select id="queryTopicDyCount" resultType="java.lang.Integer" parameterType="java.lang.Long">
+        select
+          count(*)
+        from dynamic_topic_ship dts
+        inner join dynamic dy on dy.dynamicId = dts.dynamicId
+        inner join user_info ui on ui.userId = dy.publishId
+      where dts.topicId = #{topicId}
+    </select>
+
+	<!--查询全部话题-->
+	<select id="queryAllTopicList" resultType="java.util.Map">
+		select
+			topicId,
+			topicName
+		from topic
+	</select>
+</mapper>

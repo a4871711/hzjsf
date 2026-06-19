@@ -1,0 +1,7 @@
+VisbodyFitHeatMapDemo：热力图模型效果
+
+VisbodyFitNormalDemo：首页纯模型加载效果
+
+VisbodyFitShapeDemo：体态评估模型效果
+
+VisbodyFitMeasureDemo：围度模型效果

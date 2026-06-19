@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysActivityTrainDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysActivityTrainEntity" id="SysActivityTrainEntity">
+        <result property="activityTrainId" column="activityTrainId"/>
+        <result property="atId" column="atId"/>
+        <result property="videoImgUrl" column="trainName"/>
+        <result property="videoUrl" column="videoUrl"/>
+        <result property="trainName" column="trainName"/>
+        <result property="trainImgUrl" column="trainImgUrl"/>
+        <result property="introduce" column="validity"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        videoImgUrl,videoUrl,trainName,trainImgUrl,introduce,createdDate
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysActivityTrainEntity" parameterType="map">
+        SELECT
+        activityTrainId, a.atId,
+        (select t.atName from activity_type t where t.atId=a.atId) as atName,
+        <include refid="Base_Column_List"/>
+        FROM activity_train a
+        order BY createdDate desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM  activity_train
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysActivityTrainEntity" parameterType="long">
+        SELECT
+        activityTrainId, <include refid="Base_Column_List"/>
+        FROM activity_train
+        WHERE activityTrainId=#{activityTrainId}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysActivityTrainEntity">
+        INSERT INTO activity_train
+        (
+          atId,videoImgUrl,videoUrl,trainName,trainImgUrl,introduce,createdDate
+        )
+        VALUES
+        (
+        #{atId},
+        #{videoImgUrl},
+        #{videoUrl},
+        #{trainName},
+        #{trainImgUrl},
+        #{introduce},
+        #{createdDate}
+        )
+    </insert>
+    <delete id="deleteBatch">
+        delete from activity_train where activityTrainId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysActivityTrainEntity">
+
+        UPDATE activity_train SET
+        atId=#{atId},
+        trainName=#{trainName},
+        videoImgUrl=#{videoImgUrl},
+        videoUrl= #{videoUrl},
+        trainImgUrl=#{trainImgUrl},
+        introduce=#{introduce},
+        createdDate=#{createdDate}
+        WHERE  activityTrainId=#{activityTrainId}
+    </update>
+</mapper>

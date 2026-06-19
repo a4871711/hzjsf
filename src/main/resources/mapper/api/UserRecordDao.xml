@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.UserRecordDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.api.entity.UserRecordEntity" id="userRecordMap">
+        <result property="userRecordId" column="userRecordId" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="recordType" column="recordType" jdbcType="VARCHAR"/>
+        <result property="record" column="record" jdbcType="VARCHAR"/>
+        <result property="createdDate" column="createdDate" jdbcType="TIMESTAMP"/>
+    </resultMap>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.UserRecordEntity" useGeneratedKeys="true" keyProperty="userRecordId">
+		insert into user_record
+		(
+			userId,
+			recordType,
+			record,
+			createdDate
+		)
+		values
+		(
+			#{userId}, 
+			#{recordType}, 
+			#{record}, 
+			#{createdDate}
+		)
+	</insert>
+
+    <update id="updateByUserId" parameterType="com.dlc.modules.api.entity.UserRecordEntity" >
+        update user_record
+        set
+        <if test="recordType != null" >
+            recordType = #{recordType,jdbcType=VARCHAR},
+        </if>
+        <if test="record != null" >
+            record = #{record,jdbcType=VARCHAR},
+        </if>
+        where userId = #{userId,jdbcType=BIGINT}
+        and recordType = 'U'
+        order by createdDate desc limit 1
+    </update>
+
+	<select id="queryUserRecordByUid" resultType="com.dlc.modules.api.entity.UserRecordEntity" parameterType="java.lang.Long">
+		select
+			record
+		from user_record
+		where userId = #{userId, jdbcType = BIGINT}
+		and recordType = 'U'
+		order by createdDate desc limit 1
+	</select>
+</mapper>

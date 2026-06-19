@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="../css/o_base.css">
+    <link rel="stylesheet" type="text/css" href="../css/o_style.css">
+    <title>详情</title>
+    <style>
+
+    </style>
+</head>
+
+<body class="bfff">
+    <div id="shareInformation" class='tac pd-5'>
+        <div class="title fontb font16 title">这是标题</div>
+        <div class="time font13 c999 mg-tb-15 time">2018-10-10 10:10:10</div>
+        <div class="content">
+            这是内容
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="../js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+<script type="text/javascript" charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=WXocean"></script>
+<script type="text/javascript" src="https://3gimg.qq.com/lightmap/components/geolocation/geolocation.min.js"></script>
+<script type="text/javascript" src="../js/api.js"></script>
+<script type="text/javascript" src="../js/swiper.min.js"></script>
+<script type="text/javascript" src="../js/layer.js"></script>
+<script type="text/javascript" src="../js/dlc.js"></script>
+<script type="text/javascript" src="../js/o_base.js"></script>
+<script>
+    init();
+
+    function init() {
+        console.log(format(1544613418, "Y-m-d H:i:s"))
+        ajaxPost({
+            id: getParam().id
+        }, "api/information/info", function (res) {
+            if (res.code == 1) {
+                $(".title").text(res.data.title)
+                $(".time").text(format(res.data.publishTime, "Y-m-d H:i:s"))
+                $(".content").html(res.data.content)
+            }
+        })
+    }
+</script>
+
+</html>

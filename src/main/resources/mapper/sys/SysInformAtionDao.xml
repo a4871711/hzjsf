@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysInformAtionDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysInformAtionEntity" id="SysInformAtionEntity">
+        <result property="informationId" column="informationId"/>
+        <result property="infType" column="infType"/>
+        <result property="title" column="title"/>
+        <result property="publishTime" column="publishTime"/>
+        <result property="infImgUrl" column="infImgUrl"/>
+        <result property="content" column="content"/>
+        <result property="createdDate" column="createdDate"/>
+
+    </resultMap>
+    <sql id="Base_Column_List">
+        infType,imgType,title,publishTime,infImgUrl,content,createdDate
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysInformAtionEntity" parameterType="map">
+        SELECT
+        informationId,
+        <include refid="Base_Column_List"/>
+        FROM information
+        <where>
+            <choose>
+                <when test="imgType!=null and imgType!=''">
+                    and infType is NULL
+                </when>
+                <otherwise>
+                    and imgType is NULL
+                </otherwise>
+            </choose>
+        </where>
+        order BY createdDate desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM  information
+        <where>
+            <choose>
+                <when test="imgType!=null and imgType!=''">
+                    and infType is NULL
+                </when>
+                <otherwise>
+                    and imgType is NULL
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysInformAtionEntity" parameterType="long">
+        SELECT
+        informationId,
+        <include refid="Base_Column_List"/>
+        FROM information
+        WHERE informationId=#{informationId}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysInformAtionEntity">
+        INSERT INTO information
+        (
+        <include refid="Base_Column_List"/>
+        )
+        VALUES
+        (
+        #{infType},
+        #{imgType},
+        #{title},
+        #{publishTime},
+        #{infImgUrl},
+        #{content},
+        #{createdDate}
+        )
+    </insert>
+    <delete id="deleteBatch">
+        delete from information where informationId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysInformAtionEntity">
+
+        UPDATE information SET
+        infType=#{infType},
+        imgType=#{imgType},
+        title=#{title},
+        publishTime=#{publishTime},
+        infImgUrl= #{infImgUrl},
+        content=#{content},
+        createdDate=#{createdDate}
+        WHERE  informationId=#{informationId}
+    </update>
+</mapper>

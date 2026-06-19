@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="../css/aui.css" />
+    <link rel="stylesheet" type="text/css" href="../css/swiper.min.css" />
+    <link rel="stylesheet" type="text/css" href="../css/o_base.css">
+    <link rel="stylesheet" type="text/css" href="../css/o_style.css">
+    <title>详情</title>
+    <style>
+
+    </style>
+</head>
+
+<body class="bfff">
+    <div id="share">
+        <div class="pd-10 bfff flex title">
+            <div class="headImg mg-r-10">
+                <img src="../img/logo.png" class="wd-100">
+            </div>
+            <div class="flex flexWrap msg">
+                <div class="userName wd-100"></div>
+                <div class="cbbb wd-100">我在<span class="storeName">小盒子</span>这家门店运动</div>
+            </div>
+        </div>
+        <div class="banner">
+            <div class="swiper-container">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide">
+                        <img src="../img/bg1.png" class="wd-100">
+                    </div>
+                </div>
+                <div class="swiper-pagination"></div>
+            </div>
+        </div>
+        <div class="shopMsg pd-15">
+            <div class="storeArea"></div>
+            <div class="storeName fontb font18"></div>
+            <div class="flex flexWrap pd-tb-15 border-b">
+                <div class="flex wd-50">
+                    <img src="../img/ic_people_01.png" class="icon">
+                    <div class="c999">场内实际人数：<span class="cmain number">0</span>人</div>
+                </div>
+                <div class="flex wd-50">
+                    <img src="../img/ic_nav.png" class="icon">
+                    <div class="c999"><span class="distance">未知</span>KM</div>
+                </div>
+                <div class="flex wd-50">
+                    <img src="../img/ic_location_01.png" class="icon">
+                    <div class="c999 address"></div>
+                </div>
+            </div>
+        </div>
+        <div class="recomment">
+            <div class="title font18 fontb pd-lr-15">推荐教练</div>
+            <div class="list flex pd-15">
+                <!-- <div class="shadow boxList radius15">
+                    <div class="img">
+                        <img src="../img/img1.png" class="wd-100">
+                    </div>
+                    <div class="pd-10">
+                        <div class="name">周星星</div>
+                        <div class="startImg">
+
+                        </div>
+                    </div>
+                </div> -->
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="../js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+<script type="text/javascript" charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=WXocean"></script>
+<script type="text/javascript" src="https://3gimg.qq.com/lightmap/components/geolocation/geolocation.min.js"></script>
+<script type="text/javascript" src="../js/api.js"></script>
+<script type="text/javascript" src="../js/swiper.min.js"></script>
+<script type="text/javascript" src="../js/layer.js"></script>
+<script type="text/javascript" src="../js/dlc.js"></script>
+<script type="text/javascript" src="../js/o_base.js"></script>
+<script>
+    if (getItem("location")) {
+        getStoreMsg(JSON.parse(getItem("location")))
+    } else {
+        getLocation();
+    }
+
+    function getLocation() {
+        var geolocation = new qq.maps.Geolocation("N6RBZ-AJN35-AACI2-Q2ICF-HYV6O-JRBBZ", "myapp");
+        var positionNum = 0;
+        var options = {
+            timeout: 1000
+        };
+
+        function showErr() {
+            positionNum++;
+            layer_msg('定位失败！');
+            getStoreMsg()
+        };
+
+        geolocation.getLocation(getStoreMsg, showErr, options);
+    }
+
+    var mySwiper = new Swiper('.swiper-container', {
+        autoplay: true, //可选选项，自动滑动
+        pagination: '.swiper-pagination',
+        loop: true,
+    })
+
+    //初始化数据
+    $(".headImg img").attr("src", getParam().headImg);
+    $(".userName").text(UrlSearch("userName"));
+
+    // getStoreMsg();
+    getCoachMsg();
+
+    function getStoreMsg(position) {
+        var param = {
+            storeId: getParam().ID
+        };
+        if (position) {
+            setItem("location", JSON.stringify({
+                lat: position.lat,
+                lng: position.lng
+            }))
+            param.userLng = position.lng;
+            param.userLat = position.lat;
+        }
+        // alert(JSON.stringify(param))
+        ajaxPost(param, "api/share/storeInfo", function (res) {
+            // alert(JSON.stringify(res.data))
+            if (res.code == 1) {
+                $(".storeArea").text("门店面积" + res.data.storeArea + "㎡");
+                $(".storeName").text(res.data.storeName);
+                $(".number").text(res.data.currentNum);
+                $(".distance").text(res.data.distance);
+                // $(".address").text(res.data.storeAddrDetail);
+                $(".address").text(res.data.addressDetail);
+                var imgsArr = res.data.storeImgUrl.split(",");
+                var imgs = "";
+                imgsArr.forEach(img => {
+                    imgs +=
+                        '<div class="swiper-slide">' +
+                        '<img src="' + img + '" class="wd-100">' +
+                        '</div>'
+
+                });
+                $(".swiper-wrapper").html(imgs)
+            } else {
+                layer_msg(res.msg)
+            }
+        });
+    }
+
+    function getCoachMsg() {
+        ajaxPost({
+            storeId: getParam().ID
+        }, "api/share/recommendCoach", function (res) {
+            if (res.code == 1) {
+                var str = '';
+                res.data.forEach(item => {
+                    str +=
+                        '<div class="shadow boxList radius15">' +
+                        '<div class="img">' +
+                        '<img src="' + item.headImgUrl + '" class="wd-100">' +
+                        '</div>' +
+                        '<div class="pd-10">' +
+                        '<div class="name">' + item.coachName + '</div>' +
+                        '<div class="startImg">' +
+
+                        '</div>' +
+                        '</div>' +
+                        '</div>'
+                });
+                $(".list").html(str);
+            }
+        });
+    }
+
+    function UrlSearch(param) {
+        var name, value;
+        var str = decodeURI(location.href); //取得解码后的地址栏
+        var num = str.indexOf("?")
+        str = str.substr(num + 1);
+
+        var arr = str.split("&"); //各个参数放到数组里
+        for (var i = 0; i < arr.length; i++) {
+            num = arr[i].indexOf("=");
+            if (num > 0) {
+                name = arr[i].substring(0, num);
+                value = arr[i].substr(num + 1);
+                if (name == param) {
+                    return value
+                }
+                console.log(name, value)
+                // this[name] = value;
+            }
+        }
+    }
+</script>
+
+</html>

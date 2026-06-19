@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.PointsExchangeMapper">
+    <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.PointsExchange">
+        <constructor>
+            <idArg column="pointsExchangeId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="detailType" jdbcType="TINYINT" javaType="java.lang.Byte"/>
+            <arg column="pointsCount" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="exchangeMoney" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="exchangeDate" jdbcType="TIMESTAMP" javaType="java.util.Date"/>
+        </constructor>
+    </resultMap>
+    <sql id="Base_Column_List">
+    pointsExchangeId, userId, detailType, pointsCount, exchangeMoney, exchangeDate
+  </sql>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        select
+        <include refid="Base_Column_List"/>
+        from points_exchange
+        where pointsExchangeId = #{pointsExchangeId,jdbcType=BIGINT}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from points_exchange
+    where pointsExchangeId = #{pointsExchangeId,jdbcType=BIGINT}
+  </delete>
+    <insert id="insert" parameterType="com.dlc.modules.api.entity.PointsExchange">
+    insert into points_exchange (pointsExchangeId, userId, detailType, 
+      pointsCount, exchangeMoney, exchangeDate
+      )
+    values (#{pointsExchangeId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{detailType,jdbcType=TINYINT}, 
+      #{pointsCount,jdbcType=INTEGER}, #{exchangeMoney,jdbcType=INTEGER}, #{exchangeDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.PointsExchange">
+        insert into points_exchange
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="pointsExchangeId != null">
+                pointsExchangeId,
+            </if>
+            <if test="userId != null">
+                userId,
+            </if>
+            <if test="storeId != null">
+                storeId,
+            </if>
+            <if test="detailType != null">
+                detailType,
+            </if>
+            <if test="pointsCount != null">
+                pointsCount,
+            </if>
+            <if test="exchangeMoney != null">
+                exchangeMoney,
+            </if>
+            <if test="exchangeDate != null">
+                exchangeDate,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="pointsExchangeId != null">
+                #{pointsExchangeId,jdbcType=BIGINT},
+            </if>
+            <if test="userId != null">
+                #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="storeId != null">
+                #{storeId,jdbcType=BIGINT},
+            </if>
+            <if test="detailType != null">
+                #{detailType,jdbcType=TINYINT},
+            </if>
+            <if test="pointsCount != null">
+                #{pointsCount,jdbcType=INTEGER},
+            </if>
+            <if test="exchangeMoney != null">
+                #{exchangeMoney,jdbcType=INTEGER},
+            </if>
+            <if test="exchangeDate != null">
+                #{exchangeDate,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.PointsExchange">
+        update points_exchange
+        <set>
+            <if test="userId != null">
+                userId = #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="detailType != null">
+                detailType = #{detailType,jdbcType=TINYINT},
+            </if>
+            <if test="pointsCount != null">
+                pointsCount = #{pointsCount,jdbcType=INTEGER},
+            </if>
+            <if test="exchangeMoney != null">
+                exchangeMoney = #{exchangeMoney,jdbcType=INTEGER},
+            </if>
+            <if test="exchangeDate != null">
+                exchangeDate = #{exchangeDate,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where pointsExchangeId = #{pointsExchangeId,jdbcType=BIGINT}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.PointsExchange">
+    update points_exchange
+    set userId = #{userId,jdbcType=BIGINT},
+      detailType = #{detailType,jdbcType=TINYINT},
+      pointsCount = #{pointsCount,jdbcType=INTEGER},
+      exchangeMoney = #{exchangeMoney,jdbcType=INTEGER},
+      exchangeDate = #{exchangeDate,jdbcType=TIMESTAMP}
+    where pointsExchangeId = #{pointsExchangeId,jdbcType=BIGINT}
+  </update>
+    <!--根据用户ID查询该用户积分明细-->
+    <select id="getPointDetailByUserId" resultType="java.util.Map" parameterType="java.lang.Long">
+        select
+          detailType,
+          case when detailType = 2 then '-'  else '+' end as moneyType,
+          pointsCount as exchangeMoney,
+          date_format(exchangeDate, '%Y.%m.%d %H:%i') as exchangeDate
+        from points_exchange pe
+        where pe.userId = #{userId,jdbcType=BIGINT}
+        order by pe.exchangeDate desc
+    </select>
+    <!--查询当天积分-->
+    <select id="querySumDayPoint" resultType="java.lang.Integer" parameterType="java.lang.Long">
+          select sum(ifnull(pe.pointsCount,0)) as dayPoint
+          from points_exchange pe
+          where pe.userId=#{userId}
+          and pe.detailType=1
+          and date_format(pe.exchangeDate,'%Y-%m-%d') = date_format(now(),'%Y-%m-%d')
+    </select>
+    <!--查询规则积分-->
+    <select id="queryRulePoints" resultType="java.lang.Integer" parameterType="java.lang.Long">
+        SELECT
+	      (
+            CASE
+            WHEN ui.wristId is null THEN
+                ifnull(dm.val, 0)
+            ELSE
+                ifnull(dm.price, 0)
+            END
+	      ) AS rulePoint
+        FROM
+	    user_info ui
+        LEFT JOIN data_map dm ON dm.idxLabel = 2
+        AND dm.nextLabel = 1
+        WHERE
+            ui.userId = #{userId}
+    </select>
+</mapper>

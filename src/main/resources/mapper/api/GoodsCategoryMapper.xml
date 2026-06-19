@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.GoodsCategoryMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.GoodsCategory" >
+    <constructor >
+      <idArg column="goodsCategoryId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="categoryImg" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="categoryName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    goodsCategoryId,categoryImg,categoryName,createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from goods_category
+    where goodsCategoryId = #{goodsCategoryId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from goods_category_detail
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.GoodsCategoryDetail" >
+    insert into goods_category_detail (goodsCategoryId, nextCategoryName, createdDate ,nextCategoryImg
+      )
+    values (#{goodsCategoryId,jdbcType=BIGINT}, #{nextCategoryName,jdbcType=VARCHAR}, #{createdDate,jdbcType=TIMESTAMP}, #{nextCategoryImg,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.GoodsCategoryDetail" >
+    insert into goods_category_detail
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="goodsCategoryId != null" >
+        goodsCategoryId,
+      </if>
+      <if test="nextCategoryName != null" >
+        nextCategoryName,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="nextCategoryImg != null" >
+        nextCategoryImg,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="goodsCategoryId != null" >
+        #{goodsCategoryId,jdbcType=BIGINT},
+      </if>
+      <if test="nextCategoryName != null" >
+        #{nextCategoryName,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="nextCategoryImg != null" >
+        #{nextCategoryImg,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.GoodsCategory" >
+    update goods_category
+    <set >
+      <if test="typeName != null" >
+        typeName = #{typeName,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where goodsCategoryId = #{goodsCategoryId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.GoodsCategory" >
+    update goods_category
+    set typeName = #{typeName,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where goodsCategoryId = #{goodsCategoryId,jdbcType=BIGINT}
+  </update>
+  
+  <!--主商品分类列表-->
+  <select id="goodsCateList" resultType="com.dlc.modules.api.entity.GoodsCategory">
+    SELECT <include refid="Base_Column_List"/> FROM goods_category
+  </select>
+  <!--LXK二级商品分类列表-->
+  <select id="goodsCateDetail" parameterType="map" resultType="map">
+    SELECT d.*,c.categoryName,s.`name`,s.imgUrl,concat(s.price,'') as price,s.goodsId,s.carouselImgUrl,s.remarkImgUrl from goods_category_detail d
+    LEFT JOIN goods_category c ON c.goodsCategoryId = d.goodsCategoryId
+    LEFT JOIN goods s ON s.categoryId = d.id
+    <where>
+      <if test="id!=null">
+        AND d.id = #{id}
+      </if>
+      <if test="goodsCategoryId!=null">
+        AND c.goodsCategoryId=#{goodsCategoryId}
+      </if>
+      AND s.name!=""
+    </where>
+    AND status =1 AND deleteStatus =0
+    GROUP BY goodsId
+    ORDER BY s.createdDate DESC LIMIT #{offset}, #{limit}
+  </select>
+  <!--LXK二级商品分类数量统计-->
+  <select id="goodsCateDetailCount" parameterType="map" resultType="java.lang.Integer">
+    select count(1) from (SELECT name from goods_category_detail d
+    LEFT JOIN goods_category c ON c.goodsCategoryId = d.goodsCategoryId
+    LEFT JOIN goods s ON s.categoryId = d.id
+    <where>
+      <if test="id!=null">
+        AND d.id = #{id}
+      </if>
+      <if test="goodsCategoryId!=null">
+        AND c.goodsCategoryId=#{goodsCategoryId}
+      </if>
+    </where>
+    AND status =1 AND deleteStatus =0
+    GROUP BY s.goodsId)a
+  </select>
+
+  <!--查询二级分类名称-->
+  <select id="queryCateDetailName" resultType="map">
+    SELECT id,nextCategoryName FROM goods_category_detail WHERE goodsCategoryId = #{goodsCategoryId}
+  </select>
+</mapper>

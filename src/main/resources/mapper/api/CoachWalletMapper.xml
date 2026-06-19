@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.CoachWalletMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.CoachWallet" >
+    <constructor >
+      <idArg column="coachWalletId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="money" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="alipay" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="realName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="updateDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    coachWalletId, coachId, money, alipay, realName, updateDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from coach_wallet
+    where coachWalletId = #{coachWalletId,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByCoachId" resultType="com.dlc.modules.api.entity.CoachWallet" parameterType="java.lang.Long" >
+    select
+    *
+    from coach_wallet
+    where coachId = #{coachId,jdbcType=BIGINT} limit 1
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from coach_wallet
+    where coachWalletId = #{coachWalletId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.CoachWallet" >
+    insert into coach_wallet (coachWalletId, coachId, money, 
+      alipay, realName, updateDate
+      )
+    values (#{coachWalletId,jdbcType=BIGINT}, #{coachId,jdbcType=BIGINT}, #{money,jdbcType=DOUBLE},
+      #{alipay,jdbcType=VARCHAR}, #{realName,jdbcType=VARCHAR}, #{updateDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.CoachWallet" >
+    insert into coach_wallet
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="coachWalletId != null" >
+        coachWalletId,
+      </if>
+      <if test="coachId != null" >
+        coachId,
+      </if>
+      <if test="money != null" >
+        money,
+      </if>
+      <if test="alipay != null" >
+        alipay,
+      </if>
+      <if test="realName != null" >
+        realName,
+      </if>
+      <if test="updateDate != null" >
+        updateDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="coachWalletId != null" >
+        #{coachWalletId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="money != null" >
+        #{money,jdbcType=DOUBLE},
+      </if>
+      <if test="alipay != null" >
+        #{alipay,jdbcType=VARCHAR},
+      </if>
+      <if test="realName != null" >
+        #{realName,jdbcType=VARCHAR},
+      </if>
+      <if test="updateDate != null" >
+        #{updateDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.CoachWallet" >
+    update coach_wallet
+    <set >
+      <if test="coachId != null" >
+        coachId = #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="money != null" >
+        money = #{money,jdbcType=DOUBLE},
+      </if>
+      <if test="alipay != null" >
+        alipay = #{alipay,jdbcType=VARCHAR},
+      </if>
+      <if test="realName != null" >
+        realName = #{realName,jdbcType=VARCHAR},
+      </if>
+      <if test="updateDate != null" >
+        updateDate = #{updateDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where coachWalletId = #{coachWalletId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.CoachWallet" >
+    update coach_wallet
+    set coachId = #{coachId,jdbcType=BIGINT},
+      money = #{money,jdbcType=DOUBLE},
+      alipay = #{alipay,jdbcType=VARCHAR},
+      realName = #{realName,jdbcType=VARCHAR},
+      updateDate = #{updateDate,jdbcType=TIMESTAMP}
+    where coachWalletId = #{coachWalletId,jdbcType=BIGINT}
+  </update>
+
+
+  <select id="queryCoachAccountBalance" parameterType="Long" resultType="double">
+      SELECT money FROM coach_wallet WHERE coachId = #{coachId}
+  </select>
+
+  <update id="updateAlipayCount" parameterType="map">
+      UPDATE coach_wallet SET  alipay = #{alipay},realName =#{realName} WHERE coachId =#{coachId}
+  </update>
+  <!--教练钱包进出款-->
+  <update id="updateCoachMoney">
+    update coach_wallet cw
+    set cw.money = cw.money + #{money,jdbcType=DOUBLE},
+    cw.updateDate = now()
+    where cw.coachId = #{coachId, jdbcType=BIGINT}
+  </update>
+</mapper>

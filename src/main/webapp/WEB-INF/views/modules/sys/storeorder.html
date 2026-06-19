@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0, user-scalable=no">
+    <title>门店订单结算</title>
+    <!--css类引用-->
+    <link rel="stylesheet" href="${request.contextPath}/statics/js/shopping/layui/css/layui.css"/>
+    <link rel="stylesheet" href="${request.contextPath}/statics/js/shopping/eleme-ui/index.css"/>
+    <link rel="stylesheet" href="${request.contextPath}/statics/css/ShoppingCart.css"/>
+    <style>
+        .col-sm-2 {
+            float: left;
+            width: 16.66666667%;
+            position: relative;
+            min-height: 1px;
+            padding-right: 25px;
+            padding-left: 15px;
+            padding-bottom: 5px;
+        }
+        .col-sm-9 {
+            float: left;
+            width: 100%;
+            position: relative;
+            min-height: 1px;
+            padding-right: 25px;
+            padding-left: 15px;
+            padding-bottom: 5px;
+        }
+        .col-sm-1 {
+            float: left;
+            width: 80px;
+            position: relative;
+            min-height: 1px;
+            margin-right: -20px;
+            padding-left: 15px;
+            margin-left: 30px;
+            padding-top: 7px;
+        }
+
+        .form-controlss {
+            display: block;
+            width: 100%;
+            height: 20px;
+            padding: 6px 12px;
+            font-size: 14px;
+            line-height: 1.42857143;
+            color: #555;
+            background-color: #fff;
+            background-image: none;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+            -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;
+            -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+            transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+        }
+
+        .btn-default {
+            color: white;
+            margin-left: 5%;
+            margin-right: 10px;
+            display: inline-block;
+            padding: 6px 12px;
+            margin-bottom: 0;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.42857143;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            -ms-touch-action: manipulation;
+            touch-action: manipulation;
+            cursor: pointer;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            background-image: none;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            text-decoration: none;
+            background-color: #209ceb;
+            border-color: #ccc;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<!--主要内容-->
+<div class="row " id="myVue" v-cloak>
+    <div class="form-group col-sm-1">
+        <label>条形码：</label>
+    </div>
+    <div class="form-group col-sm-2">
+        <input id="bq" type="text" class="form-controlss" @change="query" v-model="q.barCode" placeholder="读取条形码">
+    </div>
+    <div class="col-sm-9"></div>
+    <div class="form-group col-sm-1">
+        <label>手环/卡：</label>
+    </div>
+    <div class="form-group col-sm-2">
+        <input type="password" class="form-controlss" v-model="q.wristId" placeholder="读取手环（或卡）">
+    </div>
+    <div class="col-lg-10 col-lg-offset-1">
+        <div class="layui-form">
+            <table class="ShopCartTable layui-table">
+                <thead>
+                <tr>
+                    <th class="selectLeft">
+                        <template>
+                            <el-checkbox @change="checkedAllBtn(checkedAll)" v-model="checkedAll">全选</el-checkbox>
+                        </template>
+                        <span class="selectLeftGoods">商品</span>
+                    </th>
+                    <th>单价</th>
+                    <th>数量</th>
+                    <th>小计</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(tabledatas,index) in shopTableDatas">
+                    <td class="selectLeft">
+                        <template>
+                            <el-checkbox @change="checkedRadioBtn(tabledatas)" style="padding-left: 16px"
+                                         v-model="tabledatas.checked"></el-checkbox>
+                        </template>
+
+                        <span class="goodName goodsName">
+								<h2 class="goodname" v-text="tabledatas.name"></h2>
+                                <p class="style">
+									<span>规格：</span>
+									<span v-text="tabledatas.style"></span>
+								</p>
+                                <p class="barCode">
+									<span>条码：</span>
+									<span v-text="tabledatas.barCode"></span>
+								</p>
+							</span>
+                    </td>
+                    <td class="danPrice">{{tabledatas.price | moneyFiler}}</td>
+                    <td>
+                        <i @click="goodNum(tabledatas,-1)" class="fa  deleteBtn" aria-hidden="true">-</i>
+                        <input v-model="tabledatas.num" type="text" class="form-control numInput" disabled="disabled"
+                               aria-label="...">
+                        <i @click="goodNum(tabledatas,1)" class="fa  addBtn" aria-hidden="true">+</i>
+                    </td>
+                    <td>
+                        <p class="totalPrice">{{tabledatas.price*tabledatas.num | moneyFiler}}</p>
+                    </td>
+                    <td class="gongneng">
+                        <p class="deletegoods" @click="alertRadio(index)">删除</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="row tablefooter">
+                <template>
+                    <el-checkbox style="padding-left:16px" @change="checkedAllBtn(checkedAll)" v-model="checkedAll">全选
+                    </el-checkbox>
+                </template>
+                <span class="removeMuch" @click="alertMuch">删除选中项</span>
+                <span class="servicenum">已选择<span class="goodsNum">{{goodsNum}}</span>件商品</span>
+                <span class="totalclassPoin">总价：<span class="totalMoneyClass">{{totalMoney | moneyFiler}}</span></span>
+                <a @click="saveData" class="SettlementBtn">去结算</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!--js类引用-->
+<script src="${request.contextPath}/statics/libs/jquery.min.js"></script>
+<script type="text/javascript" src="${request.contextPath}/statics/js/shopping/vue/vue.min.js"></script>
+<script type="text/javascript" src="${request.contextPath}/statics/js/shopping/eleme-ui/index.js"></script>
+<script type="text/javascript" src="${request.contextPath}/statics/js/shopping/ShoppingCart.js"></script>
+<script src="${request.contextPath}/statics/plugins/layer/layer.js"></script>
+<!--<script>
+    var str='';  //定义一个空变量用来存储密码
+    $('input').keyup(function(){
+        var value=$(this).val();    //输入的时候获取输入框的值
+        str+=value.substr(value.length-1,1); //获取最后一个字符加到到str,因为除了最后一个字符，其他的已经为*
+        $(this).val(value.replace(/./g,'*')) //输入框内容全部变为*
+        console.log(str); //str即为输入框的内容
+    })
+</script>-->
+
+<div style="text-align:center;margin:50px 0; font:normal 14px/24px 'MicroSoft YaHei';">
+
+</div>
+</body>
+</html>

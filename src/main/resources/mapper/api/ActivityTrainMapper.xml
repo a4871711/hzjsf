@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.ActivityTrainMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.ActivityTrain" >
+    <constructor >
+      <idArg column="activityTrainId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="trainName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="trainImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="videoImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="videoUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="com.dlc.modules.api.entity.ActivityTrain" >
+    <constructor >
+      <idArg column="activityTrainId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="trainName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="trainImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="videoImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="videoUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="introduce" jdbcType="LONGVARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    activityTrainId, trainName, trainImgUrl,videoImgUrl,videoUrl, createdDate
+  </sql>
+
+  <sql id="Blob_Column_List" >
+    introduce
+  </sql>
+
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from activity_train
+    where activityTrainId = #{activityTrainId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from activity_train
+    where activityTrainId = #{activityTrainId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.ActivityTrain" >
+    insert into activity_train (activityTrainId, trainName, trainImgUrl, videoImgUrl,videoUrl,
+      createdDate, introduce)
+    values (#{activityTrainId,jdbcType=BIGINT}, #{trainName,jdbcType=VARCHAR}, #{trainImgUrl,jdbcType=VARCHAR}, #{videoImgUrl,jdbcType=VARCHAR},#{videoUrl,jdbcType=VARCHAR},
+      #{createdDate,jdbcType=TIMESTAMP}, #{introduce,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.ActivityTrain" >
+    insert into activity_train
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="activityTrainId != null" >
+        activityTrainId,
+      </if>
+      <if test="trainName != null" >
+        trainName,
+      </if>
+      <if test="trainImgUrl != null" >
+        trainImgUrl,
+      </if>
+      <if test="videoImgUrl != null" >
+        videoImgUrl,
+      </if>
+      <if test="videoUrl != null" >
+        videoUrl,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="introduce != null" >
+        introduce,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="activityTrainId != null" >
+        #{activityTrainId,jdbcType=BIGINT},
+      </if>
+      <if test="trainName != null" >
+        #{trainName,jdbcType=VARCHAR},
+      </if>
+      <if test="trainImgUrl != null" >
+        #{trainImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="videoImgUrl != null" >
+        #{videoImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="videoUrl != null" >
+        #{videoUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="introduce != null" >
+        #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.ActivityTrain" >
+    update activity_train
+    <set >
+      <if test="trainName != null" >
+        trainName = #{trainName,jdbcType=VARCHAR},
+      </if>
+      <if test="trainImgUrl != null" >
+        trainImgUrl = #{trainImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="videoImgUrl != null" >
+        videoImgUrl = #{videoImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="videoUrl != null" >
+        videoUrl = #{videoUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="introduce != null" >
+        introduce = #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where activityTrainId = #{activityTrainId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.dlc.modules.api.entity.ActivityTrain" >
+    update activity_train
+    set trainName = #{trainName,jdbcType=VARCHAR},
+      trainImgUrl = #{trainImgUrl,jdbcType=VARCHAR},
+      videoImgUrl = #{videoImgUrl,jdbcType=VARCHAR},
+      videoUrl = #{videoUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      introduce = #{introduce,jdbcType=LONGVARCHAR}
+    where activityTrainId = #{activityTrainId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.ActivityTrain" >
+    update activity_train
+    set trainName = #{trainName,jdbcType=VARCHAR},
+      trainImgUrl = #{trainImgUrl,jdbcType=VARCHAR},
+      videoImgUrl = #{videoImgUrl,jdbcType=VARCHAR},
+      videoUrl = #{videoUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where activityTrainId = #{activityTrainId,jdbcType=BIGINT}
+  </update>
+  <!--根据一级分类查询动作训练列表-->
+  <select id="queryActivityTrainListByAtId" resultType="map" parameterType="java.util.Map">
+    SELECT activityTrainId,trainName,videoImgUrl
+    FROM activity_train
+    WHERE atId=#{atId}
+    ORDER BY createdDate DESC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <!--根据一级分类查询动作训练列表总数-->
+  <select id="queryActivityTrainTotalByAtId" resultType="java.lang.Integer" parameterType="java.util.Map">
+    SELECT COUNT(*)
+    FROM activity_train
+    WHERE atId=#{atId}
+  </select>
+  <!--动作训练列表-->
+  <select id="queryActivityTrainList" resultType="map">
+    SELECT activityTrainId,trainName
+    FROM activity_train
+    ORDER BY createdDate DESC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <select id="queryTotal" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM activity_train
+  </select>
+  <!--动作训练详情-->
+  <select id="queryActivityTrainInfo" resultType="map" parameterType="java.lang.Long">
+    SELECT trainName, trainImgUrl,videoImgUrl,videoUrl, introduce FROM activity_train WHERE activityTrainId = #{id}
+  </select>
+</mapper>

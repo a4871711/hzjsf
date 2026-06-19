@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.SystemMsgDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap id="systemMsgMap" type="com.dlc.modules.api.entity.SystemMsgEntity" >
+        <result property="sysMsgId" column="sysMsgId" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="sendTime" column="sendTime" jdbcType="TIMESTAMP"/>
+        <result property="msgType" column="msgType" jdbcType="INTEGER"/>
+        <result property="readFlag" column="readFlag" jdbcType="INTEGER"/>
+        <result property="record" column="record" jdbcType="VARCHAR"/>
+    </resultMap>
+
+ 	<select id="queryTotal" resultType="int" parameterType="java.lang.Long">
+		select
+			count(*)
+		from system_msg
+		where
+		<if test="userId != null">
+			userId = #{userId},
+		</if>
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.SystemMsgEntity" >
+		insert into system_msg
+		(
+			userId,
+			sendTime,
+			msgType,
+			record
+		)
+		values
+		(
+			#{userId}, 
+			#{sendTime}, 
+			#{msgType},
+			#{record}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.api.entity.SystemMsgEntity">
+		update system_msg 
+		<set>
+			<if test="userId != null">
+				userId = #{userId},
+			</if>
+			<if test="sendTime != null">
+				sendTime = #{sendTime},
+			</if>
+			<if test="record != null">
+				record = #{record}
+			</if>
+		</set>
+		where sysMsgId = #{sysMsgId}
+	</update>
+	
+	<delete id="delete">
+		delete from system_msg where sysMsgId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from system_msg where sysMsgId in 
+		<foreach item="sysMsgId" collection="array" open="(" separator="," close=")">
+			#{sysMsgId}
+		</foreach>
+	</delete>
+	<!-- 查詢個人系統消息-->
+	<select id="querySysMsgByUserId" resultType="java.util.Map" parameterType="java.lang.Long" >
+		select
+			userId,
+			date_format(sendTime, '%Y-%m-%d %H:%i') sendTime,
+			record
+		from system_msg sm
+		where sm.userId = #{userId,jdbcType=BIGINT}
+		order by sm.sendTime desc
+	</select>
+    <!-- 查詢個人系統消息未读数-->
+    <select id="queryUnReadNum" resultType="java.lang.Integer" parameterType="java.lang.Long" >
+        select
+        count(*)
+        from system_msg sm
+        where sm.userId = #{userId,jdbcType=BIGINT}
+        and sm.readFlag = 0
+    </select>
+    <update id="updateReadFlag" parameterType="java.lang.Long" >
+        update system_msg
+        set readFlag = 1
+        where userId = #{userId,jdbcType=BIGINT}
+    </update>
+</mapper>

@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.SportRecordMapper">
+    <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.SportRecord">
+        <constructor>
+            <idArg column="srId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="activity" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="teamClassCount" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="privateClassCount" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="sportType" jdbcType="BIT" javaType="java.lang.Boolean"/>
+            <arg column="oxyKcal" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="unoxyKcal" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="teamClassKcal" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="privateClassKcal" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="startDate" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="sportTime" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="sportStep" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="energy" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date"/>
+        </constructor>
+    </resultMap>
+    <sql id="Base_Column_List">
+    srId, userId, activity, teamClassCount, privateClassCount, sportType, oxyKcal, unoxyKcal, 
+    teamClassKcal, privateClassKcal, startDate, sportTime, sportStep, energy, createdDate
+  </sql>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        select
+        <include refid="Base_Column_List"/>
+        from sport_record
+        where srId = #{srId,jdbcType=BIGINT}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from sport_record
+    where srId = #{srId,jdbcType=BIGINT}
+  </delete>
+    <insert id="insert" parameterType="com.dlc.modules.api.entity.SportRecord">
+    insert into sport_record (srId, userId, activity, 
+      teamClassCount, privateClassCount, sportType, 
+      oxyKcal, unoxyKcal, teamClassKcal, 
+      privateClassKcal, startDate, sportTime, 
+      sportStep, energy, createdDate
+      )
+    values (#{srId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{activity,jdbcType=INTEGER}, 
+      #{teamClassCount,jdbcType=INTEGER}, #{privateClassCount,jdbcType=INTEGER}, #{sportType,jdbcType=BIT}, 
+      #{oxyKcal,jdbcType=INTEGER}, #{unoxyKcal,jdbcType=INTEGER}, #{teamClassKcal,jdbcType=INTEGER}, 
+      #{privateClassKcal,jdbcType=INTEGER}, #{startDate,jdbcType=VARCHAR}, #{sportTime,jdbcType=VARCHAR}, 
+      #{sportStep,jdbcType=INTEGER}, #{energy,jdbcType=INTEGER}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.SportRecord">
+        insert into sport_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="srId != null">
+                srId,
+            </if>
+            <if test="userId != null">
+                userId,
+            </if>
+            <if test="activity != null">
+                activity,
+            </if>
+            <if test="teamClassCount != null">
+                teamClassCount,
+            </if>
+            <if test="privateClassCount != null">
+                privateClassCount,
+            </if>
+            <if test="sportType != null">
+                sportType,
+            </if>
+            <if test="oxyKcal != null">
+                oxyKcal,
+            </if>
+            <if test="unoxyKcal != null">
+                unoxyKcal,
+            </if>
+            <if test="teamClassKcal != null">
+                teamClassKcal,
+            </if>
+            <if test="privateClassKcal != null">
+                privateClassKcal,
+            </if>
+            <if test="startDate != null">
+                startDate,
+            </if>
+            <if test="sportTime != null">
+                sportTime,
+            </if>
+            <if test="sportStep != null">
+                sportStep,
+            </if>
+            <if test="energy != null">
+                energy,
+            </if>
+            <if test="createdDate != null">
+                createdDate,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="srId != null">
+                #{srId,jdbcType=BIGINT},
+            </if>
+            <if test="userId != null">
+                #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="activity != null">
+                #{activity,jdbcType=INTEGER},
+            </if>
+            <if test="teamClassCount != null">
+                #{teamClassCount,jdbcType=INTEGER},
+            </if>
+            <if test="privateClassCount != null">
+                #{privateClassCount,jdbcType=INTEGER},
+            </if>
+            <if test="sportType != null">
+                #{sportType,jdbcType=BIT},
+            </if>
+            <if test="oxyKcal != null">
+                #{oxyKcal,jdbcType=INTEGER},
+            </if>
+            <if test="unoxyKcal != null">
+                #{unoxyKcal,jdbcType=INTEGER},
+            </if>
+            <if test="teamClassKcal != null">
+                #{teamClassKcal,jdbcType=INTEGER},
+            </if>
+            <if test="privateClassKcal != null">
+                #{privateClassKcal,jdbcType=INTEGER},
+            </if>
+            <if test="startDate != null">
+                #{startDate,jdbcType=VARCHAR},
+            </if>
+            <if test="sportTime != null">
+                #{sportTime,jdbcType=VARCHAR},
+            </if>
+            <if test="sportStep != null">
+                #{sportStep,jdbcType=INTEGER},
+            </if>
+            <if test="energy != null">
+                #{energy,jdbcType=INTEGER},
+            </if>
+            <if test="createdDate != null">
+                #{createdDate,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.SportRecord">
+        update sport_record
+        <set>
+            <if test="userId != null">
+                userId = #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="activity != null">
+                activity = #{activity,jdbcType=INTEGER},
+            </if>
+            <if test="teamClassCount != null">
+                teamClassCount = #{teamClassCount,jdbcType=INTEGER},
+            </if>
+            <if test="privateClassCount != null">
+                privateClassCount = #{privateClassCount,jdbcType=INTEGER},
+            </if>
+            <if test="sportType != null">
+                sportType = #{sportType,jdbcType=BIT},
+            </if>
+            <if test="oxyKcal != null">
+                oxyKcal = #{oxyKcal,jdbcType=INTEGER},
+            </if>
+            <if test="unoxyKcal != null">
+                unoxyKcal = #{unoxyKcal,jdbcType=INTEGER},
+            </if>
+            <if test="teamClassKcal != null">
+                teamClassKcal = #{teamClassKcal,jdbcType=INTEGER},
+            </if>
+            <if test="privateClassKcal != null">
+                privateClassKcal = #{privateClassKcal,jdbcType=INTEGER},
+            </if>
+            <if test="startDate != null">
+                startDate = #{startDate,jdbcType=VARCHAR},
+            </if>
+            <if test="sportTime != null">
+                sportTime = #{sportTime,jdbcType=VARCHAR},
+            </if>
+            <if test="sportStep != null">
+                sportStep = #{sportStep,jdbcType=INTEGER},
+            </if>
+            <if test="energy != null">
+                energy = #{energy,jdbcType=INTEGER},
+            </if>
+            <if test="createdDate != null">
+                createdDate = #{createdDate,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where srId = #{srId,jdbcType=BIGINT}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.SportRecord">
+    update sport_record
+    set userId = #{userId,jdbcType=BIGINT},
+      activity = #{activity,jdbcType=INTEGER},
+      teamClassCount = #{teamClassCount,jdbcType=INTEGER},
+      privateClassCount = #{privateClassCount,jdbcType=INTEGER},
+      sportType = #{sportType,jdbcType=BIT},
+      oxyKcal = #{oxyKcal,jdbcType=INTEGER},
+      unoxyKcal = #{unoxyKcal,jdbcType=INTEGER},
+      teamClassKcal = #{teamClassKcal,jdbcType=INTEGER},
+      privateClassKcal = #{privateClassKcal,jdbcType=INTEGER},
+      startDate = #{startDate,jdbcType=VARCHAR},
+      sportTime = #{sportTime,jdbcType=VARCHAR},
+      sportStep = #{sportStep,jdbcType=INTEGER},
+      energy = #{energy,jdbcType=INTEGER},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where srId = #{srId,jdbcType=BIGINT}
+  </update>
+
+    <!--<select id="queryTodaySportStep" parameterType="java.lang.Long" resultType="java.lang.Integer">
+      SELECT SUM(sportStep) sportStep FROM sport_record WHERE userId = #{userId} AND to_days(createdDate) = to_days(now());
+    </select>
+    <select id="queryActivity" parameterType="java.lang.Long" resultType="java.lang.Integer">
+      SELECT activeDay FROM sport_active WHERE userId = #{userId}
+    </select>-->
+
+    <!--我的运动记录-->
+    <select id="querySportRecord" resultType="map" parameterType="java.lang.Long">
+    select
+    srId, userId, activity, teamClassCount, privateClassCount,
+    teamClassKcal, privateClassKcal, createdDate
+    from sport_record
+    where userId = #{userId,jdbcType=BIGINT}
+  </select>
+
+    <!--运动分类列表-->
+    <select id="querySportListByType" resultType="map">
+    SELECT userId,sportType,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,
+    SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,
+    SUM(energy) energy FROM sport_active WHERE userId= #{userId} AND sportType = #{sportType}
+     AND date_format(createdDate, '%Y-%m-%d') = date_format(now(), '%Y-%m-%d')
+  </select>
+
+    <!--根据运动类型查询总数据-->
+    <select id="sportDataCount" resultType="map">
+     SELECT COUNT(1) cishu,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,
+     SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sumST,
+     (SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy,YEAR(createdDate) data
+     FROM sport_active WHERE userId= #{userId} AND sportType = #{sportType}
+     GROUP BY YEAR(createdDate) ORDER BY YEAR(createdDate) DESC;
+  </select>
+
+
+    <!--查询所有总数据-->
+    <!--<select id="sportDataCountALL" resultType="com.dlc.modules.api.entity.SportActive">
+      SELECT SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy,createdDate
+      FROM sport_active WHERE userId= #{userId}  GROUP  BY userId
+
+      SELECT COUNT(1) cishu,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sumST,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy,(select date_format(createdDate ,'%Y' ) ) `data`
+       FROM sport_active WHERE userId= #{userId} AND sportType = #{sportType} GROUP  BY userId
+    </select>-->
+
+
+    <!--根据运动类型统计本周数据-->
+    <select id="sportDataCountByWeek" parameterType="com.dlc.modules.api.entity.SportActive" resultType="map">
+    SELECT COUNT(1) cishu,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy,
+    (SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`))) sportTime FROM sport_active WHERE userId=#{userId} AND sportType=#{sportType} AND YEARWEEK(date_format(createdDate,'%Y-%m-%d')) = YEARWEEK(now())) sumST,
+    (select date_format(createdDate ,'%Y-%m-%d' ) ) `data` FROM
+    sport_active WHERE
+    YEARWEEK(date_format(createdDate,'%Y-%m-%d'),1) = YEARWEEK(now(),1) AND userId= #{userId} AND sportType = #{sportType}  GROUP BY `data` order by createdDate desc
+  </select>
+
+    <!--统计本周全部数据-->
+    <!--<select id="sportDataCountByWeekALL" parameterType="com.dlc.modules.api.entity.SportActive" resultType="com.dlc.modules.api.entity.SportActive">
+      SELECT SUM(1) cishu,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy,
+      (select date_format(createdDate ,'%Y-%m-%d' ) ) `data` FROM
+      sport_active WHERE
+      YEARWEEK(date_format(createdDate,'%Y-%m-%d')) = YEARWEEK(now()) AND userId= #{userId}  GROUP BY `data`;
+    </select>-->
+
+
+    <!--根据运动类型本月数据（周为单位）-->
+    <select id="sportDataCountByMooth" resultType="map">
+    SELECT COUNT(1) cishu,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy,createdDate,
+
+    (SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`))) sportTime FROM sport_active WHERE DATE_FORMAT( createdDate, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' ) AND userId= #{userId} AND sportType = #{sportType}) sumST,
+    (select date_format(createdDate ,'%Y-%m-%d' ) ) `data`
+    FROM
+    sport_active WHERE DATE_FORMAT( createdDate, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' ) AND userId= #{userId} AND sportType = #{sportType}
+    GROUP BY data order by createdDate desc
+  </select>
+
+
+    <!--本月全部数据（周为单位）-->
+    <!--<select id="sportDataCountByMoothALL" resultType="com.dlc.modules.api.entity.SportActive">
+      SELECT SUM(1) cishu,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy,createdDate,
+      WEEK(createdDate) as dateTime
+      FROM
+      sport_active WHERE DATE_FORMAT( createdDate, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' ) AND userId= #{userId}
+      GROUP BY dateTime
+    </select>-->
+
+
+    <!--根据运动类型年度数据（月为单位）-->
+    <select id="sportDataCountByYear" resultType="map">
+    SELECT COUNT(1) cishu,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy,
+	(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`))) sportTime FROM
+	sport_active WHERE (select date_format(createdDate ,'%Y' ) ) = (select YEAR(CURDATE())) AND userId= #{userId} AND sportType = #{sportType}) sumST,
+	(select date_format(createdDate ,'%Y-%m' ) ) `data`
+    FROM
+	sport_active WHERE (select date_format(createdDate ,'%Y' ) ) = (select YEAR(CURDATE())) AND userId= #{userId} AND sportType = #{sportType}
+    GROUP BY data order by createdDate desc
+  </select>
+
+
+    <!--年度全部数据（月为单位）-->
+    <!--<select id="sportDataCountByYearALL" resultType="com.dlc.modules.api.entity.SportActive">
+      SELECT SUM(1) cishu,SUM(oxyKcal) oxyKcal,SUM(unoxyKcal) unoxyKcal,SUM(sportStep) sportStep,SUM(distance) distance,(SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(`sportTime`)))) sportTime,SUM(energy) energy
+      ,(select date_format(createdDate ,'%Y-%m' ) ) `data`
+      FROM
+      sport_active WHERE (select date_format(createdDate ,'%Y' ) ) = (select YEAR(CURDATE())) AND userId= #{userId}
+      GROUP BY data;
+    </select>-->
+
+
+    <!--保存运动数据-->
+    <insert id="saveSportData" parameterType="map">
+    insert into sport_active (userId,sportType,oxyKcal,unoxyKcal,
+    sportStep,distance,sportTime,energy)
+    values
+    (#{userId},#{sportType},#{oxyKcal},#{unoxyKcal},#{sportStep},#{distance},#{sportTime},#{energy})
+  </insert>
+    <!--查询个人总能量-->
+    <select id="queryUserTotalEnergy" resultType="java.lang.Integer" parameterType="java.lang.Long">
+        select
+        ROUND(sum(ifnull(sr.teamClassKcal,0)+
+                ifnull(sr.privateClassKcal,0)+
+                ifnull((select sum(ifnull(sa.energy,0)) from sport_active sa where sa.userId=#{userId}),0)+
+                ifnull((select sum(ifnull(usdr.calorie,0)) from user_sport_device_record usdr where usdr.userId=#{userId}),0)),0)
+        from sport_record sr where sr.userId = #{userId}
+    </select>
+    <!--登录接口活跃天数统计-->
+    <update id="updateActivity" parameterType="java.lang.Long">
+      update sport_record
+        set activity = activity + 1,
+        createdDate = now()
+        where userId = #{userId,jdbcType=BIGINT}
+        and date_format(createdDate, '%Y-%m-%d') <![CDATA[ <> ]]> date_format(now(), '%Y-%m-%d')
+  </update>
+    <!--更新私教课相关数据-->
+    <update id="updatePrivateClassInfo" parameterType="java.util.Map">
+    update sport_record
+     set privateClassCount = privateClassCount + 1,
+         privateClassKcal = ifnull(privateClassKcal,0) + #{energy,jdbcType=DOUBLE}
+         where userId = #{studentId,jdbcType=BIGINT}
+  </update>
+    <!--更新个人团课数据-->
+    <update id="updateTeamClassInfo" parameterType="java.util.Map">
+        update sport_record
+        set teamClassCount = teamClassCount + 1,
+        teamClassKcal = ifnull(teamClassKcal,0) + #{energy,jdbcType=DOUBLE}
+        where userId = #{studentId,jdbcType=BIGINT}
+    </update>
+    <!--查询个人能量-->
+    <select id="queryEnergy" resultType="map">
+        select sum(kcal) kcal,userId from (select teamClassKcal+privateClassKcal kcal,userId,createdDate FROM sport_record
+        where DATE_SUB(now(), INTERVAL 7 DAY)    <![CDATA[<=]]> date(createdDate)
+        UNION ALL
+        select calorie,userId,createTime
+        FROM user_sport_device_record
+        where DATE_SUB(now(), INTERVAL 7 DAY) <![CDATA[<=]]> date(createTime)
+        ) a
+        GROUP BY userId
+  </select>
+    <!--查当天团课总能量-->
+    <select id="querySportRecordTClass" resultType="java.math.BigDecimal">
+        SELECT ifnull(SUM(energy),0) FROM sport_active
+        WHERE userId=#{userId}
+        AND sportType=5
+        AND date_format(createdDate, '%Y-%m-%d') = date_format(now(), '%Y-%m-%d')
+    </select>
+    <!--查当天私教课总能量-->
+    <select id="querySportRecordPClass" resultType="java.math.BigDecimal">
+        SELECT ifnull(SUM(energy),0) FROM sport_active
+        WHERE userId=#{userId}
+        AND sportType=6
+        AND date_format(createdDate, '%Y-%m-%d') = date_format(now(), '%Y-%m-%d')
+    </select>
+</mapper>

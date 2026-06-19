@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.FaceIdentyMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.FaceIdenty" >
+    <constructor >
+      <idArg column="faceId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="faceToken" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="location" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    faceId, userId, faceToken, location, createTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from face_identy
+    where faceId = #{faceId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from face_identy
+    where faceId = #{faceId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.FaceIdenty" >
+    insert into face_identy (faceId, userId, faceToken, 
+      location, createTime)
+    values (#{faceId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{faceToken,jdbcType=VARCHAR}, 
+      #{location,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.FaceIdenty" >
+    insert into face_identy
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="faceId != null" >
+        faceId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="faceToken != null" >
+        faceToken,
+      </if>
+      <if test="location != null" >
+        location,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="faceId != null" >
+        #{faceId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="faceToken != null" >
+        #{faceToken,jdbcType=VARCHAR},
+      </if>
+      <if test="location != null" >
+        #{location,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.FaceIdenty" >
+    update face_identy
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="faceToken != null" >
+        faceToken = #{faceToken,jdbcType=VARCHAR},
+      </if>
+      <if test="location != null" >
+        location = #{location,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where faceId = #{faceId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.FaceIdenty" >
+    update face_identy
+    set userId = #{userId,jdbcType=BIGINT},
+      faceToken = #{faceToken,jdbcType=VARCHAR},
+      location = #{location,jdbcType=VARCHAR},
+      createTime = #{createTime,jdbcType=TIMESTAMP}
+    where faceId = #{faceId,jdbcType=BIGINT}
+  </update>
+</mapper>

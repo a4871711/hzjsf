@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StoreGroupMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StoreGroup" >
+    <constructor >
+      <idArg column="storeGroupId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="groupName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="groupAddr" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="groupImg" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    storeGroupId, storeId, groupName, groupAddr, groupImg, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from store_group
+    where storeGroupId = #{storeGroupId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from store_group
+    where storeGroupId = #{storeGroupId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StoreGroup" >
+    insert into store_group (storeGroupId, storeId, groupName, 
+      groupAddr, groupImg, createdDate
+      )
+    values (#{storeGroupId,jdbcType=BIGINT}, #{storeId,jdbcType=BIGINT}, #{groupName,jdbcType=VARCHAR}, 
+      #{groupAddr,jdbcType=VARCHAR}, #{groupImg,jdbcType=VARCHAR}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.StoreGroup" >
+    insert into store_group
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="storeGroupId != null" >
+        storeGroupId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="groupName != null" >
+        groupName,
+      </if>
+      <if test="groupAddr != null" >
+        groupAddr,
+      </if>
+      <if test="groupImg != null" >
+        groupImg,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="storeGroupId != null" >
+        #{storeGroupId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="groupName != null" >
+        #{groupName,jdbcType=VARCHAR},
+      </if>
+      <if test="groupAddr != null" >
+        #{groupAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="groupImg != null" >
+        #{groupImg,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.StoreGroup" >
+    update store_group
+    <set >
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="groupName != null" >
+        groupName = #{groupName,jdbcType=VARCHAR},
+      </if>
+      <if test="groupAddr != null" >
+        groupAddr = #{groupAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="groupImg != null" >
+        groupImg = #{groupImg,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where storeGroupId = #{storeGroupId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.StoreGroup" >
+    update store_group
+    set storeId = #{storeId,jdbcType=BIGINT},
+      groupName = #{groupName,jdbcType=VARCHAR},
+      groupAddr = #{groupAddr,jdbcType=VARCHAR},
+      groupImg = #{groupImg,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where storeGroupId = #{storeGroupId,jdbcType=BIGINT}
+  </update>
+  <!--查询社群列表-->
+  <select id="queryStoreGroupList" resultType="java.util.Map">
+    select
+      storeGroupId,
+      groupName
+      from store_group where status=1
+  </select>
+    <!--查询同城社群-->
+    <select id="querySameCityGroupList" resultType="java.util.Map" parameterType="java.util.Map">
+        select * from ( SELECT sg.groupName, sg.groupImg, sg.storeGroupId,sa.city,
+            (select count(1) from store_attention sat where sat.storeGroupId = sg.storeGroupId and sat.attentionStatus = 1) AS menberNum,
+            (select count(1) from dynamic dy where dy.socialGroupId = sg.storeGroupId) AS dynamicNum,
+            round(
+            6378.138 * 2 * asin(
+            sqrt(pow(sin((#{userLat} * pi() / 180 - latitude * pi() / 180 ) / 2),2) + cos(#{userLat} * pi() / 180) * cos(latitude * pi() / 180) * pow(
+            sin((#{userLng} * pi() / 180 - longitude * pi() / 180) / 2),2))) *1000) AS distance
+            FROM store_group sg inner join store_address sa on sg.storeAddrId = sa.storeAddrId
+            where sg.status=1
+            ORDER BY distance ASC
+          ) A
+          order by city, menberNum desc
+          limit #{offset}, #{limit}
+    </select>
+    <!--查询分页总数-->
+    <select id="querySameCityGroupTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        SELECT
+        count(*)
+        FROM store_address sa inner join store_group sg on sg.storeAddrId = sa.storeAddrId
+        <where>
+            <if test="province != null">
+                AND sa.province LIKE concat('%',#{province},'%')
+            </if>
+            <if test="city != null">
+                AND sa.city LIKE concat('%',#{city},'%')
+            </if>
+            <if test="zone != null">
+                AND sa.zone LIKE concat('%',#{zone},'%')
+            </if>
+            AND sg.status=1
+        </where>
+    </select>
+    <!--查询热门社群-->
+    <select id="queryHotGroup" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT
+        sg.storeGroupId,
+        sg.groupName,
+        sg.groupImg,
+        (select count(1) from store_attention sat where sat.storeGroupId = sg.storeGroupId and sat.attentionStatus = 1) AS menberNum,
+        (select count(1) from dynamic dy where dy.socialGroupId = sg.storeGroupId) AS dynamicNum
+        FROM store_group sg
+        WHERE sg.status=1
+        order by dynamicNum desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询分页总数-->
+    <select id="queryHotGroupTotal" resultType="java.lang.Integer">
+        SELECT
+        count(*)
+        FROM store_group WHERE status=1
+    </select>
+    <!--查询我的社群列表-->
+    <select id="queryMyGroup" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT
+        sg.storeGroupId,
+        sg.groupName,
+        sg.groupImg,
+        (select count(1) from store_attention sat where sat.storeGroupId = sg.storeGroupId and sat.attentionStatus = 1) AS menberNum,
+        (select count(1) from dynamic dy where dy.socialGroupId = sg.storeGroupId) AS dynamicNum
+        FROM store_attention sa inner join store_group sg on sg.storeGroupId = sa.storeGroupId
+        where sa.observerId = #{userId}
+        and sg.status=1
+        order by dynamicNum desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询我的社群分页列表总数-->
+    <select id="queryMyGroupTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        SELECT
+        count(*)
+        FROM store_attention sa inner join store_group sg on sg.storeGroupId = sa.storeGroupId
+        where sa.observerId = #{userId} and sg.status=1
+    </select>
+    <!--查询社群详情-->
+    <select id="queryGroupDetail" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        sg.storeGroupId, sg.groupName, sg.groupAddr, sg.groupImg,
+        (select sa.attentionStatus from store_attention sa where sa.storeGroupId = sg.storeGroupId
+          and sa.observerId = #{observerId}) as attentionStatus
+        from store_group sg
+        where sg.storeGroupId = #{storeGroupId,jdbcType=BIGINT}
+    </select>
+    <!--查询社群下的会员数-->
+    <select id="queryGroupMembers" resultType="java.util.Map" parameterType="java.lang.Long">
+        select
+          ui.nickname,
+          ui.headImgUrl
+        from store_attention sa
+        inner join user_info ui on ui.userId = sa.observerId
+        where sa.storeGroupId = #{storeGroupId,jdbcType=BIGINT}
+    </select>
+    <!--查询社群/话题下的动态列表-->
+    <select id="queryDynamicList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        dy.dynamicId,
+        dy.publishId,
+        ui.nickname,
+        ui.headImgUrl,
+        dy.content,
+        dy.publishImgUrl,
+        dy.socialGroupId,
+        case when dy.socialGroupId is null then 0 when dy.socialGroupId=0 then 0 else 1 end as moreFlag,
+        (select sg.groupName from store_group sg where sg.storeGroupId=dy.socialGroupId) as groupName,
+        dy.readCount,
+        dy.dzCount,
+        dy.plCount,
+        (select count(1) from dz_record dr where dr.dynamicId=dy.dynamicId and dr.dzUserId=#{userId}) as dzStatus,
+        (select ua.attentionStatus from user_attention ua where ua.attentedId = dy.publishId and ua.observerId = #{userId}) as attentionStatus,
+        date_format(dy.publishDate, '%Y-%m-%d %H:%i') as publishDate
+        from dynamic dy
+        inner join user_info ui on ui.userId = dy.publishId
+      where dy.socialGroupId = #{storeGroupId}
+      AND dy.dynamicId NOT IN (SELECT ds.dynamicId FROM dynamic_shield ds WHERE ds.userId=#{userId})
+      order by dy.publishDate desc LIMIT #{offset}, #{limit}
+    </select>
+    <!--查询社群下的动态列表total-->
+    <select id="queryDynamicListCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from dynamic dy
+        inner join user_info ui on ui.userId = dy.publishId
+      where dy.socialGroupId = #{storeGroupId}
+      AND dy.dynamicId NOT IN (SELECT ds.dynamicId FROM dynamic_shield ds WHERE ds.userId=#{userId})
+    </select>
+    <!--个人中心社群列表查询-->
+    <select id="queryGroupByUid" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        sg.storeGroupId, sg.groupName, sg.groupImg,
+        (select sa.attentionStatus from store_attention sa where sa.storeGroupId = sg.storeGroupId
+        and sa.observerId = #{myId}) as attentionStatus
+        from store_attention sa inner join store_group sg on sg.storeGroupId=sa.storeGroupId
+        where sa.observerId = #{userId} and sg.status=1 LIMIT #{offset}, #{limit}
+    </select>
+    <!--个人中心社群列表查询-->
+    <select id="queryGroupByUidCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+          count(*)
+        from store_attention sa inner join store_group sg on sg.storeGroupId=sa.storeGroupId
+        where sa.observerId = #{userId} and sg.status=1
+    </select>
+</mapper>

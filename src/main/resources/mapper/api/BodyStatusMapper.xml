@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.BodyStatusMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.BodyStatus" >
+    <constructor >
+      <idArg column="id" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="scanId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="vid" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="leftLeg" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="rightLeg" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="leftShoulder" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="rightShoulder" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="cavumConchae" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="hipJoint" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="shoulderMidpoint" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="acromionReference" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="results" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, scanId, userId, vid, leftLeg, rightLeg, leftShoulder, rightShoulder, cavumConchae, 
+    hipJoint, shoulderMidpoint, acromionReference, results, createTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from body_status
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from body_status
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.BodyStatus" >
+    insert into body_status (id, scanId, userId, 
+      vid, leftLeg, rightLeg, 
+      leftShoulder, rightShoulder, cavumConchae, 
+      hipJoint, shoulderMidpoint, acromionReference, 
+      results, createTime)
+    values (#{id,jdbcType=BIGINT}, #{scanId,jdbcType=VARCHAR}, #{userId,jdbcType=BIGINT}, 
+      #{vid,jdbcType=BIGINT}, #{leftLeg,jdbcType=VARCHAR}, #{rightLeg,jdbcType=VARCHAR}, 
+      #{leftShoulder,jdbcType=VARCHAR}, #{rightShoulder,jdbcType=VARCHAR}, #{cavumConchae,jdbcType=VARCHAR}, 
+      #{hipJoint,jdbcType=VARCHAR}, #{shoulderMidpoint,jdbcType=VARCHAR}, #{acromionReference,jdbcType=VARCHAR}, 
+      #{results,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.BodyStatus" >
+    insert into body_status
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="scanId != null" >
+        scanId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="vid != null" >
+        vid,
+      </if>
+      <if test="leftLeg != null" >
+        leftLeg,
+      </if>
+      <if test="rightLeg != null" >
+        rightLeg,
+      </if>
+      <if test="leftShoulder != null" >
+        leftShoulder,
+      </if>
+      <if test="rightShoulder != null" >
+        rightShoulder,
+      </if>
+      <if test="cavumConchae != null" >
+        cavumConchae,
+      </if>
+      <if test="hipJoint != null" >
+        hipJoint,
+      </if>
+      <if test="shoulderMidpoint != null" >
+        shoulderMidpoint,
+      </if>
+      <if test="acromionReference != null" >
+        acromionReference,
+      </if>
+      <if test="results != null" >
+        results,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="scanId != null" >
+        #{scanId,jdbcType=VARCHAR},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="vid != null" >
+        #{vid,jdbcType=BIGINT},
+      </if>
+      <if test="leftLeg != null" >
+        #{leftLeg,jdbcType=VARCHAR},
+      </if>
+      <if test="rightLeg != null" >
+        #{rightLeg,jdbcType=VARCHAR},
+      </if>
+      <if test="leftShoulder != null" >
+        #{leftShoulder,jdbcType=VARCHAR},
+      </if>
+      <if test="rightShoulder != null" >
+        #{rightShoulder,jdbcType=VARCHAR},
+      </if>
+      <if test="cavumConchae != null" >
+        #{cavumConchae,jdbcType=VARCHAR},
+      </if>
+      <if test="hipJoint != null" >
+        #{hipJoint,jdbcType=VARCHAR},
+      </if>
+      <if test="shoulderMidpoint != null" >
+        #{shoulderMidpoint,jdbcType=VARCHAR},
+      </if>
+      <if test="acromionReference != null" >
+        #{acromionReference,jdbcType=VARCHAR},
+      </if>
+      <if test="results != null" >
+        #{results,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.BodyStatus" >
+    update body_status
+    <set >
+      <if test="scanId != null" >
+        scanId = #{scanId,jdbcType=VARCHAR},
+      </if>
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="vid != null" >
+        vid = #{vid,jdbcType=BIGINT},
+      </if>
+      <if test="leftLeg != null" >
+        leftLeg = #{leftLeg,jdbcType=VARCHAR},
+      </if>
+      <if test="rightLeg != null" >
+        rightLeg = #{rightLeg,jdbcType=VARCHAR},
+      </if>
+      <if test="leftShoulder != null" >
+        leftShoulder = #{leftShoulder,jdbcType=VARCHAR},
+      </if>
+      <if test="rightShoulder != null" >
+        rightShoulder = #{rightShoulder,jdbcType=VARCHAR},
+      </if>
+      <if test="cavumConchae != null" >
+        cavumConchae = #{cavumConchae,jdbcType=VARCHAR},
+      </if>
+      <if test="hipJoint != null" >
+        hipJoint = #{hipJoint,jdbcType=VARCHAR},
+      </if>
+      <if test="shoulderMidpoint != null" >
+        shoulderMidpoint = #{shoulderMidpoint,jdbcType=VARCHAR},
+      </if>
+      <if test="acromionReference != null" >
+        acromionReference = #{acromionReference,jdbcType=VARCHAR},
+      </if>
+      <if test="results != null" >
+        results = #{results,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.BodyStatus" >
+    update body_status
+    set scanId = #{scanId,jdbcType=VARCHAR},
+      userId = #{userId,jdbcType=BIGINT},
+      vid = #{vid,jdbcType=BIGINT},
+      leftLeg = #{leftLeg,jdbcType=VARCHAR},
+      rightLeg = #{rightLeg,jdbcType=VARCHAR},
+      leftShoulder = #{leftShoulder,jdbcType=VARCHAR},
+      rightShoulder = #{rightShoulder,jdbcType=VARCHAR},
+      cavumConchae = #{cavumConchae,jdbcType=VARCHAR},
+      hipJoint = #{hipJoint,jdbcType=VARCHAR},
+      shoulderMidpoint = #{shoulderMidpoint,jdbcType=VARCHAR},
+      acromionReference = #{acromionReference,jdbcType=VARCHAR},
+      results = #{results,jdbcType=VARCHAR},
+      createTime = #{createTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+   <select id="queryBodyInfoBetweenTime" resultType="map" parameterType="map">
+      SELECT weight,percentBodyFat,bmi,kcal,waistToHip,fluid,muscle,createTime FROM bodys_info
+       <where>
+           <if test="paramMap.userId != null and paramMap.userId != ''">
+               userId = #{paramMap.userId}
+           </if>
+           <if test="paramMap.startTime != null and paramMap.startTime !=''">
+               <![CDATA[  and DATE_FORMAT(createTime, '%Y-%m-%d') >= DATE_FORMAT(#{paramMap.startTime}, '%Y-%m-%d')]]>
+           </if>
+           <if test="paramMap.endTime != null and paramMap.endTime != ''">
+               <![CDATA[  and DATE_FORMAT(createTime, '%Y-%m-%d') <= DATE_FORMAT(#{paramMap.endTime}, '%Y-%m-%d')]]>
+           </if>
+       </where>
+
+   </select>
+
+    <select id="queryBodyBodyStatusByUserId" resultType="map" parameterType="Long">
+        SELECT *FROM body_status WHERE userId = #{userId} ORDER BY createTime DESC LIMIT 0 ,1
+    </select>
+
+</mapper>

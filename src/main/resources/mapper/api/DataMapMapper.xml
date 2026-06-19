@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.DataMapMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.DataMap" >
+    <constructor >
+      <idArg column="dataMapId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="idxLabel" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="nextLabel" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="dataName" jdbcType="VARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    dataMapId, idxLabel, nextLabel, dataName
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from data_map
+    where dataMapId = #{dataMapId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from data_map
+    where dataMapId = #{dataMapId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.DataMap" >
+    insert into data_map (dataMapId, idxLabel, nextLabel, 
+      dataName)
+    values (#{dataMapId,jdbcType=BIGINT}, #{idxLabel,jdbcType=BIGINT}, #{nextLabel,jdbcType=BIGINT}, 
+      #{dataName,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.DataMap" >
+    insert into data_map
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="dataMapId != null" >
+        dataMapId,
+      </if>
+      <if test="idxLabel != null" >
+        idxLabel,
+      </if>
+      <if test="nextLabel != null" >
+        nextLabel,
+      </if>
+      <if test="dataName != null" >
+        dataName,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="dataMapId != null" >
+        #{dataMapId,jdbcType=BIGINT},
+      </if>
+      <if test="idxLabel != null" >
+        #{idxLabel,jdbcType=BIGINT},
+      </if>
+      <if test="nextLabel != null" >
+        #{nextLabel,jdbcType=BIGINT},
+      </if>
+      <if test="dataName != null" >
+        #{dataName,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.DataMap" >
+    update data_map
+    <set >
+      <if test="idxLabel != null" >
+        idxLabel = #{idxLabel,jdbcType=BIGINT},
+      </if>
+      <if test="nextLabel != null" >
+        nextLabel = #{nextLabel,jdbcType=BIGINT},
+      </if>
+      <if test="dataName != null" >
+        dataName = #{dataName,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where dataMapId = #{dataMapId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.DataMap" >
+    update data_map
+    set idxLabel = #{idxLabel,jdbcType=BIGINT},
+      nextLabel = #{nextLabel,jdbcType=BIGINT},
+      dataName = #{dataName,jdbcType=VARCHAR}
+    where dataMapId = #{dataMapId,jdbcType=BIGINT}
+  </update>
+  <!--查询手环价格-->
+  <select id="findBraceletPrice" resultType="map">
+    SELECT dataName, concat(price,'') as price FROM data_map WHERE idxLabel=3 and nextLabel=1
+  </select>
+  <!--查询兴趣标签-->
+  <select id="queryHobbies" resultType="java.lang.String">
+    select dataName from data_map where idxLabel = 1
+  </select>
+  <!--查举报类型6-->
+  <select id="queryReportList" resultType="java.util.Map">
+    select
+    nextLabel as reportType,
+    dataName as reportName
+    from data_map where idxLabel = 6
+  </select>
+    <!--查询名称-->
+    <select id="queryReportNameList" resultType="java.lang.String">
+        select
+        dataName
+        from data_map
+        where idxLabel = 6
+        and nextLabel in
+      <foreach item="id" collection="list" open="(" separator="," close=")">
+        #{id}
+      </foreach>
+    </select>
+  <!--查图片前缀从Constant-->
+  <select id="queryImgConstant" resultType="java.lang.String">
+    SELECT constant FROM constant WHERE cId=1
+  </select>
+</mapper>

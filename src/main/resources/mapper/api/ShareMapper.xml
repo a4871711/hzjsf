@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.ShareMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.Share" >
+    <constructor >
+      <idArg column="shareId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="shareType" jdbcType="TINYINT" javaType="java.lang.Integer" />
+      <arg column="content" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="imgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="linkUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="shareChannel" jdbcType="TINYINT" javaType="java.lang.Integer" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    shareId, userId, shareType, content, imgUrl,linkUrl, shareChannel, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from share
+    where shareId = #{shareId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from share
+    where shareId = #{shareId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.Share" >
+    insert into share (shareId, userId, shareType, content,
+      imgUrl, linkUrl, shareChannel, createdDate
+      )
+    values (#{shareId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT},#{shareType,jdbcType=TINYINT}, #{content,jdbcType=VARCHAR},
+      #{imgUrl,jdbcType=VARCHAR},#{linkUrl,jdbcType=VARCHAR}, #{shareChannel,jdbcType=TINYINT}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.Share" >
+    insert into share
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="shareId != null" >
+        shareId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="shareType != null" >
+        shareType,
+      </if>
+      <if test="content != null" >
+        content,
+      </if>
+      <if test="imgUrl != null" >
+        imgUrl,
+      </if>
+      <if test="linkUrl != null" >
+        linkUrl,
+      </if>
+      <if test="shareChannel != null" >
+        shareChannel,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="shareId != null" >
+        #{shareId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="shareType != null" >
+        #{shareType,jdbcType=TINYINT},
+      </if>
+      <if test="content != null" >
+        #{content,jdbcType=VARCHAR},
+      </if>
+      <if test="imgUrl != null" >
+        #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="linkUrl != null" >
+        #{linkUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="shareChannel != null" >
+        #{shareChannel,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.Share" >
+    update share
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="shareType != null" >
+        shareType = #{shareChannel,jdbcType=TINYINT},
+      </if>
+      <if test="content != null" >
+        content = #{content,jdbcType=VARCHAR},
+      </if>
+      <if test="imgUrl != null" >
+        imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="linkUrl != null" >
+        linkUrl = #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="shareChannel != null" >
+        shareChannel = #{shareChannel,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where shareId = #{shareId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.Share" >
+    update share
+    set userId = #{userId,jdbcType=BIGINT},
+      shareType = #{shareType,jdbcType=TINYINT},
+      content = #{content,jdbcType=VARCHAR},
+      imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      linkUrl = #{linkUrl,jdbcType=VARCHAR},
+      shareChannel = #{shareChannel,jdbcType=TINYINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where shareId = #{shareId,jdbcType=BIGINT}
+  </update>
+
+  <!--分享地址查询-->
+  <select id="share" resultType="map">
+    SELECT shareType, content, imgUrl,linkUrl, shareChannel,title,
+     ui.nickname,ui.headImgUrl
+     FROM share left join user_info ui on ui.userId=#{userId}
+     WHERE shareType = #{shareType}
+  </select>
+</mapper>

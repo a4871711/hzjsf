@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StoreAddressMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StoreAddress" >
+    <constructor >
+      <idArg column="storeAddrId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="phone" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="province" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="city" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="zone" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="storeAddrDetail" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="longitude" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="latitude" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="status" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    storeAddrId, storeId, storeName, phone, province, city, zone, storeAddrDetail, longitude, 
+    latitude, status, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from store_address
+    where storeAddrId = #{storeAddrId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from store_address
+    where storeAddrId = #{storeAddrId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StoreAddress" >
+    insert into store_address (storeAddrId, storeId, storeName, 
+      phone, province, city, 
+      zone, storeAddrDetail, longitude, 
+      latitude, status, createdDate
+      )
+    values (#{storeAddrId,jdbcType=BIGINT}, #{storeId,jdbcType=BIGINT}, #{storeName,jdbcType=VARCHAR}, 
+      #{phone,jdbcType=VARCHAR}, #{province,jdbcType=VARCHAR}, #{city,jdbcType=VARCHAR}, 
+      #{zone,jdbcType=VARCHAR}, #{storeAddrDetail,jdbcType=VARCHAR}, #{longitude,jdbcType=VARCHAR}, 
+      #{latitude,jdbcType=VARCHAR}, #{status,jdbcType=TINYINT}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.StoreAddress" >
+    insert into store_address
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="storeAddrId != null" >
+        storeAddrId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="storeName != null" >
+        storeName,
+      </if>
+      <if test="phone != null" >
+        phone,
+      </if>
+      <if test="province != null" >
+        province,
+      </if>
+      <if test="city != null" >
+        city,
+      </if>
+      <if test="zone != null" >
+        zone,
+      </if>
+      <if test="storeAddrDetail != null" >
+        storeAddrDetail,
+      </if>
+      <if test="longitude != null" >
+        longitude,
+      </if>
+      <if test="latitude != null" >
+        latitude,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="storeAddrId != null" >
+        #{storeAddrId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="storeName != null" >
+        #{storeName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="province != null" >
+        #{province,jdbcType=VARCHAR},
+      </if>
+      <if test="city != null" >
+        #{city,jdbcType=VARCHAR},
+      </if>
+      <if test="zone != null" >
+        #{zone,jdbcType=VARCHAR},
+      </if>
+      <if test="storeAddrDetail != null" >
+        #{storeAddrDetail,jdbcType=VARCHAR},
+      </if>
+      <if test="longitude != null" >
+        #{longitude,jdbcType=VARCHAR},
+      </if>
+      <if test="latitude != null" >
+        #{latitude,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.StoreAddress" >
+    update store_address
+    <set >
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="storeName != null" >
+        storeName = #{storeName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        phone = #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="province != null" >
+        province = #{province,jdbcType=VARCHAR},
+      </if>
+      <if test="city != null" >
+        city = #{city,jdbcType=VARCHAR},
+      </if>
+      <if test="zone != null" >
+        zone = #{zone,jdbcType=VARCHAR},
+      </if>
+      <if test="storeAddrDetail != null" >
+        storeAddrDetail = #{storeAddrDetail,jdbcType=VARCHAR},
+      </if>
+      <if test="longitude != null" >
+        longitude = #{longitude,jdbcType=VARCHAR},
+      </if>
+      <if test="latitude != null" >
+        latitude = #{latitude,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where storeAddrId = #{storeAddrId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.StoreAddress" >
+    update store_address
+    set storeId = #{storeId,jdbcType=BIGINT},
+      storeName = #{storeName,jdbcType=VARCHAR},
+      phone = #{phone,jdbcType=VARCHAR},
+      province = #{province,jdbcType=VARCHAR},
+      city = #{city,jdbcType=VARCHAR},
+      zone = #{zone,jdbcType=VARCHAR},
+      storeAddrDetail = #{storeAddrDetail,jdbcType=VARCHAR},
+      longitude = #{longitude,jdbcType=VARCHAR},
+      latitude = #{latitude,jdbcType=VARCHAR},
+      status = #{status,jdbcType=TINYINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where storeAddrId = #{storeAddrId,jdbcType=BIGINT}
+  </update>
+  <!--门店列表-->
+  <select id="storeAddressList" resultType="map" parameterType="map">
+    SELECT sa.*, s.status as storeStatus, s.storeImgUrl, s.hours,
+    round(
+    6378.138 * 2 * asin(
+    sqrt(pow(sin((#{userLat} * pi() / 180 - latitude * pi() / 180 ) / 2),2) + cos(#{userLat} * pi() / 180) * cos(latitude * pi() / 180) * pow(
+    sin((#{userLng} * pi() / 180 - longitude * pi() / 180) / 2),2))) *1000) AS distance
+    FROM store_address sa
+    INNER JOIN store s ON sa.storeId = s.storeId
+    <where>
+      <if test="province != null">
+        AND sa.province LIKE concat('%',#{province},'%')
+      </if>
+      <if test="city != null">
+        AND sa.city LIKE concat('%',#{city},'%')
+      </if>
+      <if test="zone != null">
+        AND sa.zone LIKE concat('%',#{zone},'%')
+      </if>
+      <if test="keywords != null and keywords != ''">
+        AND sa.storeName LIKE concat('%',#{keywords},'%')
+      </if>
+      <if test="storeIds != null and storeIds != ''">
+        AND sa.storeId in (${storeIds})
+      </if>
+      <if test="goodsIdStoreId != null and goodsIdStoreId != ''">
+        AND sa.goodsIdStoreId = #{goodsIdStoreId}
+      </if>
+      AND sa.status=1
+    </where>
+    ORDER BY distance ASC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <!--门店统计-->
+  <select id="queryStoreAddressTotal" resultType="java.lang.Integer" parameterType="map">
+    SELECT COUNT(*) FROM store_address
+    <where>
+      <if test="province != null">
+        AND province LIKE concat('%',#{province},'%')
+      </if>
+      <if test="city != null">
+        AND city LIKE concat('%',#{city},'%')
+      </if>
+      <if test="zone != null">
+        AND zone LIKE concat('%',#{zone},'%')
+      </if>
+      <if test="keywords != null and keywords != ''">
+        AND storeName LIKE concat('%',#{keywords},'%')
+      </if>
+      <if test="storeIds != null and storeIds != ''">
+        AND sa.storeId in (${storeIds})
+      </if>
+      <if test="goodsIdStoreId != null and goodsIdStoreId != ''">
+        AND sa.goodsIdStoreId = #{goodsIdStoreId}
+      </if>
+      AND status=1
+    </where>
+  </select>
+  <!--门店详情里的门店位置和门店距离-->
+  <select id="findAddAndDistance" resultType="map" parameterType="map">
+    SELECT sa.*, s.status as storeStatus, s.storeImgUrl, s.hours,
+    round(
+    6378.138 * 2 * asin(
+    sqrt(pow(sin((#{userLat} * pi() / 180 - latitude * pi() / 180 ) / 2),2) + cos(#{userLat} * pi() / 180) * cos(latitude * pi() / 180) * pow(
+    sin((#{userLng} * pi() / 180 - longitude * pi() / 180) / 2),2))) *1000) AS distance
+    FROM store_address sa
+    INNER JOIN store s ON sa.storeId = s.storeId
+    <where>
+      <if test="province != null">
+        AND sa.province LIKE concat('%',#{province},'%')
+      </if>
+      <if test="city != null">
+        AND sa.city LIKE concat('%',#{city},'%')
+      </if>
+      <if test="zone != null">
+        AND sa.zone LIKE concat('%',#{zone},'%')
+      </if>
+      AND sa.storeId = #{storeId}
+    </where>
+  </select>
+  <!--查出距离最近的门店-->
+  <select id="findStoreByListDistance" resultType="map" parameterType="map">
+    SELECT storeId,province, city, zone, storeAddrDetail, round(
+    6378.138 * 2 * asin(
+    sqrt(pow(sin((#{userLat} * pi() / 180 - latitude * pi() / 180 ) / 2),2) + cos(#{userLat} * pi() / 180) * cos(latitude * pi() / 180) * pow(
+    sin((#{userLng} * pi() / 180 - longitude * pi() / 180) / 2),2))) *1000) AS distance
+    FROM store_address
+    where status=1
+    ORDER BY distance ASC limit 1
+  </select>
+  <select id="findStoreListByListDistance" resultType="map" parameterType="map">
+    SELECT s.*, r.status as storeStatus, r.storeImgUrl,  round(
+    6378.138 * 2 * asin(
+    sqrt(pow(sin((#{userLat} * pi() / 180 - s.latitude * pi() / 180 ) / 2),2) + cos(#{userLat} * pi() / 180) * cos(s.latitude * pi() / 180) * pow(
+    sin((#{userLng} * pi() / 180 - s.longitude * pi() / 180) / 2),2))) *1000) AS distance
+    FROM store_address s
+    inner join store r on r.storeId=s.storeId
+    where s.status=1
+    ORDER BY distance ASC, r.storeId ASC
+    <if test="offset != null and limit != null">
+      limit ${offset}, ${limit}
+    </if>
+  </select>
+  <!--根据会员查询门店列表-->
+    <select id="queryMyStoreList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        s.*, r.status as storeStatus, r.storeImgUrl, r.hours,
+        round(
+    6378.138 * 2 * asin(
+    sqrt(pow(sin((#{userLat} * pi() / 180 - s.latitude * pi() / 180 ) / 2),2) + cos(#{userLat} * pi() / 180) * cos(s.latitude * pi() / 180) * pow(
+    sin((#{userLng} * pi() / 180 - s.longitude * pi() / 180) / 2),2))) *1000) AS distance
+        from store_address s 
+        <if test="userId != null and userId != ''">
+        inner join device d on d.storeAddressId=s.storeAddrId
+        inner join user_info u on u.userId=d.proxyId
+        </if>
+        inner join store r on r.storeId=s.storeId
+        <where> s.status=1
+            <if test="storeId != null and storeId != ''">
+                AND s.storeId=#{storeId}
+            </if>
+            <if test="storeAddrId != null and storeAddrId != ''">
+                AND s.storeAddrId=#{storeAddrId}
+            </if>
+            <if test="userId != null and userId != ''">
+                AND u.userId = #{userId}
+            </if>
+        </where>
+        <choose>
+            <when test="userLat != null and userLat.trim() != ''">
+                order by distance asc, r.storeId asc
+            </when>
+            <otherwise>
+                order by r.storeId asc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit ${offset}, ${limit}
+        </if>
+    </select>
+  <select id="findStoreAddressByStoreAddressId" resultType="com.dlc.modules.api.entity.StoreAddress" parameterType="java.lang.Long">
+    SELECT sa.*,s.agent5Ids,s.agent6Ids
+    FROM store_address sa
+    left join store s on s.storeAddrId = sa.storeAddrId
+    WHERE s.storeAddrId = #{storeAddrId}
+  </select>
+  
+  
+  <select id="queryStoreAddressByStoreId" resultType="map" parameterType="java.lang.Long">
+    SELECT *
+    FROM store_address
+    WHERE storeId = #{storeId}
+  </select>
+
+  <!--用户与门店坐标的距离-->
+  <select id="getDistanceByUser" resultType="java.lang.Integer">
+    SELECT
+      round( ACOS(
+                   SIN((PI() / 180) * latitude) * SIN((PI() / 180) * #{userLat})
+                   + COS((PI() / 180) * latitude) * COS((PI() / 180) * #{userLat}) * COS((PI() / 180) * #{userLng} - (PI() / 180) * longitude)
+               ) * 6371 * 1000
+        , 0) as distance
+    FROM store_address
+    WHERE storeId = #{storeId}
+  </select>
+</mapper>

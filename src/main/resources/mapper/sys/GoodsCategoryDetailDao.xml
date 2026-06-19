@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysGoodsCategoryDetailDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysGoodsCategoryDetailEntity" id="goodsCategoryDetailMap">
+        <result property="id" column="id"/>
+        <result property="nextCategoryImg" column="nextCategoryImg"/>
+		<result property="nextCategoryName" column="nextCategoryName"/>
+		<result property="goodsCategoryId" column="goodsCategoryId"/>
+		<result property="createdDate" column="createdDate"/>
+		<result property="categoryName" column="categoryName"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.SysGoodsCategoryDetailEntity">
+		select * from goods_category_detail where id = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.SysGoodsCategoryDetailEntity">
+		SELECT gcd.*,gc.categoryName FROM goods_category_detail gcd INNER JOIN goods_category gc ON gcd.goodsCategoryId = gc.goodsCategoryId
+		<where>
+			<if test="nextCategoryName != null and nextCategoryName != ''">
+				AND gcd.nextCategoryName LIKE concat('%',#{nextCategoryName},'%')
+			</if>
+		</where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by gcd.createdDate desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from goods_category_detail gcd INNER JOIN goods_category gc ON gcd.goodsCategoryId = gc.goodsCategoryId
+		<where>
+			<if test="nextCategoryName != null and nextCategoryName != ''">
+				AND gcd.nextCategoryName LIKE concat('%',#{nextCategoryName},'%')
+			</if>
+		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.SysGoodsCategoryDetailEntity" useGeneratedKeys="true" keyProperty="id">
+		insert into goods_category_detail
+		(
+			`nextCategoryName`,
+			`goodsCategoryId`,
+			`createdDate`
+		)
+		values
+		(
+			#{nextCategoryName},
+			#{goodsCategoryId},
+			#{createdDate}
+
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.sys.entity.SysGoodsCategoryDetailEntity">
+		update goods_category_detail
+		<set>
+			<if test="nextCategoryName != null">`nextCategoryName` = #{nextCategoryName},</if>
+			<if test="goodsCategoryId != null">`goodsCategoryId` = #{goodsCategoryId},</if>
+			<if test="createdDate != null">`createdDate` = #{createdDate}</if>
+		</set>
+		where id = #{id}
+	</update>
+
+	<delete id="delete">
+		delete from goods_category_detail where id = #{value}
+	</delete>
+
+	<delete id="deleteBatch">
+		delete from goods_category_detail where id in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+	<!--查询一级分类的数据绑定在二级分类的下拉框中显示-->
+	<select id="queryGoodsCategoryDetailList" resultType="com.dlc.modules.sys.entity.SysGoodsCategoryDetailEntity">
+		select id,nextCategoryName from goods_category_detail
+	</select>
+
+</mapper>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>私教课</title>
+    <#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <#if shiro.hasPermission("sys:leve:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <!--<#if shiro.hasPermission("sys:leve:delete")>-->
+                <!--<a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>-->
+            <!--</#if>-->
+        </div>
+        <table id="deptTable" data-mobile-responsive="true" data-click-to-select="true">
+            <thead>
+            <tr>
+                <th data-field="selectItem" data-checkbox="true"></th>
+            </tr>
+            </thead>
+        </table>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" style="width: 60%">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.privateClassId" placeholder="课程名称" readonly/>
+                </div>
+            </div>
+            <div id="img" class="form-group">
+                <div class="col-sm-2 control-label">封面图</div>
+                <div class="logoImg">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_zhu"
+                         style="width: 100px;height: 100px">
+                    <!--<a class="btn btn-primary btn-xs upload">上传</a>-->
+                </div>
+            </div>
+
+
+            <!--<div class="form-group">-->
+            <!--<div class="col-sm-2 control-label">关联教练等级</div>-->
+            <!--<div class="col-sm-10">-->
+            <!--<input type="number" class="form-control" v-model="list.grade"-->
+            <!--placeholder="请填写教练等级，设定后只有等级及以下等级教练才可以教授次课程"/>-->
+            <!--</div>-->
+            <!--</div>-->
+
+            <!--<div class="form-group">-->
+            <!--<div class="col-sm-2 control-label">课程单价</div>-->
+            <!--<div class="col-sm-10">-->
+            <!--<input type="number" class="form-control" v-model="list.price" placeholder="课程单价"/>-->
+            <!--</div>-->
+            <!--</div>-->
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/privceclass.js?_${.now?long}"></script>
+<script src="${request.contextPath}/statics/js/ajaxfileupload.js?_${.now?long}"></script>
+
+</body>
+</html>

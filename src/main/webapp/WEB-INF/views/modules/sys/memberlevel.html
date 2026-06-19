@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>会员等级</title>
+    <#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <!--<#if shiro.hasPermission("sys:datamap:save")>-->
+            <!--<a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>-->
+            <!--</#if>-->
+            <#if shiro.hasPermission("sys:memberLevel:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <!--<#if shiro.hasPermission("sys:datamap:delete")>-->
+            <!--<a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>-->
+            <!--</#if>-->
+        </div>
+        <table id="deptTable" data-mobile-responsive="true" data-click-to-select="true">
+            <thead>
+            <tr>
+                <th data-field="selectItem" data-checkbox="true"></th>
+            </tr>
+            </thead>
+        </table>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" style="width: 95%">
+            <div class="form-group">
+                <div class="col-sm-1 control-label">会员等级名称</div>
+                <div class="col-sm-11">
+                    <input class="form-control" v-model="dataMapEntityList.dataName" placeholder="会员等级名称" style="width: 200px; height: 50px"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-1 control-label">等级</div>
+                <div class="col-sm-11">
+                    <input class="form-control" v-model="dataMapEntityList.price" placeholder="等级" style="width: 200px;height: 50px"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-1 control-label">最低能量值(千卡)</div>
+                <div class="col-sm-11">
+                    <input class="form-control" v-model="dataMapEntityList.val" placeholder="最低能量值(单位：千卡kcal)" style="width: 200px;height: 50px"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-1 control-label">说明</div>
+                <div class="col-sm-11">
+                    <textarea class="form-control" v-model="dataMapEntityList.description" placeholder="说明" style="height: 300px"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 选择部门 -->
+<div id="deptLayer" style="display: none;padding:10px;">
+    <ul id="deptTree" class="ztree"></ul>
+</div>
+
+<script src="${request.contextPath}/statics/js/modules/sys/memberlevel.js?_${.now?long}"></script>
+</body>
+</html>

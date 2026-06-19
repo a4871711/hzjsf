@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysGymEngineDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.GymEngineEntity" id="gymEngineMap">
+        <result property="gymEngineId" column="gymEngineId"/>
+        <result property="gtId" column="gtId"/>
+        <result property="engineName" column="engineName"/>
+        <result property="videoImgUrl" column="videoImgUrl"/>
+        <result property="videoUrl" column="videoUrl"/>
+        <result property="introduce" column="introduce"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        engineName,videoImgUrl,videoUrl,introduce,createdDate
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.GymEngineEntity" parameterType="map">
+        SELECT
+        g.gymEngineId,g.gtId,
+        (select gt.gtName from gym_type gt where gt.gtId=g.gtId) as gtName,
+        <include refid="Base_Column_List"/>
+        FROM gym_engine g
+        order BY g.createdDate desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM  gym_engine
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.GymEngineEntity" parameterType="long">
+        SELECT
+        gymEngineId,
+        <include refid="Base_Column_List"/>
+        FROM gym_engine
+        WHERE gymEngineId=#{gymEngineId}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.GymEngineEntity">
+        INSERT INTO gym_engine
+        (
+          gtId,engineName,videoImgUrl,videoUrl,introduce,createdDate
+        )
+        VALUES
+        (
+        #{gtId},
+        #{engineName},
+        #{videoImgUrl},
+        #{videoUrl},
+        #{introduce},
+        #{createdDate}
+        )
+    </insert>
+    <delete id="deleteBatch">
+        delete from gym_engine where gymEngineId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.GymEngineEntity">
+
+        UPDATE gym_engine SET
+        gtId=#{gtId},
+        engineName=#{engineName},
+        videoImgUrl= #{videoImgUrl},
+        videoUrl= #{videoUrl},
+        introduce=#{introduce}
+        WHERE  gymEngineId=#{gymEngineId}
+    </update>
+</mapper>

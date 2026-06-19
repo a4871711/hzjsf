@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.GoodsOrderMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.GoodsOrder" >
+    <constructor >
+      <idArg column="goodsOrderId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="openId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="goodsId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="buyCount" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="orderType" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="orderNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="receiveAddrId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="shopAddrId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <!--<arg column="orderNum" jdbcType="INTEGER" javaType="java.lang.Integer" />-->
+      <arg column="transactionNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="goodsSum" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="fare" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="couponMoney" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="payType" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <!--<arg column="deliveType" jdbcType="BIT" javaType="java.lang.Boolean" />-->
+      <arg column="company" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="realPayment" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="logisticsNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="logisticsName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="status" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="payTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="deliveryTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="finish" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="tradeTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="imgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="messages" jdbcType="VARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    goodsOrderId, openId, userId, goodsId, buyCount, orderType, orderNo, receiveAddrId, 
+    shopAddrId, transactionNo, goodsSum, fare, couponMoney,  payType, company,
+    realPayment, logisticsNo, logisticsName, status, createdDate, payTime, deliveryTime, 
+    finish, tradeTime, imgUrl, messages
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from goods_order
+    where goodsOrderId = #{goodsOrderId,jdbcType=BIGINT}
+  </select>
+    <!--根据order查询-->
+    <select id="queryGoodsOrderByOrder" resultType="java.util.Map" parameterType="java.lang.String" >
+        select
+          userId,
+          orderNo,
+          transactionNo,
+          payType,
+          status,
+          realPayment
+        from goods_order
+        where orderNo = #{orderNo,jdbcType=VARCHAR}
+    </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from goods_order
+    where goodsOrderId = #{goodsOrderId,jdbcType=BIGINT}
+  </delete>
+  <!--根据订单编号删除-->
+  <delete id="deleteByOrderNo" parameterType="java.lang.String" >
+    delete from goods_order
+    where orderNo = #{orderNo,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.GoodsOrder" >
+    insert into goods_order (goodsOrderId, openId, userId, 
+      goodsId, buyCount, orderType, 
+      orderNo, receiveAddrId, shopAddrId,
+      transactionNo, goodsSum,
+      fare, couponMoney, payType,
+      company, realPayment, logisticsNo, 
+      logisticsName, status, createdDate, 
+      payTime, deliveryTime, finish, 
+      tradeTime, imgUrl, messages
+      )
+    values (#{goodsOrderId,jdbcType=BIGINT}, #{openId,jdbcType=VARCHAR}, #{userId,jdbcType=BIGINT}, 
+      #{goodsId,jdbcType=BIGINT}, #{buyCount,jdbcType=INTEGER}, #{orderType,jdbcType=TINYINT}, 
+      #{orderNo,jdbcType=VARCHAR}, #{receiveAddrId,jdbcType=BIGINT}, #{shopAddrId,jdbcType=BIGINT}, 
+       #{transactionNo,jdbcType=VARCHAR}, #{goodsSum,jdbcType=DECIMAL},
+      #{fare,jdbcType=DECIMAL}, #{couponMoney,jdbcType=DECIMAL}, #{payType,jdbcType=TINYINT},
+      #{company,jdbcType=VARCHAR}, #{realPayment,jdbcType=DECIMAL}, #{logisticsNo,jdbcType=VARCHAR},
+      #{logisticsName,jdbcType=VARCHAR}, #{status,jdbcType=TINYINT}, #{createdDate,jdbcType=TIMESTAMP}, 
+      #{payTime,jdbcType=TIMESTAMP}, #{deliveryTime,jdbcType=TIMESTAMP}, #{finish,jdbcType=TIMESTAMP}, 
+      #{tradeTime,jdbcType=TIMESTAMP}, #{imgUrl,jdbcType=VARCHAR}, #{messages,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.GoodsOrder" >
+    insert into goods_order
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="goodsOrderId != null" >
+        goodsOrderId,
+      </if>
+      <if test="openId != null" >
+        openId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="goodsId != null" >
+        goodsId,
+      </if>
+      <if test="buyCount != null" >
+        buyCount,
+      </if>
+      <if test="orderType != null" >
+        orderType,
+      </if>
+      <if test="orderNo != null" >
+        orderNo,
+      </if>
+      <if test="receiveAddrId != null" >
+        receiveAddrId,
+      </if>
+      <if test="shopAddrId != null" >
+        shopAddrId,
+      </if>
+      <if test="transactionNo != null" >
+        transactionNo,
+      </if>
+      <if test="goodsSum != null" >
+        goodsSum,
+      </if>
+      <if test="fare != null" >
+        fare,
+      </if>
+      <if test="couponMoney != null" >
+        couponMoney,
+      </if>
+      <if test="payType != null" >
+        payType,
+      </if>
+      <if test="company != null" >
+        company,
+      </if>
+      <if test="realPayment != null" >
+        realPayment,
+      </if>
+      <if test="logisticsNo != null" >
+        logisticsNo,
+      </if>
+      <if test="logisticsName != null" >
+        logisticsName,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="payTime != null" >
+        payTime,
+      </if>
+      <if test="deliveryTime != null" >
+        deliveryTime,
+      </if>
+      <if test="finish != null" >
+        finish,
+      </if>
+      <if test="tradeTime != null" >
+        tradeTime,
+      </if>
+      <if test="imgUrl != null" >
+        imgUrl,
+      </if>
+      <if test="messages != null" >
+        messages,
+      </if>
+      <if test="couponId != null" >
+        couponId,
+      </if>
+      <if test="receiveName != null" >
+        receiveName,
+      </if>
+      <if test="receivePhone != null" >
+        receivePhone,
+      </if>
+      <if test="receiveAddr != null" >
+        receiveAddr,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="goodsOrderId != null" >
+        #{goodsOrderId,jdbcType=BIGINT},
+      </if>
+      <if test="openId != null" >
+        #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="goodsId != null" >
+        #{goodsId,jdbcType=BIGINT},
+      </if>
+      <if test="buyCount != null" >
+        #{buyCount,jdbcType=INTEGER},
+      </if>
+      <if test="orderType != null" >
+        #{orderType,jdbcType=TINYINT},
+      </if>
+      <if test="orderNo != null" >
+        #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="receiveAddrId != null" >
+        #{receiveAddrId,jdbcType=BIGINT},
+      </if>
+      <if test="shopAddrId != null" >
+        #{shopAddrId,jdbcType=BIGINT},
+      </if>
+      <if test="transactionNo != null" >
+        #{transactionNo,jdbcType=VARCHAR},
+      </if>
+      <if test="goodsSum != null" >
+        #{goodsSum,jdbcType=DECIMAL},
+      </if>
+      <if test="fare != null" >
+        #{fare,jdbcType=DECIMAL},
+      </if>
+      <if test="couponMoney != null" >
+        #{couponMoney,jdbcType=DECIMAL},
+      </if>
+      <if test="payType != null" >
+        #{payType,jdbcType=TINYINT},
+      </if>
+      <if test="company != null" >
+        #{company,jdbcType=DECIMAL},
+      </if>
+      <if test="realPayment != null" >
+        #{realPayment,jdbcType=DECIMAL},
+      </if>
+      <if test="logisticsNo != null" >
+        #{logisticsNo,jdbcType=VARCHAR},
+      </if>
+      <if test="logisticsName != null" >
+        #{logisticsName,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="payTime != null" >
+        #{payTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="deliveryTime != null" >
+        #{deliveryTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="finish != null" >
+        #{finish,jdbcType=TIMESTAMP},
+      </if>
+      <if test="tradeTime != null" >
+        #{tradeTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="imgUrl != null" >
+        #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="messages != null" >
+        #{messages,jdbcType=VARCHAR},
+      </if>
+      <if test="couponId != null" >
+        #{couponId,jdbcType=BIGINT},
+      </if>
+      <if test="receiveName != null" >
+        #{receiveName,jdbcType=VARCHAR},
+      </if>
+      <if test="receivePhone != null" >
+        #{receivePhone,jdbcType=VARCHAR},
+      </if>
+      <if test="receiveAddr != null" >
+        #{receiveAddr,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.GoodsOrder" >
+    update goods_order
+    <set >
+      <if test="openId != null" >
+        openId = #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="goodsId != null" >
+        goodsId = #{goodsId,jdbcType=BIGINT},
+      </if>
+      <if test="buyCount != null" >
+        buyCount = #{buyCount,jdbcType=INTEGER},
+      </if>
+      <if test="orderType != null" >
+        orderType = #{orderType,jdbcType=TINYINT},
+      </if>
+      <if test="orderNo != null" >
+        orderNo = #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="receiveAddrId != null" >
+        receiveAddrId = #{receiveAddrId,jdbcType=BIGINT},
+      </if>
+      <if test="shopAddrId != null" >
+        shopAddrId = #{shopAddrId,jdbcType=BIGINT},
+      </if>
+      <if test="transactionNo != null" >
+        transactionNo = #{transactionNo,jdbcType=VARCHAR},
+      </if>
+      <if test="goodsSum != null" >
+        goodsSum = #{goodsSum,jdbcType=DECIMAL},
+      </if>
+      <if test="fare != null" >
+        fare = #{fare,jdbcType=DECIMAL},
+      </if>
+      <if test="couponMoney != null" >
+        couponMoney = #{couponMoney,jdbcType=DECIMAL},
+      </if>
+      <if test="payType != null" >
+        payType = #{payType,jdbcType=TINYINT},
+      </if>
+      <if test="company != null" >
+        company = #{company,jdbcType=VARCHAR},
+      </if>
+      <if test="realPayment != null" >
+        realPayment = #{realPayment,jdbcType=DECIMAL},
+      </if>
+      <if test="logisticsNo != null" >
+        logisticsNo = #{logisticsNo,jdbcType=VARCHAR},
+      </if>
+      <if test="logisticsName != null" >
+        logisticsName = #{logisticsName,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="payTime != null" >
+        payTime = #{payTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="finish != null" >
+        finish = #{finish,jdbcType=TIMESTAMP},
+      </if>
+      <if test="tradeTime != null" >
+        tradeTime = #{tradeTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="imgUrl != null" >
+        imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="messages != null" >
+        messages = #{messages,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where goodsOrderId = #{goodsOrderId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.GoodsOrder" >
+    update goods_order
+    set openId = #{openId,jdbcType=VARCHAR},
+      userId = #{userId,jdbcType=BIGINT},
+      goodsId = #{goodsId,jdbcType=BIGINT},
+      buyCount = #{buyCount,jdbcType=INTEGER},
+      orderType = #{orderType,jdbcType=TINYINT},
+      orderNo = #{orderNo,jdbcType=VARCHAR},
+      receiveAddrId = #{receiveAddrId,jdbcType=BIGINT},
+      shopAddrId = #{shopAddrId,jdbcType=BIGINT},
+      transactionNo = #{transactionNo,jdbcType=VARCHAR},
+      goodsSum = #{goodsSum,jdbcType=DECIMAL},
+      fare = #{fare,jdbcType=DECIMAL},
+      couponMoney = #{couponMoney,jdbcType=DECIMAL},
+      payType = #{payType,jdbcType=TINYINT},
+      company = #{company,jdbcType=VARCHAR},
+      realPayment = #{realPayment,jdbcType=DECIMAL},
+      logisticsNo = #{logisticsNo,jdbcType=VARCHAR},
+      logisticsName = #{logisticsName,jdbcType=VARCHAR},
+      status = #{status,jdbcType=TINYINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      payTime = #{payTime,jdbcType=TIMESTAMP},
+      deliveryTime = #{deliveryTime,jdbcType=TIMESTAMP},
+      finish = #{finish,jdbcType=TIMESTAMP},
+      tradeTime = #{tradeTime,jdbcType=TIMESTAMP},
+      imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      messages = #{messages,jdbcType=VARCHAR}
+    where goodsOrderId = #{goodsOrderId,jdbcType=BIGINT}
+  </update>
+  <!-- 查询用户订单根据用户ID(全部)-->
+  <select id="queryGoodsOrderByUserId" resultType="java.util.Map" parameterType="java.util.Map">
+    select
+      gor.userId,
+      gor.orderNo,
+      gor.status,
+      gor.buyCount,
+      concat(gor.realPayment,'') as totalPrice,
+      date_format(gor.createdDate, '%Y-%m-%d %H:%i') as createdDate
+    from goods_order gor
+    where gor.userId = #{userId,jdbcType=BIGINT}
+    order by gor.createdDate desc LIMIT #{offset}, #{limit}
+  </select>
+    <!-- 查询用户订单根据用户ID(全部总数)-->
+    <select id="queryGoodsOrderCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from goods_order gor
+        left join order_detail od on od.orderNo = gor.orderNo
+        where gor.userId = #{userId,jdbcType=BIGINT}
+    </select>
+    <!-- 查询用户订单根据用户ID(不同状态的)-->
+    <select id="queryGoodsOrderByStatus" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        gor.userId,
+        gor.orderNo,
+        gor.status,
+        gor.buyCount,
+        concat(gor.realPayment, '') as totalPrice,
+        date_format(gor.createdDate, '%Y-%m-%d') as createdDate
+        from goods_order gor
+        where gor.userId = #{userId,jdbcType=BIGINT}
+        and gor.status = #{orderStatus}
+        order by gor.createdDate desc LIMIT #{offset}, #{limit}
+    </select>
+    <!-- 查询用户订单根据用户ID(不同状态总数)-->
+    <select id="queryGoodsOrderByStatusNum" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+          count(*)
+        from goods_order gor
+        left join order_detail od on od.orderNo = gor.orderNo
+        where gor.userId = #{userId,jdbcType=BIGINT}
+        and gor.status = #{orderStatus}
+    </select>
+  <!-- 查询商城订单详情-->
+  <select id="queryOrderDetail" resultType="java.util.Map">
+      select
+         gor.userId,
+         gor.orderNo,
+         gor.goodsId,
+         gor.status,
+         concat(gor.realPayment,'') as realPayment,
+         gor.messages,
+         gor.receiveName as userName,
+         gor.receivePhone as phone,
+         gor.receiveAddr as receiveAddr,
+         concat(gor.fare,'') as fare,
+         concat(gor.goodsSum,'') as goodsSum,
+         concat(gor.couponMoney,'') as couponMoney,
+         date_format(gor.createdDate, '%Y-%m-%d %H:%i') as createdDate,
+         date_format(gor.payTime, '%Y-%m-%d %H:%i') as payTime,
+         date_format(gor.deliveryTime, '%Y-%m-%d %H:%i') as deliveryTime,
+         date_format(gor.finish, '%Y-%m-%d %H:%i') as finish
+	   from goods_order gor
+	   where gor.userId = #{userId,jdbcType=BIGINT}
+	   and gor.orderNo = #{orderNo,jdbcType=VARCHAR}
+  </select>
+
+  <!--LXK更改订单状态-->
+  <update id="" parameterType="map">
+    update goods_order
+    set openId = #{openId,jdbcType=VARCHAR},
+      userId = #{userId,jdbcType=BIGINT},
+      goodsId = #{goodsId,jdbcType=BIGINT},
+      buyCount = #{buyCount,jdbcType=INTEGER},
+      orderType = #{orderType,jdbcType=TINYINT},
+      orderNo = #{orderNo,jdbcType=VARCHAR},
+      receiveAddrId = #{receiveAddrId,jdbcType=BIGINT},
+      shopAddrId = #{shopAddrId,jdbcType=BIGINT},
+      transactionNo = #{transactionNo,jdbcType=VARCHAR},
+      goodsSum = #{goodsSum,jdbcType=DECIMAL},
+      fare = #{fare,jdbcType=DECIMAL},
+      payType = #{payType,jdbcType=TINYINT},
+      company = #{company,jdbcType=VARCHAR},
+      realPayment = #{realPayment,jdbcType=DECIMAL},
+      logisticsNo = #{logisticsNo,jdbcType=VARCHAR},
+      logisticsName = #{logisticsName,jdbcType=VARCHAR},
+      status = #{status,jdbcType=TINYINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      payTime = #{payTime,jdbcType=TIMESTAMP},
+      deliveryTime = #{deliveryTime,jdbcType=TIMESTAMP},
+      finish = #{finish,jdbcType=TIMESTAMP},
+      tradeTime = #{tradeTime,jdbcType=TIMESTAMP},
+      imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      messages = #{messages,jdbcType=VARCHAR}
+    where orderNo =#{orderNo}
+  </update>
+  <select id="queryUserIdByOrderNo" parameterType="java.lang.String" resultType="java.lang.Long">
+    SELECT userId FROM goods_order WHERE orderNo=#{out_trade_no}
+  </select>
+
+  <!--查询优惠卷-->
+  <select id="queryCouponMoneyByOrderNo" parameterType="java.lang.String" resultType="com.dlc.modules.api.entity.GoodsOrder">
+    select
+    userId,couponId,couponMoney
+    from goods_order WHERE orderNo=#{orderNo}
+  </select>
+  <!--根据订单号查询订单-->
+  <select id="selectGoodOrderByOrder" resultType="com.dlc.modules.api.entity.GoodsOrder" parameterType="java.lang.String">
+    SELECT goodsOrderId, openId, userId, goodsId, buyCount, orderType, orderNo, receiveAddrId,
+    shopAddrId, transactionNo, goodsSum, fare, couponId,couponMoney,  payType, company,
+    realPayment, logisticsNo, logisticsName, status, createdDate, payTime, deliveryTime,
+    finish, tradeTime, imgUrl, messages FROM goods_order WHERE orderNo = #{orderNo}
+  </select>
+  <!--取消/完成/评价订单-->
+  <update id="updateOrderStatus" parameterType="java.util.Map">
+    update goods_order
+      set status = #{status}, finish = (case when 3 = #{status} then now() else finish end)
+    where userId = #{userId,jdbcType=BIGINT}
+	   and orderNo = #{orderNo,jdbcType=VARCHAR}
+  </update>
+  <!--根据订单编号查商品id-->
+  <select id="queryGidByOrderNo" resultType="java.lang.Long" parameterType="java.lang.String">
+    select
+      goodsId
+      from order_detail
+      where orderNo = #{orderNo,jdbcType=VARCHAR}
+  </select>
+  <!--查询所有未付款的商品订单-->
+  <select id="selectAllOrderByStatus" resultType="com.dlc.modules.api.entity.GoodsOrder">
+    SELECT goodsOrderId, status, createdDate
+    FROM goods_order
+    WHERE status = 0
+  </select>
+  <!--查询商品是否存在-->
+  <select id="queryIfExistGoods" parameterType="java.lang.Long" resultType="java.lang.Integer">
+    select count(*) from goods where goodsId = #{goodsId} and status = 1
+  </select>
+</mapper>

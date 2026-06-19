@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysUserRoleDao">
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.SysUserRoleEntity">
+		select ur.*, r.role_name as roleName from sys_user_role ur
+		LEFT JOIN sys_role r on r.role_id=ur.role_id
+		<where>
+			<if test="userId != null">
+				ur.user_id = #{userId}
+			</if>
+			<if test="user_id != null">
+				ur.user_id = #{user_id}
+			</if>
+		</where>
+	</select>
+ 
+	<insert id="save">
+		insert into sys_user_role
+		(
+			`user_id`, 
+			`role_id`
+		)
+		values
+		<foreach collection="roleIdList" item="item" index="index" separator="," >
+		(
+			#{userId}, 
+			#{item}
+		)
+		</foreach>
+	</insert>
+	
+	<delete id="delete">
+		delete from sys_user_role where user_id = #{value}
+	</delete>
+	
+	<select id="queryRoleIdList" resultType="long">
+		select role_id from sys_user_role where user_id = #{value}
+	</select>
+</mapper>

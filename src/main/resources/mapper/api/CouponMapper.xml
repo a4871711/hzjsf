@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.CouponMapper">
+    <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.Coupon">
+        <constructor>
+            <idArg column="couponId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="goodsId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="couponStatus" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="validityTime" jdbcType="TIMESTAMP" javaType="java.util.Date"/>
+            <arg column="couponPrice" jdbcType="DECIMAL" javaType="java.math.BigDecimal"/>
+            <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date"/>
+            <arg column="limitPrice" jdbcType="DECIMAL" javaType="java.math.BigDecimal"/>
+            <arg column="couponType" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="couponNew" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="storeAddrIds" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="couponTitle" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="fitCardIds" jdbcType="VARCHAR" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <sql id="Base_Column_List">
+    couponId, userId, goodsId, couponStatus, validityTime, couponPrice, createdDate, limitPrice, couponType, couponNew, storeAddrIds, couponTitle, fitCardIds
+  </sql>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        select
+        <include refid="Base_Column_List"/>
+        from coupon
+        where couponId = #{couponId,jdbcType=BIGINT}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from coupon
+    where couponId = #{couponId,jdbcType=BIGINT}
+  </delete>
+    <insert id="insert" parameterType="com.dlc.modules.api.entity.Coupon">
+    insert into coupon (couponId, userId, goodsId, couponStatus,
+      validityTime, couponPrice, createdDate, limitPrice, couponType, couponNew, storeAddrIds, couponTitle, fitCardIds
+      )
+    values (#{couponId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{goodsId,jdbcType=BIGINT}, #{couponStatus,jdbcType=INTEGER},
+      #{validityTime,jdbcType=TIMESTAMP}, #{couponPrice,jdbcType=INTEGER}, #{createdDate,jdbcType=TIMESTAMP}
+      , #{limitPrice,jdbcType=DECIMAL}, #{couponType,jdbcType=INTEGER}, #{couponType,jdbcType=INTEGER}
+      , #{storeAddrIds,jdbcType=VARCHAR}, #{couponTitle,jdbcType=VARCHAR}, #{fitCardIds,jdbcType=VARCHAR}
+      )
+  </insert>
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.Coupon">
+        insert into coupon
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="couponId != null">
+                couponId,
+            </if>
+            <if test="userId != null">
+                userId,
+            </if>
+            <if test="goodsId != null">
+                goodsId,
+            </if>
+            <if test="couponStatus != null">
+                couponStatus,
+            </if>
+            <if test="validityTime != null">
+                validityTime,
+            </if>
+            <if test="couponPrice != null">
+                couponPrice,
+            </if>
+            <if test="createdDate != null">
+                createdDate,
+            </if>
+            <if test="limitPrice != null">
+                limitPrice,
+            </if>
+            <if test="couponType != null">
+                couponType,
+            </if>
+            <if test="couponNew != null">
+                couponNew,
+            </if>
+            <if test="storeAddrIds != null">
+                storeAddrIds,
+            </if>
+            <if test="couponTitle != null">
+                couponTitle,
+            </if>
+            <if test="fitCardIds != null">
+                fitCardIds,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="couponId != null">
+                #{couponId,jdbcType=BIGINT},
+            </if>
+            <if test="userId != null">
+                #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="goodsId != null">
+                #{goodsId,jdbcType=BIGINT},
+            </if>
+            <if test="couponStatus != null">
+                #{couponStatus,jdbcType=INTEGER},
+            </if>
+            <if test="validityTime != null">
+                #{validityTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="couponPrice != null">
+                #{couponPrice,jdbcType=INTEGER},
+            </if>
+            <if test="createdDate != null">
+                #{createdDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="limitPrice != null">
+                #{limitPrice,jdbcType=DECIMAL},
+            </if>
+            <if test="couponType != null">
+                #{couponType,jdbcType=INTEGER},
+            </if>
+            <if test="couponNew != null">
+                #{couponNew,jdbcType=INTEGER},
+            </if>
+            <if test="storeAddrIds != null">
+                #{storeAddrIds,jdbcType=VARCHAR},
+            </if>
+            <if test="couponTitle != null">
+                #{couponTitle,jdbcType=VARCHAR},
+            </if>
+            <if test="fitCardIds != null">
+                #{fitCardIds,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.Coupon">
+        update coupon
+        <set>
+            <if test="userId != null">
+                userId = #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="goodsId != null">
+                goodsId = #{goodsId,jdbcType=BIGINT},
+            </if>
+            <if test="couponStatus != null">
+                couponStatus = #{couponStatus,jdbcType=INTEGER},
+            </if>
+            <if test="validityTime != null">
+                validityTime = #{validityTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="couponPrice != null">
+                couponPrice = #{couponPrice,jdbcType=INTEGER},
+            </if>
+            <if test="createdDate != null">
+                createdDate = #{createdDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="limitPrice != null">
+                limitPrice = #{limitPrice,jdbcType=DECIMAL},
+            </if>
+            <if test="couponType != null">
+                couponType = #{couponType,jdbcType=INTEGER},
+            </if>
+            <if test="couponNew != null">
+                couponNew = #{couponNew,jdbcType=INTEGER},
+            </if>
+            <if test="storeAddrIds != null">
+                storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR},
+            </if>
+            <if test="couponTitle != null">
+                couponTitle = #{couponTitle,jdbcType=VARCHAR},
+            </if>
+            <if test="fitCardIds != null">
+                fitCardIds = #{fitCardIds,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where couponId = #{couponId,jdbcType=BIGINT}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.Coupon">
+    update coupon
+    set userId = #{userId,jdbcType=BIGINT},
+      goodsId = #{goodsId,jdbcType=BIGINT},
+      couponStatus = #{couponStatus,jdbcType=INTEGER},
+      validityTime = #{validityTime,jdbcType=TIMESTAMP},
+      couponPrice = #{couponPrice,jdbcType=INTEGER},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      limitPrice = #{limitPrice,jdbcType=DECIMAL},
+      couponType = #{couponType,jdbcType=INTEGER},
+      couponNew = #{couponNew,jdbcType=INTEGER},
+      storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR},
+      couponTitle = #{couponTitle,jdbcType=VARCHAR}
+      <if test="fitCardIds != null">
+      ,fitCardIds = #{fitCardIds,jdbcType=VARCHAR}
+      </if>
+    where couponId = #{couponId,jdbcType=BIGINT}
+  </update>
+
+    <!--LXK优惠卷列表ByUserId-->
+    <select id="selectByUserId" resultType="map">
+        select couponId, userId, goodsId, couponStatus,  concat(couponPrice,'') as couponPrice, createdDate,
+        date_format(validityTime, '%Y-%m-%d') as validityTime, limitPrice, couponType, couponNew, storeAddrIds, couponTitle,fitCardIds
+        from coupon
+        <where>
+            <if test="userId!=null">
+              AND userId = #{userId}
+            </if>
+            <if test="couponStatus!=null">
+                AND couponStatus = #{couponStatus}
+            </if>
+            <if test="storeAddrId!=null and storeAddrId != ''">
+                AND (storeAddrIds is null or storeAddrIds = '' or find_in_set(#{storeAddrId}, storeAddrIds))
+            </if>
+            <if test="paySum!=null">
+                AND (limitPrice = 0 or limitPrice <![CDATA[<=]]> #{paySum})
+            </if>
+            <if test="fitCardId!=null and fitCardId != ''">
+                AND (fitCardIds is null or fitCardIds = '' or find_in_set(#{fitCardId}, fitCardIds))
+            </if>
+            <if test="couponTypeList != null and couponTypeList.size() > 0">
+                AND couponType in
+                <foreach collection="couponTypeList" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="couponNew!=null and couponNew != ''">
+                AND couponNew = #{couponNew}
+            </if>
+        </where>
+        order by couponStatus asc, createdDate desc
+    </select>
+    <!--修改优惠券状态by couponId-->
+    <update id="updateCouponStatus" parameterType="java.util.Map">
+        update coupon
+        set couponStatus = #{couponStatus,jdbcType=INTEGER}
+        where couponId = #{couponId,jdbcType=BIGINT}
+    </update>
+    <!--查询我的全部优惠券列表-->
+    <select id="queryCouponByUserId" parameterType="java.util.Map" resultType="java.util.Map">
+        select
+         couponStatus,
+         date_format(validityTime, '%Y-%m-%d') as validityTime,
+         concat(couponPrice,'') as couponPrice, limitPrice, couponType, couponNew, storeAddrIds, couponTitle,fitCardIds
+        from coupon
+        where userId = #{userId,jdbcType=BIGINT}
+        order by validityTime desc LIMIT #{offset}, #{limit}
+    </select>
+    <!--查询我的全部优惠券列表总数-->
+    <select id="queryCouponCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+        select
+          count(*)
+        from coupon
+        where userId = #{userId,jdbcType=BIGINT}
+    </select>
+    <select id="selectByCouponId" resultType="com.dlc.modules.api.entity.Coupon" parameterType="java.lang.Long">
+        SELECT * FROM coupon WHERE couponId = #{couponId}
+    </select>
+
+    <!-- 同一手机号或同一 openid 只能领一次新人券（跨账号） -->
+    <select id="countNewUserCouponByUserId" resultType="int">
+        SELECT COUNT(1)
+        FROM coupon c
+        INNER JOIN user_info u ON c.userId = u.userId AND u.isDel = 0
+        CROSS JOIN user_info cur
+        WHERE cur.userId = #{userId} AND cur.isDel = 0
+          AND c.couponNew = 1
+          AND (
+            (IFNULL(cur.phone, '') != '' AND u.phone = cur.phone)
+            OR (IFNULL(cur.openId, '') != '' AND (
+              u.openId = cur.openId OR u.gzhOpenId = cur.openId OR u.zfbOpenId = cur.openId OR u.wtOpenId = cur.openId))
+            OR (IFNULL(cur.gzhOpenId, '') != '' AND (
+              u.openId = cur.gzhOpenId OR u.gzhOpenId = cur.gzhOpenId OR u.zfbOpenId = cur.gzhOpenId OR u.wtOpenId = cur.gzhOpenId))
+            OR (IFNULL(cur.zfbOpenId, '') != '' AND (
+              u.openId = cur.zfbOpenId OR u.gzhOpenId = cur.zfbOpenId OR u.zfbOpenId = cur.zfbOpenId OR u.wtOpenId = cur.zfbOpenId))
+            OR (IFNULL(cur.wtOpenId, '') != '' AND (
+              u.openId = cur.wtOpenId OR u.gzhOpenId = cur.wtOpenId OR u.zfbOpenId = cur.wtOpenId OR u.wtOpenId = cur.wtOpenId))
+          )
+    </select>
+
+    <!--查询所有的优惠券-->
+    <select id="selectAllCoupons" resultType="com.dlc.modules.api.entity.Coupon">
+        SELECT couponId, userId, goodsId, couponStatus, validityTime, couponPrice, createdDate, limitPrice, 
+        couponType, couponNew, storeAddrIds, couponTitle,fitCardIds
+        FROM coupon
+        WHERE couponStatus = 0
+    </select>
+</mapper>

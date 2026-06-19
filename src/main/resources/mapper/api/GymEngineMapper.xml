@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.GymEngineMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.GymEngine" >
+    <constructor >
+      <idArg column="gymEngineId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="engineName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="engineImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="com.dlc.modules.api.entity.GymEngine" >
+    <constructor >
+      <idArg column="gymEngineId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="engineName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="engineImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="videoImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="videoUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="introduce" jdbcType="LONGVARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    gymEngineId, engineName, engineImgUrl, videoImgUrl,videoUrl,createdDate
+  </sql>
+  <sql id="Blob_Column_List" >
+    introduce
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from gym_engine
+    where gymEngineId = #{gymEngineId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from gym_engine
+    where gymEngineId = #{gymEngineId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.GymEngine" >
+    insert into gym_engine (gymEngineId, engineName, engineImgUrl, videoImgUrl,videoUrl,
+      createdDate, introduce)
+    values (#{gymEngineId,jdbcType=BIGINT}, #{engineName,jdbcType=VARCHAR}, #{engineImgUrl,jdbcType=VARCHAR}, #{videoImgUrl,jdbcType=VARCHAR},#{videoUrl,jdbcType=VARCHAR},
+      #{createdDate,jdbcType=TIMESTAMP}, #{introduce,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.GymEngine" >
+    insert into gym_engine
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="gymEngineId != null" >
+        gymEngineId,
+      </if>
+      <if test="engineName != null" >
+        engineName,
+      </if>
+      <if test="engineImgUrl != null" >
+        engineImgUrl,
+      </if>
+      <if test="videoImgUrl != null" >
+        videoImgUrl,
+      </if>
+      <if test="videoUrl != null" >
+        videoUrl,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="introduce != null" >
+        introduce,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="gymEngineId != null" >
+        #{gymEngineId,jdbcType=BIGINT},
+      </if>
+      <if test="engineName != null" >
+        #{engineName,jdbcType=VARCHAR},
+      </if>
+      <if test="engineImgUrl != null" >
+        #{engineImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="videoImgUrl != null" >
+        #{videoImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="videoUrl != null" >
+        #{videoUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="introduce != null" >
+        #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.GymEngine" >
+    update gym_engine
+    <set >
+      <if test="engineName != null" >
+        engineName = #{engineName,jdbcType=VARCHAR},
+      </if>
+      <if test="engineImgUrl != null" >
+        engineImgUrl = #{engineImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="videoImgUrl != null" >
+        videoImgUrl = #{videoImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="videoUrl != null" >
+        videoUrl = #{videoUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="introduce != null" >
+        introduce = #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where gymEngineId = #{gymEngineId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.dlc.modules.api.entity.GymEngine" >
+    update gym_engine
+    set engineName = #{engineName,jdbcType=VARCHAR},
+      engineImgUrl = #{engineImgUrl,jdbcType=VARCHAR},
+      videoImgUrl = #{videoImgUrl,jdbcType=VARCHAR},
+      videoUrl = #{videoUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      introduce = #{introduce,jdbcType=LONGVARCHAR}
+    where gymEngineId = #{gymEngineId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.GymEngine" >
+    update gym_engine
+    set engineName = #{engineName,jdbcType=VARCHAR},
+      engineImgUrl = #{engineImgUrl,jdbcType=VARCHAR},
+      videoImgUrl = #{videoImgUrl,jdbcType=VARCHAR},
+      videoUrl = #{videoUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where gymEngineId = #{gymEngineId,jdbcType=BIGINT}
+  </update>
+  <!--根据2级分类查询器械列表-->
+  <select id="queryGymEngineListByGtId" resultType="map" parameterType="java.util.Map">
+    SELECT gymEngineId, engineName, videoImgUrl
+    FROM gym_engine
+    WHERE gtId=#{gtId}
+    ORDER BY createdDate DESC
+      <if test="offset != null and limit != null">
+          limit #{offset}, #{limit}
+      </if>
+  </select>
+    <!--根据2级分类查询器械列表总数-->
+  <select id="queryGymEngineTotalByGtId" resultType="java.lang.Integer" parameterType="java.util.Map">
+    SELECT COUNT(*)
+    FROM gym_engine
+    WHERE gtId=#{gtId}
+  </select>
+
+  <!--查询器械列表-->
+  <select id="queryGymEngineList" resultType="map">
+    SELECT gymEngineId, engineName
+    FROM gym_engine
+    ORDER BY createdDate DESC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <select id="queryTotal" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM gym_engine
+  </select>
+  <!--查询机械详情-->
+  <select id="queryGymEngineInfo" resultType="map" parameterType="java.lang.Long">
+    SELECT engineName, engineImgUrl,videoImgUrl,videoUrl, introduce FROM gym_engine WHERE gymEngineId = #{id}
+  </select>
+</mapper>

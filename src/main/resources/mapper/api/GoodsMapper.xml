@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.GoodsMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.Goods" >
+    <constructor >
+      <idArg column="goodsId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="categoryId" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="name" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="price" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="style" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="color" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="size" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="total" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="monthlySales" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="imgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="status" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="freight" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="remark" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="carouselImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="remarkImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="deleteStatus" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    goodsId, categoryId, name, price, style, color, size, total, monthlySales, imgUrl, 
+    status, freight, remark, carouselImgUrl, remarkImgUrl, deleteStatus, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from goods
+    where goodsId = #{goodsId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from goods
+    where goodsId = #{goodsId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.Goods" >
+    insert into goods (goodsId, categoryId, name, 
+      price, style, color, 
+      size, total, monthlySales, 
+      imgUrl, status, freight, 
+      remark, carouselImgUrl, remarkImgUrl, 
+      deleteStatus, createdDate)
+    values (#{goodsId,jdbcType=BIGINT}, #{categoryId,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, 
+      #{price,jdbcType=INTEGER}, #{style,jdbcType=VARCHAR}, #{color,jdbcType=VARCHAR}, 
+      #{size,jdbcType=VARCHAR}, #{total,jdbcType=INTEGER}, #{monthlySales,jdbcType=INTEGER}, 
+      #{imgUrl,jdbcType=VARCHAR}, #{status,jdbcType=TINYINT}, #{freight,jdbcType=INTEGER}, 
+      #{remark,jdbcType=VARCHAR}, #{carouselImgUrl,jdbcType=VARCHAR}, #{remarkImgUrl,jdbcType=VARCHAR}, 
+      #{deleteStatus,jdbcType=TINYINT}, #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.Goods" >
+    insert into goods
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="goodsId != null" >
+        goodsId,
+      </if>
+      <if test="categoryId != null" >
+        categoryId,
+      </if>
+      <if test="name != null" >
+        name,
+      </if>
+      <if test="price != null" >
+        price,
+      </if>
+      <if test="style != null" >
+        style,
+      </if>
+      <if test="color != null" >
+        color,
+      </if>
+      <if test="size != null" >
+        size,
+      </if>
+      <if test="total != null" >
+        total,
+      </if>
+      <if test="monthlySales != null" >
+        monthlySales,
+      </if>
+      <if test="imgUrl != null" >
+        imgUrl,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="freight != null" >
+        freight,
+      </if>
+      <if test="remark != null" >
+        remark,
+      </if>
+      <if test="carouselImgUrl != null" >
+        carouselImgUrl,
+      </if>
+      <if test="remarkImgUrl != null" >
+        remarkImgUrl,
+      </if>
+      <if test="deleteStatus != null" >
+        deleteStatus,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="goodsId != null" >
+        #{goodsId,jdbcType=BIGINT},
+      </if>
+      <if test="categoryId != null" >
+        #{categoryId,jdbcType=INTEGER},
+      </if>
+      <if test="name != null" >
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="price != null" >
+        #{price,jdbcType=INTEGER},
+      </if>
+      <if test="style != null" >
+        #{style,jdbcType=VARCHAR},
+      </if>
+      <if test="color != null" >
+        #{color,jdbcType=VARCHAR},
+      </if>
+      <if test="size != null" >
+        #{size,jdbcType=VARCHAR},
+      </if>
+      <if test="total != null" >
+        #{total,jdbcType=INTEGER},
+      </if>
+      <if test="monthlySales != null" >
+        #{monthlySales,jdbcType=INTEGER},
+      </if>
+      <if test="imgUrl != null" >
+        #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="freight != null" >
+        #{freight,jdbcType=INTEGER},
+      </if>
+      <if test="remark != null" >
+        #{remark,jdbcType=VARCHAR},
+      </if>
+      <if test="carouselImgUrl != null" >
+        #{carouselImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="remarkImgUrl != null" >
+        #{remarkImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="deleteStatus != null" >
+        #{deleteStatus,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.Goods" >
+    update goods
+    <set >
+      <if test="categoryId != null" >
+        categoryId = #{categoryId,jdbcType=INTEGER},
+      </if>
+      <if test="name != null" >
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="price != null" >
+        price = #{price,jdbcType=INTEGER},
+      </if>
+      <if test="style != null" >
+        style = #{style,jdbcType=VARCHAR},
+      </if>
+      <if test="color != null" >
+        color = #{color,jdbcType=VARCHAR},
+      </if>
+      <if test="size != null" >
+        size = #{size,jdbcType=VARCHAR},
+      </if>
+      <if test="total != null" >
+        total = #{total,jdbcType=INTEGER},
+      </if>
+      <if test="monthlySales != null" >
+        monthlySales = #{monthlySales,jdbcType=INTEGER},
+      </if>
+      <if test="imgUrl != null" >
+        imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="freight != null" >
+        freight = #{freight,jdbcType=INTEGER},
+      </if>
+      <if test="remark != null" >
+        remark = #{remark,jdbcType=VARCHAR},
+      </if>
+      <if test="carouselImgUrl != null" >
+        carouselImgUrl = #{carouselImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="remarkImgUrl != null" >
+        remarkImgUrl = #{remarkImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="deleteStatus != null" >
+        deleteStatus = #{deleteStatus,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where goodsId = #{goodsId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.Goods" >
+    update goods
+    set categoryId = #{categoryId,jdbcType=INTEGER},
+      name = #{name,jdbcType=VARCHAR},
+      price = #{price,jdbcType=INTEGER},
+      style = #{style,jdbcType=VARCHAR},
+      color = #{color,jdbcType=VARCHAR},
+      size = #{size,jdbcType=VARCHAR},
+      total = #{total,jdbcType=INTEGER},
+      monthlySales = #{monthlySales,jdbcType=INTEGER},
+      imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      status = #{status,jdbcType=TINYINT},
+      freight = #{freight,jdbcType=INTEGER},
+      remark = #{remark,jdbcType=VARCHAR},
+      carouselImgUrl = #{carouselImgUrl,jdbcType=VARCHAR},
+      remarkImgUrl = #{remarkImgUrl,jdbcType=VARCHAR},
+      deleteStatus = #{deleteStatus,jdbcType=TINYINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where goodsId = #{goodsId,jdbcType=BIGINT}
+  </update>
+
+  <!--商品倒叙展示-->
+<select id="latestGoodsList" parameterType="map" resultType="map">
+  SELECT <include refid="Base_Column_List"/> FROM goods
+  WHERE status = 1 AND deleteStatus = 0
+  ORDER BY createdDate DESC LIMIT #{offset}, #{limit}
+</select>
+<select id="latestGoodsListCount" parameterType="map" resultType="java.lang.Integer">
+  SELECT COUNT(1) FROM goods WHERE status = 1 AND deleteStatus = 0
+</select>
+
+  <!--商品详情-->
+  <select id="goodsDetails" parameterType="java.lang.Long" resultType="map">
+    SELECT goodsId, categoryId, name, concat(price,'') as price,total, monthlySales, imgUrl,style,
+    status, concat(freight,'') as freight, remark, carouselImgUrl, remarkImgUrl, deleteStatus, createdDate FROM goods WHERE
+    goodsId = #{goodsId}  AND status = 1 AND deleteStatus = 0 GROUP BY goodsId
+  </select>
+
+  <!--query goods‘s Color By goodsId-->
+  <select id="queryGoodsColor" parameterType="java.lang.Long" resultType="map">
+    SELECT color FROM goods WHERE goodsId = #{goodsId} AND deleteStatus = 0 GROUP BY color
+  </select>
+
+  <select id="queryGoodsSize" resultType="map">
+    SELECT size FROM goods WHERE goodsId = #{goodsId} AND color =#{color} AND deleteStatus = 0
+  </select>
+</mapper>

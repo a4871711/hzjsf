@@ -1,0 +1,993 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysUserDao">
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysUserEntity">
+		select * from sys_user where user_id = #{value}
+	</select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysUserEntity">
+        select u.*, (select s.storeName from store s where s.storeId=u.storeId) storeName,
+        (select d.name from sys_dept d where d.dept_id = u.dept_id) deptName from sys_user u
+        <where>
+            <if test="username != null and username.trim() != ''">
+                and u.`username` like concat('%',trim(#{username}),'%')
+            </if>
+            <if test="mobile != null and mobile.trim() != ''">
+                and u.`mobile` like concat('%',trim(#{mobile}),'%')
+            </if>
+            <if test="status != null and status.trim() != ''">
+                and u.`status` = #{status}
+            </if>
+            <if test="user_id != null and user_id != ''">
+                and u.`user_id` <![CDATA[<>]]> 1
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                and HaveCommonElements(u.storeIds, #{storeIds})
+            </if>
+            <if test="type != null and type != ''">
+                and u.`type` = #{type}
+            </if>
+
+            <!--  数据过滤  -->
+            <if test="type == null || type == ''">
+            ${filterSql}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by u.${sidx} ${order}
+            </when>
+            <otherwise>
+                order by u.user_id desc
+            </otherwise>
+        </choose>
+        <if test="type != null and type != '' and type != 2">
+            ${filterSql}
+            </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from sys_user u
+        <where>
+            <if test="username != null and username.trim() != ''">
+                and u.`username` like concat('%',trim(#{username}),'%')
+            </if>
+            <if test="mobile != null and mobile.trim() != ''">
+                and u.`mobile` like concat('%',trim(#{mobile}),'%')
+            </if>
+            <if test="status != null and status.trim() != ''">
+                and u.`status` = #{status}
+            </if>
+            <if test="user_id != null and user_id != ''">
+                and u.`user_id` <![CDATA[<>]]> 1
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                and HaveCommonElements(u.storeIds, #{storeIds})
+            </if>
+            <if test="type != null and type != ''">
+                and u.`type` = #{type}
+            </if>
+
+            <!--  数据过滤  -->
+            <if test="type != null and type != '' and type != 2">
+            ${filterSql}
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询用户的所有权限 -->
+    <select id="queryAllPerms" resultType="string">
+		select m.perms from sys_user_role ur 
+			LEFT JOIN sys_role_menu rm on ur.role_id = rm.role_id 
+			LEFT JOIN sys_menu m on rm.menu_id = m.menu_id 
+		where ur.user_id = #{userId}
+	</select>
+
+    <!-- 查询用户的所有菜单ID -->
+    <select id="queryAllMenuId" resultType="long">
+		select distinct rm.menu_id from sys_user_role ur 
+			LEFT JOIN sys_role_menu rm on ur.role_id = rm.role_id 
+		where ur.user_id = #{userId}
+	</select>
+
+    <select id="queryByUserName" resultType="com.dlc.modules.sys.entity.SysUserEntity">
+		select * from sys_user where username = #{username}
+	</select>
+
+    <select id="queryByMobile" resultType="com.dlc.modules.sys.entity.SysUserEntity">
+		select * from sys_user where mobile = #{mobile} and status = 1
+	</select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysUserEntity" useGeneratedKeys="true"
+            keyProperty="userId">
+		insert into sys_user
+		(
+			`type`,
+			`username`,
+			`password`,
+			`salt`,
+			`email`, 
+			`mobile`, 
+			`status`,
+			`loginCount`,
+			`dept_id`,
+			`storeId`,
+			`storeIds`,
+			`storeAddrIds`,
+			`create_time`
+		)
+		values
+		(
+			#{type},
+			#{username},
+			#{password},
+			#{salt},
+			#{email}, 
+			#{mobile}, 
+			#{status},
+			#{loginCount},
+			#{deptId},
+			#{storeId},
+			#{storeIds},
+			#{storeAddrIds},
+			#{createTime}
+		)
+	</insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysUserEntity">
+        update sys_user
+        <set>
+            <if test="username != null">`username` = #{username},</if>
+            <if test="salt != null">`salt` = #{salt},</if>
+            <if test="password != null">`password` = #{password},</if>
+            <if test="email != null">`email` = #{email},</if>
+            <if test="mobile != null">`mobile` = #{mobile},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="loginCount != null">`loginCount` = #{loginCount},</if>
+            <if test="deptId != null">`dept_id` = #{deptId},</if>
+            <if test="storeId != null and storeId != ''">`storeId` = #{storeId},</if>
+            <if test="storeIds != null">`storeIds` = #{storeIds},</if>
+            <if test="storeAddrIds != null">`storeAddrIds` = #{storeAddrIds},</if>
+        </set>
+        where user_id = #{userId}
+    </update>
+
+    <update id="updatePassword" parameterType="map">
+		update sys_user set `password` = #{newPassword}
+		where user_id = #{userId} and password = #{password}
+	</update>
+
+    <delete id="deleteBatch">
+        delete from sys_user where user_id in
+        <foreach item="userId" collection="array" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+        ;
+        delete from sys_user_role where user_id in
+        <foreach item="userId" collection="array" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+    <!--更新用户人脸状态2，待认证updateUFaceSta-->
+    <update id="updateUFaceSta" parameterType="java.lang.Long">
+		UPDATE user_info SET faceStatus = 2 where userId = #{userId}
+	</update>
+    <!--app用户列表-->
+    <select id="queryAppList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+          *, date_format(birthday, '%Y-%m-%d') as birthday2
+        from user_info
+        <where>
+        	isDel=0
+        	<if test="nickname != null and nickname != ''">
+                AND nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone like concat('%',#{phone},'%')
+            </if>
+            <if test="sex != null and sex != ''">
+                AND sex = #{sex}
+            </if>
+            <if test="wtState != null and wtState != ''">
+                AND wtState = #{wtState}
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND auditStatus = #{auditStatus}
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND createdDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND createdDate <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="remark != null and remark != ''">
+                AND remark like concat('%',#{remark},'%')
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--总数-->
+    <select id="queryAppTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from user_info
+        <where>
+        	isDel=0
+            <if test="nickname != null and nickname != ''">
+                AND nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone like concat('%',#{phone},'%')
+            </if>
+            <if test="sex != null and sex != ''">
+                AND sex = #{sex}
+            </if>
+            <if test="wtState != null and wtState != ''">
+                AND wtState = #{wtState}
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND auditStatus = #{auditStatus}
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND createdDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND createdDate <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="remark != null and remark != ''">
+                AND remark like concat('%',#{remark},'%')
+            </if>
+        </where>
+    </select>
+    <!--del用户列表-->
+    <select id="queryDelList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+          u.*, date_format(u.birthday, '%Y-%m-%d') as birthday2,
+          ss.username,s.storeName
+        from user_info u
+        left join sys_user ss on ss.user_id=u.sysUserId
+        left join device d on u.userId=d.proxyId
+        left join store_address s on d.storeAddressId=s.storeAddrId
+        <where>
+        	u.isDel=1
+        	<if test="nickname != null and nickname != ''">
+                AND u.nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND u.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName like concat('%',#{storeName},'%')
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+            <if test="sex != null and sex != ''">
+                AND u.sex = #{sex}
+            </if>
+            <if test="wtState != null and wtState != ''">
+                AND u.wtState = #{wtState}
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND u.auditStatus = #{auditStatus}
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND u.delTime <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND u.delTime <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="remark != null and remark != ''">
+                AND u.remark like concat('%',#{remark},'%')
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by u.createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--总数-->
+    <select id="queryDelTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+          count(*)
+        from user_info u
+        left join sys_user ss on ss.user_id=u.sysUserId
+        left join device d on u.userId=d.proxyId
+        left join store_address s on d.storeAddressId=s.storeAddrId
+        <where>
+        	u.isDel=1
+        	<if test="nickname != null and nickname != ''">
+                AND u.nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND u.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName like concat('%',#{storeName},'%')
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+            <if test="sex != null and sex != ''">
+                AND u.sex = #{sex}
+            </if>
+            <if test="wtState != null and wtState != ''">
+                AND u.wtState = #{wtState}
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND u.auditStatus = #{auditStatus}
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND u.delTime <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND u.delTime <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="remark != null and remark != ''">
+                AND u.remark like concat('%',#{remark},'%')
+            </if>
+        </where>
+    </select>
+    <!--app用户优惠券列表-->
+    <select id="queryUserCouponList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        ui.userId,ui.nickname,ui.phone,ui.createdDate,
+        (select count(*) from coupon cp where cp.userId=ui.userId and cp.couponStatus=0 ) as couponNum
+        from user_info ui
+        <where>
+        	ui.isDel=0
+            <if test="phone != null and phone != ''">
+                AND ui.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND ui.createdDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND ui.createdDate <![CDATA[<=]]> #{endTime}
+            </if>
+        </where>
+        order by ui.createdDate desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+
+    <!--优惠券列表总数-->
+    <select id="queryUserCouponTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from user_info ui
+        <where>
+        	ui.isDel=0
+            <if test="phone != null and phone != ''">
+                AND ui.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND ui.createdDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND ui.createdDate <![CDATA[<=]]> #{endTime}
+            </if>
+        </where>
+
+    </select>
+    <!--查询个人优惠券详情-->
+    <select id="queryUserCouponInfo" resultType="java.util.Map" parameterType="java.lang.Long">
+        select
+        cp.couponId,
+        case
+            when cp.couponStatus=0 then '未使用'
+            when cp.couponStatus=1 then '已使用'
+            when cp.couponStatus=2 then '已过期' end as couponStatus,
+        date_format(cp.validityTime, '%Y-%m-%d') as validityTime,
+        cp.couponPrice
+        from coupon cp where cp.userId = #{userId}
+    </select>
+    <!--插入个人优惠券信息-->
+    <insert id="insertCouponInfo" parameterType="java.util.Map">
+      insert into coupon (
+        userId,
+        couponStatus,
+        validityTime,
+        couponPrice,
+        operateStoreId,
+        operateStore,
+        createdDate,
+        limitPrice,
+        storeAddrIds,
+        couponTitle
+        <if test="sysCouponId != null">
+        	,sysCouponId
+        </if>
+        <if test="fitCardIds != null">
+        	,fitCardIds
+        </if>
+        <if test="sysUserId != null">
+        	,sysUserId
+        </if>
+        <if test="couponType != null">
+        	,couponType
+        </if>
+        <if test="couponNew != null">
+        	,couponNew
+        </if>
+        <if test="goodsId != null">
+        	,goodsId
+        </if>
+       )
+      values (
+        #{userId},
+        0,
+        #{validDay},
+        #{couponMoney},
+        #{operateStoreId},
+        #{operateStore},
+        now(),
+        #{limitPrice},
+        #{storeAddrIds},
+        #{couponTitle}
+        <if test="sysCouponId != null">
+        	,#{sysCouponId}
+        </if>
+        <if test="fitCardIds != null">
+        	,#{fitCardIds}
+        </if>
+        <if test="sysUserId != null">
+        	,#{sysUserId}
+        </if>
+        <if test="couponType != null">
+        	,#{couponType}
+        </if>
+        <if test="couponNew != null">
+        	,#{couponNew}
+        </if>
+        <if test="goodsId != null">
+        	,#{goodsId}
+        </if>
+       )
+    </insert>
+    <!--门店会员导出列表查询-->
+    <select id="queryExportStoreMemberList" resultType="com.dlc.modules.sys.entity.SysStoreMemberExcel" parameterType="java.util.Map">
+        select
+        d.deviceId, u.userId,u.nickname,u.phone,u.sex,date_format(u.birthday, '%Y-%m-%d') as birthday,u.height,u.weight,u.remark,u.faceStatus,
+        u.auditStatus,u.wtState,
+        d.createTime as createdDate, s.storeName, d.status,d.inOutNum,
+        d.type,(select ct.ctName from card_type ct where ct.cardType=d.type limit 1) as ctName,
+        (select fc.cardName from fit_card fc where fc.fitCardId = d.fitCardId limit 1) as cardName,
+        date_format(d.validityDate, '%Y-%m-%d') as validityDate
+        from store_address s inner join device d on d.storeAddressId=s.storeAddrId
+        inner join user_info u on u.userId=d.proxyId
+        <where> 
+			u.isDel=0
+            <if test="storeId != null and storeId != ''">
+                AND s.storeId=#{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND u.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="sex != null and sex != ''">
+                AND u.sex = #{sex}
+            </if>         
+            <if test="auditStatus != null and auditStatus != ''">
+                AND u.auditStatus = #{auditStatus}
+            </if>      
+            <if test="wtState != null and wtState != ''">
+                AND u.wtState = #{wtState}
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName like concat('%',#{storeName},'%')
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND d.validityDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND d.validityDate <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="autoPay!=null and autoPay=='0'">
+                AND d.autoPay =#{autoPay}
+            </if>
+            <if test="autoPay!=null and autoPay!='' and autoPay!='0'">
+                AND d.autoPay > 0
+            </if>
+            <if test="selecteFree != null and selecteFree != ''">
+                AND d.selecteFree = #{selecteFree}
+            </if>
+            <if test="remark != null and remark != ''">
+                AND u.remark like concat('%',#{remark},'%')
+            </if>        
+            <if test="status != null and status != ''">
+                AND d.status = #{status}
+            </if>
+        </where>
+        order by d.createTime desc
+    </select>
+
+    <!--门店会员列表查询-->
+    <select id="queryStoreMemberList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        d.deviceId, u.userId, u.nickname, u.phone, u.sex, date_format(u.birthday, '%Y-%m-%d') as birthday,
+               u.height, u.weight, u.faceStatus, u.remark, u.auditStatus,u.wtState,u.headImgUrl,
+        u.createdDate, s.storeName, d.status,d.inOutNum,d.autoPay,d.selecteFree,
+        d.type,(select ct.ctName from card_type ct where ct.cardType=d.type limit 1) as ctName,
+        (select fc.cardName from fit_card fc where fc.fitCardId = d.fitCardId limit 1) as cardName,
+        date_format(d.validityDate, '%Y-%m-%d') as validityDate, d.createTime as buyTime, u.contractId,
+        (select group_concat(storeName) from store_address where find_in_set(storeAddrId, d.storeAddrIds)) as supportStoreName
+        from store_address s inner join device d on d.storeAddressId=s.storeAddrId
+        inner join user_info u on u.userId=d.proxyId
+        <where> 
+			u.isDel=0
+            <if test="storeId != null and storeId != ''">
+                AND s.storeId=#{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND u.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="sex != null and sex != ''">
+                AND u.sex = #{sex}
+            </if>         
+            <if test="auditStatus != null and auditStatus != ''">
+                AND u.auditStatus = #{auditStatus}
+            </if>      
+            <if test="wtState != null and wtState != ''">
+                AND u.wtState = #{wtState}
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName like concat('%',#{storeName},'%')
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND d.validityDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND d.validityDate <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="autoPay!=null and autoPay!='' and autoPay=='0'">
+                AND d.autoPay =#{autoPay}
+            </if>
+            <if test="autoPay!=null and autoPay!='' and autoPay!='0'">
+                AND d.autoPay > 0
+            </if>
+            <if test="selecteFree != null and selecteFree != ''">
+                AND d.selecteFree = #{selecteFree}
+            </if>
+            <if test="remark != null and remark != ''">
+                AND u.remark like concat('%',#{remark},'%')
+            </if>        
+            <if test="status != null and status != ''">
+                AND d.status = #{status}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by d.createTime desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--门店会员总数查询-->
+    <select id="queryStoreMemberTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from store_address s inner join device d on d.storeAddressId=s.storeAddrId
+        inner join user_info u on u.userId=d.proxyId
+        <where> 
+			u.isDel=0
+            <if test="storeId != null and storeId != ''">
+                AND s.storeId=#{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND s.storeId in (${storeIds})
+            </if>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND u.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="sex != null and sex != ''">
+                AND u.sex = #{sex}
+            </if>         
+            <if test="auditStatus != null and auditStatus != ''">
+                AND u.auditStatus = #{auditStatus}
+            </if>      
+            <if test="wtState != null and wtState != ''">
+                AND u.wtState = #{wtState}
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName like concat('%',#{storeName},'%')
+            </if>
+            <if test="startTime != null and !''.equals(startTime)">
+                AND d.validityDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND d.validityDate <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="autoPay!=null and autoPay!='' and autoPay=='0'">
+                AND d.autoPay =#{autoPay}
+            </if>
+            <if test="autoPay!=null and autoPay!='' and autoPay!='0'">
+                AND d.autoPay > 0
+            </if>
+            <if test="selecteFree != null and selecteFree != ''">
+                AND d.selecteFree = #{selecteFree}
+            </if>
+            <if test="remark != null and remark != ''">
+                AND u.remark like concat('%',#{remark},'%')
+            </if>        
+            <if test="status != null and status != ''">
+                AND d.status = #{status}
+            </if>
+        </where>
+    </select>
+    <!--查询门店-->
+    <select id="queryUserByPhone" resultType="java.lang.Integer" parameterType="java.lang.String">
+		select count(*) from sys_user where mobile=#{phone}
+	</select>
+
+    <!--优惠券列表-->
+    <select id="queryCouponList" resultType="com.dlc.modules.sys.entity.UserCouponEntity" parameterType="java.util.Map">
+        select 
+        c.*,ui.nickname,ui.phone,su.username as sysUserName
+        <if test="used != null">
+        ,o.finishTime as payTime,sa.storeName
+        </if>        
+         FROM coupon c
+        INNER JOIN user_info ui on c.userId=ui.userId
+        LEFT JOIN device d on c.userId = d.proxyId
+        LEFT JOIN sys_user su on su.user_id=c.sysUserId
+        <if test="used != null">
+        LEFT JOIN card_order o on o.couponId = c.couponId and o.status=4
+        LEFT JOIN store_address sa on sa.storeAddrId = o.storeAddressId
+        </if>
+        <where>
+        	ui.isDel=0
+            <if test="phone != null and phone != ''">
+                AND ui.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="couponTitle != null and couponTitle != ''">
+                AND c.couponTitle like concat('%',#{couponTitle},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND sa.storeName like concat('%',#{storeName},'%')
+            </if>
+            <if test="operateStoreId != null and operateStoreId != ''">
+                AND c.operateStoreId = #{storeName}
+            </if>
+            <if test="couponStatus != null and couponStatus != ''">
+                AND c.couponStatus = #{couponStatus}
+            </if>
+            <if test="couponType != null and couponType != ''">
+                AND c.couponType = #{couponType}
+            </if>
+            <if test="couponNew != null and couponNew != ''">
+                AND c.couponNew = #{couponNew}
+            </if>
+            <if test="operateStore != null and operateStore != ''">
+                AND c.operateStore like concat('%',#{operateStore},'%')
+            </if>
+            <if test="sysUserName != null and sysUserName != ''">
+                AND su.username like concat('%',#{sysUserName},'%')
+            </if>
+            <if test="startTime != null and ''!=startTime and endTime!=null and endTime!=''">
+                AND c.createdDate between #{startTime} and #{endTime}
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND c.operateStoreId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND c.operateStoreId in (${storeIds})
+            </if>
+            <if test="storeAddrIds != null and storeAddrIds != ''">
+                AND (HaveCommonElements(c.storeAddrIds, #{storeAddrIds}) or c.storeAddrIds is null or c.storeAddrIds='')
+            </if>
+            <if test="couponStatus != null and couponStatus != ''">
+                AND c.couponStatus = #{couponStatus}
+            </if>
+            <if test="used == null and startTime != null and !''.equals(startTime)">
+                AND d.validityTime <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="used == null and endTime != null and !''.equals(endTime)">
+                AND d.validityTime <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="used != null and startTime != null and !''.equals(startTime)">
+                AND o.finishTime <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="used != null and endTime != null and !''.equals(endTime)">
+                AND o.finishTime <![CDATA[<=]]> #{endTime}
+            </if>
+        </where>
+        order by c.createdDate desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+
+    <!--优惠券列表总数-->
+    <select id="queryCouponTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select count(1) FROM coupon c
+        INNER JOIN user_info ui on c.userId=ui.userId
+        LEFT JOIN device d on c.userId = d.proxyId
+        LEFT JOIN sys_user su on su.user_id=c.sysUserId
+        <if test="used != null">
+        LEFT JOIN card_order o on o.couponId = c.couponId and o.status=4
+        LEFT JOIN store_address sa on sa.storeAddrId = o.storeAddressId
+        </if>
+        <where>
+        	ui.isDel=0
+            <if test="phone != null and phone != ''">
+                AND ui.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="couponTitle != null and couponTitle != ''">
+                AND c.couponTitle like concat('%',#{couponTitle},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND sa.storeName like concat('%',#{storeName},'%')
+            </if>
+            <if test="operateStoreId != null and operateStoreId != ''">
+                AND c.operateStoreId = #{storeName}
+            </if>
+            <if test="couponStatus != null and couponStatus != ''">
+                AND c.couponStatus = #{couponStatus}
+            </if>
+            <if test="couponType != null and couponType != ''">
+                AND c.couponType = #{couponType}
+            </if>
+            <if test="couponNew != null and couponNew != ''">
+                AND c.couponNew = #{couponNew}
+            </if>
+            <if test="operateStore != null and operateStore != ''">
+                AND c.operateStore like concat('%',#{operateStore},'%')
+            </if>
+            <if test="sysUserName != null and sysUserName != ''">
+                AND su.username like concat('%',#{sysUserName},'%')
+            </if>
+            <if test="startTime != null and ''!=startTime and endTime!=null and endTime!=''">
+                AND c.createdDate between #{startTime} and #{endTime}
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND c.operateStoreId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND c.operateStoreId in (${storeIds})
+            </if>
+            <if test="storeAddrIds != null and storeAddrIds != ''">
+                AND (HaveCommonElements(c.storeAddrIds, #{storeAddrIds}) or c.storeAddrIds is null or c.storeAddrIds='')
+            </if>
+            <if test="couponStatus != null and couponStatus != ''">
+                AND c.couponStatus = #{couponStatus}
+            </if>
+            <if test="used == null and startTime != null and !''.equals(startTime)">
+                AND d.validityTime <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="used == null and endTime != null and !''.equals(endTime)">
+                AND d.validityTime <![CDATA[<=]]> #{endTime}
+            </if>
+            <if test="used != null and startTime != null and !''.equals(startTime)">
+                AND o.finishTime <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="used != null and endTime != null and !''.equals(endTime)">
+                AND o.finishTime <![CDATA[<=]]> #{endTime}
+            </if>
+        </where>
+
+    </select>
+    <!--查询门店转卡会员列表-->
+    <select id="selectTranMemberList" resultType="java.util.Map" parameterType="java.util.Map">
+        select * from (
+            select
+            u.userId,u.nickname,u.phone, CASE WHEN u.wristId IS NULL THEN 0 ELSE 1 END AS cardFlag
+            from user_info u
+            <where>
+                (u.wristId IS NULL AND u.phone IS NOT NULL AND u.isDel=0)
+                <if test="storeIds != null and storeIds != ''">
+                    OR u.userId IN (
+                    select d.proxyId from store_address s
+                    inner join device d on d.storeAddressId=s.storeAddrId
+                    WHERE s.storeId in (${storeIds})
+                    )
+                </if>
+                order by u.createdDate desc
+            </where>
+        ) a
+        <where>
+            <if test="phone != null and phone != ''">
+                AND a.phone like concat('%',#{phone},'%')
+            </if>
+        </where>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询门店转卡会员列表总数-->
+    <select id="selectTranMemberListTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select count(*) from (
+            select
+            u.userId,u.nickname,u.phone, CASE WHEN u.wristId IS NULL THEN 0 ELSE 1 END AS cardFlag
+            from user_info u
+            <where>
+                (u.wristId IS NULL AND u.phone IS NOT NULL AND u.isDel=0)
+                <if test="storeIds != null and storeIds != ''">
+                    OR u.userId IN (
+                    select d.proxyId from store_address s
+                    inner join device d on d.storeAddressId=s.storeAddrId
+                    WHERE s.storeId in (${storeIds})
+                    )
+                </if>
+                order by u.createdDate desc
+            </where>
+        ) a
+        <where>
+            <if test="phone != null and phone != ''">
+                AND a.phone like concat('%',#{phone},'%')
+            </if>
+        </where>
+
+    </select>
+    <!--查询用户是否有卡-->
+    <select id="isAnyCardByUserId" resultType="java.lang.Integer" parameterType="java.lang.Long">
+        select case when wristId is null then 0 else 1 end from user_info where userId=#{userId} and isDel=0
+    </select>
+    <!--根据门店id获取门店地址id-->
+    <select id="getStoreAddressIdBySId" resultType="java.lang.Long" parameterType="java.lang.Long">
+        select storeAddrId from store_address where storeId=#{storeId} limit 1
+    </select>
+    <!--根据userId查用户信息-->
+    <select id="getTaUserInfoByUid" resultType="java.util.Map" parameterType="java.lang.Long">
+        select * from user_info where userId=#{userId} and isDel=0
+    </select>
+    <!--更新用户手环信息为无效null-->
+    <update id="updateUserWristByUid" parameterType="java.lang.Long">
+        update user_info set wristId = null where userId=#{userId}
+    </update>
+    <!--查询deviceToken根据deviceId-->
+    <select id="queryDeviceTokens" resultType="java.lang.String">
+        select u.deviceToken from device d INNER JOIN user_info u ON u.userId=d.proxyId
+        where d.deviceId IN
+        <foreach item="deviceId" collection="array" open="(" separator="," close=")">
+            #{deviceId}
+        </foreach>
+        AND LENGTH(u.deviceToken) <![CDATA[>]]> 43 and isDel=0
+    </select>
+    <!--查询deviceToken根据userId-->
+    <select id="queryDeviceTokensByUid" resultType="java.lang.String">
+        select deviceToken from user_info
+        where userId IN
+        <foreach item="userId" collection="array" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+        AND LENGTH(deviceToken) <![CDATA[>]]> 43 and isDel=0
+    </select>
+
+    <!--查询所有会员devicetoken-->
+    <select id="queryAllDeviceTokens" resultType="java.lang.String">
+        select deviceToken from user_info
+        where LENGTH(deviceToken) <![CDATA[>]]> 43 and isDel=0
+    </select>
+    <!--查询用户id-->
+    <select id="getProxyIdByDeviceId" resultType="java.lang.Long" parameterType="java.lang.Long">
+        select proxyId from device where deviceId=#{deviceId}
+    </select>
+
+    <!--更新用户信息-->
+    <update id="updateUserInfo" parameterType="java.util.Map">
+        update user_info
+        <set>
+            <if test="nickname != null and nickname != '' ">`nickname` = #{nickname},</if>
+            <if test="phone != null and phone != '' ">`phone` = #{phone},</if>
+            <if test="phone == 'NULL' ">`phone` = '',</if>
+            <if test="sex != null and sex != '' ">`sex` = #{sex},</if>
+            <if test="height != null and height != '' ">`height` = #{height},</if>
+            <if test="weight != null and weight != '' ">`weight` = #{weight},</if>
+            <if test="birthday != null and birthday != '' ">`birthday` = #{birthday},</if>
+            <if test="remark != null and remark != '' ">`remark` = #{remark},</if>
+            <if test="auditStatus != null and auditStatus != '' ">`auditStatus` = #{auditStatus},</if>
+            <if test="wtState != null and wtState != '' ">`wtState` = #{wtState},</if>
+            <if test="contractId != null ">`contractId` = #{contractId},</if>
+            <if test="contractTime != null and contractTime != '' ">`contractTime` = #{contractTime},</if>
+            <if test="nowStoreId != null and nowStoreId != '' ">`nowStoreId` = #{nowStoreId},</if>
+        </set>
+        where userId = #{userId}
+    </update>
+
+    <!-- 删除注销用户 -->
+    <delete id="batchDeleteUsers">
+        update user_info set isDel=1, sysUserId = #{sysUserId}, delTime = #{delTime}
+        where userId in
+        <foreach item="userId" collection="userIds" open="(" separator="," close=")">
+            #{userId,jdbcType=BIGINT}
+        </foreach>
+    </delete>
+
+    <delete id="deleteCouponByUserId">
+        delete from coupon where userId = #{userId}
+    </delete>
+    <delete id="deleteCardOrderByUserId">
+        delete from card_order where userId = #{userId}
+    </delete>
+    <delete id="deleteIncomePayDetailByUserId">
+        delete from income_pay_detail where userId = #{userId}
+    </delete>
+    <delete id="deleteOpenDoorRecordByUserId">
+        delete from user_open_door_record where user_id = #{userId}
+    </delete>
+    <delete id="deleteDeviceChangeByProxyId">
+        delete from device_change where proxyId = #{userId}
+    </delete>
+    <delete id="deleteUserUpdateRecordByUserId">
+        delete from user_update_record where userId = #{userId}
+    </delete>
+    <delete id="deleteFaceIdentyRecordByUserId">
+        delete from face_identy_record where userId = #{userId}
+    </delete>
+    <delete id="deleteUserTokenLoginLogsByUserId">
+        delete from user_token_login_logs where userId = #{userId}
+    </delete>
+    <delete id="deleteUserSportDeviceRecordByUserId">
+        delete from user_sport_device_record where userId = #{userId}
+    </delete>
+    <delete id="deleteDeviceByProxyId">
+        delete from device where proxyId = #{userId}
+    </delete>
+    <update id="resetUserMemberFlags">
+        update user_info
+        set faceStatus = 0, contractId = null, contractTime = null, wtState = 0
+        where userId = #{userId} and isDel = 0
+    </update>
+
+    <!-- 清除同手机号/openid 下的历史注销账号（会员注销记录，不含当前正常账号） -->
+    <delete id="deleteDelUserRecordByUserId">
+        DELETE ui FROM user_info ui
+        CROSS JOIN user_info cur
+        WHERE cur.userId = #{userId} AND cur.isDel = 0
+          AND ui.isDel = 1
+          AND ui.userId != #{userId}
+          AND (
+            (IFNULL(cur.phone, '') != '' AND ui.phone = cur.phone)
+            OR (IFNULL(cur.openId, '') != '' AND (
+              ui.openId = cur.openId OR ui.gzhOpenId = cur.openId OR ui.zfbOpenId = cur.openId OR ui.wtOpenId = cur.openId))
+            OR (IFNULL(cur.gzhOpenId, '') != '' AND (
+              ui.openId = cur.gzhOpenId OR ui.gzhOpenId = cur.gzhOpenId OR ui.zfbOpenId = cur.gzhOpenId OR ui.wtOpenId = cur.gzhOpenId))
+            OR (IFNULL(cur.zfbOpenId, '') != '' AND (
+              ui.openId = cur.zfbOpenId OR ui.gzhOpenId = cur.zfbOpenId OR ui.zfbOpenId = cur.zfbOpenId OR ui.wtOpenId = cur.zfbOpenId))
+            OR (IFNULL(cur.wtOpenId, '') != '' AND (
+              ui.openId = cur.wtOpenId OR ui.gzhOpenId = cur.wtOpenId OR ui.zfbOpenId = cur.wtOpenId OR ui.wtOpenId = cur.wtOpenId))
+          )
+    </delete>
+
+</mapper>

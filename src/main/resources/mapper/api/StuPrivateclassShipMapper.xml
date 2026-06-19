@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StuPrivateclassShipMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StuPrivateclassShip" >
+    <constructor >
+      <idArg column="spsId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="studentId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="classId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="orderType" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="orderNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="className" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classTime" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classDate" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classroom" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="energy" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="classplaceId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="askNumber" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="buyNumber" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="classStatus" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="price" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="duration" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="validityDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    spsId, studentId, classId, coachId, orderNo, className, classTime,classDate, classroom, classplaceId, askNumber,
+    buyNumber, classStatus, createdDate, price, duration, validityDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from stu_privateclass_ship
+    where spsId = #{spsId,jdbcType=BIGINT}
+  </select>
+    <select id="selectByKey" resultType="com.dlc.modules.api.entity.StuPrivateclassShip" parameterType="java.lang.Long" >
+        select
+          studentId, classId, coachId, orderNo, className, askNumber, buyNumber, price, duration, validityDate
+        from stu_privateclass_ship
+        where spsId = #{spsId,jdbcType=BIGINT}
+    </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from stu_privateclass_ship
+    where spsId = #{spsId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StuPrivateclassShip" >
+    insert into stu_privateclass_ship (spsId, studentId, classId, 
+      coachId, askNumber, buyNumber, 
+      classStatus, createdDate)
+    values (#{spsId,jdbcType=BIGINT}, #{studentId,jdbcType=BIGINT}, #{classId,jdbcType=BIGINT}, 
+      #{coachId,jdbcType=BIGINT}, #{askNumber,jdbcType=INTEGER}, #{buyNumber,jdbcType=TINYINT},
+      #{classStatus,jdbcType=TINYINT}, #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" useGeneratedKeys="true" keyProperty="spsId" parameterType="com.dlc.modules.api.entity.StuPrivateclassShip" >
+    insert into stu_privateclass_ship
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="spsId != null" >
+        spsId,
+      </if>
+      <if test="studentId != null" >
+        studentId,
+      </if>
+      <if test="classId != null" >
+        classId,
+      </if>
+      <if test="coachId != null" >
+        coachId,
+      </if>
+        <if test="orderType != null">
+            orderType,
+        </if>
+      <if test="orderNo != null">
+        orderNo,
+      </if>
+      <if test="askNumber != null" >
+        askNumber,
+      </if>
+      <if test="buyNumber != null" >
+        buyNumber,
+      </if>
+      <if test="classStatus != null" >
+        classStatus,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="className != null" >
+        className,
+      </if>
+        <if test="energy != null" >
+            energy,
+        </if>
+        <if test="price != null" >
+            price,
+      </if>
+        <if test="duration != null" >
+            duration,
+      </if>
+        <if test="validityDate != null" >
+            validityDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="spsId != null" >
+        #{spsId,jdbcType=BIGINT},
+      </if>
+      <if test="studentId != null" >
+        #{studentId,jdbcType=BIGINT},
+      </if>
+      <if test="classId != null" >
+        #{classId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+        <if test="orderType != null">
+            #{orderType,jdbcType=INTEGER},
+        </if>
+      <if test="orderNo != null">
+        #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="askNumber != null" >
+        #{askNumber,jdbcType=INTEGER},
+      </if>
+      <if test="buyNumber != null" >
+        #{buyNumber,jdbcType=INTEGER},
+      </if>
+      <if test="classStatus != null" >
+        #{classStatus,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+        <if test="className != null" >
+            #{className,jdbcType=VARCHAR},
+        </if>
+        <if test="energy != null" >
+            #{energy,jdbcType=DOUBLE},
+        </if>
+        <if test="price != null" >
+            #{price,jdbcType=DOUBLE},
+        </if>
+        <if test="duration != null" >
+            #{duration,jdbcType=DOUBLE},
+        </if>
+        <if test="validityDate != null" >
+            #{validityDate,jdbcType=TIMESTAMP},
+        </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.StuPrivateclassShip" >
+    update stu_privateclass_ship
+    <set >
+      <if test="studentId != null" >
+        studentId = #{studentId,jdbcType=BIGINT},
+      </if>
+      <if test="classId != null" >
+        classId = #{classId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        coachId = #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="askNumber != null" >
+        askNumber = #{askNumber,jdbcType=INTEGER},
+      </if>
+      <if test="buyNumber != null" >
+        buyNumber = #{buyNumber,jdbcType=INTEGER},
+      </if>
+      <if test="classStatus != null" >
+        classStatus = #{classStatus,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where spsId = #{spsId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.StuPrivateclassShip" >
+    update stu_privateclass_ship
+    set studentId = #{studentId,jdbcType=BIGINT},
+      classId = #{classId,jdbcType=BIGINT},
+      coachId = #{coachId,jdbcType=BIGINT},
+      askNumber = #{askNumber,jdbcType=INTEGER},
+      buyNumber = #{buyNumber,jdbcType=INTEGER},
+      classStatus = #{classStatus,jdbcType=INTEGER},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where spsId = #{spsId,jdbcType=BIGINT}
+  </update>
+  <!--查詢我的私教课-->
+  <select id="queryPrivateClassByUserId" resultType="java.util.Map" parameterType="java.util.Map" >
+    select
+        sps.spsId,
+        sps.studentId,
+        sps.classId,
+        sps.coachId,
+        co.coachName,
+        co.grade,
+        co.headImgUrl,
+        co.phone,
+        sps.className,
+        sps.askNumber,
+        sps.buyNumber,
+        sps.classStatus,
+        ui.rongCloudId,
+        ui.rongCloudToken,
+        date_format(sps.validityDate, '%Y-%m-%d') as classValidityDay
+    from stu_privateclass_ship sps
+        left join coach co on co.coachId = sps.coachId
+        left join user_info ui on ui.userId = co.userId
+    where sps.studentId = #{userId,jdbcType=BIGINT}
+      order by sps.createdDate desc LIMIT #{offset},${limit}
+  </select>
+  <select id="queryPrivateClassCount" resultType="java.lang.Integer" parameterType="java.util.Map" >
+    select
+        count(*)
+    from stu_privateclass_ship sps
+        left join coach co on co.coachId = sps.coachId
+        left join user_info ui on ui.userId = co.userId
+    where sps.studentId = #{userId,jdbcType=BIGINT}
+  </select>
+
+  <select id="queryStuPrivateClassByCoachId" parameterType="Long" resultType="map">
+        SELECT
+                u.nickname,
+                u.headImgUrl,
+                u.sex,
+                u.rongCloudId,
+                u.rongCloudToken,
+                u.phone,
+                u.userId,
+                a.className,
+                a.classPlace,
+                a.classStatus,
+                a.classTime
+        FROM arrange_class a
+        LEFT JOIN user_info u ON a.studentId = u.userId
+        WHERE a.coachId = #{coachId}
+  </select>
+  <!--更新可约节数-->
+  <update id="updateAskNumber" parameterType="java.util.Map">
+    update stu_privateclass_ship
+      set askNumber = askNumber-1,
+          classplaceId = #{storeAddrId},
+          classroom = #{storeName},
+          classTime = #{dataTime},
+          classDate = #{dataJsonArray},
+          createdDate = now()
+    where spsId = #{spsId, jdbcType=BIGINT}
+  </update>
+  <!--退课更新可约节数-->
+  <update id="updateAskNumberByAcId" parameterType="java.lang.Long">
+    update stu_privateclass_ship
+      set askNumber = askNumber+1,
+          createdDate = now()
+    where spsId = (select spsId from arrange_class where arrangeClassId = #{arrangeClassId})
+  </update>
+    <!--查询已过期1天 且未上完课的课程-->
+    <select id="queryClassByValidate" resultType="java.util.Map">
+        select
+            sps.spsId,
+            sps.orderNo,
+            sps.className,
+            sps.coachId,
+            co.userId,
+            sps.studentId,
+            sps.price,
+            (sps.buyNumber - sps.askNumber) as restClassNum,
+            (sps.buyNumber - sps.askNumber) * price as totalMoney
+        from stu_privateclass_ship sps
+        left join coach co on co.coachId = sps.coachId
+        where TIMESTAMPDIFF(DAY, date_add(str_to_date(sps.validityDate, '%Y-%m-%d'), interval ifnull(sps.duration,0) minute),
+        date_format(now(),'%Y-%m-%d'))>1
+        and sps.askNumber <![CDATA[ < ]]> sps.buyNumber
+    </select>
+    <!--更新状态-->
+    <update id="updatSpsStatus" >
+        update stu_privateclass_ship
+        set classStatus = #{classStatus},
+        createdDate = now()
+        where spsId = #{spsId,jdbcType=BIGINT}
+    </update>
+</mapper>

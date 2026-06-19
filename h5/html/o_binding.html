@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="../css/aui.css" />
+    <link rel="stylesheet" type="text/css" href="../css/o_base.css">
+    <link rel="stylesheet" type="text/css" href="../css/o_style.css">
+    <title>绑定手机</title>
+</head>
+
+<body class="bfff">
+    <div class="headImg box">
+        <div class="headBox">
+            <img src="../img/logo.png" alt="">
+        </div>
+    </div>
+    <div class="bindingBox pd-lr-40">
+        <div class="inputPhone border-b flex flexBetween pd-tb-15">
+            <div class="icon flex flexVcenter flexACenter">
+                <img src="../img/ic_phone.png" alt="">
+            </div>
+            <div class="input">
+                <input type="text" class="phone" name="phone" placeholder="请输入您的手机号码" onkeyup="this.value=this.value.replace(/[^0-9]/g,'')"
+                    maxlength="11" />
+            </div>
+        </div>
+        <div class="inputCode border-b flex flexBetween pd-tb-15">
+            <div class="icon flex flexVcenter flexACenter">
+                <img src="../img/ic_code.png" alt="">
+            </div>
+            <div class="input">
+                <input type="text" class="code" name="code" placeholder="请输入验证码 " />
+            </div>
+            <div class="getCodeBtn box">获取验证码</div>
+        </div>
+        <div class="confirm mainBtn mg-t-50">确认</div>
+    </div>
+</body>
+<script type="text/javascript" src="../js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="../js/layer.js"></script>
+<script type="text/javascript" src="../js/dlc.js"></script>
+<script type="text/javascript" src="../js/o_base.js"></script>
+<script>
+    var interval, time = 60;
+    var userInfo = JSON.parse(getItem("userInfo"));
+    // getToken(function () {
+    //     goTo("o_cardList.html");
+    // })
+    $(".headBox img").attr("src", JSON.parse(getItem("userInfo")).headImgUrl)
+    // 获取验证码
+    $(".getCodeBtn").on("click", function () {
+        var phone = $(".phone").val();
+        if (isPhone(phone) && !isNull(phone)) {
+            ajaxPost({
+                phone: phone
+            }, "api/userInfo/sendCode", function (res) {
+                if (res.code == 101) {
+                    moveItem("userInfo")
+                    getToken();
+                }
+                layer_msg(res.msg);
+                if (res.code == 1) {
+                    interval = setInterval(() => {
+                        if (time > 0) {
+                            time--
+                            $(".getCodeBtn").addClass("sended").text(time + " S");
+                        } else {
+                            clearInterval(interval)
+                            $(".getCodeBtn").removeClass("sended").text("重新获取");
+                        }
+                    }, 1000);
+
+                }
+            });
+        } else if (isNull(phone)) {
+            layer_msg("手机号码不能为空");
+        } else {
+            layer_msg("手机格式不正确");
+        }
+
+    });
+    // 绑定手机
+    $(".confirm").on("click", function () {
+        var phone = $(".phone").val();
+        var code = $(".code").val();
+        if (!isNull(phone) && !isNull(code)) {
+            ajaxPost({
+                phone: phone,
+                code: code,
+            }, "api/userInfo/updateUserInfo", function (res) {
+                // debugger;
+                if (res.code == 101) {
+                    moveItem("userInfo")
+                    getToken();
+                }
+                if (res.code == 102) {
+                    layer_msg(res.msg);
+                    userInfo.phone = phone
+                    setItem("userInfo", JSON.stringify(userInfo))
+                    setTimeout(() => {
+                        goTo("o_cardList.html");
+                    }, 1500);
+                }
+                if (res.code == 1) {
+                    layer_msg("绑定成功");
+                    userInfo.phone = phone
+                    setItem("userInfo", JSON.stringify(userInfo))
+                    setTimeout(() => {
+                        goTo("o_cardList.html");
+                    }, 1500);
+                } else {
+                    layer_msg(res.msg);
+                }
+            });
+        } else if (isNull(phone)) {
+            layer_msg("手机号码不能为空");
+        } else {
+            layer_msg("验证码不能为空");
+        }
+
+    });
+</script>
+
+</html>

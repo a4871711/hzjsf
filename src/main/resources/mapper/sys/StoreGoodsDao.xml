@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysStoreGoodsDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysStoreGoodsEntity" id="storeGoodsMap">
+        <result property="goodsId" column="goodsId"/>
+        <result property="storeId" column="storeId"/>
+        <result property="barCode" column="barCode"/>
+        <result property="name" column="name"/>
+        <result property="price" column="price"/>
+        <result property="style" column="style"/>
+        <result property="total" column="total"/>
+        <result property="remark" column="remark"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+    <sql id="base_col"> storeId, barCode,name,price,style, total, remark,createdDate
+                            </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysStoreGoodsEntity" parameterType="map">
+        select * from store_goods
+        <where>
+            <if test="storeId != null and storeId != ''">
+                and storeId = #{storeId}
+            </if>
+            <if test="name != null and name !=''">
+                and name like concat('%',#{name},'%')
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="integer" parameterType="map">
+        select count(1) from store_goods
+        <where>
+            <if test="storeId != null and storeId != ''">
+                and storeId = #{storeId}
+            </if>
+            <if test="name != null and name !=''">
+                and name like concat('%',#{name},'%')
+            </if>
+        </where>
+    </select>
+    <select id="queryObject" parameterType="long" resultType="com.dlc.modules.sys.entity.SysStoreGoodsEntity">
+        select * from store_goods WHERE goodsId=#{id}
+    </select>
+    <select id="queryGoodsByBarCode" parameterType="java.lang.String" resultType="com.dlc.modules.sys.entity.SysStoreGoodsEntity">
+        select * from store_goods WHERE barCode=#{barCode}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysStoreGoodsEntity">
+        insert into store_goods(
+        <include refid="base_col"/>
+        ) values (#{storeId}, #{barCode}, #{name},#{price}, #{style}, #{total}, #{remark}, #{createdDate}
+        );
+    </insert>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysStoreGoodsEntity">
+        update store_goods
+        SET
+        storeId=#{storeId},
+        barCode=#{barCode},
+        name=#{name},
+        price=#{price},
+        style=#{style},
+        total=#{total},
+        remark=#{remark},
+        createdDate=#{createdDate}
+        where goodsId=#{goodsId};
+    </update>
+    <delete id="deleteBatch">
+        DELETE FROM store_goods
+        WHERE goodsId
+        IN
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+    <select id="queryCountByBarCode" parameterType="map" resultType="integer">
+        select COUNT(1) from store_goods
+        <where>
+            <if test="barCode !=null and barCode !=''">
+                and barCode =#{barCode}
+            </if>
+        </where>
+    </select>
+    <!--批量更新商品数量-->
+    <update id="batchUpdateStoreGoodsNum" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            update store_goods
+            <set>
+                total = total - #{item.num}
+            </set>
+            where barCode = #{item.barCode}
+            and storeId = #{item.storeId}
+        </foreach>
+    </update>
+</mapper>

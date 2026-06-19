@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.ArrangeClassMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.ArrangeClass" >
+    <constructor >
+      <idArg column="arrangeClassId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="spsId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachClassId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="studentId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="classPlaceId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="className" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classPlace" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classDate" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classTime" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classStatus" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="price" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="duration" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="validityDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    arrangeClassId, spsId, coachClassId, coachId, studentId, classPlace, classPlaceId, className, classTime, classStatus,
+    createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from arrange_class
+    where arrangeClassId = #{arrangeClassId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from arrange_class
+    where arrangeClassId = #{arrangeClassId,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteBySpsId" parameterType="java.lang.Long" >
+    delete from arrange_class
+    where spsId = #{spsId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.ArrangeClass" >
+    insert into arrange_class (arrangeClassId, coachClassId, coachId, 
+      studentId, classPlace, classTime, 
+      classStatus, createdDate)
+    values (#{arrangeClassId,jdbcType=BIGINT}, #{coachClassId,jdbcType=BIGINT}, #{coachId,jdbcType=BIGINT}, 
+      #{studentId,jdbcType=BIGINT}, #{classPlace,jdbcType=VARCHAR}, #{classTime,jdbcType=VARCHAR}, 
+      #{classStatus,jdbcType=INTEGER}, #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.ArrangeClass" >
+    insert into arrange_class
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="arrangeClassId != null" >
+        arrangeClassId,
+      </if>
+      <if test="spsId != null" >
+        spsId,
+      </if>
+      <if test="coachClassId != null" >
+        coachClassId,
+      </if>
+      <if test="coachId != null" >
+        coachId,
+      </if>
+      <if test="studentId != null" >
+        studentId,
+      </if>
+      <if test="classPlace != null" >
+        classPlace,
+      </if>
+      <if test="classPlaceId != null" >
+        classPlaceId,
+      </if>
+      <if test="classTime != null" >
+        classTime,
+      </if>
+      <if test="classDate != null" >
+        classDate,
+      </if>
+      <if test="classStatus != null" >
+        classStatus,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="className != null" >
+        className,
+      </if>
+        <if test="price != null" >
+            price,
+        </if>
+        <if test="duration != null" >
+            duration,
+        </if>
+        <if test="validityDate != null" >
+            validityDate,
+        </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="arrangeClassId != null" >
+        #{arrangeClassId,jdbcType=BIGINT},
+      </if>
+      <if test="spsId != null" >
+        #{spsId,jdbcType=BIGINT},
+      </if>
+      <if test="coachClassId != null" >
+        #{coachClassId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="studentId != null" >
+        #{studentId,jdbcType=BIGINT},
+      </if>
+      <if test="classPlace != null" >
+        #{classPlace,jdbcType=VARCHAR},
+      </if>
+      <if test="classPlaceId != null" >
+        #{classPlaceId,jdbcType=BIGINT},
+      </if>
+      <if test="classTime != null" >
+        #{classTime,jdbcType=VARCHAR},
+      </if>
+      <if test="classDate != null" >
+        #{classDate,jdbcType=VARCHAR},
+      </if>
+      <if test="classStatus != null" >
+        #{classStatus,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="className != null" >
+        #{className,jdbcType=VARCHAR},
+      </if>
+        <if test="price != null" >
+            #{price,jdbcType=DOUBLE},
+        </if>
+        <if test="duration != null" >
+            #{duration,jdbcType=DOUBLE},
+        </if>
+        <if test="validityDate != null" >
+            #{validityDate,jdbcType=TIMESTAMP},
+        </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.ArrangeClass" >
+    update arrange_class
+    <set >
+      <if test="coachClassId != null" >
+        coachClassId = #{coachClassId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        coachId = #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="studentId != null" >
+        studentId = #{studentId,jdbcType=BIGINT},
+      </if>
+      <if test="classPlace != null" >
+        classPlace = #{classPlace,jdbcType=VARCHAR},
+      </if>
+      <if test="classTime != null" >
+        classTime = #{classTime,jdbcType=VARCHAR},
+      </if>
+      <if test="classStatus != null" >
+        classStatus = #{classStatus,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where arrangeClassId = #{arrangeClassId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.ArrangeClass" >
+    update arrange_class
+    set coachClassId = #{coachClassId,jdbcType=BIGINT},
+      coachId = #{coachId,jdbcType=BIGINT},
+      studentId = #{studentId,jdbcType=BIGINT},
+      classPlace = #{classPlace,jdbcType=VARCHAR},
+      classTime = #{classTime,jdbcType=VARCHAR},
+      classStatus = #{classStatus,jdbcType=INTEGER},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where arrangeClassId = #{arrangeClassId,jdbcType=BIGINT}
+  </update>
+    <!--查询我的约课-->
+  <select id="queryAppointClassByUserId" resultType="java.util.Map" parameterType="java.util.Map">
+      select
+          ac.arrangeClassId,
+          ac.studentId,
+          ac.coachClassId,
+          ac.coachId,
+          co.coachName,
+          co.grade,
+          co.headImgUrl,
+          co.phone,
+          (case
+            when ac.classStatus=0 and TIMESTAMPDIFF(MINUTE, date_format(now(),'%Y-%m-%d %H:%i'), ac.classTime)>120 then 1
+            else 0
+            end
+            ) as cancelFlag,
+          ac.className,
+          ac.classPlace,
+          ac.classTime,
+          ui.rongCloudId,
+          ui.rongCloudToken,
+          ac.classStatus
+      from arrange_class ac
+          left join coach co on co.coachId = ac.coachId
+          left join user_info ui on ui.userId = co.userId
+      where ac.studentId = #{userId,jdbcType=BIGINT}
+      order by ac.createdDate desc LIMIT #{offset}, #{limit}
+  </select>
+
+    <select id="queryAppointClassCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+          count(*)
+        from arrange_class ac
+          left join coach co on co.coachId = ac.coachId
+          left join user_info ui on ui.userId = co.userId
+      where ac.studentId = #{userId,jdbcType=BIGINT}
+    </select>
+  <!--取消课程-->
+  <update id="updateClassStatus" >
+    update arrange_class
+      set classStatus = #{status},
+      createdDate = now()
+      where arrangeClassId = #{arrangeClassId,jdbcType=BIGINT}
+  </update>
+  <!--查询 状态为进行中且 上课时间已过24小时，但未确认的课程-->
+  <select id="queryArrClassByStatus" resultType="java.util.Map">
+    select
+            ac.arrangeClassId,
+			sps.orderNo,
+			sps.orderType,
+			ac.className,
+			ac.coachId,
+			co.userId,
+			co.grade,
+			ac.studentId,
+			ac.price,
+			ac.studentId
+      from arrange_class ac
+      inner join stu_privateclass_ship sps on sps.spsId=ac.spsId
+      inner join coach co on co.coachId = ac.coachId
+      where ac.classStatus = 0
+			and TIMESTAMPDIFF(MINUTE, date_add(str_to_date(ac.classTime, '%Y-%m-%d %H:%i'), interval ifnull(ac.duration,0) minute),
+			  date_format(now(),'%Y-%m-%d %H:%i'))>1440
+  </select>
+
+</mapper>

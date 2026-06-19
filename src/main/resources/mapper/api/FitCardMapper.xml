@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.FitCardMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.FitCard" >
+    <constructor >
+      <idArg column="fitCardId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="cardType" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="cardName" jdbcType="INTEGER" javaType="java.lang.String" />
+      <arg column="cardPrice" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="validity" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="cardImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="cardRule" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="storeAddrIds" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="useCount" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="showStoreAddrIds" jdbcType="VARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    fitCardId, cardType, cardName, cardPrice, validity, cardImgUrl, cardRule, createdDate,storeAddrIds,useCount,showStoreAddrIds
+  </sql>
+  <select id="selectByPrimaryKey" resultType="com.dlc.modules.api.entity.FitCard" parameterType="java.lang.Long" >
+    select 
+    fitCardId, cardType, cardName, cardPrice, validity, cardImgUrl, cardRule, createdDate,storeAddrIds,useCount,showStoreAddrIds
+    from fit_card
+    where fitCardId = #{fitCardId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from fit_card
+    where fitCardId = #{fitCardId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.FitCard" >
+    insert into fit_card (fitCardId, cardType, cardName, cardPrice, 
+      validity, cardImgUrl, cardRule, 
+      createdDate,storeAddrIds,useCount,showStoreAddrIds)
+    values (#{fitCardId,jdbcType=BIGINT}, #{cardType,jdbcType=INTEGER}, #{cardName,jdbcType=VARCHAR}, #{cardPrice,jdbcType=INTEGER},
+      #{validity,jdbcType=INTEGER}, #{cardImgUrl,jdbcType=VARCHAR}, #{cardRule,jdbcType=VARCHAR},
+      #{createdDate,jdbcType=TIMESTAMP}, #{storeAddrIds,jdbcType=VARCHAR}, #{useCount,jdbcType=INTEGER}, #{showStoreAddrIds,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.FitCard" >
+    insert into fit_card
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="fitCardId != null" >
+        fitCardId,
+      </if>
+      <if test="cardType != null" >
+        cardType,
+      </if>
+      <if test="cardName != null" >
+        cardName,
+      </if>
+      <if test="cardPrice != null" >
+        cardPrice,
+      </if>
+      <if test="validity != null" >
+        validity,
+      </if>
+      <if test="cardImgUrl != null" >
+        cardImgUrl,
+      </if>
+      <if test="cardRule != null" >
+        cardRule,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="storeAddrIds != null" >
+        storeAddrIds,
+      </if>
+      <if test="useCount != null" >
+        useCount,
+      </if>
+      <if test="showStoreAddrIds != null" >
+        showStoreAddrIds,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="fitCardId != null" >
+        #{fitCardId,jdbcType=BIGINT},
+      </if>
+      <if test="cardType != null" >
+        #{cardType,jdbcType=INTEGER},
+      </if>
+      <if test="cardName != null" >
+        #{cardName,jdbcType=INTEGER},
+      </if>
+      <if test="cardPrice != null" >
+        #{cardPrice,jdbcType=INTEGER},
+      </if>
+      <if test="validity != null" >
+        #{validity,jdbcType=INTEGER},
+      </if>
+      <if test="cardImgUrl != null" >
+        #{cardImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="cardRule != null" >
+        #{cardRule,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="storeAddrIds != null" >
+        #{storeAddrIds,jdbcType=VARCHAR},
+      </if>
+      <if test="useCount != null" >
+        #{useCount,jdbcType=INTEGER},
+      </if>
+      <if test="showStoreAddrIds != null" >
+        #{showStoreAddrIds,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.FitCard" >
+    update fit_card
+    <set >
+      <if test="cardType != null" >
+        cardType = #{cardType,jdbcType=INTEGER},
+      </if>
+      <if test="cardName != null" >
+        cardName = #{cardName,jdbcType=INTEGER},
+      </if>
+      <if test="cardPrice != null" >
+        cardPrice = #{cardPrice,jdbcType=INTEGER},
+      </if>
+      <if test="validity != null" >
+        validity = #{validity,jdbcType=INTEGER},
+      </if>
+      <if test="cardImgUrl != null" >
+        cardImgUrl = #{cardImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="cardRule != null" >
+        cardRule = #{cardRule,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="storeAddrIds != null" >
+        storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR},
+      </if>
+      <if test="useCount != null" >
+        useCount = #{useCount,jdbcType=INTEGER},
+      </if>
+      <if test="showStoreAddrIds != null" >
+        showStoreAddrIds = #{showStoreAddrIds,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where fitCardId = #{fitCardId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.FitCard" >
+    update fit_card
+    set cardType = #{cardType,jdbcType=INTEGER},
+    cardName = #{cardName,jdbcType=VARCHAR},
+      cardPrice = #{cardPrice,jdbcType=INTEGER},
+      validity = #{validity,jdbcType=INTEGER},
+      cardImgUrl = #{cardImgUrl,jdbcType=VARCHAR},
+      cardRule = #{cardRule,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+      <if test="storeAddrIds != null" >
+        ,storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR}
+      	</if>
+      	<if test="useCount != null" >
+        ,useCount = #{useCount,jdbcType=INTEGER}
+      	</if>
+      	<if test="showStoreAddrIds != null" >
+        ,showStoreAddrIds = #{showStoreAddrIds,jdbcType=VARCHAR}
+      	</if>
+    where fitCardId = #{fitCardId,jdbcType=BIGINT}
+  </update>
+  <!--查询健身卡列表-->
+  <select id="queryFitCardList" parameterType="com.dlc.modules.api.entity.FitCard" resultType="map">
+    SELECT f.*, c.ctName
+      FROM fit_card f INNER JOIN card_type c ON c.cardType=f.cardType
+      <where>  
+          <if test="cardType != null  and cardType != ''"> and f.cardType = #{cardType}</if>
+          <if test="storeId != null  and storeId != ''"> and (IFNULL(storeAddrIds, '') = '' or find_in_set(#{storeId}, storeAddrIds)) and (IFNULL(showStoreAddrIds, '') = '' or find_in_set(#{storeId}, showStoreAddrIds)) </if>
+          and f.status=1
+      </where>		 
+  </select>
+  <!--查询健身卡详情-->
+  <select id="queryFitCardInfo" resultType="map" parameterType="java.lang.Long">
+    SELECT f.*, c.ctName
+      FROM fit_card f INNER JOIN card_type c ON c.cardType=f.cardType
+      WHERE f.fitCardId = #{id}
+  </select>
+  <!--查询健身卡详情-->
+  <select id="getFitCardInfo" resultType="com.dlc.modules.api.entity.FitCard" parameterType="java.lang.Long">
+    SELECT f.*, c.ctName
+      FROM fit_card f INNER JOIN card_type c ON c.cardType=f.cardType
+      WHERE f.fitCardId = #{id}
+  </select>
+</mapper>

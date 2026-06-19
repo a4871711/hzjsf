@@ -1,0 +1,589 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.DeviceMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.Device" >
+    <constructor >
+		<idArg column="deviceId" jdbcType="BIGINT" javaType="java.lang.Long" />
+	    <arg column="deviceNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="deviceName" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="proxyId" jdbcType="BIGINT" javaType="java.lang.Long" />
+	    <arg column="deviceImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+	    <arg column="storeAddressId" jdbcType="BIGINT" javaType="java.lang.Long" />
+	    <arg column="storeAddrIds" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="proxyName" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="phone" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="devicePrice" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+	    <arg column="imei" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="addressDetail" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="addressId" jdbcType="BIGINT" javaType="java.lang.Long" />
+	    <arg column="status" jdbcType="TINYINT" javaType="java.lang.Byte" />
+	    <arg column="inventory" jdbcType="INTEGER" javaType="java.lang.Integer" />
+	    <arg column="type" jdbcType="INTEGER" javaType="java.lang.Integer" />
+	    <arg column="fitCardId" jdbcType="BIGINT" javaType="java.lang.Long" />
+	    <arg column="inOutNum" jdbcType="BIGINT" javaType="java.lang.Long" />
+	    <arg column="validityDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+	    <arg column="onLineTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+	    <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+	    <arg column="autoPay" jdbcType="INTEGER" javaType="java.lang.Integer" />
+	    <arg column="selecteFree" jdbcType="INTEGER" javaType="java.lang.Integer" />
+	    <arg column="nextPrice" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+	    <arg column="nextPriceTitle" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="nextPrice2" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+	    <arg column="nextPriceTitle2" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="nextPrice3" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+	    <arg column="nextPriceTitle3" jdbcType="VARCHAR" javaType="java.lang.String" />
+	    <arg column="useCount" jdbcType="INTEGER" javaType="java.lang.Integer" />
+	    <arg column="usedCount" jdbcType="INTEGER" javaType="java.lang.Integer" />
+	    <arg column="buyCount" jdbcType="INTEGER" javaType="java.lang.Integer" />
+	    <arg column="validity" jdbcType="INTEGER" javaType="java.lang.Integer" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    deviceId, deviceNo, deviceName, proxyId, deviceImgUrl, storeId, storeAddressId, proxyName, autoPay,
+    phone, devicePrice, imei, addressDetail, addressId, status, inventory, onLineTime, fitCardId,
+    createTime,buyCount,validity,storeAddrIds,type,useCount,nextPrice,nextPriceTitle,nextPrice2
+      ,nextPriceTitle2,nextPrice3,nextPriceTitle3,validityDate
+  </sql>
+  <select id="selectByPrimaryKey" resultType="com.dlc.modules.api.entity.Device" parameterType="java.lang.Long" >
+    select 
+    *
+    from device
+    where deviceId = #{deviceId,jdbcType=BIGINT}
+  </select>
+  <select id="queryIsForbiddenByIds" resultType="java.lang.Long">
+      select d.proxyId from device d
+      where d.proxyId in
+        <foreach item="userId" collection="list" open="(" separator="," close=")">
+          #{userId}
+        </foreach>
+      and d.status in (0,1)
+      and date_format(d.validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from device
+    where deviceId = #{deviceId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.Device" >
+    insert into device (deviceId, deviceNo, deviceName, 
+      proxyId, deviceImgUrl, storeId, 
+      storeAddressId, proxyName, phone, 
+      devicePrice, imei, addressDetail, 
+      addressId, status, inventory, 
+      onLineTime, createTime,type,storeAddrIds,useCount,nextPrice,nextPriceTitle,nextPrice2
+      ,nextPriceTitle2,nextPrice3,nextPriceTitle3
+      ,usedCount,buyCount,validity,validityDate)
+    values (#{deviceId,jdbcType=BIGINT}, #{deviceNo,jdbcType=VARCHAR}, #{deviceName,jdbcType=VARCHAR}, 
+      #{proxyId,jdbcType=BIGINT}, #{deviceImgUrl,jdbcType=VARCHAR}, #{storeId,jdbcType=BIGINT}, 
+      #{storeAddressId,jdbcType=BIGINT}, #{proxyName,jdbcType=VARCHAR}, #{phone,jdbcType=VARCHAR}, 
+      #{devicePrice,jdbcType=DECIMAL}, #{imei,jdbcType=VARCHAR}, #{addressDetail,jdbcType=VARCHAR}, 
+      #{addressId,jdbcType=BIGINT}, #{status,jdbcType=TINYINT}, #{inventory,jdbcType=INTEGER}, 
+      #{onLineTime,jdbcType=TIMESTAMP}, #{createTime,jdbcType=TIMESTAMP} 
+      , #{type,jdbcType=INTEGER}
+      , #{storeAddrIds,jdbcType=VARCHAR}, #{useCount,jdbcType=INTEGER}
+      , #{nextPrice,jdbcType=DECIMAL}, #{nextPriceTitle,jdbcType=VARCHAR}, #{nextPrice2,jdbcType=DECIMAL}
+      , #{nextPriceTitle2,jdbcType=VARCHAR}, #{nextPrice3,jdbcType=DECIMAL}, #{nextPriceTitle3,jdbcType=VARCHAR}
+      , #{usedCount,jdbcType=INTEGER}, #{buyCount,jdbcType=INTEGER}, #{validity,jdbcType=INTEGER}, #{validityDate,jdbcType=TIMESTAMP} )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.Device" useGeneratedKeys="true" keyProperty="deviceId">
+    insert into device
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="deviceId != null" >
+        deviceId,
+      </if>
+      <if test="deviceNo != null" >
+        deviceNo,
+      </if>
+      <if test="deviceName != null" >
+        deviceName,
+      </if>
+      <if test="proxyId != null" >
+        proxyId,
+      </if>
+      <if test="deviceImgUrl != null" >
+        deviceImgUrl,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="storeAddressId != null" >
+        storeAddressId,
+      </if>
+      <if test="proxyName != null" >
+        proxyName,
+      </if>
+      <if test="phone != null" >
+        phone,
+      </if>
+      <if test="devicePrice != null" >
+        devicePrice,
+      </if>
+      <if test="imei != null" >
+        imei,
+      </if>
+      <if test="addressDetail != null" >
+        addressDetail,
+      </if>
+      <if test="addressId != null" >
+        addressId,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="inventory != null" >
+        inventory,
+      </if>
+        <if test="type != null" >
+            type,
+        </if>
+        <if test="validityDate != null" >
+            validityDate,
+        </if>
+      <if test="onLineTime != null" >
+        onLineTime,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+      <if test="fitCardId != null" >
+        fitCardId,
+      </if>
+      <if test="autoPay != null" >
+        autoPay,
+      </if>
+      <if test="selecteFree != null" >
+        selecteFree,
+      </if>
+      <if test="storeAddrIds != null" >
+        storeAddrIds,
+      </if>
+      <if test="nextPrice != null" >
+        nextPrice,
+      </if>
+      <if test="nextPriceTitle != null" >
+        nextPriceTitle,
+      </if>
+      <if test="nextPrice2 != null" >
+        nextPrice2,
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        nextPriceTitle2,
+      </if>
+      <if test="nextPrice3 != null" >
+        nextPrice3,
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        nextPriceTitle3,
+      </if>
+      <if test="useCount != null" >
+        useCount,
+      </if>
+      <if test="buyCount != null" >
+        buyCount,
+      </if>
+      <if test="validity != null" >
+        validity,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="deviceId != null" >
+        #{deviceId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceNo != null" >
+        #{deviceNo,jdbcType=VARCHAR},
+      </if>
+      <if test="deviceName != null" >
+        #{deviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="proxyId != null" >
+        #{proxyId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceImgUrl != null" >
+        #{deviceImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="storeAddressId != null" >
+        #{storeAddressId,jdbcType=BIGINT},
+      </if>
+      <if test="proxyName != null" >
+        #{proxyName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="devicePrice != null" >
+        #{devicePrice,jdbcType=DECIMAL},
+      </if>
+      <if test="imei != null" >
+        #{imei,jdbcType=VARCHAR},
+      </if>
+      <if test="addressDetail != null" >
+        #{addressDetail,jdbcType=VARCHAR},
+      </if>
+      <if test="addressId != null" >
+        #{addressId,jdbcType=BIGINT},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="inventory != null" >
+        #{inventory,jdbcType=INTEGER},
+      </if>
+        <if test="type != null" >
+            #{type,jdbcType=INTEGER},
+        </if>
+        <if test="validityDate != null" >
+            #{validityDate,jdbcType=TIMESTAMP},
+        </if>
+      <if test="onLineTime != null" >
+        #{onLineTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="fitCardId != null" >
+        #{fitCardId,jdbcType=BIGINT},
+      </if>
+      <if test="autoPay != null" >
+        #{autoPay,jdbcType=INTEGER},
+      </if>
+      <if test="selecteFree != null" >
+        #{selecteFree,jdbcType=INTEGER},
+      </if>
+      <if test="storeAddrIds != null" >
+        #{storeAddrIds,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice != null" >
+        #{nextPrice,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle != null" >
+        #{nextPriceTitle,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice2 != null" >
+        #{nextPrice2,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        #{nextPriceTitle2,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice3 != null" >
+        #{nextPrice3,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        #{nextPriceTitle3,jdbcType=VARCHAR},
+      </if>
+      <if test="useCount != null" >
+        #{useCount,jdbcType=INTEGER},
+      </if>
+      <if test="buyCount != null" >
+        #{buyCount,jdbcType=INTEGER},
+      </if>
+      <if test="validity != null" >
+        #{validity,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.Device" >
+    update device
+    <set >
+      <if test="deviceNo != null" >
+        deviceNo = #{deviceNo,jdbcType=VARCHAR},
+      </if>
+      <if test="deviceName != null" >
+        deviceName = #{deviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="proxyId != null" >
+        proxyId = #{proxyId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceImgUrl != null" >
+        deviceImgUrl = #{deviceImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="storeAddressId != null" >
+        storeAddressId = #{storeAddressId,jdbcType=BIGINT},
+      </if>
+      <if test="proxyName != null" >
+        proxyName = #{proxyName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        phone = #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="devicePrice != null" >
+        devicePrice = #{devicePrice,jdbcType=DECIMAL},
+      </if>
+      <if test="imei != null" >
+        imei = #{imei,jdbcType=VARCHAR},
+      </if>
+      <if test="addressDetail != null" >
+        addressDetail = #{addressDetail,jdbcType=VARCHAR},
+      </if>
+      <if test="addressId != null" >
+        addressId = #{addressId,jdbcType=BIGINT},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="inventory != null" >
+        inventory = #{inventory,jdbcType=INTEGER},
+      </if>
+      <if test="validityDate != null" >
+        validityDate = #{validityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="onLineTime != null" >
+        onLineTime = #{onLineTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="fitCardId != null" >
+        fitCardId = #{fitCardId,jdbcType=BIGINT},
+      </if>
+      <if test="type != null" >
+        type = #{type,jdbcType=INTEGER},
+      </if>
+      <if test="autoPay != null" >
+        autoPay = #{autoPay,jdbcType=INTEGER},
+      </if>
+      <if test="selecteFree != null" >
+        selecteFree = #{selecteFree,jdbcType=INTEGER},
+      </if>
+      <if test="storeAddrIds != null" >
+        storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR},
+      </if>
+      <if test="useCount != null" >
+        useCount = #{useCount,jdbcType=INTEGER},
+      </if>
+      <if test="nextPrice != null" >
+        nextPrice = #{nextPrice,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle != null" >
+        nextPriceTitle = #{nextPriceTitle,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice2 != null" >
+        nextPrice2 = #{nextPrice2,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        nextPriceTitle2 = #{nextPriceTitle2,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice3 != null" >
+        nextPrice3 = #{nextPrice3,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        nextPriceTitle3 = #{nextPriceTitle3,jdbcType=VARCHAR},
+      </if>
+      <if test="buyCount != null" >
+        buyCount = #{buyCount,jdbcType=INTEGER},
+      </if>
+      <if test="validity != null" >
+        validity = #{validity,jdbcType=INTEGER},
+      </if>
+    </set>
+    where deviceId = #{deviceId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.Device" >
+    update device
+    set deviceNo = #{deviceNo,jdbcType=VARCHAR},
+      deviceName = #{deviceName,jdbcType=VARCHAR},
+      proxyId = #{proxyId,jdbcType=BIGINT},
+      deviceImgUrl = #{deviceImgUrl,jdbcType=VARCHAR},
+      storeId = #{storeId,jdbcType=BIGINT},
+      storeAddressId = #{storeAddressId,jdbcType=BIGINT},
+      proxyName = #{proxyName,jdbcType=VARCHAR},
+      phone = #{phone,jdbcType=VARCHAR},
+      devicePrice = #{devicePrice,jdbcType=DECIMAL},
+      imei = #{imei,jdbcType=VARCHAR},
+      addressDetail = #{addressDetail,jdbcType=VARCHAR},
+      addressId = #{addressId,jdbcType=BIGINT},
+      status = #{status,jdbcType=TINYINT},
+      inventory = #{inventory,jdbcType=INTEGER},
+      onLineTime = #{onLineTime,jdbcType=TIMESTAMP},
+      createTime = #{createTime,jdbcType=TIMESTAMP}      
+      <if test="autoPay != null" >
+        ,autoPay = #{autoPay,jdbcType=INTEGER}
+      </if>
+      <if test="storeAddrIds != null" >
+        ,storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR}
+      </if>      
+      <if test="type != null" >
+        ,type = #{type,jdbcType=INTEGER}
+      </if>
+      <if test="useCount != null" >
+        useCount = #{useCount,jdbcType=INTEGER},
+      </if>
+      <if test="nextPrice != null" >
+        nextPrice = #{nextPrice,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle != null" >
+        nextPriceTitle = #{nextPriceTitle,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice2 != null" >
+        nextPrice2 = #{nextPrice2,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        nextPriceTitle2 = #{nextPriceTitle2,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice3 != null" >
+        nextPrice3 = #{nextPrice3,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        nextPriceTitle3 = #{nextPriceTitle3,jdbcType=VARCHAR},
+      </if>
+      <if test="buyCount != null" >
+        buyCount = #{buyCount,jdbcType=INTEGER},
+      </if>
+      <if test="validity != null" >
+        validity = #{validity,jdbcType=INTEGER},
+      </if>
+    where deviceId = #{deviceId,jdbcType=BIGINT}
+  </update>
+  <update id="updateCountByPrimaryKey" parameterType="java.lang.Long" >
+    update device
+    set usedCount=IFNULL(usedCount, 0)+1
+    where deviceId = #{deviceId,jdbcType=BIGINT}
+  </update>
+  <update id="updateStoreScope">
+    update device
+    set storeId = #{storeId,jdbcType=BIGINT},
+        storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR}
+    where deviceId = #{deviceId,jdbcType=BIGINT}
+  </update>
+  <!--查询用户是否已禁用-->
+  <select id="queryIsForbidden" resultType="java.lang.Integer" parameterType="java.lang.Long">
+      select count(*) from device d
+      where d.proxyId=#{userId} and d.status in (0,1)
+      and date_format(d.validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+  </select>
+  <!--查询用户是否有卡-->
+  <select id="queryIsCardUserById" resultType="java.lang.Integer" parameterType="java.lang.Long">
+      select count(*) from device d
+      where d.proxyId=#{userId} and d.status in (0,1)
+      and date_format(d.validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+  </select>
+  <!--查询用户设备是否已禁用-->
+  <select id="queryDeviceIsForbidden" resultType="java.lang.Integer">
+      select count(*) from device where proxyId=#{userId} and deviceNo=#{deviceNo} and status in (2,3,4,5)
+  </select>
+  <!--更新有效期-->
+  <update id="updateValiditByUid" parameterType="com.dlc.modules.api.entity.Device">
+      update device
+        set
+          storeId = #{storeId,jdbcType=BIGINT},
+          storeAddressId = #{storeAddressId,jdbcType=BIGINT},
+        validityDate = #{validityDate,jdbcType=TIMESTAMP},
+        type = #{type,jdbcType=INTEGER},
+        fitCardId = #{fitCardId,jdbcType=BIGINT},
+        status = (CASE WHEN status = 2 THEN 2 ELSE 1 END),
+        autoPay = #{autoPay,jdbcType=INTEGER},
+        selecteFree = #{selecteFree,jdbcType=INTEGER},
+        devicePrice = #{devicePrice,jdbcType=DECIMAL},
+        <if test="autoPay != null" >
+        ,autoPay = #{autoPay,jdbcType=INTEGER}
+      </if>
+        <if test="storeAddrIds != null" >
+        ,storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR}
+      	</if>
+      	<if test="type != null" >
+        ,type = #{type,jdbcType=INTEGER}
+      	</if>
+      <if test="useCount != null" >
+        ,useCount = #{useCount,jdbcType=INTEGER}
+      </if>
+      <if test="nextPrice != null" >
+        ,nextPrice = #{nextPrice,jdbcType=DECIMAL}
+      </if>
+      <if test="nextPriceTitle != null" >
+        ,nextPriceTitle = #{nextPriceTitle,jdbcType=VARCHAR}
+      </if>
+      <if test="nextPrice2 != null" >
+        ,nextPrice2 = #{nextPrice2,jdbcType=DECIMAL}
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        ,nextPriceTitle2 = #{nextPriceTitle2,jdbcType=VARCHAR}
+      </if>
+      <if test="nextPrice3 != null" >
+        ,nextPrice3 = #{nextPrice3,jdbcType=DECIMAL}
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        ,nextPriceTitle3 = #{nextPriceTitle3,jdbcType=VARCHAR}
+      </if>
+      <if test="buyCount != null" >
+        ,buyCount = #{buyCount,jdbcType=INTEGER}
+      </if>
+      <if test="validity != null" >
+        ,validity = #{validity,jdbcType=INTEGER}
+      </if>
+      where proxyId = #{proxyId,jdbcType=BIGINT}
+  </update>
+  <!--更新进出次数-->
+  <update id="updateInOutNumByUId">
+      update device
+      set inOutNum = IFNULL(inOutNum, 0) + 1
+      where proxyId = #{userId}
+      and status in (0,1)
+      and date_format(validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+      and storeId = (select s.storeId from store_device s where s.deviceNo=#{deviceNo} limit 1)
+      ORDER BY deviceId DESC limit 1
+  </update>
+  <!--查当前用户可用卡信息-->
+  <select id="selectByProxyId" resultType="java.util.Map" parameterType="java.lang.Long">
+    select * from device where proxyId = #{userId} and status in (0,1)
+    and date_format(validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+    ORDER BY deviceId DESC limit 1
+  </select>
+  <!--查询该用户是否在该门店买过卡-->
+  <select id="queryHaveDeviceById" resultType="com.dlc.modules.api.entity.Device">
+    select * from device where proxyId=#{userId} and storeAddressId=#{storeAddressId}
+  </select>
+
+  <select id="selectAutoPayUser" resultType="com.dlc.modules.api.entity.Device">
+    select
+      *
+    from device
+    where autoPay > 0
+    AND status in (0,1)
+    AND date_format(validityDate, '%Y-%m-%d') <![CDATA[<=]]> date_format(date_add(now(),INTERVAL 1 DAY), '%Y-%m-%d')
+    <!-- AND proxyId NOT IN (
+      SELECT userId
+      FROM card_order
+      WHERE autoPay > 0 AND createdDate > date_format(date_add(now(),INTERVAL -2 DAY), '%Y-%m-%d')
+    ) -->
+    AND proxyId IN (
+      SELECT userId
+      FROM user_info
+      WHERE wtState=1 and auditStatus=1
+    )
+    ORDER BY deviceId DESC
+  </select>
+
+  <!--用户二维码识别判断会员卡有效期-->
+  <select id="checkUserValidity" resultType="java.lang.Long">
+    SELECT proxyId
+    FROM device
+    WHERE proxyId = #{userId} and status in (0, 1)
+      and date_format(validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+    ORDER BY deviceId DESC
+    LIMIT 1
+  </select>
+  
+  <select id="selectUserValidity" resultType="com.dlc.modules.api.entity.Device">
+    SELECT *
+    FROM device
+    WHERE proxyId = #{userId} and status in (0, 1)
+      and date_format(validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+    ORDER BY deviceId DESC
+    LIMIT 1
+  </select>
+  
+  <select id="selectByUser" resultType="com.dlc.modules.api.entity.Device">
+    SELECT *
+    FROM device
+    WHERE proxyId = #{userId}
+    ORDER BY deviceId DESC
+    LIMIT 1
+  </select>
+
+</mapper>

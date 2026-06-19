@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>健身卡(会员卡)</title>
+    <#include "/header.html"/>
+        <style>
+            .logo {
+                display: inline-block;
+                text-align: center;
+                margin-right: 15px;
+            }
+
+            .logo .logo_img {
+                width: 100px;
+                height: 100px;
+                display: block;
+            }
+
+            .logo .upload_file {
+                position: absolute;
+                top: 0;
+                width: 150px;
+                height: 150px;
+                opacity: 0;
+            }
+
+            .upload {
+                margin: 5px 0 15px 0px;
+            }
+
+            .upload-button {
+                position: fixed;
+                bottom: 0px;
+                right: 20px;
+            }
+
+        </style>
+        </head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+           <#if shiro.hasPermission("sys:fitcard:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:fitcard:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+             <#if shiro.hasPermission("sys:fitcard:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+             </#if>
+            <#if shiro.hasPermission("sys:fitcard:update")>
+                <a class="btn btn-primary" @click="onCard"><i class="fa fa-sort-asc"></i>&nbsp;上架</a>
+                <a class="btn btn-primary" @click="offCard"><i class="fa fa-sort-desc"></i>&nbsp;下架</a>
+            </#if>
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div id="anewFileWindow" style="display: none;margin-left: 10%">
+        <div class="form-group">
+            <div class="col-sm-10">
+                <input type="text" class="form-control" v-model="cardType.ctName" name="ctName" placeholder="请输入卡类型名称"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-4 control-label"></div>
+            <input type="button" class="btn btn-primary" @click="saveOrUpdateType" value="确认"/>
+        </div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" style="width: 60%;">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">卡片类型</div>
+                <div class="col-sm-5">
+                    <select class="form-control" v-model="fitCard.cardType" @click="initValidity">
+                        <option v-for="item in cardTypeList" :value="item.cardType">
+                            {{ item.ctName }}</option>
+                    </select>
+                </div>
+                <!-- <div class="btn btn-primary" @click="ctDefined"><span class="fa fa-plus">&nbsp;自定义类型</span></div> -->
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">单价</div>
+                <div class="col-sm-5">
+                    <input type="text" class="form-control" v-model="fitCard.cardPrice" placeholder="单价"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">新人价</div>
+                <div class="col-sm-5">
+                    <input type="text" class="form-control" v-model="fitCard.newUserPrice" placeholder="新人专享价"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">原价</div>
+                <div class="col-sm-5">
+                    <input type="text" class="form-control" v-model="fitCard.costPrice" placeholder="原价"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">有效期/天</div>
+                <div class="col-sm-5">
+                    <!--<input  id="validity" class="Wdate"  style="width: 100%;padding: 5px 10px;" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',readOnly:false,maxDate:'#F{$dp.$D(\'validity\')}'})" @focus="changeTime()"  placeholder="有效期"  />-->
+                    <input id="validity" class="form-control" style="width: 100%;padding: 5px 10px;"
+                           v-model="fitCard.validity" placeholder="有效期/天"/>
+
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">次卡可用次数</div>
+                <div class="col-sm-5">
+                    <input type="text" class="form-control" v-model="fitCard.useCount" placeholder=""/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">是否自动续费</div>
+                
+                <label class="radio-inline">
+                    <input type="radio" name="autoPay" value="0" v-model="fitCard.autoPay" @change="isAutoPay"/> 否
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="autoPay" value="1" v-model="fitCard.autoPay" @change="isAutoPay"/> 1级
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="autoPay" value="2" v-model="fitCard.autoPay" @change="isAutoPay"/> 2级
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="autoPay" value="3" v-model="fitCard.autoPay" @change="isAutoPay"/> 3级
+                </label>
+                
+            </div>
+            
+            <div class="form-group">
+                <div class="col-sm-2 control-label">可用站点</div>
+                <div class="col-sm-5">
+                    <input type="text" class="form-control" v-model="fitCard.storeAddrIds" placeholder="* 门店地址的ID，选择未做完，暂时先自己填storeAddressId"/>
+                </div>
+            </div>
+            
+            <div class="form-group">
+            	<div>
+            		<label class="radio-inline">
+	                    1级起月份：&nbsp;<input type="text" id="nextPriceTitle" v-model="fitCard.nextPriceTitle" placeholder="英文逗号分隔的数字"/>
+	                </label>
+	                <label class="radio-inline">
+	                    1级起价格：&nbsp;<input type="text" id="nextPrice" v-model="fitCard.nextPrice" placeholder=""/>元
+	                </label>
+            	</div>
+            	<div>
+            		<label class="radio-inline">
+	                    2二级起月份：&nbsp;<input type="text" id="nextPriceTitle2" v-model="fitCard.nextPriceTitle2" placeholder="英文逗号分隔的数字"/>
+	                </label>
+	                <label class="radio-inline">
+	                    2二级起价格：&nbsp;<input type="text" id="nextPrice2" v-model="fitCard.nextPrice2" placeholder=""/>元
+	                </label>
+            	</div>
+            	<div>
+            		<label class="radio-inline">
+	                    3级起月份：&nbsp;<input type="text" id="nextPriceTitle3" v-model="fitCard.nextPriceTitle3" placeholder="英文逗号分隔的数字"/>
+	                </label>
+	                <label class="radio-inline">
+	                    3级起价格：&nbsp;<input type="text" id="nextPrice3" v-model="fitCard.nextPrice3" placeholder=""/>元
+	                </label>
+            	</div>
+            </div>
+            <div id="images" class="form-group">
+                <div class="col-sm-2 control-label">卡图</div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img" width="150px" height="150px">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                    <span>*请上传宽446像素，高266像素的图片</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">会员规则</div>
+                <div class="col-sm-5">
+                  <textarea rows="6" cols="55" v-model="fitCard.cardRule" placeholder="会员规则">
+
+                  </textarea>
+
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">上/下架</div>
+                <label class="radio-inline">
+                    <input type="radio" name="status" value="1" v-model="fitCard.status"/> 上架
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="status" value="2" v-model="fitCard.status"/> 下架
+                </label>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+    <div id="ctDefined"  style="width: 700px;">
+        <table id="jqGridAdd" style="width: 700px"></table>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/plugins/jquery.form.js"></script>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/fitcard.js?_${.now?long}"></script>
+<script src="${request.contextPath}/statics/plugins/My97DatePicker/WdatePicker.js"></script>
+</body>
+</html>

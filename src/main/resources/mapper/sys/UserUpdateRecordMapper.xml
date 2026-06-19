@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.sys.dao.UserUpdateRecordMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.sys.entity.UserUpdateRecord" >
+    <constructor >
+      <idArg column="uprId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="sysUserId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="oldValidityDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="newValidityDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    uprId, userId, sysUserId, storeId, oldValidityDate, newValidityDate, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from user_update_record
+    where uprId = #{uprId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from user_update_record
+    where uprId = #{uprId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.sys.entity.UserUpdateRecord" >
+    insert into user_update_record (uprId, userId, storeId, 
+      oldValidityDate, newValidityDate, createdDate
+      )
+    values (#{uprId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{storeId,jdbcType=BIGINT}, 
+      #{oldValidityDate,jdbcType=TIMESTAMP}, #{newValidityDate,jdbcType=TIMESTAMP}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.sys.entity.UserUpdateRecord" >
+    insert into user_update_record
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="uprId != null" >
+        uprId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="sysUserId != null" >
+        sysUserId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="oldValidityDate != null" >
+        oldValidityDate,
+      </if>
+      <if test="newValidityDate != null" >
+        newValidityDate,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="uprId != null" >
+        #{uprId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="sysUserId != null" >
+        #{sysUserId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="oldValidityDate != null" >
+        #{oldValidityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="newValidityDate != null" >
+        #{newValidityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.sys.entity.UserUpdateRecord" >
+    update user_update_record
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="sysUserId != null" >
+        sysUserId = #{sysUserId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="oldValidityDate != null" >
+        oldValidityDate = #{oldValidityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="newValidityDate != null" >
+        newValidityDate = #{newValidityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where uprId = #{uprId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.sys.entity.UserUpdateRecord" >
+    update user_update_record
+    set userId = #{userId,jdbcType=BIGINT},
+      storeId = #{storeId,jdbcType=BIGINT},
+      oldValidityDate = #{oldValidityDate,jdbcType=TIMESTAMP},
+      newValidityDate = #{newValidityDate,jdbcType=TIMESTAMP},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where uprId = #{uprId,jdbcType=BIGINT}
+  </update>
+  <!--分页查询-->
+  <select id="selectValidityRecordList" resultType="java.util.Map" parameterType="java.util.Map">
+      select ur.uprId, date_format(ur.oldValidityDate, '%Y-%m-%d') as oldValidityDate,
+      date_format(ur.newValidityDate, '%Y-%m-%d') as newValidityDate,
+      ur.createdDate, ss.username,
+      u.nickname,u.phone, s.storeName from user_update_record ur
+        INNER JOIN user_info u ON u.userId=ur.userId
+        INNER JOIN store s ON s.storeId = ur.storeId
+        INNER JOIN sys_user ss ON ss.user_id = ur.sysUserId
+        <where>
+            <if test="storeId != null and storeId != ''">
+                AND ur.storeId=#{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND ur.storeId in (${storeIds})
+            </if>
+            <if test="phone != null and phone != ''">
+                AND u.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName like concat('%',#{storeName},'%')
+            </if>            
+            <if test="startTime != null and !''.equals(startTime)">
+                AND ur.createdDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND ur.createdDate <![CDATA[<=]]> #{endTime}
+            </if>
+        </where>
+      ORDER BY ur.createdDate DESC
+      <if test="offset != null and limit != null">
+          limit #{offset}, #{limit}
+      </if>
+  </select>
+    <!--总数-->
+  <select id="selectValidityRecordTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+      select COUNT(*) from user_update_record ur
+        INNER JOIN user_info u ON u.userId=ur.userId
+        INNER JOIN store s ON s.storeId = ur.storeId
+        <where>
+            <if test="storeId != null and storeId != ''">
+                AND ur.storeId=#{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND ur.storeId in (${storeIds})
+            </if>
+            <if test="phone != null and phone != ''">
+                AND u.phone like concat('%',#{phone},'%')
+            </if>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname like concat('%',#{nickname},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                AND s.storeName like concat('%',#{storeName},'%')
+            </if>            
+            <if test="startTime != null and !''.equals(startTime)">
+                AND ur.createdDate <![CDATA[>=]]> #{startTime}
+            </if>
+            <if test="endTime != null and !''.equals(endTime)">
+                AND ur.createdDate <![CDATA[<=]]> #{endTime}
+            </if>
+        </where>
+  </select>
+</mapper>

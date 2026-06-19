@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StoreCoachEvaluateMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StoreCoachEvaluate" >
+    <constructor >
+      <idArg column="evaluateId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="scId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="headImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="nickname" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="evLevel" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="evContent" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="evaluatImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="evaluatDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    evaluateId, scId, userId, headImgUrl, nickname, evLevel, evContent, evaluatImgUrl, 
+    evaluatDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from store_coach_evaluate
+    where evaluateId = #{evaluateId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from store_coach_evaluate
+    where evaluateId = #{evaluateId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StoreCoachEvaluate" >
+    insert into store_coach_evaluate (evaluateId, scId, userId, 
+      headImgUrl, nickname, evLevel, 
+      evContent, evaluatImgUrl, evaluatDate
+      )
+    values (#{evaluateId,jdbcType=BIGINT}, #{scId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, 
+      #{headImgUrl,jdbcType=VARCHAR}, #{nickname,jdbcType=VARCHAR}, #{evLevel,jdbcType=INTEGER},
+      #{evContent,jdbcType=VARCHAR}, #{evaluatImgUrl,jdbcType=VARCHAR}, #{evaluatDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.StoreCoachEvaluate" >
+    insert into store_coach_evaluate
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="evaluateId != null" >
+        evaluateId,
+      </if>
+      <if test="scId != null" >
+        scId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="headImgUrl != null" >
+        headImgUrl,
+      </if>
+      <if test="nickname != null" >
+        nickname,
+      </if>
+      <if test="evLevel != null" >
+        evLevel,
+      </if>
+      <if test="evContent != null" >
+        evContent,
+      </if>
+      <if test="evaluatImgUrl != null" >
+        evaluatImgUrl,
+      </if>
+      <if test="evaluatDate != null" >
+        evaluatDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="evaluateId != null" >
+        #{evaluateId,jdbcType=BIGINT},
+      </if>
+      <if test="scId != null" >
+        #{scId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="headImgUrl != null" >
+        #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="nickname != null" >
+        #{nickname,jdbcType=VARCHAR},
+      </if>
+      <if test="evLevel != null" >
+        #{evLevel,jdbcType=INTEGER},
+      </if>
+      <if test="evContent != null" >
+        #{evContent,jdbcType=VARCHAR},
+      </if>
+      <if test="evaluatImgUrl != null" >
+        #{evaluatImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="evaluatDate != null" >
+        #{evaluatDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.StoreCoachEvaluate" >
+    update store_coach_evaluate
+    <set >
+      <if test="scId != null" >
+        scId = #{scId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="headImgUrl != null" >
+        headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="nickname != null" >
+        nickname = #{nickname,jdbcType=VARCHAR},
+      </if>
+      <if test="evLevel != null" >
+        evLevel = #{evLevel,jdbcType=INTEGER},
+      </if>
+      <if test="evContent != null" >
+        evContent = #{evContent,jdbcType=VARCHAR},
+      </if>
+      <if test="evaluatImgUrl != null" >
+        evaluatImgUrl = #{evaluatImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="evaluatDate != null" >
+        evaluatDate = #{evaluatDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where evaluateId = #{evaluateId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.StoreCoachEvaluate" >
+    update store_coach_evaluate
+    set scId = #{scId,jdbcType=BIGINT},
+      userId = #{userId,jdbcType=BIGINT},
+      headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      nickname = #{nickname,jdbcType=VARCHAR},
+      evLevel = #{evLevel,jdbcType=INTEGER},
+      evContent = #{evContent,jdbcType=VARCHAR},
+      evaluatImgUrl = #{evaluatImgUrl,jdbcType=VARCHAR},
+      evaluatDate = #{evaluatDate,jdbcType=TIMESTAMP}
+    where evaluateId = #{evaluateId,jdbcType=BIGINT}
+  </update>
+  <!--教练评分总和-->
+  <select id="sumStoreCoachEvleve" resultType="java.lang.Integer" parameterType="java.lang.Long">
+    SELECT ifnull(SUM(evLevel), 0) FROM store_coach_evaluate WHERE scId = #{coachId}
+  </select>
+    <!--场馆教练评价总数-->
+  <select id="countStoreCoachEvleve" resultType="java.lang.Integer" parameterType="java.lang.Long">
+    SELECT count(*) FROM store_coach_evaluate WHERE scId = #{coachId}
+  </select>
+    <!--评价列表-->
+    <select id="sroreCoachEvaList" resultType="map" parameterType="map">
+        SELECT u.nickname,u.headImgUrl,ce.evLevel,ce.evaluatDate,ce.evContent,ce.evaluatImgUrl
+        FROM store_coach_evaluate ce
+        LEFT JOIN user_info u ON u.userId = ce.userId
+        WHERE ce.scId = #{coachId}
+        ORDER BY ce.evaluatDate DESC
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--评价列表-->
+    <select id="queryStoreCoachTotal" resultType="java.lang.Integer" parameterType="map">
+        SELECT COUNT(*)
+        FROM store_coach_evaluate ce
+        LEFT JOIN user_info u ON u.userId = ce.userId
+        WHERE ce.scId = #{coachId}
+    </select>
+  <!--评价总数-->
+  <select id="queryStoreCoachEvelTotal" resultType="java.lang.Integer" parameterType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM store_coach_evaluate ce
+        LEFT JOIN user_info u ON u.userId = ce.userId
+        WHERE ce.scId = #{coachId}
+    </select>
+</mapper>

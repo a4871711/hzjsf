@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.CoachAppointmentMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.CoachAppointment" >
+    <constructor >
+      <idArg column="appointId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="appDate" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="appTime" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="appStatus" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    appointId, coachId, appDate, appTime, appStatus, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from coach_appointment
+    where appointId = #{appointId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from coach_appointment
+    where appointId = #{appointId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.CoachAppointment" >
+    insert into coach_appointment (appointId, coachId, appDate, 
+      appTime, appStatus, createdDate
+      )
+    values (#{appointId,jdbcType=BIGINT}, #{coachId,jdbcType=BIGINT}, #{appDate,jdbcType=VARCHAR}, 
+      #{appTime,jdbcType=VARCHAR}, #{appStatus,jdbcType=TINYINT}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.CoachAppointment" >
+    insert into coach_appointment
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="appointId != null" >
+        appointId,
+      </if>
+      <if test="coachId != null" >
+        coachId,
+      </if>
+      <if test="appDate != null" >
+        appDate,
+      </if>
+      <if test="appTime != null" >
+        appTime,
+      </if>
+      <if test="appStatus != null" >
+        appStatus,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="appointId != null" >
+        #{appointId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="appDate != null" >
+        #{appDate,jdbcType=VARCHAR},
+      </if>
+      <if test="appTime != null" >
+        #{appTime,jdbcType=VARCHAR},
+      </if>
+      <if test="appStatus != null" >
+        #{appStatus,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.CoachAppointment" >
+    update coach_appointment
+    <set >
+      <if test="coachId != null" >
+        coachId = #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="appDate != null" >
+        appDate = #{appDate,jdbcType=VARCHAR},
+      </if>
+      <if test="appTime != null" >
+        appTime = #{appTime,jdbcType=VARCHAR},
+      </if>
+      <if test="appStatus != null" >
+        appStatus = #{appStatus,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where appointId = #{appointId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.CoachAppointment" >
+    update coach_appointment
+    set coachId = #{coachId,jdbcType=BIGINT},
+      appDate = #{appDate,jdbcType=VARCHAR},
+      appTime = #{appTime,jdbcType=VARCHAR},
+      appStatus = #{appStatus,jdbcType=TINYINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where appointId = #{appointId,jdbcType=BIGINT}
+  </update>
+  <!--可约时间-->
+  <select id="reducibleTime" resultType="map" parameterType="java.lang.Long">
+    SELECT appDate,appTime,appStatus
+    FROM coach_appointment
+    WHERE coachId = #{coachId}
+  </select>
+
+  <select id="queryCoachAppointment" resultType="String" parameterType="map">
+    SELECT appDate FROM coach_appointment
+      <where>
+          <if test="appTime != null">
+             AND appTime = #{appTime}
+          </if>
+          <if test="coachId != null">
+             AND coachId = #{coachId}
+          </if>
+      </where>
+  </select>
+  <update id="updateCoachAppointment" parameterType="map">
+      UPDATE coach_appointment
+      SET appDate = #{appDate} where coachId = #{coachId} and appTime = #{appTime}
+  </update>
+
+   <insert id="saveCoachAppointment" parameterType="map">
+       INSERT INTO coach_appointment(coachId,appDate,appTime) VALUES(#{coachId}, #{appDate},#{appTime})
+   </insert>
+  <select id="selectByAppTimeAndCoachId" resultType="com.dlc.modules.api.entity.CoachAppointment" parameterType="map">
+    SELECT appointId, coachId, appDate, appTime, appStatus, createdDate
+    FROM coach_appointment
+    WHERE coachId = #{coachId} AND appTime = #{appTime}
+  </select>
+</mapper>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysPrivateClassDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysPrivateClassEntity" id="SysPrivateClassEntity">
+        <result property="privateClassId" column="privateClassId"/>
+        <result property="className" column="className"/>
+        <result property="firstImgUrl" column="firstImgUrl"/>
+        <result property="imgUrl" column="imgUrl"/>
+        <result property="classType" column="classType"/>
+        <result property="classTime" column="classTime"/>
+        <result property="leastBuyNum" column="leastBuyNum"/>
+        <result property="classPrice" column="classPrice"/>
+        <result property="energy" column="energy"/>
+        <result property="classDetail" column="classDetail"/>
+        <result property="validityDay" column="validityDay"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        className,firstImgUrl,imgUrl,classType,classTime,leastBuyNum,classPrice,energy,classDetail,validityDay,createdDate
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysPrivateClassEntity" parameterType="map">
+        SELECT P.`privateClassId`,P.`className`,P.`firstImgUrl`,P.`imgUrl`,l.`grade` AS grade, P.classType AS classType,
+        (select dm.dataName from data_map dm where dm.idxLabel=2 and dm.nextLabel=4 and dm.price=P.classType) AS classTypeName,
+        P.`classTime`,P.`leastBuyNum`,l.`price` AS classPrice,P.`energy`,P.`classDetail`,P.`validityDay`,P.`createdDate`
+        FROM `private_class` P
+        LEFT JOIN `grade_price_ship` l ON P.`privateClassId`=l.`privateClassId`
+        <where>
+            <if test="className != null and className !=''">
+                AND P.className LIKE concat('%',#{className},'%')
+            </if>
+        </where>
+        order BY P.createdDate desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM  private_class
+        <where>
+            <if test="className != null and className !=''">
+                AND className LIKE concat('%',#{className},'%')
+            </if>
+        </where>
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysPrivateClassEntity" parameterType="long">
+        SELECT P.`privateClassId`,P.`className`,P.`firstImgUrl`,P.`imgUrl`,l.`grade` AS classType,l.`grade` AS grade,P.`classTime`,P.`leastBuyNum`,l.`price` AS classPrice,P.`energy`,P.`classDetail`,P.`validityDay`,P.`createdDate`
+        FROM `private_class` P
+        INNER JOIN `grade_price_ship` l ON P.`privateClassId`=l.`privateClassId`
+        WHERE P.privateClassId=#{privateClassId}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysPrivateClassEntity">
+        INSERT INTO private_class
+        (
+        <include refid="Base_Column_List"/>
+        )
+        VALUES
+        (
+        #{className},
+        #{firstImgUrl},
+        #{imgUrl},
+        #{classType},
+        #{classTime},
+        #{leastBuyNum},
+        #{classPrice},
+        #{energy},
+        #{classDetail},
+        #{validityDay},
+        #{createdDate}
+        )
+    </insert>
+    <select id="queryLast" resultType="com.dlc.modules.sys.entity.SysPrivateClassEntity" parameterType="com.dlc.modules.sys.entity.SysPrivateClassEntity">
+        SELECT * FROM private_class WHERE className=#{className} order by  createdDate desc limit 0,1
+    </select>
+    <!--删除私教课-->
+    <delete id="deleteBatch">
+        delete from private_class where privateClassId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <!--删除教练课程关系记录-->
+    <delete id="deleteBatchCcShip">
+        delete from coach_class_ship where classId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <!--删除等级课程价格关系记录-->
+    <delete id="deleteBatchGpShip">
+        delete from grade_price_ship where privateClassId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysPrivateClassEntity">
+        UPDATE private_class SET
+        className=#{className},
+        firstImgUrl=#{firstImgUrl},
+        imgUrl=#{imgUrl},
+        classType=#{classType},
+        classTime=#{classTime},
+        leastBuyNum=#{leastBuyNum},
+        classPrice=#{classPrice},
+        energy=#{energy},
+        classDetail=#{classDetail},
+        validityDay=#{validityDay},
+        createdDate=#{createdDate}
+        WHERE  privateClassId=#{privateClassId}
+    </update>
+</mapper>

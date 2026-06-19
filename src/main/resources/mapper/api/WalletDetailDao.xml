@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.WalletDetailDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.api.entity.WalletDetailEntity" id="walletDetailMap">
+        <result property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="type" column="type" jdbcType="TINYINT"/>
+        <result property="money" column="money" jdbcType="DOUBLE"/>
+        <result property="aliAccount" column="AliAccount" jdbcType="VARCHAR"/>
+        <result property="wxCount" column="wxCount" jdbcType="VARCHAR"/>
+        <result property="transactionNumber" column="transactionNumber" jdbcType="VARCHAR"/>
+        <result property="reason" column="reason" jdbcType="VARCHAR"/>
+        <result property="orderNo" column="orderNo" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="openId" column="openId" jdbcType="VARCHAR"/>
+        <result property="realName" column="realName" jdbcType="VARCHAR"/>
+        <result property="checkedTime" column="checkedTime" jdbcType="TIMESTAMP"/>
+        <result property="transactionTime" column="transactionTime" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.api.entity.WalletDetailEntity">
+		select * from wallet_detail where id = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.api.entity.WalletDetailEntity">
+		select * from wallet_detail
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by id desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from wallet_detail 
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.WalletDetailEntity" useGeneratedKeys="true" keyProperty="id">
+		insert into wallet_detail
+		(
+			`userId`, 
+			`type`, 
+			`money`, 
+			`AliAccount`, 
+			`wxCount`, 
+			`transactionNumber`, 
+			`reason`, 
+			`orderNo`, 
+			`status`, 
+			`openId`, 
+			`checkedTime`, 
+			`transactionTime`, 
+			`realName`,
+			`createTime`
+		)
+		values
+		(
+			#{userId}, 
+			#{type}, 
+			#{money}, 
+			#{aliAccount}, 
+			#{wxCount}, 
+			#{transactionNumber}, 
+			#{reason}, 
+			#{orderNo}, 
+			#{status}, 
+			#{openId}, 
+			#{checkedTime}, 
+			#{transactionTime}, 
+			#{realName},
+			#{createTime}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.api.entity.WalletDetailEntity">
+		update wallet_detail 
+		<set>
+			<if test="userId != null">`userId` = #{userId}, </if>
+			<if test="type != null">`type` = #{type}, </if>
+			<if test="money != null">`money` = #{money}, </if>
+			<if test="aliAccount != null">`AliAccount` = #{aliAccount}, </if>
+			<if test="wxCount != null">`wxCount` = #{wxCount}, </if>
+			<if test="transactionNumber != null">`transactionNumber` = #{transactionNumber}, </if>
+			<if test="reason != null">`reason` = #{reason}, </if>
+			<if test="orderNo != null">`orderNo` = #{orderNo}, </if>
+			<if test="status != null">`status` = #{status}, </if>
+			<if test="openId != null">`openId` = #{openId}, </if>
+			<if test="checkedTime != null">`checkedTime` = #{checkedTime}, </if>
+			<if test="transactionTime != null">`transactionTime` = #{transactionTime}, </if>
+			<if test="createTime != null">`createTime` = #{createTime}</if>
+		</set>
+		where id = #{id}
+	</update>
+	
+	<delete id="delete">
+		delete from wallet_detail where id = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from wallet_detail where id in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+    <!--状态（1为审核中 2审核失败 3已完成  4提现中 5提现失败,6 充值失败）-->
+    <!--明细类型（1.(用户) 提现 2.（教练）提现）'-->
+    <select id="queryWithdrawCash" resultType="double" parameterType="Long">
+      SELECT SUM(money) FROM wallet_detail WHERE userId = #{userId} AND type = 2 AND status = 3
+    </select>
+
+    <select id="queryWithdrawCashList" parameterType="map" resultType="map">
+        SELECT createTime,concat(money,'') as money,status FROM wallet_detail WHERE userId = #{coachId} AND type = 2
+		 order by createTime desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryWithdrawCashListTotal" parameterType="map" resultType="int">
+        SELECT COUNT(1) FROM wallet_detail WHERE userId = #{coachId} AND type = 2
+    </select>
+
+    <select id="queryCoachWalletBalance" resultType="BigDecimal" parameterType="long">
+        SELECT money FROM coach_wallet WHERE coachId = #{coachId}
+    </select>
+
+    <update id="updateCoachWalletMoney" parameterType="map">
+        UPDATE coach_wallet SET money = #{newBalance} WHERE coachId = #{coachId}
+    </update>
+	<!--充值后更新详情信息(已完成)-->
+	<update id="updateDetailByOrderNo" parameterType="java.util.Map">
+		UPDATE wallet_detail
+			SET money = #{money},
+			transactionNumber = #{transactionNumber},
+			status = 3
+			WHERE orderNo = #{orderNo}
+	</update>
+    <!--根据订单编号查询userId-->
+    <select id="queryUidByOrderNo" resultType="java.lang.Long" parameterType="java.lang.String">
+        select userId
+          from wallet_detail
+          WHERE orderNo = #{orderNo}
+    </select>
+</mapper>

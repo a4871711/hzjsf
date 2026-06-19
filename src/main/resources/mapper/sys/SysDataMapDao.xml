@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysDataMapDao">
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+    SELECT * FROM `data_map` where idxLabel = 1
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+</select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysDataMapEntity" parameterType="long">
+        SELECT
+        *
+        FROM data_map
+        WHERE dataMapId=#{dataMapId}
+        and idxLabel = 1
+    </select>
+    <select id="queryTotal" resultType="int">
+      SELECT COUNT(1) FROM `data_map` where idxLabel = 1
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        insert into data_map
+        (
+        `idxLabel`,
+        `dataName`,
+        `description`
+        )
+        values
+        (
+        1,
+        #{dataName},
+        #{description}
+        )
+    </insert>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+         UPDATE data_map SET
+		dataName=#{dataName},
+		description=#{description}
+		WHERE  dataMapId = #{dataMapId}
+		and idxLabel = 1
+    </update>
+    <delete id="deleteBatch">
+        delete from data_map where idxLabel = 1 and dataMapId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <!--查询规则等级-->
+    <select id="getGradeRule" resultType="java.lang.Integer" parameterType="java.lang.Double">
+        select price as grade
+          from data_map
+          where idxLabel=2
+          and nextLabel=3
+          and val <![CDATA[ >= ]]> #{money} order by val asc limit 1
+    </select>
+    <!--查询最大等级数-->
+    <select id="queryMaxGrade" resultType="java.lang.Integer">
+        select price as grade
+          from data_map
+          where idxLabel=2
+          and nextLabel=3
+          order by val desc limit 1
+    </select>
+</mapper>

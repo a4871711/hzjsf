@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>关于我们</title>
+    <#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <!--<#if shiro.hasPermission("sys:about:save")>-->
+                <!--<a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>-->
+            <!--</#if>-->
+            <#if shiro.hasPermission("sys:about:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <!--<#if shiro.hasPermission("sys:about:delete")>-->
+                <!--<a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>-->
+            <!--</#if>-->
+        </div>
+        <table id="deptTable" data-mobile-responsive="true" data-click-to-select="true">
+            <thead>
+            <tr>
+                <th data-field="selectItem" data-checkbox="true"></th>
+            </tr>
+            </thead>
+        </table>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div id="img" class="form-group">
+                <div class="col-sm-2 control-label">app图标</div>
+                <div class="logoImg">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_zhu"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                    <span>*请上传宽184像素，高184像素的图片</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">app名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" style="cursor:pointer;"
+                           v-model="list.appName" @click="deptTree" placeholder="app名称"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">客服电话</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.serviceTel" placeholder="客服电话"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">下载地址(Andorid)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.appUrl" placeholder="下载地址(Andorid)"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">下载地址(IOS)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.appUrlIos" placeholder="下载地址(IOS)"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">版本号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.version" placeholder="版本号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">中文公司名</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.companyNameCHN" placeholder="中文公司名"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">英文公司名</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.companyNameENG" placeholder="英文公司名"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">开门限制距离</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.openDoor" placeholder="单位米"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">开门二维码有效时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.qrcodeValid" placeholder="单位秒"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- 选择部门 -->
+<div id="deptLayer" style="display: none;padding:10px;">
+    <ul id="deptTree" class="ztree"></ul>
+</div>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/about.js?_${.now?long}"></script>
+</body>
+</html>

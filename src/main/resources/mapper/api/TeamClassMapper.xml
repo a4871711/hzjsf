@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.TeamClassMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.TeamClass" >
+    <constructor >
+      <idArg column="teamClassId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="teamClassName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="teamClassType" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="classPrice" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="totalNum" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="actulNum" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="energy" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="room" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classTime" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="place" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="introduce" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classLabel" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classDetail" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="firstImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+
+  <sql id="Base_Column_List" >
+    teamClassId, storeId, teamClassName, teamClassType, classPrice, totalNum, actulNum, 
+    coachId, coachName, energy, room, classTime, place,introduce, classDetail, classLabel, firstImgUrl, classImgUrl, createdDate
+  </sql>
+
+  <select id="selectByPrimaryKey" resultType="com.dlc.modules.api.entity.TeamClass" parameterType="java.lang.Long" >
+    select teamClassId, storeId, teamClassName, teamClassType, classPrice, totalNum, actulNum,
+    coachId, coachName, energy, room, classTime, place,introduce, classDetail, classLabel, firstImgUrl, classImgUrl, createdDate
+    from team_class
+    where teamClassId = #{teamClassId,jdbcType=BIGINT}
+  </select>
+  <!--查询团体课-->
+  <select id="selectByPrimaryKeyMap" resultType="java.util.Map" parameterType="java.lang.Long" >
+    select teamClassId, storeId, teamClassName, teamClassType, concat(classPrice,'') as classPrice, totalNum, actulNum,
+    coachId, coachName, energy, room, classTime, place,introduce, classDetail, classLabel, firstImgUrl, classImgUrl, createdDate
+    from team_class
+    where teamClassId = #{teamClassId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from team_class
+    where teamClassId = #{teamClassId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.TeamClass" >
+    insert into team_class (teamClassId, storeId, teamClassName, 
+      teamClassType, classPrice, totalNum, 
+      actulNum, coachId, coachName, 
+      energy, room, classTime, 
+      place, classLabel, firstImgUrl, classImgUrl,
+      createdDate, introduce, classDetail
+      )
+    values (#{teamClassId,jdbcType=BIGINT}, #{storeId,jdbcType=BIGINT}, #{teamClassName,jdbcType=VARCHAR}, 
+      #{teamClassType,jdbcType=INTEGER}, #{classPrice,jdbcType=DOUBLE}, #{totalNum,jdbcType=INTEGER},
+      #{actulNum,jdbcType=INTEGER}, #{coachId,jdbcType=BIGINT}, #{coachName,jdbcType=VARCHAR},
+      #{energy,jdbcType=DOUBLE}, #{room,jdbcType=VARCHAR}, #{classTime,jdbcType=VARCHAR},
+      #{place,jdbcType=VARCHAR}, #{classLabel,jdbcType=VARCHAR}, #{firstImgUrl,jdbcType=VARCHAR}, #{classImgUrl,jdbcType=VARCHAR},
+      #{createdDate,jdbcType=TIMESTAMP}, #{introduce,jdbcType=LONGVARCHAR}, #{classDetail,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.TeamClass" >
+    insert into team_class
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="teamClassId != null" >
+        teamClassId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="teamClassName != null" >
+        teamClassName,
+      </if>
+      <if test="teamClassType != null" >
+        teamClassType,
+      </if>
+      <if test="classPrice != null" >
+        classPrice,
+      </if>
+      <if test="totalNum != null" >
+        totalNum,
+      </if>
+      <if test="actulNum != null" >
+        actulNum,
+      </if>
+      <if test="coachId != null" >
+        coachId,
+      </if>
+      <if test="coachName != null" >
+        coachName,
+      </if>
+      <if test="energy != null" >
+        energy,
+      </if>
+      <if test="room != null" >
+        room,
+      </if>
+      <if test="classTime != null" >
+        classTime,
+      </if>
+      <if test="place != null" >
+        place,
+      </if>
+      <if test="classLabel != null" >
+        classLabel,
+      </if>
+      <if test="firstImgUrl != null" >
+        firstImgUrl,
+      </if>
+      <if test="classImgUrl != null" >
+        classImgUrl,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="introduce != null" >
+        introduce,
+      </if>
+      <if test="classDetail != null" >
+        classDetail,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="teamClassId != null" >
+        #{teamClassId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="teamClassName != null" >
+        #{teamClassName,jdbcType=VARCHAR},
+      </if>
+      <if test="teamClassType != null" >
+        #{teamClassType,jdbcType=INTEGER},
+      </if>
+      <if test="classPrice != null" >
+        #{classPrice,jdbcType=DOUBLE},
+      </if>
+      <if test="totalNum != null" >
+        #{totalNum,jdbcType=TINYINT},
+      </if>
+      <if test="actulNum != null" >
+        #{actulNum,jdbcType=TINYINT},
+      </if>
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="coachName != null" >
+        #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="energy != null" >
+        #{energy,jdbcType=DOUBLE},
+      </if>
+      <if test="room != null" >
+        #{room,jdbcType=VARCHAR},
+      </if>
+      <if test="classTime != null" >
+        #{classTime,jdbcType=VARCHAR},
+      </if>
+      <if test="place != null" >
+        #{place,jdbcType=VARCHAR},
+      </if>
+      <if test="classLabel != null" >
+        #{classLabel,jdbcType=VARCHAR},
+      </if>
+      <if test="firstImgUrl != null" >
+        #{firstImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="classImgUrl != null" >
+        #{classImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="introduce != null" >
+        #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="classDetail != null" >
+        #{classDetail,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.TeamClass" >
+    update team_class
+    <set >
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="teamClassName != null" >
+        teamClassName = #{teamClassName,jdbcType=VARCHAR},
+      </if>
+      <if test="teamClassType != null" >
+        teamClassType = #{teamClassType,jdbcType=INTEGER},
+      </if>
+      <if test="classPrice != null" >
+        classPrice = #{classPrice,jdbcType=DOUBLE},
+      </if>
+      <if test="totalNum != null" >
+        totalNum = #{totalNum,jdbcType=TINYINT},
+      </if>
+      <if test="actulNum != null" >
+        actulNum = #{actulNum,jdbcType=TINYINT},
+      </if>
+      <if test="coachId != null" >
+        coachId = #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="coachName != null" >
+        coachName = #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="energy != null" >
+        energy = #{energy,jdbcType=DOUBLE},
+      </if>
+      <if test="room != null" >
+        room = #{room,jdbcType=VARCHAR},
+      </if>
+      <if test="classTime != null" >
+        classTime = #{classTime,jdbcType=VARCHAR},
+      </if>
+      <if test="place != null" >
+        place = #{place,jdbcType=VARCHAR},
+      </if>
+      <if test="classLabel != null" >
+        classLabel = #{classLabel,jdbcType=VARCHAR},
+      </if>
+      <if test="firstImgUrl != null" >
+        firstImgUrl = #{firstImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="classImgUrl != null" >
+        classImgUrl = #{classImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="introduce != null" >
+        introduce = #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="classDetail != null" >
+        classDetail = #{classDetail,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where teamClassId = #{teamClassId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.dlc.modules.api.entity.TeamClass" >
+    update team_class
+    set storeId = #{storeId,jdbcType=BIGINT},
+      teamClassName = #{teamClassName,jdbcType=VARCHAR},
+      teamClassType = #{teamClassType,jdbcType=INTEGER},
+      classPrice = #{classPrice,jdbcType=DOUBLE},
+      totalNum = #{totalNum,jdbcType=TINYINT},
+      actulNum = #{actulNum,jdbcType=TINYINT},
+      coachId = #{coachId,jdbcType=BIGINT},
+      coachName = #{coachName,jdbcType=VARCHAR},
+      energy = #{energy,jdbcType=DOUBLE},
+      room = #{room,jdbcType=VARCHAR},
+      classTime = #{classTime,jdbcType=VARCHAR},
+      place = #{place,jdbcType=VARCHAR},
+      classLabel = #{classLabel,jdbcType=VARCHAR},
+      firstImgUrl = #{firstImgUrl,jdbcType=VARCHAR},
+      classImgUrl = #{classImgUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      introduce = #{introduce,jdbcType=LONGVARCHAR},
+      classDetail = #{classDetail,jdbcType=LONGVARCHAR}
+    where teamClassId = #{teamClassId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.TeamClass" >
+    update team_class
+    set storeId = #{storeId,jdbcType=BIGINT},
+      teamClassName = #{teamClassName,jdbcType=VARCHAR},
+      teamClassType = #{teamClassType,jdbcType=INTEGER},
+      classPrice = #{classPrice,jdbcType=DOUBLE},
+      totalNum = #{totalNum,jdbcType=TINYINT},
+      actulNum = #{actulNum,jdbcType=TINYINT},
+      coachId = #{coachId,jdbcType=BIGINT},
+      coachName = #{coachName,jdbcType=VARCHAR},
+      energy = #{energy,jdbcType=DOUBLE},
+      room = #{room,jdbcType=VARCHAR},
+      classTime = #{classTime,jdbcType=VARCHAR},
+      place = #{place,jdbcType=VARCHAR},
+      classLabel = #{classLabel,jdbcType=VARCHAR},
+      firstImgUrl = #{firstImgUrl,jdbcType=VARCHAR},
+      classImgUrl = #{classImgUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where teamClassId = #{teamClassId,jdbcType=BIGINT}
+  </update>
+
+  <!--门店活动列表-->
+  <select id="selectStoreTeamClassList" resultType="map" parameterType="map">
+    SELECT
+    teamClassId,
+    storeId,
+    teamClassName,
+    teamClassType,
+    totalNum,
+    actulNum,
+    classTime,
+    classLabel,
+    firstImgUrl,
+    classImgUrl,
+    date_format(SUBSTR(classTime,1,16),'%Y-%m-%d %H:%i') as startTime
+    FROM
+    team_class
+    WHERE
+    TIMESTAMPDIFF(MINUTE,date_format(
+    SUBSTR(
+    classTime,
+    1,
+    16
+    ),
+    '%Y-%m-%d %H:%i'
+    ), now()) <![CDATA[<]]> 0
+    AND storeId = #{storeId}
+    ORDER BY startTime ASC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <select id="queryTotal" resultType="int" parameterType="map">
+    SELECT COUNT(*) FROM team_class
+    WHERE TIMESTAMPDIFF(MINUTE,date_format(
+    SUBSTR(
+    classTime,
+    1,
+    16
+    ),
+    '%Y-%m-%d %H:%i'
+    ), now()) <![CDATA[<]]> 0
+    AND storeId = #{storeId}
+  </select>
+</mapper>

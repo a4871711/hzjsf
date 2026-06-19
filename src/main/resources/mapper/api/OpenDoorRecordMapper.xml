@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.OpenDoorRecordMapper">
+    <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.OpenDoorRecord">
+        <constructor>
+            <idArg column="id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="longitude" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="latitude" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="distance" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="result" jdbcType="TINYINT" javaType="java.lang.Integer"/>
+            <arg column="remark" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        , user_id, store_id, longitude, latitude, distance, result, remark, create_time
+    </sql>
+
+    <select id="selectOpenDoorRecordList" resultType="com.dlc.modules.sys.vo.OpenRecordVo" parameterType="java.util.Map">
+        SELECT r.*, u.nickname, u.phone, s.storeName as store_name, s2.storeName as device_store_name
+        FROM user_open_door_record as r
+        LEFT JOIN user_info as u on u.userId = r.user_id
+        LEFT JOIN store as s on s.storeId = r.store_id
+        LEFT JOIN store as s2 on s2.storeId = r.device_store_id
+        <where>
+            r.status = 1
+            <if test="phone != null and phone != ''">
+                and u.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="store_name != null and store_name != ''">
+                and s.storeName LIKE concat('%',#{store_name},'%')
+            </if>
+            <if test="device_store_name != null and device_store_name != ''">
+                and s2.storeName LIKE concat('%',#{device_store_name},'%')
+            </if>
+            <if test="store_id != null and store_id != ''">
+                and r.store_id = #{store_id}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND r.store_id in (${storeIds})
+            </if>
+            <if test="startTime != null and ''!=startTime and endTime!=null and endTime!=''">
+                AND r.create_time between #{startTime} and #{endTime}
+            </if>
+        </where>
+        ORDER BY r.id desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="selectOpenDoorRecordTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        SELECT COUNT(*)
+        FROM user_open_door_record as r
+        LEFT JOIN user_info as u on u.userId = r.user_id
+        LEFT JOIN store as s on s.storeId = r.store_id
+        LEFT JOIN store as s2 on s2.storeId = r.device_store_id
+        <where>
+            r.status = 1
+            <if test="phone != null and phone != ''">
+                and u.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="store_name != null and store_name != ''">
+                and s.storeName LIKE concat('%',#{store_name},'%')
+            </if>
+            <if test="device_store_name != null and device_store_name != ''">
+                and s2.storeName LIKE concat('%',#{device_store_name},'%')
+            </if>
+            <if test="store_id != null and store_id != ''">
+                and r.store_id = #{store_id}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND r.store_id in (${storeIds})
+            </if>
+            <if test="startTime != null and ''!=startTime and endTime!=null and endTime!=''">
+                AND r.create_time between #{startTime} and #{endTime}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        select
+        <include refid="Base_Column_List"/>
+        from user_open_door_record
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <insert id="insert" parameterType="com.dlc.modules.api.entity.OpenDoorRecord">
+        insert into user_open_door_record (user_id, store_id, longitude, latitude, distance, result, remark, device_store_id,
+                                           create_time)
+        values (#{userId,jdbcType=BIGINT},
+                #{storeId,jdbcType=BIGINT},
+                #{longitude,jdbcType=VARCHAR},
+                #{latitude,jdbcType=VARCHAR},
+                #{distance,jdbcType=INTEGER},
+                #{result,jdbcType=TINYINT},
+                #{remark,jdbcType=VARCHAR},
+                #{deviceStoreId,jdbcType=BIGINT},
+                #{createTime,jdbcType=TIMESTAMP})
+    </insert>
+
+    <select id="getStorePeopleTotal" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT count(DISTINCT user_id)
+        FROM user_open_door_record
+        WHERE result = 1 and create_time > DATE_ADD(NOW(),INTERVAL -2 HOUR)
+        <if test="storeIds != null and storeIds != ''">
+            AND store_id in (${storeIds})
+        </if>
+    </select>
+
+    <select id="getNearOpenLog" resultType="java.util.Map">
+        SELECT *, date_format(create_time, '%Y-%m-%d %H:%i:%s') as open_time
+        FROM user_open_door_record
+        WHERE user_id = #{userId} AND create_time > #{startTime}
+        ORDER BY id asc
+        LIMIT 1
+    </select>
+
+    <select id="getLastOpenLog" resultType="java.util.Map">
+        SELECT *, date_format(create_time, '%Y-%m-%d %H:%i:%s') as open_time
+        FROM user_open_door_record
+        WHERE user_id = #{userId} AND id <![CDATA[ < ]]> #{id}
+        ORDER BY id desc
+        LIMIT 1
+    </select>
+
+
+</mapper>

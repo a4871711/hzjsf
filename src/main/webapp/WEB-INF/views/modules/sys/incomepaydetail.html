@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>收支明细表</title>
+    <#include "/header.html"/>
+        </head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="row">
+                <div class="form-group col-sm-1" style="width: 15%">
+                    <input type="text" class="form-control" v-model="q.userName" placeholder="用户">
+                </div>
+                <div class="form-group col-sm-1" style="width: 15%">
+                    <input type="text" class="form-control" v-model="q.phone" placeholder="手机号">
+                </div>
+                <div class="form-group col-sm-2" style="width: 15%">
+                    <input type="text" class="form-control" v-model="q.orderNo" placeholder="订单号">
+                </div>
+                <div class="form-group col-sm-2" style="width: 15%">
+                    <input type="text" class="form-control" v-model="q.storeName" placeholder="门店名称">
+                </div>
+                <div class="form-group col-md-2">
+                    <select class="form-control" v-model="q.payType">
+                        <option value="">支付用途</option>
+                      <!--  <option value="1">提现</option>-->
+                        <option value="2">会员卡购买</option>
+                        <option value="13">会员卡自动续费</option>
+                        <option value="3">商城购买</option>
+                        <option value="4">私教课购买</option>
+                        <option value="5">团体课购买</option>
+                        <option value="6">充值</option>
+                       <!-- <option value="7">广告消费</option>
+                        <option value="8">积分兑换</option>-->
+                        <option value="9">商城退款</option>
+                        <option value="11">提现失败退款</option>
+                        <option value="10">其他</option>
+
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <select class="form-control" v-model="q.tradeType">
+                        <option value="">收支方式</option>
+                        <option value="1">钱包</option>
+                        <option value="2">微信</option>
+                        <option value="3">支付宝</option>
+                    </select>
+                </div>
+            </div>
+            <div class="">
+                <div class="form-group col-md-2">
+                    <select class="form-control" v-model="q.tradeStatus">
+                        <option value="">状态</option>
+                        <option value="3">已完成</option>
+                        <option value="-1">失败</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <input id="sdate" class="Wdate" style="width: 100%;padding: 5px 10px;"
+                           onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',readOnly:true,maxDate:'#F{$dp.$D(\'edate\')}'})"
+                           placeholder="开始时间"/>
+                </div>
+                <div class="form-group col-md-2">
+                    <input id="edate" class="Wdate" style="width: 100%;padding: 5px 10px;"
+                           onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',readOnly:true,minDate:'#F{$dp.$D(\'sdate\')}'})"
+                           placeholder="结束时间"/><br>
+                </div>
+            </div>
+            <a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+
+            <a class="btn btn-default" onclick="location.reload()"><i class="fa fa-repeat"></i>&nbsp;重置</a>
+            <a class="btn btn-default" onclick="vm.export()"><i class="fa fa-cloud-upload"></i>&nbsp;部分导出</a>
+            <a class="btn btn-default" onclick="vm.exportAll()"><i class="fa fa-upload"></i>&nbsp;导出所有数据</a>
+            <a class="btn btn-default" onclick="vm.updateOrderStatus()"><i class="fa fa-upload"></i>&nbsp;更新订单状态</a>
+
+        </div>
+        <div class="row"><h3 style="display: inline">平台总收入: <span id="countMoney"></span></h3>
+
+            <h4 style="display: inline;margin-left: 20px">本页收入: <span id="pageMoney"></span></h4></div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <!-- 更新订单状态 -->
+    <div id="updateStatusWindow" style="display: none; padding: 20px 20px 0 20px; ">
+        <div class="form-group">
+            <div class="form-group">
+                <select class="form-control" v-model="orderInfo.tradeStatus">
+                    <option value="" selected>请选择</option>
+                    <option value="3">已完成</option>
+                    <option value="7">已退款</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <input type="button" class="btn btn-primary" @click="doUpdateOrderStatus" value="确认"/>
+        </div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">用户ID</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.userId" placeholder="用户ID"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">订单号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.orderNo" placeholder="订单号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">流水号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.transactionNumber"
+                           placeholder="流水号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">支付用途（1 提现 2.会员卡购买 3.商城购买 4.私教课购买 5.团体课购买 6.充值 7.广告消费 8.积分兑换 9.商城退款
+                    10.其他）
+                </div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.payType"
+                           placeholder="支付用途（1 提现 2.会员卡购买 3.商城购买 4.私教课购买 5.团体课购买 6.充值 7.广告消费 8.积分兑换 9.商城退款 10.其他）"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">金额数</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.money" placeholder="金额数"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">收支时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.tradeDate" placeholder="收支时间"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">收支方式(1:钱包 2：微信支付 3：支付宝支付)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.tradeType"
+                           placeholder="收支方式(1:钱包 2：微信支付 3：支付宝支付)"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">微信openId</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.openId" placeholder="微信openId"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">状态（1为审核中 2审核失败 3已完成 4提现中 5提现失败,6 充值失败）</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.tradeStatus"
+                           placeholder="状态（1为审核中 2审核失败 3已完成  4提现中 5提现失败,6 充值失败）"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">审核通过时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.checkedTime" placeholder="审核通过时间"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">交易完成时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.transactionTime"
+                           placeholder="交易完成时间"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">创建时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="incomePayDetail.createdDate" placeholder="创建时间"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/plugins/jquery.form.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/incomepaydetail.js?_${.now?long}"></script>
+
+<script src="${request.contextPath}/statics/plugins/My97DatePicker/WdatePicker.js"></script>
+</body>
+</html>

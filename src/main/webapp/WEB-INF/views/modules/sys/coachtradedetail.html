@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>教练收支明细</title>
+    <#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="col-md-2">
+                <input type="text" class="form-control" v-model="q.phone" placeholder="手机号">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" v-model="q.coachName" placeholder="教练">
+            </div>
+            <div class="col-md-2">
+                <select class="form-control" v-model="q.status">
+                    <option value="">状态</option>
+                    <option value="0">进行中</option>
+                    <option value="1">已完成</option>
+                    <option value="2">交易失败</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <input id="sdate" class="Wdate" style="width: 100%;padding: 5px 10px;"
+                       onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',readOnly:true,maxDate:'#F{$dp.$D(\'edate\')}'})"
+                       placeholder="开始时间"/>
+            </div>
+            <div class="form-group col-md-2">
+                <input id="edate" class="Wdate" style="width: 100%;padding: 5px 10px;"
+                       onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',readOnly:true,minDate:'#F{$dp.$D(\'sdate\')}'})"
+                       placeholder="结束时间"/><br>
+            </div>
+            <a class="btn btn-primary" @click="query"><i class="fa fa-search"></i>&nbsp;搜索</a>
+            <!--<#if shiro.hasPermission("sys:coachtradedetail:save")>
+            <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:coachtradedetail:update")>
+            <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:coachtradedetail:delete")>
+            <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>-->
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">教练ID</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.coachId" placeholder="教练ID"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">交易类型（1.课程回款 2.课程入账退款 ）</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.tradeType"
+                           placeholder="交易类型（1.课程回款 2.课程入账退款 ）"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">金额数</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.money" placeholder="金额数"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">提现到的支付宝号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.AliAccount"
+                           placeholder="提现到的支付宝号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">提现到的微信号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.wxCount" placeholder="提现到的微信号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">流水号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.transactionNumber"
+                           placeholder="流水号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">失败原因</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.reason" placeholder="失败原因"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">提现,充值订单号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.orderNo" placeholder="提现,充值订单号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">状态（0：进行中 1：已完成 2.交易失败）</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.status"
+                           placeholder="状态（0：进行中 1：已完成 2.交易失败）"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">审核通过时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.checkedTime"
+                           placeholder="审核通过时间"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">交易完成时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.transactionTime"
+                           placeholder="交易完成时间"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">创建时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="coachTradeDetail.createTime" placeholder="创建时间"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/plugins/My97DatePicker/WdatePicker.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/coachtradedetail.js?_${.now?long}"></script>
+</body>
+</html>

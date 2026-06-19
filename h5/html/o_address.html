@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="../css/aui.css" />
+    <link rel="stylesheet" type="text/css" href="../css/dropload.css">
+    <link rel="stylesheet" type="text/css" href="../css/o_base.css">
+    <link rel="stylesheet" type="text/css" href="../css/o_style.css">
+    <title>收货地址</title>
+</head>
+
+<body>
+    <div id="address">
+        <div class="addressList">
+            <!-- <div class="mg-t-10 pd-15 bfff aui-content">
+                <label class="aui-list-item-label aui-list aui-list-in mg-t-10">
+                    <div class="border-b pd-b-15">
+                        <div class="address font15">广东省东莞市南城区</div>
+                        <div class="flex cbbb">
+                            <div class="name">Ocean</div>
+                            <div class="phone mg-l-10">18820129123</div>
+                        </div>
+                    </div>
+                    <div class="tool pd-t-15 flex flexBetween flexACenter">
+                        <input class="aui-radio" type="radio" name="address" checked>
+                    </div>
+                </label>
+                <div class="tools pd-t-15 flex flexBetween flexACenter wd-50">
+                    <div class="edit wd-50 flex" onclick="editAddress(1)">
+                        <div class="aui-list-item-label-icon">
+                            <i class="aui-iconfont aui-icon-edit"></i>
+                        </div>
+                        <div class="aui-list-item-inner">
+                            编辑
+                        </div>
+                    </div>
+                    <div class="delete wd-50 flex">
+                        <div class="aui-list-item-label-icon">
+                            <i class="aui-iconfont aui-icon-trash"></i>
+                        </div>
+                        <div class="aui-list-item-inner">
+                            删除
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+        </div>
+        <div class="empty hide tac">—— 暂无收货地址 ——</div>
+        <div class="btn mainBtn wd-90 mg-t-50" onclick="">添加收货地址</div>
+    </div>
+</body>
+<script type="text/javascript" src="../js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="../js/dropload.min.js"></script>
+<script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+<script type="text/javascript" charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=WXocean"></script>
+<script type="text/javascript" src="https://3gimg.qq.com/lightmap/components/geolocation/geolocation.min.js"></script>
+<script type="text/javascript" src="../js/layer.js"></script>
+<script type="text/javascript" src="../js/dlc.js"></script>
+<script type="text/javascript" src="../js/o_base.js"></script>
+<script>
+    var addressData;
+    ajaxPost({}, "api/address/list", function (res) {
+        var str = "";
+        if (res.code == 101) {
+            moveItem("userInfo")
+            getToken();
+        }
+        if (res.code == 1) {
+            if (res.data.length == 0) {
+                $('.empty').show()
+            } else {
+                addressData = res.data;
+                res.data.forEach((item, index) => {
+                    var addressName = item.province + item.city + item.zone + " " + item.addr;
+                    str +=
+                        '<div class="mg-t-10 pd-15 bfff aui-content">' +
+                        '<label class="aui-list-item-label aui-list aui-list-in mg-t-10">' +
+                        '<div class="border-b pd-b-15" onclick="pickUp(' + item.userAddressId + ',\'' +
+                        addressName + '\')">' +
+                        '<div class="address font15">' + addressName + '</div>' +
+                        '<div class="flex cbbb">' +
+                        '<div class="name">' + item.userName + '</div>' +
+                        '<div class="phone mg-l-10">' + item.phone + '</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div class="tool pd-t-15 flex flexBetween flexACenter">' +
+                        // '<input class="aui-radio" type="radio" name="address" checked>' +
+                        '</div>' +
+                        '<div class="tools flex flexBetween flexACenter wd-40">' +
+                        '<div class="edit wd-50 flex" onclick="editAddress(' + item.userAddressId +
+                        ',' + index + ')">' +
+                        '<div class="aui-list-item-label-icon">' +
+                        '<i class="aui-iconfont aui-icon-edit mg-r-5"></i>' +
+                        '</div>' +
+                        '<div class="aui-list-item-inner">编辑</div>' +
+                        '</div>' +
+                        '<div class="delete wd-50 flex" onclick="delAddress(' + item.userAddressId +
+                        ')">' +
+                        '<div class="aui-list-item-label-icon">' +
+                        '<i class="aui-iconfont aui-icon-trash mg-r-5"></i>' +
+                        '</div>' +
+                        '<div class="aui-list-item-inner">删除</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '</label>' +
+
+                        '</div>';
+                });
+                $(".addressList").html(str)
+            }
+        }
+    });
+
+    function editAddress(id, index) {
+        setItem("editAddress", JSON.stringify(addressData[index]))
+        goTo("o_addressAdd.html", "addressId=" + id);
+    }
+
+    function delAddress(id) {
+        ajaxPost({
+            userAddressId: id
+        }, "api/address/delete", function (res) {
+            layer_msg(res.msg)
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        });
+    }
+
+    function pickUp(id, address) {
+        setItem("address", address)
+        goTo("o_order.html", "addressId=" + id);
+    }
+
+    $(".mainBtn").on("click", function (res) {
+        goTo("o_addressAdd.html")
+    });
+</script>
+
+</html>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.DynamicShieldMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.DynamicShield" >
+    <constructor >
+      <idArg column="shieldId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="dynamicId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    shieldId, userId, dynamicId, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from dynamic_shield
+    where shieldId = #{shieldId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from dynamic_shield
+    where shieldId = #{shieldId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.DynamicShield" >
+    insert into dynamic_shield (shieldId, userId, dynamicId, 
+      createdDate)
+    values (#{shieldId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{dynamicId,jdbcType=BIGINT}, 
+      #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.DynamicShield" >
+    insert into dynamic_shield
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="shieldId != null" >
+        shieldId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="dynamicId != null" >
+        dynamicId,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="shieldId != null" >
+        #{shieldId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="dynamicId != null" >
+        #{dynamicId,jdbcType=BIGINT},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.DynamicShield" >
+    update dynamic_shield
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="dynamicId != null" >
+        dynamicId = #{dynamicId,jdbcType=BIGINT},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where shieldId = #{shieldId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.DynamicShield" >
+    update dynamic_shield
+    set userId = #{userId,jdbcType=BIGINT},
+      dynamicId = #{dynamicId,jdbcType=BIGINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where shieldId = #{shieldId,jdbcType=BIGINT}
+  </update>
+</mapper>

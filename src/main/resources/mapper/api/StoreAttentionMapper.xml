@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StoreAttentionMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StoreAttention" >
+    <constructor >
+      <arg column="storeAttentionId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="observerId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeGroupId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="attentionStatus" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="reportType" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="attentionDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StoreAttention" >
+    insert into store_attention (storeAttentionId, observerId, storeGroupId, 
+      attentionStatus, reportType, attentionDate
+      )
+    values (#{storeAttentionId,jdbcType=BIGINT}, #{observerId,jdbcType=BIGINT}, #{storeGroupId,jdbcType=BIGINT}, 
+      #{attentionStatus,jdbcType=TINYINT}, #{reportType,jdbcType=TINYINT}, #{attentionDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.StoreAttention" >
+    insert into store_attention
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="storeAttentionId != null" >
+        storeAttentionId,
+      </if>
+      <if test="observerId != null" >
+        observerId,
+      </if>
+      <if test="storeGroupId != null" >
+        storeGroupId,
+      </if>
+      <if test="attentionStatus != null" >
+        attentionStatus,
+      </if>
+      <if test="reportType != null" >
+        reportType,
+      </if>
+      <if test="attentionDate != null" >
+        attentionDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="storeAttentionId != null" >
+        #{storeAttentionId,jdbcType=BIGINT},
+      </if>
+      <if test="observerId != null" >
+        #{observerId,jdbcType=BIGINT},
+      </if>
+      <if test="storeGroupId != null" >
+        #{storeGroupId,jdbcType=BIGINT},
+      </if>
+      <if test="attentionStatus != null" >
+        #{attentionStatus,jdbcType=TINYINT},
+      </if>
+      <if test="reportType != null" >
+        #{reportType,jdbcType=TINYINT},
+      </if>
+      <if test="attentionDate != null" >
+        #{attentionDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <!--查询社群下的成员列表-->
+  <select id="queryMemberList" resultType="java.util.Map" parameterType="java.util.Map">
+    select
+    ui.userId,
+    ui.nickname,
+    ui.headImgUrl,
+    ui.sex,
+    case when ua.attentionStatus = 1 then 1 else 0 END as attentionStatus
+    from store_attention sa
+    inner join user_info ui on ui.userId = sa.observerId
+    left join user_attention ua on ua.attentedId = sa.observerId and ua.observerId = #{userId}
+    where sa.storeGroupId = #{storeGroupId,jdbcType=BIGINT} limit #{offset}, #{limit}
+  </select>
+    <!--查成员总数-->
+    <select id="queryMemberCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from store_attention sa
+        inner join user_info ui on ui.userId = sa.observerId
+        where sa.storeGroupId = #{storeGroupId,jdbcType=BIGINT}
+    </select>
+  <delete id="deleteAttends" parameterType="com.dlc.modules.api.entity.StoreAttention">
+      delete from store_attention
+      where observerId = #{observerId,jdbcType=BIGINT}
+      and storeGroupId = #{storeGroupId,jdbcType=BIGINT}
+  </delete>
+</mapper>

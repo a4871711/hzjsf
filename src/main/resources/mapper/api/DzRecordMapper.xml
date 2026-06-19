@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.DzRecordDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.api.entity.DzRecordEntity" id="dzRecordMap">
+        <result property="dzRecordId" column="dzRecordId" jdbcType="BIGINT"/>
+        <result property="dynamicId" column="dynamicId" jdbcType="BIGINT"/>
+        <result property="dzUserId" column="dzUserId" jdbcType="BIGINT"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.api.entity.DzRecordEntity">
+		select * from dz_record where dzRecordId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.api.entity.DzRecordEntity">
+		select * from dz_record
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by dzRecordId desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from dz_record 
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.DzRecordEntity" useGeneratedKeys="true" keyProperty="dzRecordId">
+		insert into dz_record
+		(
+			`dynamicId`, 
+			`dzUserId`
+		)
+		values
+		(
+			#{dynamicId}, 
+			#{dzUserId}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.api.entity.DzRecordEntity">
+		update dz_record 
+		<set>
+			<if test="dynamicId != null">`dynamicId` = #{dynamicId}, </if>
+			<if test="dzUserId != null">`dzUserId` = #{dzUserId}</if>
+		</set>
+		where dzRecordId = #{dzRecordId}
+	</update>
+	
+	<delete id="delete">
+		delete from dz_record where dzRecordId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from dz_record where dzRecordId in 
+		<foreach item="dzRecordId" collection="array" open="(" separator="," close=")">
+			#{dzRecordId}
+		</foreach>
+	</delete>
+	<!--根据用户id和动态id查是否存在已点赞-->
+	<select id="queryDzByUIdAndDyId" resultType="java.lang.Integer" parameterType="java.util.Map">
+		SELECT
+			COUNT(*)
+			FROM dz_record
+			WHERE dynamicId = #{dynamicId, jdbcType=BIGINT}
+			AND dzUserId = #{dzUserId, jdbcType=BIGINT}
+	</select>
+    <!--取消点赞-->
+    <delete id="deleteDz" parameterType="java.util.Map">
+        delete from dz_record where dynamicId = #{dynamicId, jdbcType=BIGINT}
+			and dzUserId = #{dzUserId, jdbcType=BIGINT}
+    </delete>
+</mapper>

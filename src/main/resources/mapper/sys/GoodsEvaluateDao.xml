@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysGoodsEvaluateDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysGoodsEvaluateEntity" id="goodsEvaluateMap">
+                    <result property="goodsEvaluatId" column="goodsEvaluatId"/>
+                    <result property="goodsId" column="goodsId"/>
+                    <result property="orderNo" column="orderNo"/>
+                    <result property="userId" column="userId"/>
+                    <result property="headImgUrl" column="headImgUrl"/>
+                    <result property="nickname" column="nickname"/>
+                    <result property="evLevel" column="evLevel"/>
+                    <result property="evContent" column="evContent"/>
+                    <result property="evaluatImgUrl" column="evaluatImgUrl"/>
+                    <result property="evaluatDate" column="evaluatDate"/>
+            </resultMap>
+    <sql id="base_col">
+      goodsId,
+      orderNo,
+      userId,
+      headImgUrl,
+      nickname,
+      evLevel,
+      evContent,
+      evaluatImgUrl,
+      evaluatDate
+                            </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysGoodsEvaluateEntity" parameterType="map">
+        select * from goods_evaluate
+        <where>
+            <if test="orderNo!=null and orderNo!=''">
+                and orderNo=#{orderNo}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by evaluatDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="integer" parameterType="map">
+        select count(1) from goods_evaluate
+        <where>
+        <if test="orderNo!=null and orderNo!=''">
+            and orderNo=#{orderNo}
+        </if>
+    </where>
+    </select>
+    <select id="queryObject" parameterType="long" resultType="com.dlc.modules.sys.entity.SysGoodsEvaluateEntity">
+        select * from goods_evaluate WHERE goodsEvaluatId=#{id}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysGoodsEvaluateEntity">
+        insert into goods_evaluate(
+        <include refid="base_col"/>
+        ) values (
+         #{goodsId},
+         #{orderNo},
+          #{userId},
+         #{headImgUrl},
+         #{nickname},
+         #{evLevel},
+        #{evContent},
+         #{evaluatImgUrl},
+           #{evaluatDate}
+            );
+    </insert>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysGoodsEvaluateEntity">
+        update goods_evaluate
+        SET
+          goodsId=#{goodsId},
+           orderNo=#{orderNo},
+            userId=#{userId},
+            headImgUrl=#{headImgUrl},
+             nickname=#{nickname},
+             evLevel=#{evLevel},
+             evContent=#{evContent},
+             evaluatImgUrl=#{evaluatImgUrl},
+               evaluatDate=#{evaluatDate}
+                where goodsEvaluatId=#{goodsEvaluatId};
+    </update>
+    <delete id="deleteBatch">
+        DELETE FROM goods_evaluate
+        WHERE  goodsEvaluatId
+        IN
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

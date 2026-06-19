@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.FaceIdentyRecordMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.FaceIdentyRecord" >
+    <constructor >
+      <idArg column="firId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="deviceNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    firId, userId, deviceNo, createTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from face_identy_record
+    where firId = #{firId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from face_identy_record
+    where firId = #{firId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.FaceIdentyRecord" >
+    insert into face_identy_record (firId, userId, deviceNo, 
+      createTime)
+    values (#{firId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{deviceNo,jdbcType=VARCHAR}, 
+      #{createTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.FaceIdentyRecord" >
+    insert into face_identy_record
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="firId != null" >
+        firId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="deviceNo != null" >
+        deviceNo,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="firId != null" >
+        #{firId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceNo != null" >
+        #{deviceNo,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.FaceIdentyRecord" >
+    update face_identy_record
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceNo != null" >
+        deviceNo = #{deviceNo,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where firId = #{firId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.FaceIdentyRecord" >
+    update face_identy_record
+    set userId = #{userId,jdbcType=BIGINT},
+      deviceNo = #{deviceNo,jdbcType=VARCHAR},
+      createTime = #{createTime,jdbcType=TIMESTAMP}
+    where firId = #{firId,jdbcType=BIGINT}
+  </update>
+  <!--查询历史刷脸次数 and date_format(createTime, '%Y%m%d') = date_format(now(), '%Y%m%d')-->
+  <select id="selectRecordCount" resultType="java.lang.Integer" parameterType="java.lang.Long">
+    select count(*) from face_identy_record
+    where userId=#{userId}
+  </select>
+    <!--删除记录-->
+    <delete id="deleteRecode" parameterType="java.lang.Long">
+        delete from face_identy_record
+        where userId=#{userId}
+    </delete>
+  <!--定时任务删除1天之前的数据-->
+  <delete id="deleteRecodeHistory">
+      delete from face_identy_record
+        where DATE_SUB(CURDATE(), INTERVAL 1 DAY) > createTime
+  </delete>
+  <!--查刷脸列表-->
+  <select id="selectfaceRecordList" resultType="java.util.Map" parameterType="java.util.Map">
+    SELECT f.firId,f.deviceNo,f.createTime,u.nickname,u.phone FROM face_identy_record f INNER JOIN user_info u ON u.userId=f.userId
+    <where>
+      <if test="phone != null and phone != ''">
+        AND u.phone LIKE concat('%',#{phone},'%')
+      </if>
+      <if test="deviceNo != null and deviceNo != ''">
+        AND f.deviceNo LIKE concat('%',#{deviceNo},'%')
+      </if>
+    </where>
+    ORDER BY f.createTime DESC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <!--查刷脸数量-->
+  <select id="selectfaceRecordTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+    SELECT COUNT(*) FROM face_identy_record f INNER JOIN user_info u ON u.userId=f.userId
+    <where>
+      <if test="phone != null and phone != ''">
+        AND u.phone LIKE concat('%',#{phone},'%')
+      </if>
+      <if test="deviceNo != null and deviceNo != ''">
+        AND f.deviceNo LIKE concat('%',#{deviceNo},'%')
+      </if>
+    </where>
+  </select>
+</mapper>

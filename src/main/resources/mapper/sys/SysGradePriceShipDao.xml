@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysGradePriceShipDao">
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysGradePriceShipEntity">
+        SELECT l.`lpsId`,p.`className` AS privateClassId,p.`firstImgUrl` AS img,l.`grade`,l.`price`
+        FROM `private_class` p
+        LEFT JOIN `grade_price_ship` l ON p.`privateClassId`=l.`privateClassId`
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysGradePriceShipEntity" parameterType="long">
+        SELECT l.`lpsId`,p.`className` AS privateClassId,p.`firstImgUrl` AS img,l.`grade`,l.`price`
+        FROM `private_class` p
+        LEFT JOIN `grade_price_ship` l ON p.`privateClassId`=l.`privateClassId`
+        WHERE l.lpsId=#{lpsId}
+    </select>
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM `grade_price_ship`
+    </select>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysGradePriceShipEntity">
+        UPDATE `grade_price_ship` SET `grade`=#{grade},`price`=#{price}
+        WHERE `privateClassId`=#{privateClassId}
+    </update>
+    <delete id="deleteBatch">
+        delete from grade_price_ship where lpsId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <insert id="savap" parameterType="com.dlc.modules.sys.entity.SysGradePriceShipEntity">
+         INSERT INTO `grade_price_ship` (
+          `privateClassId`,
+          `grade`,
+          `price`
+           )
+        VALUES
+           (
+          #{entityId},
+          #{dengji},
+          #{price}
+            );
+    </insert>
+</mapper>

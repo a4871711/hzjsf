@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.PointsExchangeDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.PointsExchangeEntity" id="pointsExchangeMap">
+        <result property="pointsExchangeId" column="pointsExchangeId" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="storeId" column="storeId" jdbcType="BIGINT"/>
+        <result property="detailType" column="detailType" jdbcType="TINYINT"/>
+        <result property="pointsCount" column="pointsCount" jdbcType="TINYINT"/>
+        <result property="exchangeMoney" column="exchangeMoney" jdbcType="DECIMAL"/>
+        <result property="exchangeDate" column="exchangeDate" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.PointsExchangeEntity">
+		select * from points_exchange where pointsExchangeId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.PointsExchangeEntity">
+		SELECT pe.*,ui.nickname,ui.phone,s.storeName FROM points_exchange pe
+		INNER JOIN user_info ui ON pe.userId = ui.userId
+		LEFT JOIN store_address s ON s.storeId = pe.storeId
+		<where>
+			detailType = 2
+			<if test="phone != null and phone !=''">
+				AND ui.phone LIKE concat('%',#{phone},'%')
+			</if>
+			<if test="nickname != null and nickname !=''">
+				AND ui.nickname LIKE concat('%',#{nickname},'%')
+			</if>
+			<if test="storeName != null and storeName !=''">
+				AND s.storeName LIKE concat('%',#{storeName},'%')
+			</if>
+			<if test="storeId != null and storeId !=''">
+				AND pe.storeId = #{storeId}
+			</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND pe.storeId in (${storeIds})
+            </if>
+		</where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by pointsExchangeId desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		SELECT COUNT(*) FROM points_exchange pe
+		INNER JOIN user_info ui ON pe.userId = ui.userId
+		LEFT JOIN store_address s ON s.storeId = pe.storeId
+		<where>
+			detailType = 2
+			<if test="phone != null and phone !=''">
+				AND ui.phone LIKE concat('%',#{phone},'%')
+			</if>
+			<if test="nickname != null and nickname !=''">
+				AND ui.nickname LIKE concat('%',#{nickname},'%')
+			</if>
+			<if test="storeName != null and storeName !=''">
+				AND s.storeName LIKE concat('%',#{storeName},'%')
+			</if>
+			<if test="storeId != null and storeId !=''">
+				AND pe.storeId = #{storeId}
+			</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND pe.storeId in (${storeIds})
+            </if>
+		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.PointsExchangeEntity" useGeneratedKeys="true" keyProperty="pointsExchangeId">
+		insert into points_exchange
+		(
+			`userId`, 
+			`detailType`, 
+			`pointsCount`, 
+			`exchangeMoney`, 
+			`exchangeDate`
+		)
+		values
+		(
+			#{userId}, 
+			#{detailType}, 
+			#{pointsCount}, 
+			#{exchangeMoney}, 
+			#{exchangeDate}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.sys.entity.PointsExchangeEntity">
+		update points_exchange 
+		<set>
+			<if test="userId != null">`userId` = #{userId}, </if>
+			<if test="detailType != null">`detailType` = #{detailType}, </if>
+			<if test="pointsCount != null">`pointsCount` = #{pointsCount}, </if>
+			<if test="exchangeMoney != null">`exchangeMoney` = #{exchangeMoney}, </if>
+			<if test="exchangeDate != null">`exchangeDate` = #{exchangeDate}</if>
+		</set>
+		where pointsExchangeId = #{pointsExchangeId}
+	</update>
+	
+	<delete id="delete">
+		delete from points_exchange where pointsExchangeId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from points_exchange where pointsExchangeId in 
+		<foreach item="pointsExchangeId" collection="array" open="(" separator="," close=")">
+			#{pointsExchangeId}
+		</foreach>
+	</delete>
+
+</mapper>

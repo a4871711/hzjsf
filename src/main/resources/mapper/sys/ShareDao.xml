@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysShareDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysShareEntity" id="shareMap">
+        <result property="shareId" column="shareId"/>
+        <result property="userId" column="userId"/>
+        <result property="shareType" column="shareType"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="linkUrl" column="linkUrl"/>
+        <result property="imgUrl" column="imgUrl"/>
+        <result property="shareChannel" column="shareChannel"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+    <sql id="base_col">
+         userId,  shareType,  title, content, linkUrl,   imgUrl,shareChannel, createdDate
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysShareEntity" parameterType="map">
+        select * from share
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="integer" parameterType="map">
+        select count(1) from share
+    </select>
+    <select id="queryObject" parameterType="long" resultType="com.dlc.modules.sys.entity.SysShareEntity">
+        select * from share WHERE shareId=#{id}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysShareEntity">
+        insert into share(
+        <include refid="base_col"/>
+        ) values (
+        userId,
+        shareType,
+        title,
+        content,
+        linkUrl,
+        imgUrl,
+        shareChannel,
+        createdDate
+        );
+    </insert>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysShareEntity">
+        update share
+        SET userId=#{userId},
+        shareType=#{shareType},
+        title=#{title},
+        content=#{content},
+        linkUrl=#{linkUrl},
+        imgUrl=#{imgUrl},
+        shareChannel=#{shareChannel},
+        createdDate=#{createdDate}
+        where shareId=#{shareId};
+    </update>
+    <delete id="deleteBatch">
+        DELETE FROM share
+        WHERE shareId
+        IN
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

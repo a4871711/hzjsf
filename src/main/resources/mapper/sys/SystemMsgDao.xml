@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysSystemMsgDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysSystemMsgEntity" id="systemMsgMap">
+        <result property="sysMsgId" column="sysMsgId"/>
+        <result property="userId" column="userId"/>
+        <result property="sendTime" column="sendTime"/>
+        <result property="msgType" column="msgType"/>
+        <result property="readFlag" column="readFlag"/>
+        <result property="record" column="record"/>
+    </resultMap>
+    <sql id="base_col">
+         userId,sendTime,msgType, readFlag,record
+  </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysSystemMsgEntity" parameterType="map">
+        select sm.*,ui.nickname userName from system_msg sm,user_info ui WHERE ui.userId=sm.userId AND msgType=1
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by sm.sendTime desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="integer" parameterType="map">
+        select count(1) from system_msg  WHERE msgType=1
+    </select>
+    <select id="queryObject" parameterType="long" resultType="com.dlc.modules.sys.entity.SysSystemMsgEntity">
+        select  sm.*,ui.nickname userName  from system_msg  sm,user_info ui WHERE sysMsgId=#{id} and ui.userId=sm.userId
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysSystemMsgEntity">
+        insert into system_msg(
+        <include refid="base_col"/>
+        ) values (
+
+        userId,
+
+        sendTime,
+
+        msgType,
+
+        readFlag,
+
+        record
+
+
+        );
+    </insert>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysSystemMsgEntity">
+        update system_msg
+        SET
+                
+        
+                
+                            userId=#{userId},
+              
+          
+                
+                            sendTime=#{sendTime},
+              
+          
+                
+                            msgType=#{msgType},
+              
+          
+                
+                            readFlag=#{readFlag},
+              
+          
+                
+                            record=#{record}
+
+            
+          
+                where sysMsgId=#{sysMsgId};
+    </update>
+    <delete id="deleteBatch">
+        DELETE FROM system_msg
+        WHERE sysMsgId
+        IN
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

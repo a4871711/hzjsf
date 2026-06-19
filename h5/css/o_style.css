@@ -1,0 +1,271 @@
+/*********** 背景颜色 ***********/
+.b666 {
+  background-color: #666666;
+}
+
+.bmain {
+  background-color: #9dcdd7;
+}
+
+.bf5 {
+  background-color: #f5f5f5;
+}
+
+.bfff {
+  background-color: #ffffff;
+}
+
+.bred {
+  background-color: #ff0000;
+}
+
+/*********** 字体颜色 ***********/
+.cred {
+  color: #ff0000;
+}
+
+.cmain {
+  color: #ef611e;
+}
+
+.cfff {
+  color: #ffffff;
+}
+
+.c666 {
+  color: #666666;
+}
+
+.c999 {
+  color: #999999;
+}
+
+.cbbb {
+  color: #bbbbbb;
+}
+
+.c000 {
+  color: #000000;
+}
+
+/*********** 按钮样式 ***********/
+.mainBtn {
+  color: #ffffff;
+  border-radius: 30px;
+  text-align: center;
+  background: linear-gradient(#f7996c, #f06626);
+  padding: 10px 0;
+  margin: 15px auto;
+}
+
+.mainBuyBtn {
+  background: linear-gradient(#f7996c, #f06626);
+  color: #ffffff;
+  text-align: center;
+}
+
+/*********** 间距样式 ***********/
+
+.h100 {
+  height: 100%;
+}
+
+/*********** 遮 罩 层 ***********/
+.mask {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+
+.maskBox {
+  position: fixed;
+  margin: auto;
+  left: 0;
+  width: 100%;
+  bottom: 0;
+  background: #ffffff;
+  z-index: 21;
+}
+
+/*********** icon样式 ***********/
+
+/*********** o_cardList ***********/
+
+#cardList .list .card {
+  box-shadow: 1px 5px 15px #666666;
+  border-radius: 10px;
+}
+
+/*********** o_cardDetail ***********/
+#cardDetail .cardMsg .borderDotted {
+  margin: 15px;
+  height: 1px;
+  background-image: linear-gradient(to right,
+    #ccc 0%,
+    #ccc 50%,
+    transparent 50%);
+  background-size: 12px 2px;
+  background-repeat: repeat-x;
+}
+
+#cardDetail footer {
+  bottom: 0;
+  position: fixed;
+  width: 100%;
+  padding: 0 5%;
+  height: 69px;
+}
+
+#cardDetail .btn.add,
+#cardDetail .btn.reduce,
+#cardDetail .num {
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  border: 1px solid #efefef;
+}
+
+#cardDetail .num {
+  width: 40px;
+  margin: 0 10px;
+}
+
+#cardDetail .maskBox .cancel {
+  position: absolute;
+  right: 0;
+  width: 20%;
+  text-align: center;
+  color: #dddddd;
+}
+
+#cardDetail .maskBox .back {
+  position: absolute;
+  left: 0;
+  width: 20%;
+  text-align: center;
+  color: #dddddd;
+}
+
+#cardDetail .maskBox.couponMaskBox {
+  max-height: 50%;
+  overflow-y: scroll;
+}
+
+/*********** o_order ***********/
+#order .maskBox .cancel {
+  position: absolute;
+  right: 0;
+  width: 20%;
+  text-align: center;
+  color: #dddddd;
+}
+
+#order .maskBox .back {
+  position: absolute;
+  left: 0;
+  width: 20%;
+  text-align: center;
+  color: #dddddd;
+}
+
+#order .maskBox.couponMaskBox {
+  max-height: 50%;
+  overflow-y: scroll;
+}
+
+.hideImportant {
+  display: none !important;
+}
+
+/*********** o_binding ***********/
+.headImg {
+  height: 200px;
+}
+
+.headBox {
+  width: 100px;
+  height: 100px;
+}
+
+.headBox img {
+  display: block;
+  width: 100%;
+  border-radius: 50%;
+}
+
+.bindingBox .icon {
+  width: 10%
+}
+
+.bindingBox .icon img {
+  width: 12px;
+  height: 15px
+}
+
+.bindingBox .inputPhone .input {
+  width: 90%;
+}
+
+.bindingBox .inputCode .input {
+  width: 60%;
+}
+
+.bindingBox .inputCode .getCodeBtn {
+  width: 30%;
+  background: #ef611e;
+  color: #ffffff;
+  border-radius: 5px;
+}
+
+.bindingBox .inputCode .sended {
+  background: #999999;
+}
+
+/*********** o_binding ***********/
+#address .tools {
+  margin-left: 60%
+}
+
+/*********** o_share ***********/
+#share .title .headImg {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+#share .title .msg div {
+  line-height: 25px;
+  height: 25px;
+}
+
+#share .banner {
+  max-height: 220px;
+  overflow: hidden;
+}
+
+#share .shopMsg .icon {
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+}
+
+#share .recomment .list {
+  overflow: scroll;
+}
+
+#share .recomment .boxList {
+  width: 150px;
+  margin-right: 15px;
+}
+
+#share .recomment .img {
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  width: 150px;
+  height: 100px;
+  overflow: hidden;
+}

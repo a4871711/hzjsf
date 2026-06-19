@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.InformationMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.Information" >
+    <constructor >
+      <idArg column="informationId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="infType" jdbcType="BIT" javaType="java.lang.Boolean" />
+      <arg column="title" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="publishTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="infImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="com.dlc.modules.api.entity.Information" >
+    <constructor >
+      <idArg column="informationId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="infType" jdbcType="BIT" javaType="java.lang.Boolean" />
+      <arg column="title" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="publishTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="infImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="content" jdbcType="LONGVARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    informationId, infType, title, publishTime, infImgUrl, createdDate
+  </sql>
+  <sql id="Blob_Column_List" >
+    content
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from information
+    where informationId = #{informationId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from information
+    where informationId = #{informationId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.Information" >
+    insert into information (informationId, infType, title, 
+      publishTime, infImgUrl, createdDate, 
+      content)
+    values (#{informationId,jdbcType=BIGINT}, #{infType,jdbcType=BIT}, #{title,jdbcType=VARCHAR}, 
+      #{publishTime,jdbcType=TIMESTAMP}, #{infImgUrl,jdbcType=VARCHAR}, #{createdDate,jdbcType=TIMESTAMP}, 
+      #{content,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.Information" >
+    insert into information
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="informationId != null" >
+        informationId,
+      </if>
+      <if test="infType != null" >
+        infType,
+      </if>
+      <if test="title != null" >
+        title,
+      </if>
+      <if test="publishTime != null" >
+        publishTime,
+      </if>
+      <if test="infImgUrl != null" >
+        infImgUrl,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="content != null" >
+        content,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="informationId != null" >
+        #{informationId,jdbcType=BIGINT},
+      </if>
+      <if test="infType != null" >
+        #{infType,jdbcType=BIT},
+      </if>
+      <if test="title != null" >
+        #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="publishTime != null" >
+        #{publishTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="infImgUrl != null" >
+        #{infImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="content != null" >
+        #{content,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.Information" >
+    update information
+    <set >
+      <if test="infType != null" >
+        infType = #{infType,jdbcType=BIT},
+      </if>
+      <if test="title != null" >
+        title = #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="publishTime != null" >
+        publishTime = #{publishTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="infImgUrl != null" >
+        infImgUrl = #{infImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="content != null" >
+        content = #{content,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where informationId = #{informationId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.dlc.modules.api.entity.Information" >
+    update information
+    set infType = #{infType,jdbcType=BIT},
+      title = #{title,jdbcType=VARCHAR},
+      publishTime = #{publishTime,jdbcType=TIMESTAMP},
+      infImgUrl = #{infImgUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      content = #{content,jdbcType=LONGVARCHAR}
+    where informationId = #{informationId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.Information" >
+    update information
+    set infType = #{infType,jdbcType=BIT},
+      title = #{title,jdbcType=VARCHAR},
+      publishTime = #{publishTime,jdbcType=TIMESTAMP},
+      infImgUrl = #{infImgUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where informationId = #{informationId,jdbcType=BIGINT}
+  </update>
+  <!--资讯列表-->
+  <select id="queryInformationList" resultType="map" parameterType="map">
+    SELECT informationId,title,infImgUrl,publishTime
+    FROM information
+    <where>
+      <if test="infType != null">
+        AND infType = #{infType}
+      </if>
+      AND infType IS NOT NULL
+    </where>
+    ORDER BY createdDate
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <select id="queryTotal" resultType="java.lang.Integer" parameterType="map">
+    SELECT count(*)
+    FROM information
+    <where>
+      <if test="infType != null">
+        AND infType = #{infType}
+      </if>
+      AND infType IS NOT NULL
+    </where>
+  </select>
+
+  <!--资讯详情-->
+  <select id="queryInformationInfo" resultType="map" parameterType="java.lang.Long">
+    SELECT informationId, infType, title, publishTime, content
+    FROM information
+    WHERE informationId = #{id}
+  </select>
+  <!--资讯轮播图-->
+  <select id="selectSowingMap" resultType="map" parameterType="java.lang.Integer">
+    SELECT informationId,infImgUrl FROM information WHERE imgType = #{infType}
+  </select>
+  <!--S-live 咨询说-->
+  <select id="querySliveList" resultType="map">
+    SELECT informationId,title
+    FROM information
+    ORDER BY createdDate DESC
+  </select>
+</mapper>

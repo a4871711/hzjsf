@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.CoachPlaceShipMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.CoachPlaceShip" >
+    <constructor >
+      <idArg column="cpsId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="grade" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    cpsId, coachId, storeId, storeName, grade, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from coach_place_ship
+    where cpsId = #{cpsId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from coach_place_ship
+    where cpsId = #{cpsId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.CoachPlaceShip" >
+    insert into coach_place_ship (cpsId, coachId, storeId, 
+      storeName, createdDate)
+    values (#{cpsId,jdbcType=BIGINT}, #{coachId,jdbcType=BIGINT}, #{storeId,jdbcType=BIGINT}, 
+      #{storeName,jdbcType=VARCHAR}, #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.CoachPlaceShip" >
+    insert into coach_place_ship
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="cpsId != null" >
+        cpsId,
+      </if>
+      <if test="coachId != null" >
+        coachId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="storeName != null" >
+        storeName,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="cpsId != null" >
+        #{cpsId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="storeName != null" >
+        #{storeName,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.CoachPlaceShip" >
+    update coach_place_ship
+    <set >
+      <if test="coachId != null" >
+        coachId = #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="storeName != null" >
+        storeName = #{storeName,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where cpsId = #{cpsId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.CoachPlaceShip" >
+    update coach_place_ship
+    set coachId = #{coachId,jdbcType=BIGINT},
+      storeId = #{storeId,jdbcType=BIGINT},
+      storeName = #{storeName,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where cpsId = #{cpsId,jdbcType=BIGINT}
+  </update>
+  <!--查询教练所服务的门店 grade 1：表示通过门店认证-->
+  <select id="selectStoreIdByCoachId" resultType="map" parameterType="map">
+    SELECT cps.cpsId, cps.coachId, cps.storeId,sa.storeAddrId, s.storeName, cps.grade, cps.createdDate
+    FROM coach_place_ship cps
+    INNER JOIN store s ON s.storeId = cps.storeId
+    INNER JOIN store_address sa ON sa.storeId = s.storeId
+    WHERE cps.coachId = #{coachId} AND cps.grade = 1 AND s.status=1
+  </select>
+</mapper>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.UserAttentionMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.UserAttention" >
+    <constructor >
+      <arg column="userAttentionId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="observerId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="attentedId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="attentionStatus" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="reportType" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="attentionDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.UserAttention" >
+    insert into user_attention (userAttentionId, observerId, attentedId, 
+      attentionStatus, reportType, attentionDate
+      )
+    values (#{userAttentionId,jdbcType=BIGINT}, #{observerId,jdbcType=BIGINT}, #{attentedId,jdbcType=BIGINT}, 
+      #{attentionStatus,jdbcType=TINYINT}, #{reportType,jdbcType=VARCHAR}, #{attentionDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.UserAttention" >
+    insert into user_attention
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="userAttentionId != null" >
+        userAttentionId,
+      </if>
+      <if test="observerId != null" >
+        observerId,
+      </if>
+      <if test="attentedId != null" >
+        attentedId,
+      </if>
+      <if test="attentionStatus != null" >
+        attentionStatus,
+      </if>
+      <if test="reportType != null" >
+        reportType,
+      </if>
+      <if test="attentionDate != null" >
+        attentionDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="userAttentionId != null" >
+        #{userAttentionId,jdbcType=BIGINT},
+      </if>
+      <if test="observerId != null" >
+        #{observerId,jdbcType=BIGINT},
+      </if>
+      <if test="attentedId != null" >
+        #{attentedId,jdbcType=BIGINT},
+      </if>
+      <if test="attentionStatus != null" >
+        #{attentionStatus,jdbcType=TINYINT},
+      </if>
+      <if test="reportType != null" >
+        #{reportType,jdbcType=VARCHAR},
+      </if>
+      <if test="attentionDate != null" >
+        #{attentionDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <!--查询我的关注-->
+  <select id="queryMyAttention" resultType="java.util.Map" parameterType="java.util.Map">
+   select
+        dy.dynamicId,
+        dy.publishId,
+        ui.nickname,
+        ui.headImgUrl,
+        dy.content,
+        dy.publishImgUrl,
+        dy.socialGroupId,
+        case when dy.socialGroupId is null then 0 when dy.socialGroupId=0 then 0 else 1 end as moreFlag,
+        sg.groupName,
+        dy.readCount,
+        dy.dzCount,
+        dy.plCount,
+        (select count(1) from dz_record dr where dr.dynamicId=dy.dynamicId and dr.dzUserId=#{userId}) as dzStatus,
+        (select case when ua.attentionStatus =1 then 1 else 0 end from user_attention ua
+          where ua.attentedId = dy.publishId and ua.attentionStatus <![CDATA[ <> ]]> 3 and ua.observerId = #{userId}) as attentionStatus,
+        date_format(dy.publishDate, '%Y-%m-%d %H:%i') as publishDate
+        from user_attention ua
+        inner join dynamic dy on dy.publishId = ua.attentedId
+        left join user_info ui on ui.userId = dy.publishId
+        left join store_group sg on sg.storeGroupId = dy.socialGroupId
+      where ua.attentionStatus = 1
+      and ua.observerId = #{userId,jdbcType=BIGINT}
+      AND dy.dynamicId NOT IN (SELECT ds.dynamicId FROM dynamic_shield ds WHERE ds.userId=#{userId})
+      order by dy.publishDate desc limit #{offset},#{limit}
+  </select>
+    <!--查询我的关注总条数-->
+    <select id="queryMyAttentionCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from user_attention ua inner join dynamic dy on dy.publishId = ua.attentedId
+        left join user_info ui on ui.userId = dy.publishId
+        left join store_group sg on sg.storeGroupId = dy.socialGroupId
+        where ua.observerId = #{userId,jdbcType=BIGINT}
+        and ua.attentionStatus = 1
+        AND dy.dynamicId NOT IN (SELECT ds.dynamicId FROM dynamic_shield ds WHERE ds.userId=#{userId})
+    </select>
+    <!--添加关注-->
+    <insert id="insertAttention">
+        insert into user_attention (observerId, attentedId, attentionStatus)
+        values (#{userId,jdbcType=BIGINT}, #{attentedId,jdbcType=BIGINT}, 1)
+    </insert>
+    <!--取消关注-->
+    <update id="updateAttentionStatus">
+      update user_attention
+        set attentionStatus = 2
+      where  observerId = #{userId,jdbcType=BIGINT}
+      and attentedId = #{attentedId,jdbcType=BIGINT}
+    </update>
+    <delete id="deleteAttention">
+      delete from user_attention
+      where  observerId = #{userId,jdbcType=BIGINT}
+      and attentedId = #{attentedId,jdbcType=BIGINT}
+    </delete>
+    <!--举报-->
+    <update id="updateReportType">
+        update user_attention
+        set attentionStatus = 3,
+        reportType = #{reportType, jdbcType=VARCHAR}
+        where  observerId = #{userId,jdbcType=BIGINT}
+        and attentedId = #{attentedId,jdbcType=BIGINT}
+    </update>
+    <!--查询粉丝（关注者）数， 被关注者是传入的userId-->
+    <select id="queryFansByUId" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+          ui.userId,
+          ui.nickname,
+          ui.sex,
+          ui.headImgUrl,
+          (select u.attentionStatus from user_attention u
+            where u.attentedId=ua.observerId and u.observerId=#{myId} and u.attentionStatus=1) as attentionStatus
+        from user_attention ua
+        inner join user_info ui on ui.userId = ua.observerId
+        where ua.attentedId = #{userId,jdbcType=BIGINT}
+        and ua.attentionStatus = 1 LIMIT #{offset}, #{limit}
+    </select>
+    <!--查询粉丝分页总数-->
+    <select id="queryFansCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+          count(*)
+        from user_attention ua
+        inner join user_info ui on ui.userId = ua.observerId
+        where ua.attentedId = #{userId,jdbcType=BIGINT}
+        and ua.attentionStatus = 1
+    </select>
+    <!--查询（关注者）数， 关注者是传入的userId-->
+    <select id="queryAttendByUId" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        ui.userId,
+        ui.nickname,
+        ui.sex,
+        ui.headImgUrl,
+        (select u.attentionStatus from user_attention u
+        where u.attentedId=ua.attentedId and u.observerId=#{myId} and u.attentionStatus=1) as attentionStatus
+        from user_attention ua
+        inner join user_info ui on ui.userId = ua.attentedId
+        where ua.observerId = #{userId,jdbcType=BIGINT}
+        and ua.attentionStatus = 1 LIMIT #{offset}, #{limit}
+    </select>
+    <!--查询关注者分页总数-->
+    <select id="queryAttendByCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from user_attention ua
+        inner join user_info ui on ui.userId = ua.attentedId
+        where ua.observerId = #{userId,jdbcType=BIGINT}
+        and ua.attentionStatus = 1
+    </select>
+</mapper>

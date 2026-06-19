@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.ActivityTypeMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.ActivityType" >
+    <constructor >
+      <idArg column="atId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="atName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    atId, atName, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from activity_type
+    where atId = #{atId,jdbcType=BIGINT}
+  </select>
+    <select id="queryActivTypeAll" resultType="com.dlc.modules.api.entity.ActivityType">
+    select
+      *
+    from activity_type
+     ORDER BY createdDate DESC
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from activity_type
+    where atId = #{atId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.ActivityType" >
+    insert into activity_type (atId, atName, createdDate
+      )
+    values (#{atId,jdbcType=BIGINT}, #{atName,jdbcType=VARCHAR}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.ActivityType" >
+    insert into activity_type
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="atId != null" >
+        atId,
+      </if>
+      <if test="atName != null" >
+        atName,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="atId != null" >
+        #{atId,jdbcType=BIGINT},
+      </if>
+      <if test="atName != null" >
+        #{atName,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.ActivityType" >
+    update activity_type
+    <set >
+      <if test="atName != null" >
+        atName = #{atName,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where atId = #{atId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.ActivityType" >
+    update activity_type
+    set atName = #{atName,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where atId = #{atId,jdbcType=BIGINT}
+  </update>
+    <!--后台分类列表-->
+    <select id="queryActivTypeList" resultType="com.dlc.modules.api.entity.ActivityType" parameterType="java.util.Map">
+        select
+          *
+        from activity_type
+        <where>
+            <if test="atName != null and atName != ''">
+                atName LIKE concat('%',#{atName},'%')
+            </if>
+        </where>
+        ORDER BY createdDate DESC
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--后台分类列表总数-->
+    <select id="queryActivTypeTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+          COUNT(*)
+        from activity_type
+        <where>
+            <if test="atName != null and atName != ''">
+                atName LIKE concat('%',#{atName},'%')
+            </if>
+        </where>
+    </select>
+  <!--分类列表-->
+  <select id="queryActivityTypeList" resultType="java.util.Map" parameterType="java.util.Map">
+      select
+        atId, atName
+      from activity_type
+      ORDER BY createdDate DESC
+      <if test="offset != null and limit != null">
+          limit #{offset}, #{limit}
+      </if>
+  </select>
+    <!--总数-->
+    <select id="queryActivityTypeTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+            count(*)
+        from activity_type
+    </select>
+</mapper>

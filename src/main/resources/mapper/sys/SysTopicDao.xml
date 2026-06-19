@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysTopicDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysTopicEntity" id="topicMap">
+        <result property="topicId" column="topicId"/>
+        <result property="topicName" column="topicName"/>
+        <result property="firstImgUrl" column="firstImgUrl"/>
+        <result property="dyNum" column="dyNum"/>
+        <result property="attentionNum" column="attentionNum"/>
+        <result property="topicIntroduce" column="topicIntroduce"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        topicName,firstImgUrl,dyNum,attentionNum,topicIntroduce,createdDate
+    </sql>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysTopicEntity" parameterType="map">
+        SELECT
+        topicId,
+        <include refid="Base_Column_List"/>
+        FROM topic
+        <choose>
+        <when test="sidx != null and sidx.trim() != ''">
+            order by ${sidx} ${order}
+        </when>
+        <otherwise>
+            order by createdDate desc
+        </otherwise>
+    </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM  topic
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysTopicEntity" parameterType="long">
+        SELECT
+        topicId, <include refid="Base_Column_List"/>
+        FROM topic
+        WHERE topicId=#{topicId}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysTopicEntity">
+        INSERT INTO topic
+        (
+        <include refid="Base_Column_List"/>
+        )
+        VALUES
+        (
+        #{topicName},
+         #{firstImgUrl},
+        #{dyNum},
+        #{attentionNum},
+        #{topicIntroduce},
+        #{createdDate}
+        )
+    </insert>
+    <delete id="deleteBatch">
+        delete from topic where topicId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysTopicEntity">
+        UPDATE topic SET
+        topicName=#{topicName},
+        firstImgUrl= #{firstImgUrl},
+        dyNum=#{dyNum},
+        attentionNum=#{attentionNum},
+        topicIntroduce=#{topicIntroduce}
+        WHERE  topicId=#{topicId}
+    </update>
+</mapper>

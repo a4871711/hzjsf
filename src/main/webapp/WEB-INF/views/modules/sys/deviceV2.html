@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>设备管理</title>
+<#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div>
+		<div class="grid-btn">
+			<div class="row">
+				<div class="form-group col-sm-2">
+					<input type="text" class="form-control" v-model="q.deviceId" @keyup.enter="query" placeholder="设备编号">
+				</div>
+				<a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+				<a class="btn btn-primary" @click="addDevice"><i class="fa fa-commenting"></i>&nbsp;添加设备</a>
+				<a class="btn btn-primary" @click="updateDevice"><i class="fa fa-lock"></i>&nbsp;更新设备信息</a>
+			</div>
+			<!--  -->
+			<div style="padding-left: 15px;">
+
+			</div>
+		</div>
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+
+
+	<!-- 添加/更新设备 -->
+	<div id="dialogDevice" style="display: none; padding: 20px 10px 0 10px; ">
+		<div class="form-group">
+			<div class="form-group">
+				<input type="text" class="form-control" v-model="device.deviceId" placeholder="设备ID">
+			</div>
+			<div class="form-group">
+				<input type="text" class="form-control" v-model="device.deviceName" placeholder="设备名称">
+			</div>
+			<div class="form-group">
+				<select class="form-control" v-model="device.source" >
+					<option value="">选择设备类型</option>
+					<option value="301">跑步机</option>
+					<option value="302">椭圆机</option>
+				</select>
+			</div>
+		</div>
+		<div class="form-group" style="padding-left: 15px;">
+			<input type="button" class="btn btn-primary" @click="doUpdateDevice" value="确认"/>
+		</div>
+	</div>
+
+</div>
+
+<script src="${request.contextPath}/statics/js/modules/sys/deviceV2.js?_${.now?long}"></script>
+</body>
+</html>

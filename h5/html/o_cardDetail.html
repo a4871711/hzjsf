@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="../css/aui.css" />
+    <link rel="stylesheet" type="text/css" href="../css/o_base.css">
+    <link rel="stylesheet" type="text/css" href="../css/o_style.css">
+    <title>卡包</title>
+    <style>
+        html,body {
+            height: 100%;
+        }
+        .aui-list .aui-list-item {
+            border-bottom: 1px solid #dddddd;
+        }
+        .aui-radio:checked, .aui-radio.aui-checked, .aui-checkbox:checked, .aui-checkbox.aui-checked {
+            background-color: #ef611e;
+            border: solid 1px #ef611e;
+        }
+        .hide{
+            display: none!important
+        }
+        .num {
+            border: none!important
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cardDetail" class="aui-content h100">
+        <div class="cardMsg bfff">
+            <div class="title pd-15">
+                <img src="../img/bg01.png" class="wd-100 cardImgUrl">
+            </div>
+            <div class="msg flex flexBetween mg-lr-15">
+                <div class="left">
+                    <div class="name font20 fontb">健身半年卡</div>
+                    <div class="cbbb timeUp">有效期至：<span></span></div>
+                    <div class="cred font16 fontb priceBox">￥<span class="price">300.00</span></div>
+                </div>
+                <div class="right box">
+                    <div class="btn box add hide" onclick="count(0)">-</div>
+                    <div class="num box hide">1</div>
+                    <div class="btn box reduce hide" onclick="count(1)">+</div>
+                </div>
+            </div>
+            <div class="borderDotted"></div>
+            <div class="cardContent pd-15 border-b">
+                <div class="fontb font16">会员规则</div>
+                <div class="rule cbbb lh26">
+                    规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则规则
+                </div>
+            </div>
+            <div class="checkAll cmain pd-15 tac">查看全部</div>
+        </div>
+        <footer class="bfff">
+            <div class="mainBtn" onclick="buyNow()">￥<span class="totalPrice">300.00</span> 立即购买</div>
+        </footer>
+    </div>
+
+    <script type="text/javascript" src="../js/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="../js/layer.js"></script>
+    <script type="text/javascript" src="../js/dlc.js"></script>
+    <script type="text/javascript" src="../js/o_base.js"></script>
+    <script>
+        var price = 300,
+            name, id, num, totalPrice = 300,
+            rule, img, userInfo = JSON.parse(getItem("userInfo"));
+
+        if (getParam().id) {
+            id = getParam().id
+            init(); //初始化
+        } else {
+            getCardDetail(userInfo.userId)
+        }
+
+        function buyNow() {
+            var cardMsg = {
+                id: id,
+                price: price,
+                num: num,
+                totalPrice: totalPrice,
+                img: img,
+                name: name
+            }
+            setItem("cardMsg", JSON.stringify(cardMsg));
+            window.location.href = "./o_order.html";
+        }
+
+        function init() {
+            ajaxPost({
+                id: getParam().id
+            }, "api/fitCard/info", function (res) {
+                if (res.code == 101) {
+                    moveItem("userInfo")
+                    getToken();
+                }
+                if (res.code == 1) {
+                    img = res.data.cardImgUrl
+                    $(".cardImgUrl").attr("src", img);
+                    console.log(res.data.cardImgUrl)
+                    switch (res.data.cardType) {
+                        case 0:
+                            name = "健身月卡";
+                            break;
+                        case 1:
+                            name = "健身季卡";
+                            break;
+                        case 2:
+                            name = "健身半年卡";
+                            break;
+                        case 3:
+                            name = "健身年卡";
+                            break;
+                    }
+                    $(".price").text(res.data.cardPrice);
+                    $(".totalPrice").text(totalPrice);
+                    $(".timeUp").hide()
+                    price = Number(res.data.cardPrice);
+                    $(".name").text(name);
+
+
+                    overHide(res.data.cardRule, "rule", "checkAll"); //会员规则超出部分隐藏
+                    count() //初始化计算价格
+                }
+            });
+        }
+
+        function getCardDetail(userId) {
+            ajaxPost({
+                userId: userId
+            }, "api/user/queryMyCard", function (res) {
+                if (res.code == 101) {
+                    moveItem("userInfo")
+                    getToken();
+                }
+                if (res.code == 1) {
+                    img = res.data.cardImgUrl
+                    $(".cardImgUrl").attr("src", img);
+                    console.log(res.data.cardImgUrl)
+                    switch (res.data.cardType) {
+                        case 0:
+                            name = "健身月卡";
+                            break;
+                        case 1:
+                            name = "健身季卡";
+                            break;
+                        case 2:
+                            name = "健身半年卡";
+                            break;
+                        case 3:
+                            name = "健身年卡";
+                            break;
+                    }
+                    $(".timeUp span").text(res.data.validityDate); // 有效期
+                    $(".priceBox").hide();
+                    $(".totalPrice").text(res.data.cardPrice);
+                    $(".name").text(name);
+                    price = res.data.cardPrice;
+                    totalPrice = res.data.cardPrice;
+                    img = res.data.cardImgUrl;
+                    num = 1;
+                    id = res.data.fitCardId
+
+                    overHide(res.data.cardRule, "rule", "checkAll"); //会员规则超出部分隐藏
+                    // count() //初始化计算价格
+                }
+            });
+        }
+
+        function count(key) {
+            num = Number($(".num").text());
+            switch (key) {
+                case 0:
+                    if (num > 1) {
+                        num = num - 1
+                    }
+                    break;
+                case 1:
+                    num = num + 1
+                    break;
+            }
+            $(".num").text(num)
+            totalPrice = price * num
+            $(".totalPrice").text(totalPrice.toFixed(2))
+            $(".cardDetail").show();
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>私教课</title>
+    <#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="form-group col-sm-2">
+                <input type="text" class="form-control" v-model="q.className" @keyup.enter="query" placeholder="课程名称">
+            </div>
+            <a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+            <#if shiro.hasPermission("sys:private:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:private:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:private:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>
+        </div>
+        <table id="deptTable" data-mobile-responsive="true" data-click-to-select="true">
+            <thead>
+            <tr>
+                <th data-field="selectItem" data-checkbox="true"></th>
+            </tr>
+            </thead>
+        </table>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" style="width: 60%">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程类型</div>
+                <div class="col-sm-10">
+
+                <select id="selectT" class="form-control" v-model="list.classType">
+                    <option v-for="c in classTypeList" :value="c.price">
+                        {{c.dataName}}
+                    </option>
+                </select>
+                </div>
+               <!-- <input id="classT" style="width:250px;height:28px;margin-left:-300px;" type="text" v-model="list.classType" placeholder="课程类型">-->
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="list.className" placeholder="课程名称"/>
+                </div>
+            </div>
+            <div id="img" class="form-group">
+                <div class="col-sm-2 control-label">封面图</div>
+                <div class="logoImg">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_zhu"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs uploads">上传</a>
+                    <span>*请上传宽330像素，高330像素的图片</span>
+                </div>
+            </div>
+            <div id="images" class="form-group logo">
+                <div class="col-sm-2 control-label">私教图</div>
+                <div class="logoRemark">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_remark"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs uploadRemark">上传</a>
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_remark"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs uploadRemark">上传</a>
+                </div>
+                <div class="logoRemark">
+                    <div class="col-sm-2 control-label"></div>
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_remark"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs uploadRemark">上传</a>
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_remark"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs uploadRemark">上传</a>
+                </div>
+                <div class="logoRemark">
+                    <div class="col-sm-2 control-label"></div>
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img_remark"
+                         style="width: 100px;height: 100px">
+                    <a class="btn btn-primary btn-xs uploadRemark">上传</a>
+                    <span>*请上传宽750像素，高445像素的图片</span>
+                </div>
+
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课时长(分钟)</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="list.classTime" placeholder="课时长(分钟)"/>
+                </div>
+            </div>
+        <!--<div class="form-group">-->
+                <!--<div class="col-sm-2 control-label">最低购买课时数量</div>-->
+                <!--<div class="col-sm-10">-->
+                    <!--<input type="number" class="form-control" v-model="list.leastBuyNum" placeholder="最低购买课时数量"/>-->
+                <!--</div>-->
+            <!--</div>-->
+            <div class="form-group">
+                <div class="col-sm-2 control-label">能量消耗</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="list.energy" placeholder="能量消耗（单位：kCal千卡）"/>
+                </div>
+           </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程详细</div>
+                <div class="col-sm-10">
+                    <textarea type="text" class="form-control" v-model="list.classDetail" placeholder="课程详细"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程有效天数</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="list.validityDay" placeholder="购买日起算，在该天数时间内上课有效(单位：天)"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程单价</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" id="price" placeholder="课程单价（单位：元）" @change="fillGrade(list.classPrice)" v-model="list.classPrice"/>
+                </div>
+            </div>
+            <div class="form-group">
+            <div class="col-sm-2 control-label">关联教练等级</div>
+            <select id="select" style="width:300px;height:35px;"  @click="a">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+            </select>
+            <input id="dengji" style="width:250px;height:28px;margin-left:-300px;" disabled="disabled" type="text" v-model="list.grade" placeholder="请填入对应等级">
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <div id="message" class="col-sm-10" style="display: none;margin-inside:30px;color: blue;">
+                    *根据课程单价选择等级,选定后只有等级及以下等级教练可以教授此课程, 具体可参考等级价格设置中"教练等级"——"课程最高售价"<br/>
+                    <!--<span>P1等级: 课程售价最高为200元/节</span><br/>
+                    <span>P2等级: 课程售价最高为280元/节</span><br/>
+                    <span>P3等级: 课程售价最高为360元/节</span><br/>
+                    <span>P4等级: 课程售价最高为480元/节</span>-->
+                </div>
+            </div>
+            <!--<div class="form-group">
+                <div class="col-sm-2 control-label">关联教练等级</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" id="dengji" v-model="list.classType"
+                           placeholder="请填写教练等级，设定后只有等级及以下等级教练才可以教授次课程"/>
+                </div>
+            </div>-->
+
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/private.js?_${.now?long}"></script>
+<script src="${request.contextPath}/statics/js/ajaxfileupload.js?_${.now?long}"></script>
+
+</body>
+</html>

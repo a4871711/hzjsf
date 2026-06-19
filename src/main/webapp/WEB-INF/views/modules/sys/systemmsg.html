@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>系统消息记录表</title>
+    <#include "/header.html">
+        </head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <!--	<#if shiro.hasPermission("sys:systemmsg:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+                </#if>-->
+            <#if shiro.hasPermission("sys:systemmsg:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;查看</a>
+            </#if>
+            	<!--<#if shiro.hasPermission("sys:systemmsg:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+                </#if>-->
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">用户</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="systemMsg.userName" disabled="disabled"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">发送内容</div>
+                <div class="col-sm-10">
+                    <textarea v-model="systemMsg.record" rows="5" class="form-control" disabled="disabled"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">发送时间</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="systemMsg.sendTime" disabled="disabled"/>
+                </div>
+            </div>
+            <!-- <div class="form-group">
+                 <div class="col-sm-2 control-label">消息类型（0:正常消息 1:举报消息 2：退款消息 3：教练回款）</div>
+                 <div class="col-sm-10">
+                     <input type="text" class="form-control" v-model="systemMsg.msgType"
+                            placeholder="消息类型（0:正常消息 1:举报消息 2：退款消息 3：教练回款）"/>
+                 </div>
+             </div>-->
+            <!-- <div class="form-group">
+                 <div class="col-sm-2 control-label">已读标识（0：未读 1：已读）</div>
+                 <div class="col-sm-10">
+                     <input type="text" class="form-control" v-model="systemMsg.readFlag" placeholder="已读标识（0：未读 1：已读）"/>
+                 </div>
+             </div>-->
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div><!--
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>-->
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/js/modules/sys/systemmsg.js?_${.now?long}"></script>
+</body>
+</html>

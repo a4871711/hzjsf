@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StoreCoachShipMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StoreCoachShip" >
+    <constructor >
+      <idArg column="storeCoachShipId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    storeCoachShipId, storeId, coachId, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from store_coach_ship
+    where storeCoachShipId = #{storeCoachShipId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from store_coach_ship
+    where storeCoachShipId = #{storeCoachShipId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StoreCoachShip" >
+    insert into store_coach_ship (storeCoachShipId, storeId, coachId, 
+      createdDate)
+    values (#{storeCoachShipId,jdbcType=BIGINT}, #{storeId,jdbcType=BIGINT}, #{coachId,jdbcType=BIGINT}, 
+      #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.StoreCoachShip" >
+    insert into store_coach_ship
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="storeCoachShipId != null" >
+        storeCoachShipId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="coachId != null" >
+        coachId,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="storeCoachShipId != null" >
+        #{storeCoachShipId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.StoreCoachShip" >
+    update store_coach_ship
+    <set >
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        coachId = #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where storeCoachShipId = #{storeCoachShipId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.StoreCoachShip" >
+    update store_coach_ship
+    set storeId = #{storeId,jdbcType=BIGINT},
+      coachId = #{coachId,jdbcType=BIGINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where storeCoachShipId = #{storeCoachShipId,jdbcType=BIGINT}
+  </update>
+</mapper>

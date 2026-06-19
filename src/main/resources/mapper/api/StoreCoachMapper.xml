@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.StoreCoachMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.StoreCoach" >
+    <constructor >
+      <idArg column="scId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="grade" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="headImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="coachName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="phone" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="sex" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="address" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="identity" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="employTime" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="diplomaImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="identBackImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="identImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="salary" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="level" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="status" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="com.dlc.modules.api.entity.StoreCoach" >
+    <constructor >
+      <idArg column="scId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="grade" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="headImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="coachName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="phone" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="sex" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="address" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="identity" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="employTime" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="diplomaImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="identBackImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="identImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="salary" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="level" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="status" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="introduce" jdbcType="LONGVARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    scId, storeId, grade, headImgUrl, coachName, phone, sex, address, identity, employTime, 
+    diplomaImgUrl, identBackImgUrl, identImgUrl, salary, level, status, createdDate
+  </sql>
+  <sql id="Blob_Column_List" >
+    introduce
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from store_coach
+    where scId = #{scId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from store_coach
+    where scId = #{scId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.StoreCoach" >
+    insert into store_coach (scId, storeId, grade, 
+      headImgUrl, coachName, phone, 
+      sex, address, identity, 
+      employTime, diplomaImgUrl, identBackImgUrl, 
+      identImgUrl, salary, level, 
+      status, createdDate, introduce
+      )
+    values (#{scId,jdbcType=BIGINT}, #{storeId,jdbcType=VARCHAR}, #{grade,jdbcType=INTEGER}, 
+      #{headImgUrl,jdbcType=VARCHAR}, #{coachName,jdbcType=VARCHAR}, #{phone,jdbcType=VARCHAR}, 
+      #{sex,jdbcType=INTEGER}, #{address,jdbcType=VARCHAR}, #{identity,jdbcType=VARCHAR}, 
+      #{employTime,jdbcType=INTEGER}, #{diplomaImgUrl,jdbcType=VARCHAR}, #{identBackImgUrl,jdbcType=VARCHAR}, 
+      #{identImgUrl,jdbcType=VARCHAR}, #{salary,jdbcType=DECIMAL}, #{level,jdbcType=DOUBLE}, 
+      #{status,jdbcType=INTEGER}, #{createdDate,jdbcType=TIMESTAMP}, #{introduce,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.StoreCoach" >
+    insert into store_coach
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="scId != null" >
+        scId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="grade != null" >
+        grade,
+      </if>
+      <if test="headImgUrl != null" >
+        headImgUrl,
+      </if>
+      <if test="coachName != null" >
+        coachName,
+      </if>
+      <if test="phone != null" >
+        phone,
+      </if>
+      <if test="sex != null" >
+        sex,
+      </if>
+      <if test="address != null" >
+        address,
+      </if>
+      <if test="identity != null" >
+        identity,
+      </if>
+      <if test="employTime != null" >
+        employTime,
+      </if>
+      <if test="diplomaImgUrl != null" >
+        diplomaImgUrl,
+      </if>
+      <if test="identBackImgUrl != null" >
+        identBackImgUrl,
+      </if>
+      <if test="identImgUrl != null" >
+        identImgUrl,
+      </if>
+      <if test="salary != null" >
+        salary,
+      </if>
+      <if test="level != null" >
+        level,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="introduce != null" >
+        introduce,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="scId != null" >
+        #{scId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=VARCHAR},
+      </if>
+      <if test="grade != null" >
+        #{grade,jdbcType=INTEGER},
+      </if>
+      <if test="headImgUrl != null" >
+        #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="coachName != null" >
+        #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="sex != null" >
+        #{sex,jdbcType=INTEGER},
+      </if>
+      <if test="address != null" >
+        #{address,jdbcType=VARCHAR},
+      </if>
+      <if test="identity != null" >
+        #{identity,jdbcType=VARCHAR},
+      </if>
+      <if test="employTime != null" >
+        #{employTime,jdbcType=INTEGER},
+      </if>
+      <if test="diplomaImgUrl != null" >
+        #{diplomaImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="identBackImgUrl != null" >
+        #{identBackImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="identImgUrl != null" >
+        #{identImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="salary != null" >
+        #{salary,jdbcType=DECIMAL},
+      </if>
+      <if test="level != null" >
+        #{level,jdbcType=DOUBLE},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="introduce != null" >
+        #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.StoreCoach" >
+    update store_coach
+    <set >
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=VARCHAR},
+      </if>
+      <if test="grade != null" >
+        grade = #{grade,jdbcType=INTEGER},
+      </if>
+      <if test="headImgUrl != null" >
+        headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="coachName != null" >
+        coachName = #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        phone = #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="sex != null" >
+        sex = #{sex,jdbcType=INTEGER},
+      </if>
+      <if test="address != null" >
+        address = #{address,jdbcType=VARCHAR},
+      </if>
+      <if test="identity != null" >
+        identity = #{identity,jdbcType=VARCHAR},
+      </if>
+      <if test="employTime != null" >
+        employTime = #{employTime,jdbcType=INTEGER},
+      </if>
+      <if test="diplomaImgUrl != null" >
+        diplomaImgUrl = #{diplomaImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="identBackImgUrl != null" >
+        identBackImgUrl = #{identBackImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="identImgUrl != null" >
+        identImgUrl = #{identImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="salary != null" >
+        salary = #{salary,jdbcType=DECIMAL},
+      </if>
+      <if test="level != null" >
+        level = #{level,jdbcType=DOUBLE},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="introduce != null" >
+        introduce = #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where scId = #{scId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.dlc.modules.api.entity.StoreCoach" >
+    update store_coach
+    set storeId = #{storeId,jdbcType=VARCHAR},
+      grade = #{grade,jdbcType=INTEGER},
+      headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      coachName = #{coachName,jdbcType=VARCHAR},
+      phone = #{phone,jdbcType=VARCHAR},
+      sex = #{sex,jdbcType=INTEGER},
+      address = #{address,jdbcType=VARCHAR},
+      identity = #{identity,jdbcType=VARCHAR},
+      employTime = #{employTime,jdbcType=INTEGER},
+      diplomaImgUrl = #{diplomaImgUrl,jdbcType=VARCHAR},
+      identBackImgUrl = #{identBackImgUrl,jdbcType=VARCHAR},
+      identImgUrl = #{identImgUrl,jdbcType=VARCHAR},
+      salary = #{salary,jdbcType=DECIMAL},
+      level = #{level,jdbcType=DOUBLE},
+      status = #{status,jdbcType=INTEGER},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      introduce = #{introduce,jdbcType=LONGVARCHAR}
+    where scId = #{scId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.StoreCoach" >
+    update store_coach
+    set storeId = #{storeId,jdbcType=VARCHAR},
+      grade = #{grade,jdbcType=INTEGER},
+      headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      coachName = #{coachName,jdbcType=VARCHAR},
+      phone = #{phone,jdbcType=VARCHAR},
+      sex = #{sex,jdbcType=INTEGER},
+      address = #{address,jdbcType=VARCHAR},
+      identity = #{identity,jdbcType=VARCHAR},
+      employTime = #{employTime,jdbcType=INTEGER},
+      diplomaImgUrl = #{diplomaImgUrl,jdbcType=VARCHAR},
+      identBackImgUrl = #{identBackImgUrl,jdbcType=VARCHAR},
+      identImgUrl = #{identImgUrl,jdbcType=VARCHAR},
+      salary = #{salary,jdbcType=DECIMAL},
+      level = #{level,jdbcType=DOUBLE},
+      status = #{status,jdbcType=INTEGER},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where scId = #{scId,jdbcType=BIGINT}
+  </update>
+  <!--场馆教练-->
+  <select id="recommendStoreCoach" resultType="map" parameterType="java.lang.Long">
+    SELECT c.scId as coachId,c.coachName,c.grade,c.level, c.headImgUrl, c.introduce
+    FROM store_coach c
+    WHERE c.storeId = #{storeId}
+    and c.status=1
+    ORDER BY c.level DESC
+  </select>
+    <!--教练详情-->
+    <select id="selectStoreCoachByCoachId" resultType="map" parameterType="map">
+        SELECT c.scId as coachId, c.headImgUrl, c.grade, c.diplomaImgUrl,
+        c.coachName, c.level,
+        c.introduce
+        FROM store_coach c
+        WHERE c.scId = #{coachId}
+    </select>
+    
+    <select id="queryStoreCoachList" resultType="map" parameterType="map">
+    SELECT cps.*
+    FROM store_coach cps
+    WHERE cps.status=1
+    <if test="storeId != null and storeId != ''">
+        AND (cps.storeId is null or cps.storeId = '' or find_in_set(#{storeId}, cps.storeId))
+    </if>
+    <if test="grade != null and grade != ''">
+        AND cps.grade=#{grade}
+    </if>
+    ORDER BY cps.level DESC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <select id="queryStoreCoachTotal" resultType="java.lang.Integer" parameterType="map">
+    SELECT count(*)
+    FROM store_coach cps
+    WHERE cps.status=1
+    <if test="storeId != null and storeId != ''">
+        AND (cps.storeId is null or cps.storeId = '' or find_in_set(#{storeId}, cps.storeId))
+    </if>
+    <if test="grade != null and grade != ''">
+        AND cps.grade=#{grade}
+    </if>
+    ORDER BY cps.level DESC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+</mapper>

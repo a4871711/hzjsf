@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysTeamClassDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.TeamClassEntity" id="teamClassMap">
+        <result property="teamClassId" column="teamClassId"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.TeamClassEntity">
+		select * from team_class where teamClassId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.TeamClassEntity">
+		SELECT tc.*,s.storeName FROM team_class tc INNER JOIN store s ON tc.storeId = s.storeId
+		<where>
+			<if test="storeId != null">
+				tc.storeId = #{storeId}
+			</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND tc.storeId in (${storeIds})
+            </if>
+			<if test="teamClassName != null and teamClassName != ''">
+				AND tc.teamClassName LIKE concat('%',#{teamClassName},'%')
+			</if>
+			<if test="storeName != null and storeName != ''">
+				AND s.storeName LIKE concat('%',#{storeName},'%')
+			</if>
+		</where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by tc.createdDate desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		SELECT count(*) FROM team_class tc INNER JOIN store s ON tc.storeId = s.storeId
+		<where>
+			<if test="storeId != null">
+				tc.storeId = #{storeId}
+			</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND tc.storeId in (${storeIds})
+            </if>
+			<if test="teamClassName != null and teamClassName != ''">
+				AND tc.teamClassName LIKE concat('%',#{teamClassName},'%')
+			</if>
+			<if test="storeName != null and storeName != ''">
+				AND s.storeName LIKE concat('%',#{storeName},'%')
+			</if>
+		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.TeamClassEntity" useGeneratedKeys="true" keyProperty="teamClassId">
+		insert into team_class
+		(
+			`storeId`,
+			`teamClassName`,
+			`teamClassType`,
+			`classPrice`,
+			`totalNum`,
+			`coachId`,
+			`coachName`,
+			`energy`,
+			`room`,
+			`classTime`,
+			`place`,
+			`introduce`,
+			`classLabel`,
+			`classDetail`,
+			`firstImgUrl`,
+			`classImgUrl`,
+			`createdDate`
+		)
+		values
+		(
+			#{storeId},
+			#{teamClassName},
+			#{teamClassType},
+			#{classPrice},
+			#{totalNum},
+			#{coachId},
+			#{coachName},
+			#{energy},
+			#{room},
+			#{classTime},
+			#{place},
+			#{introduce},
+			#{classLabel},
+			#{classDetail},
+			#{firstImgUrl},
+			#{classImgUrl},
+			#{createdDate}
+		)
+	</insert>
+    <!--批量更新团体课状态 已完成1-->
+    <update id="batchUpdateStatus">
+        update team_class
+        set classStatus = 1
+        where teamClassId in
+        <foreach item="teamClassId" collection="list" open="(" separator="," close=")">
+            #{teamClassId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--查询有没有未开始的课程-->
+	<select id="queryOverTimeClass" resultType="java.lang.Integer">
+        select COUNT(*) from team_class
+        where teamClassId in
+        <foreach item="teamClassId" collection="list" open="(" separator="," close=")">
+            #{teamClassId,jdbcType=BIGINT}
+        </foreach>
+		and date_format(NOW(), '%Y-%m-%d %H:%i') <![CDATA[ <= ]]> date_format(SUBSTR(classTime,1,16), '%Y-%m-%d %H:%i')
+    </select>
+
+	<update id="update" parameterType="com.dlc.modules.sys.entity.TeamClassEntity">
+		update team_class
+		<set>
+			<if test="storeId != null">`storeId` = #{storeId}, </if>
+			<if test="teamClassName != null">`teamClassName` = #{teamClassName},</if>
+			<if test="teamClassType != null">`teamClassType` = #{teamClassType}, </if>
+			<if test="classPrice != null">`classPrice` = #{classPrice},</if>
+			<if test="totalNum != null">`totalNum` = #{totalNum}, </if>
+			<if test="coachName != null">`coachName` = #{coachName}, </if>
+			<if test="energy != null">`energy` = #{energy},</if>
+			<if test="room != null">`room` = #{room}, </if>
+			<if test="classTime != null">`classTime` = #{classTime},</if>
+			<if test="place != null">`place` = #{place}, </if>
+			<if test="introduce != null">`introduce` = #{introduce},</if>
+			<if test="classLabel != null">`classLabel` = #{classLabel},</if>
+			<if test="classDetail != null">`classDetail` = #{classDetail}, </if>
+			<if test="firstImgUrl != null">`firstImgUrl` = #{firstImgUrl},</if>
+			<if test="classImgUrl != null">`classImgUrl` = #{classImgUrl}, </if>
+			<if test="createdDate != null">`createdDate` = #{createdDate}</if>
+		</set>
+		where teamClassId = #{teamClassId}
+	</update>
+	
+	<delete id="delete">
+		delete from team_class where teamClassId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from team_class where teamClassId in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+	<select id="selectStoreName" resultType="com.dlc.modules.sys.entity.SysStoreEntity" parameterType="java.lang.Long">
+		SELECT storeId,storeName FROM store
+        <where>
+            <if test="storeId != null">
+                storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND storeId in (${storeIds})
+            </if>
+        </where>
+	</select>
+<!--查询团体课列表-->
+	<select id="queryTeamClass"  resultType="java.util.Map" parameterType="java.util.Map">
+        select
+            tc.teamClassId,
+            s.storeName,
+            tc.teamClassName,
+            tc.teamClassType,
+            tc.classPrice,
+            tc.totalNum,
+            tc.coachName,
+            tc.place,
+            tc.energy,
+            tc.classStatus,
+            tc.classTime
+        from team_class tc inner join store s on s.storeId=tc.storeId
+        <where>
+            <if test="storeId != null">
+                tc.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND tc.storeId in (${storeIds})
+            </if>
+            <if test="classStatus != -1">
+                and tc.classStatus = #{classStatus}
+            </if>
+            <if test="teamClassId != null">
+				and tc.teamClassId like concat('%',trim(#{teamClassId}),'%')
+            </if>
+            <if test="teamClassName != null and teamClassName.trim() != ''">
+                and tc.teamClassName like concat('%',trim(#{teamClassName}),'%')
+            </if>
+        </where>
+        order by tc.createdDate desc
+        LIMIT #{offset}, #{limit}
+    </select>
+    <!--总数-->
+    <select id="queryTeamClassTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from team_class tc inner join store s on s.storeId=tc.storeId
+        <where>
+            <if test="storeId != null">
+                tc.storeId = #{storeId}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND tc.storeId in (${storeIds})
+            </if>
+            <if test="classStatus != -1">
+                and tc.classStatus = #{classStatus}
+            </if>
+            <if test="teamClassId != null">
+                and tc.teamClassId like concat('%',trim(#{teamClassId}),'%')
+            </if>
+            <if test="teamClassName != null and teamClassName.trim() != ''">
+				and tc.teamClassName like concat('%',trim(#{teamClassName}),'%')
+            </if>
+        </where>
+    </select>
+</mapper>

@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.CardOrderMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.CardOrder" >
+    <constructor >
+      <idArg column="cardOrderId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="cardId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="orderNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="transactionNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="paySum" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="couponId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="payType" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="realPayment" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="wrist" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="wristPrice" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="storeAddressId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userAddressId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="sendType" jdbcType="TINYINT" javaType="java.lang.Integer" />
+      <arg column="status" jdbcType="TINYINT" javaType="java.lang.Integer" />
+      <arg column="validityDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="oldValidityDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="payTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="finishTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="autoPay" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="selecteFree" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="type" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="storeAddrIds" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="useCount" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="nextPrice" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="nextPriceTitle" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="nextPrice2" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="nextPriceTitle2" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="nextPrice3" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="nextPriceTitle3" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="agent5Ids" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="agent6Ids" jdbcType="VARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    cardOrderId, userId, cardId, deviceId, orderNo, transactionNo, paySum,couponId, payType, realPayment,
+    wrist, wristPrice, storeAddressId, userAddressId,sendType, status, validityDate, oldValidityDate,
+    createdDate, payTime, finishTime,type,storeAddrIds,useCount
+    ,nextPrice,nextPriceTitle,nextPrice2
+      ,nextPriceTitle2,nextPrice3,nextPriceTitle3,agent5Ids,agent6Ids
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    *
+    from card_order
+    where cardOrderId = #{cardOrderId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from card_order
+    where cardOrderId = #{cardOrderId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.CardOrder" >
+    insert into card_order (cardOrderId, userId, cardId, 
+      orderNo, transactionNo, paySum, couponId, deviceId,
+      payType, realPayment, wrist, 
+      wristPrice, storeAddressId, userAddressId, sendType,
+      status, validityDate, oldValidityDate, createdDate, payTime,
+      finishTime,type,storeAddrIds,useCount,nextPrice,nextPriceTitle,nextPrice2
+      ,nextPriceTitle2,nextPrice3,nextPriceTitle3,agent5Ids,agent6Ids)
+    values (#{cardOrderId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{cardId,jdbcType=BIGINT}, 
+      #{orderNo,jdbcType=VARCHAR}, #{transactionNo,jdbcType=VARCHAR}, #{paySum,jdbcType=DOUBLE}, #{couponId,jdbcType=BIGINT}, #{deviceId,jdbcType=BIGINT},
+      #{payType,jdbcType=TINYINT}, #{realPayment,jdbcType=DOUBLE}, #{wrist,jdbcType=TINYINT}, #{sendType,jdbcType=TINYINT},
+      #{wristPrice,jdbcType=DOUBLE}, #{storeAddressId,jdbcType=BIGINT}, #{userAddressId,jdbcType=BIGINT},
+      #{status,jdbcType=TINYINT}, #{validityDate,jdbcType=TIMESTAMP}, #{oldValidityDate,jdbcType=TIMESTAMP}, #{createdDate,jdbcType=TIMESTAMP}, #{payTime,jdbcType=TIMESTAMP},
+      #{finishTime,jdbcType=TIMESTAMP}, #{type,jdbcType=INTEGER}, #{storeAddrIds,jdbcType=VARCHAR}, #{useCount,jdbcType=INTEGER}
+      , #{nextPrice,jdbcType=DECIMAL}, #{nextPriceTitle,jdbcType=VARCHAR}, #{nextPrice2,jdbcType=DECIMAL}
+      , #{nextPriceTitle2,jdbcType=VARCHAR}, #{nextPrice3,jdbcType=DECIMAL}, #{nextPriceTitle3,jdbcType=VARCHAR}
+      , #{agent5Ids,jdbcType=VARCHAR}, #{agent6Ids,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.CardOrder" >
+    insert into card_order
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="cardOrderId != null" >
+        cardOrderId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="cardId != null" >
+        cardId,
+      </if>
+      <if test="orderNo != null" >
+        orderNo,
+      </if>
+      <if test="transactionNo != null" >
+        transactionNo,
+      </if>
+      <if test="paySum != null" >
+        paySum,
+      </if>
+      <if test="couponId != null" >
+        couponId,
+      </if>
+      <if test="deviceId != null" >
+        deviceId,
+      </if>
+      <if test="payType != null" >
+        payType,
+      </if>
+      <if test="realPayment != null" >
+        realPayment,
+      </if>
+      <if test="wrist != null" >
+        wrist,
+      </if>
+      <if test="wristPrice != null" >
+        wristPrice,
+      </if>
+      <if test="storeAddressId != null" >
+        storeAddressId,
+      </if>
+      <if test="userAddressId != null" >
+        userAddressId,
+      </if>
+      <if test="sendType != null" >
+        sendType,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="validityDate != null" >
+        validityDate,
+      </if>
+      <if test="oldValidityDate != null" >
+        oldValidityDate,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="payTime != null" >
+        payTime,
+      </if>
+      <if test="finishTime != null" >
+        finishTime,
+      </if>
+      <if test="autoPay != null" >
+        autoPay,
+      </if>
+      <if test="selecteFree != null" >
+        selecteFree,
+      </if>
+      <if test="type != null" >
+        type,
+      </if>
+      <if test="storeAddrIds != null" >
+        storeAddrIds,
+      </if>
+      <if test="useCount != null" >
+        useCount,
+      </if>
+      <if test="buyCount != null" >
+        buyCount,
+      </if>
+      <if test="nextPrice != null" >
+        nextPrice,
+      </if>
+      <if test="nextPriceTitle != null" >
+        nextPriceTitle,
+      </if>
+      <if test="nextPrice2 != null" >
+        nextPrice2,
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        nextPriceTitle2,
+      </if>
+      <if test="nextPrice3 != null" >
+        nextPrice3,
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        nextPriceTitle3,
+      </if>
+      <if test="agent5Ids != null" >
+        agent5Ids,
+      </if>
+      <if test="agent6Ids != null" >
+        agent6Ids,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="cardOrderId != null" >
+        #{cardOrderId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="cardId != null" >
+        #{cardId,jdbcType=BIGINT},
+      </if>
+      <if test="orderNo != null" >
+        #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="transactionNo != null" >
+        #{transactionNo,jdbcType=VARCHAR},
+      </if>
+      <if test="paySum != null" >
+        #{paySum,jdbcType=DOUBLE},
+      </if>
+      <if test="couponId != null" >
+        #{couponId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceId != null" >
+        #{deviceId,jdbcType=BIGINT},
+      </if>
+      <if test="payType != null" >
+        #{payType,jdbcType=TINYINT},
+      </if>
+      <if test="realPayment != null" >
+        #{realPayment,jdbcType=DOUBLE},
+      </if>
+      <if test="wrist != null" >
+        #{wrist,jdbcType=TINYINT},
+      </if>
+      <if test="wristPrice != null" >
+        #{wristPrice,jdbcType=DOUBLE},
+      </if>
+      <if test="storeAddressId != null" >
+        #{storeAddressId,jdbcType=BIGINT},
+      </if>
+      <if test="userAddressId != null" >
+        #{userAddressId,jdbcType=BIGINT},
+      </if>
+      <if test="sendType != null" >
+        #{sendType,jdbcType=TINYINT},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="validityDate != null" >
+        #{validityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="oldValidityDate != null" >
+        #{oldValidityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="payTime != null" >
+        #{payTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="finishTime != null" >
+        #{finishTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="autoPay != null" >
+        #{autoPay,jdbcType=INTEGER},
+      </if>
+      <if test="selecteFree != null" >
+        #{selecteFree,jdbcType=INTEGER},
+      </if>
+      <if test="type != null" >
+        #{type,jdbcType=INTEGER},
+      </if>
+      <if test="storeAddrIds != null" >
+        #{storeAddrIds,jdbcType=VARCHAR},
+      </if>
+      <if test="useCount != null" >
+        #{useCount,jdbcType=INTEGER},
+      </if>
+      <if test="buyCount != null" >
+        #{buyCount,jdbcType=INTEGER},
+      </if>
+      <if test="nextPrice != null" >
+        #{nextPrice,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle != null" >
+        #{nextPriceTitle,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice2 != null" >
+        #{nextPrice2,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        #{nextPriceTitle2,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice3 != null" >
+        #{nextPrice3,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        #{nextPriceTitle3,jdbcType=VARCHAR},
+      </if>
+      <if test="agent5Ids != null" >
+        #{agent5Ids,jdbcType=VARCHAR},
+      </if>
+      <if test="agent6Ids != null" >
+        #{agent6Ids,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.CardOrder" >
+    update card_order
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="cardId != null" >
+        cardId = #{cardId,jdbcType=BIGINT},
+      </if>
+      <if test="orderNo != null" >
+        orderNo = #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="transactionNo != null" >
+        transactionNo = #{transactionNo,jdbcType=VARCHAR},
+      </if>
+      <if test="paySum != null" >
+        paySum = #{paySum,jdbcType=DOUBLE},
+      </if>
+      <if test="couponId != null" >
+        couponId = #{couponId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceId != null" >
+        deviceId = #{deviceId,jdbcType=BIGINT},
+      </if>
+      <if test="payType != null" >
+        payType = #{payType,jdbcType=TINYINT},
+      </if>
+      <if test="realPayment != null" >
+        realPayment = #{realPayment,jdbcType=DOUBLE},
+      </if>
+      <if test="wrist != null" >
+        wrist = #{wrist,jdbcType=TINYINT},
+      </if>
+      <if test="wristPrice != null" >
+        wristPrice = #{wristPrice,jdbcType=DOUBLE},
+      </if>
+      <if test="storeAddressId != null" >
+        storeAddressId = #{storeAddressId,jdbcType=BIGINT},
+      </if>
+      <if test="userAddressId != null" >
+        userAddressId = #{userAddressId,jdbcType=BIGINT},
+      </if>
+      <if test="sendType != null" >
+        sendType = #{sendType,jdbcType=TINYINT},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="validityDate != null" >
+        validityDate = #{validityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="oldValidityDate != null" >
+        oldValidityDate = #{oldValidityDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="payTime != null" >
+        payTime = #{payTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="finishTime != null" >
+        finishTime = #{finishTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="type != null" >
+        type = #{type,jdbcType=INTEGER},
+      </if>
+      <if test="storeAddrIds != null" >
+        storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR},
+      </if>
+      <if test="useCount != null" >
+        useCount = #{useCount,jdbcType=INTEGER},
+      </if>
+      <if test="nextPrice != null" >
+        nextPrice = #{nextPrice,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle != null" >
+        nextPriceTitle = #{nextPriceTitle,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice2 != null" >
+        nextPrice2 = #{nextPrice2,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        nextPriceTitle2 = #{nextPriceTitle2,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice3 != null" >
+        nextPrice3 = #{nextPrice3,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        nextPriceTitle3 = #{nextPriceTitle3,jdbcType=VARCHAR},
+      </if>
+      <if test="agent5Ids != null" >
+        agent5Ids = #{agent5Ids,jdbcType=VARCHAR},
+      </if>
+      <if test="agent6Ids != null" >
+        agent6Ids = #{agent6Ids,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where cardOrderId = #{cardOrderId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.CardOrder" >
+    update card_order
+    set userId = #{userId,jdbcType=BIGINT},
+      cardId = #{cardId,jdbcType=BIGINT},
+      orderNo = #{orderNo,jdbcType=VARCHAR},
+      transactionNo = #{transactionNo,jdbcType=VARCHAR},
+      paySum = #{paySum,jdbcType=DOUBLE},
+      couponId = #{couponId,jdbcType=BIGINT},
+      deviceId = #{deviceId,jdbcType=BIGINT},
+      payType = #{payType,jdbcType=TINYINT},
+      realPayment = #{realPayment,jdbcType=DOUBLE},
+      wrist = #{wrist,jdbcType=TINYINT},
+      wristPrice = #{wristPrice,jdbcType=DOUBLE},
+      storeAddressId = #{storeAddressId,jdbcType=BIGINT},
+      userAddressId = #{userAddressId,jdbcType=BIGINT},
+      sendType = #{sendType,jdbcType=TINYINT},
+      status = #{status,jdbcType=TINYINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      payTime = #{payTime,jdbcType=TIMESTAMP},
+      finishTime = #{finishTime,jdbcType=TIMESTAMP}    
+      <if test="validityDate != null" >
+        ,validityDate = #{validityDate,jdbcType=TIMESTAMP}
+      </if>
+      <if test="oldValidityDate != null" >
+        ,oldValidityDate = #{oldValidityDate,jdbcType=TIMESTAMP}
+      </if>  
+      <if test="autoPay != null" >
+        ,autoPay = #{autoPay,jdbcType=INTEGER}
+      </if>
+      <if test="storeAddrIds != null" >
+        ,storeAddrIds = #{storeAddrIds,jdbcType=VARCHAR}
+      </if>
+      <if test="useCount != null" >
+        ,useCount = #{useCount,jdbcType=INTEGER}
+      </if>
+      <if test="nextPrice != null" >
+        ,nextPrice = #{nextPrice,jdbcType=DECIMAL}
+      </if>
+      <if test="nextPriceTitle != null" >
+        ,nextPriceTitle = #{nextPriceTitle,jdbcType=VARCHAR}
+      </if>
+      <if test="nextPrice2 != null" >
+        ,nextPrice2 = #{nextPrice2,jdbcType=DECIMAL}
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        ,nextPriceTitle2 = #{nextPriceTitle2,jdbcType=VARCHAR}
+      </if>
+      <if test="nextPrice3 != null" >
+        ,nextPrice3 = #{nextPrice3,jdbcType=DECIMAL}
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        ,nextPriceTitle3 = #{nextPriceTitle3,jdbcType=VARCHAR}
+      </if>
+      <if test="agent5Ids != null" >
+        ,agent5Ids = #{agent5Ids,jdbcType=VARCHAR}
+      </if>
+      <if test="agent6Ids != null" >
+        ,agent6Ids = #{agent6Ids,jdbcType=VARCHAR}
+      </if>
+    where cardOrderId = #{cardOrderId,jdbcType=BIGINT}
+  </update>
+  <!-- 查询个人卡信息-->
+  <select id="queryCardDetailByUserId" resultType="java.util.Map" parameterType="java.lang.Long">
+      SELECT
+      fc.fitCardId,
+      fc.cardPrice,
+      fc.cardType,
+      date_format(d.validityDate, '%Y-%m-%d') AS validityDate,
+      date_format(d.oldValidityDate, '%Y-%m-%d') AS oldValidityDate,
+      fc.cardRule,
+      fc.cardImgUrl,
+      d.autoPay,
+      d.storeAddrIds,
+      d.useCount,
+      c.ctName
+      FROM
+      device d
+      INNER JOIN fit_card fc ON fc.fitCardId = d.fitCardId
+      INNER JOIN card_type c ON c.cardType = fc.cardType
+      WHERE
+      d.proxyId = #{userId,jdbcType=BIGINT}
+      AND d.status in (0,1) ORDER BY d.id DESC LIMIT 1
+  </select>
+  <!--根据用户id查找健身卡历史订单-->
+  <select id="selectCardOrderByUSerId" resultType="map" parameterType="java.lang.Long">
+    SELECT * FROM card_order WHERE userId = #{userId} AND status = 4 ORDER BY createdDate limit 1
+  </select>
+  <!--根据订单号查询订单-->
+  <select id="selectByOrderNo" resultType="com.dlc.modules.api.entity.CardOrder" parameterType="java.lang.String">
+    SELECT *
+    FROM card_order
+    WHERE orderNo = #{orderNo}
+  </select>
+
+  <!--查询所有未付款的健身卡订单-->
+  <select id="selectAllCardOrderByStatus" resultType="com.dlc.modules.api.entity.CardOrder">
+    SELECT *
+    FROM card_order
+    WHERE status = 0
+  </select>
+  <!--根据门店地址id查门店id-->
+  <select id="queryStoreIdByAddress" resultType="java.lang.Long" parameterType="java.lang.Long">
+    select storeId from store_address where storeAddrId = #{storeAddrId}
+  </select>
+    <!--根据userid查询代扣未支付订单-->
+    <select id="selectPapCardOrder" resultType="com.dlc.modules.api.entity.CardOrder" parameterType="java.lang.Long">
+        SELECT *
+        FROM card_order
+        WHERE userId = #{userId} AND status = 0 ORDER BY createdDate limit 1
+    </select>
+
+  <update id="updateOrderStatus">
+    UPDATE card_order SET status = #{status} WHERE orderNo = #{orderNo} limit 1
+  </update>
+  
+  <select id="queryList" resultType="map">
+		select * from card_order
+        <where>
+            <if test="userId != null and userId != ''">
+                and userId=#{userId}
+            </if>
+            and status = 4
+        </where>
+        order by cardOrderId DESC
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from card_order
+        <where>
+            <if test="userId != null and userId != ''">
+                and userId=#{userId}
+            </if>
+            and status = 4
+        </where>
+	</select>
+
+</mapper>

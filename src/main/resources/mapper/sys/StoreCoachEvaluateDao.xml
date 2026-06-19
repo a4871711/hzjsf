@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysStoreCoachEvaluateDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysStoreCoachEvaluateEntity" id="storeCoachEvaluateMap">
+        <result property="evaluateId" column="evaluateId"/>
+        <result property="scId" column="scId"/>
+        <result property="userId" column="userId"/>
+        <result property="headImgUrl" column="headImgUrl"/>
+        <result property="nickname" column="nickname"/>
+        <result property="evLevel" column="evLevel"/>
+        <result property="evContent" column="evContent"/>
+        <result property="evaluatImgUrl" column="evaluatImgUrl"/>
+        <result property="evaluatDate" column="evaluatDate"/>
+    </resultMap>
+    <sql id="base_col">scId,userId, headImgUrl,  nickname, evLevel,  evContent,   evaluatImgUrl,  evaluatDate
+                            </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysStoreCoachEvaluateEntity" parameterType="map">
+        select sc.coachName,ui.nickname as userName,sce.* from store_coach_evaluate sce
+        inner JOIN  store_coach sc on sc.scId=sce.scId
+        INNER  JOIN  user_info ui on ui.userId=sce.userId
+        <where>
+            <if test="scId!=null and scId !=''">
+                and sce.scId=#{scId}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by sce.evaluatDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="integer" parameterType="map">
+        select count(1) from store_coach_evaluate
+    </select>
+    <select id="queryObject" parameterType="long" resultType="com.dlc.modules.sys.entity.SysStoreCoachEvaluateEntity">
+        select * from store_coach_evaluate WHERE evaluateId=#{id}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysStoreCoachEvaluateEntity">
+        insert into store_coach_evaluate(
+        <include refid="base_col"/>
+        ) values (
+        #{scId},
+        #{userId},
+        #{headImgUrl},
+        #{nickname},
+        #{evLevel},
+        #{evContent},
+        #{evaluatImgUrl},
+        #{evaluatDate});
+    </insert>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysStoreCoachEvaluateEntity">
+        update store_coach_evaluate
+        SET
+            scId=#{scId},
+            userId=#{userId},
+            headImgUrl=#{headImgUrl},
+            nickname=#{nickname},
+            evLevel=#{evLevel},
+            evContent=#{evContent},
+            evaluatImgUrl=#{evaluatImgUrl},
+            evaluatDate=#{evaluatDate}
+            where evaluateId=#{evaluateId};
+    </update>
+    <delete id="deleteBatch">
+        DELETE FROM store_coach_evaluate
+        WHERE evaluateId
+        IN
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

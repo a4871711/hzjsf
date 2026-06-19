@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd
+     	http://www.springframework.org/schema/aop
+     	http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+		http://www.springframework.org/schema/mvc
+     	http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+     	http://www.springframework.org/schema/task
+		http://www.springframework.org/schema/task/spring-task.xsd ">
+
+    <context:component-scan base-package="com.dlc"/>
+    <context:annotation-config/>
+    <mvc:default-servlet-handler/>
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+    <mvc:annotation-driven>
+        <mvc:message-converters register-defaults="true">
+            <bean class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>text/html;charset=UTF-8</value>
+                        <value>application/json</value>
+                    </list>
+                </property>
+                <property name="features">
+                    <list>
+                        <value>WriteMapNullValue</value>
+                        <value>QuoteFieldNames</value>
+                        <!--<value>WriteDateUseDateFormat</value>-->
+                        <!-- 禁用fastjson循环引用检测 -->
+                        <value>DisableCircularReferenceDetect</value>
+                    </list>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+
+    <!-- FreeMarker视图解析器 默认视图 -->
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <property name="viewClass" value="org.springframework.web.servlet.view.freemarker.FreeMarkerView"/>
+        <property name="contentType" value="text/html; charset=utf-8"/>
+        <property name="requestContextAttribute" value="request"/>
+        <property name="cache" value="false"/>
+        <property name="viewNames" value="*.html"/>
+        <property name="suffix" value=""/>
+        <property name="order" value="0"/>
+    </bean>
+
+    <bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+        <property name="templateLoaderPath" value="/WEB-INF/views/"/>
+        <property name="freemarkerVariables">
+            <map>
+                <entry key="shiro" value-ref="shiroTag"/>
+            </map>
+        </property>
+        <property name="freemarkerSettings">
+            <props>
+                <prop key="defaultEncoding">UTF-8</prop>
+                <prop key="numberFormat">0.##</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!-- JSP视图解析器 -->
+    <bean id="viewResolverJsp" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/views/"/>
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+        <property name="viewNames" value="*.jsp"/>
+        <property name="suffix" value=""/>
+        <property name="order" value="1"/>
+    </bean>
+
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxUploadSize" value="1000000000"/>
+    </bean>
+
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/api/**"/>
+            <mvc:exclude-mapping path="/api/userInfo/register"/>
+            <mvc:exclude-mapping path="/api/userInfo/login"/>
+            <mvc:exclude-mapping path="/api/userInfo/wxLogin"/>
+            <mvc:exclude-mapping path="/api/userInfo/zfbLogin"/>
+            <mvc:exclude-mapping path="/api/userInfo/h5Login"/>
+            <mvc:exclude-mapping path="/api/userInfo/sendCode"/>
+            <mvc:exclude-mapping path="/api/userInfo/sendCodeV2"/>
+            <mvc:exclude-mapping path="/api/userInfo/getCode"/>
+            <mvc:exclude-mapping path="/api/userInfo/getPrivateKeyAndPid"/>
+            <mvc:exclude-mapping path="/api/userInfo/forgetPassword"/>
+            <mvc:exclude-mapping path="/api/device/save"/>
+            <mvc:exclude-mapping path="/api/pay/wxNotify"/>
+            <mvc:exclude-mapping path="/api/walletPay/wxNotify"/>
+            <mvc:exclude-mapping path="/api/walletPay/wxRefoundNotify"/>
+            <mvc:exclude-mapping path="/api/walletDetail/reNotify"/>
+            <mvc:exclude-mapping path="/api/pay/zfbNotify"/>
+            <mvc:exclude-mapping path="/api/pay/wxH5Notify"/>
+            <mvc:exclude-mapping path="/api/walletPay/zfbNotify"/>
+            <mvc:exclude-mapping path="/api/walletPay/zfbRefoundNotify"/>
+            <mvc:exclude-mapping path="/api/pay/goodsCallBk"/>
+            <mvc:exclude-mapping path="/api/myWallet/goodsCallBk"/>
+            <mvc:exclude-mapping path="/api/express/expressCallBack"/>
+            <mvc:exclude-mapping path="/api/goodsOrder/wxOrderPayBck"/>
+            <mvc:exclude-mapping path="/api/goodsOrder/zxbOrderPayBck"/>
+            <mvc:exclude-mapping path="/api/h5/**"/>
+            <mvc:exclude-mapping path="/api/share/**"/>
+            <mvc:exclude-mapping path="/model/**"/>
+
+            <mvc:exclude-mapping path="/api/activityTrain/**"/>
+            <mvc:exclude-mapping path="/api/gymEngine/**"/>
+            <!--健身器材接口-->
+            <mvc:exclude-mapping path="/api/userInfo/rfid"/>
+            <mvc:exclude-mapping path="/api/userInfo/uploadSportData"/>
+            <!--力动健身器材接口-->
+            <mvc:exclude-mapping path="/api/device/rido/**"/>
+
+            <!--提供给维塑用的接口-->
+            <mvc:exclude-mapping path="/api/userInfo/v1/**"/>
+            <!--人脸识别-->
+            <mvc:exclude-mapping path="/api/face/**"/>
+            <!--资讯详情分享-->
+            <mvc:exclude-mapping path="/api/information/info"/>
+            <mvc:exclude-mapping path="/api/advertising/advertisingList"/>
+            <mvc:exclude-mapping path="/api/storeAddress/list"/>
+            <mvc:exclude-mapping path="/api/information/list"/>
+            <mvc:exclude-mapping path="/api/advertising/customizationAdv"/>
+            <mvc:exclude-mapping path="/api/user/queryMyCard"/>
+            <!--微信委托代扣模块-->
+            <mvc:exclude-mapping path="/api/wx/cancelContract"/>
+            <mvc:exclude-mapping path="/api/wx/preenTrustNotify/**"/>
+            <mvc:exclude-mapping path="/api/wx/papPaymentNotify"/>
+
+            <!--二维码识别开门-->
+            <mvc:exclude-mapping path="/api/wefit/checkUserQrcode"/>
+
+            <bean class="com.dlc.common.exception.LoginInterceptor"></bean>
+        </mvc:interceptor>
+        <mvc:interceptor>
+            <mvc:mapping path="/api/**"/>
+            <mvc:exclude-mapping path="/api/userInfo/register"/>
+            <mvc:exclude-mapping path="/api/userInfo/login"/>
+            <mvc:exclude-mapping path="/api/userInfo/wxLogin"/>
+            <mvc:exclude-mapping path="/api/userInfo/zfbLogin"/>
+            <mvc:exclude-mapping path="/api/userInfo/h5Login"/>
+            <mvc:exclude-mapping path="/api/userInfo/sendCode"/>
+            <mvc:exclude-mapping path="/api/userInfo/sendCodeV2"/>
+            <mvc:exclude-mapping path="/api/userInfo/getCode"/>
+            <mvc:exclude-mapping path="/api/userInfo/getPrivateKeyAndPid"/>
+            <mvc:exclude-mapping path="/api/userInfo/forgetPassword"/>
+            <mvc:exclude-mapping path="/api/device/save"/>
+            <mvc:exclude-mapping path="/api/pay/wxNotify"/>
+            <mvc:exclude-mapping path="/api/walletPay/wxNotify"/>
+            <mvc:exclude-mapping path="/api/walletPay/wxRefoundNotify"/>
+            <mvc:exclude-mapping path="/api/walletDetail/reNotify"/>
+            <mvc:exclude-mapping path="/api/pay/zfbNotify"/>
+            <mvc:exclude-mapping path="/api/pay/wxH5Notify"/>
+            <mvc:exclude-mapping path="/api/walletPay/zfbNotify"/>
+            <mvc:exclude-mapping path="/api/walletPay/zfbRefoundNotify"/>
+            <mvc:exclude-mapping path="/api/fitCard/**"/>
+            <mvc:exclude-mapping path="/api/myWallet/goodsCallBk"/>
+            <mvc:exclude-mapping path="/api/express/expressCallBack"/>
+            <mvc:exclude-mapping path="/api/goodsOrder/wxOrderPayBck"/>
+            <mvc:exclude-mapping path="/api/goodsOrder/zxbOrderPayBck"/>
+            <mvc:exclude-mapping path="/api/activityTrain/**"/>
+            <mvc:exclude-mapping path="/api/h5/**"/>
+            <mvc:exclude-mapping path="/api/share/**"/>
+            <!--提供给维塑用的接口-->
+            <mvc:exclude-mapping path="/api/userInfo/v1/**"/>
+            <mvc:exclude-mapping path="/model/**"/>
+            <!--健身器材接口-->
+            <mvc:exclude-mapping path="/api/userInfo/rfid"/>
+            <mvc:exclude-mapping path="/api/userInfo/uploadSportData"/>
+            <!--力动健身器材接口-->
+            <mvc:exclude-mapping path="/api/device/rido/**"/>
+            <!--人脸识别-->
+            <mvc:exclude-mapping path="/api/face/**"/>
+            <!--资讯详情分享-->
+            <mvc:exclude-mapping path="/api/information/info"/>
+            <mvc:exclude-mapping path="/api/advertising/advertisingList"/>
+            <mvc:exclude-mapping path="/api/storeAddress/list"/>
+            <mvc:exclude-mapping path="/api/information/list"/>
+            <mvc:exclude-mapping path="/api/advertising/customizationAdv"/>
+            <mvc:exclude-mapping path="/api/user/queryMyCard"/>
+            <!--微信委托代扣模块-->
+            <mvc:exclude-mapping path="/api/wx/cancelContract"/>
+            <mvc:exclude-mapping path="/api/wx/preenTrustNotify/**"/>
+            <mvc:exclude-mapping path="/api/wx/papPaymentNotify"/>
+
+            <!--二维码识别开门-->
+            <mvc:exclude-mapping path="/api/wefit/checkUserQrcode"/>
+
+            <bean class="com.dlc.common.exception.OnLineInterceptor"></bean>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+
+    <task:annotation-driven/>
+    <bean id="updateOrderStatusTask" class="com.dlc.modules.api.schedule.UpdateOrderStatusTask"></bean>
+    <bean id="deleteFaceRecordTask" class="com.dlc.modules.api.schedule.DeleteFaceRecordTask"></bean>
+    <bean id="updateClassStatusTask" class="com.dlc.modules.api.schedule.UpdateClassStatusTask"></bean>
+    <bean id="papAutoPayTask" class="com.dlc.modules.api.schedule.AutoPayTask"></bean>
+    <task:scheduled-tasks>
+        <!--每隔1小时执行一次更新卡、商城、私教课、团体课订单状态-->
+        <task:scheduled ref="updateOrderStatusTask" method="updateOrderStatus" cron="0 0 0/1 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天凌晨2点执行一次刷脸数据清理-->
+        <task:scheduled ref="deleteFaceRecordTask" method="deleteFaceRecord" cron="0 0 2 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天凌晨0点分执行一次会员过期处理-->
+        <task:scheduled ref="updateClassStatusTask" method="updateMemberStatus" cron="0 0 0 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天早上8点执行一次自动续费代扣申请发起，24小时后会执行扣款-->
+        <task:scheduled ref="papAutoPayTask" method="papAutoPay" cron="0 0 8 * * ?"/>
+    </task:scheduled-tasks>
+
+    <!-- 注册RequestMappingHandlerMapping 和RequestMappingHandlerAdapter 两个bean。-->
+    <mvc:annotation-driven>
+        <mvc:message-converters>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="objectMapper">
+                    <bean class="com.dlc.common.config.JsonObjectMapper"></bean>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+</beans>

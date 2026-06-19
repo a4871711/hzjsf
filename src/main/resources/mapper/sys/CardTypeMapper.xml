@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.sys.dao.CardTypeMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.sys.entity.CardType" >
+    <constructor >
+      <idArg column="ctId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="cardType" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="ctName" jdbcType="VARCHAR" javaType="java.lang.String" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    ctId, cardType, ctName
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from card_type
+    where ctId = #{ctId,jdbcType=BIGINT}
+  </select>
+  <!--查所有-->
+  <select id="selectAllCardType" resultType="com.dlc.modules.sys.entity.CardType">
+    select
+      *
+    from card_type
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from card_type
+    where ctId = #{ctId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.sys.entity.CardType" >
+    insert into card_type (ctId, cardType, ctName
+      )
+    values (#{ctId,jdbcType=BIGINT}, #{cardType,jdbcType=INTEGER}, #{ctName,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.sys.entity.CardType" >
+    insert into card_type
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="ctId != null" >
+        ctId,
+      </if>
+      <if test="cardType != null" >
+        cardType,
+      </if>
+      <if test="ctName != null" >
+        ctName,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="ctId != null" >
+        #{ctId,jdbcType=BIGINT},
+      </if>
+      <if test="cardType != null" >
+        #{cardType,jdbcType=INTEGER},
+      </if>
+      <if test="ctName != null" >
+        #{ctName,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.sys.entity.CardType" >
+    update card_type
+    <set >
+      <if test="cardType != null" >
+        cardType = #{cardType,jdbcType=INTEGER},
+      </if>
+      <if test="ctName != null" >
+        ctName = #{ctName,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where ctId = #{ctId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.sys.entity.CardType" >
+    update card_type
+    set cardType = #{cardType,jdbcType=INTEGER},
+      ctName = #{ctName,jdbcType=VARCHAR}
+    where ctId = #{ctId,jdbcType=BIGINT}
+  </update>
+    <!--查类型名称是否存在-->
+    <select id="queryIfExistCardType" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT COUNT(*) from card_type WHERE ctName=TRIM(#{ctName})
+    </select>
+    <!--查类型是否存在byctid-->
+    <select id="queryIfExistCardTypeByCtId" resultType="java.lang.Integer" parameterType="java.lang.Long">
+        SELECT COUNT(*) from card_type c INNER JOIN device d ON d.type=c.cardType
+          WHERE c.ctId = #{ctId,jdbcType=BIGINT}
+    </select>
+    <!--获取cardtype最大值并+1-->
+    <select id="selectLastCardType" resultType="java.lang.Integer">
+        select ifnull(cardType,0) + 1 from card_type order by cardType desc limit 1
+    </select>
+</mapper>

@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.GoodsDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.GoodsEntity" id="goodsMap">
+        <result property="goodsId" column="goodsId"/>
+        <result property="categoryId" column="categoryId"/>
+        <result property="name" column="name"/>
+		<result property="price" column="price"/>
+		<result property="style" column="style"/>
+		<result property="color" column="color"/>
+		<result property="size" column="size"/>
+		<result property="total" column="total"/>
+		<result property="monthlySales" column="monthlySales"/>
+		<result property="imgUrl" column="imgUrl"/>
+		<result property="status" column="status"/>
+		<result property="freight" column="freight"/>
+		<result property="remark" column="remark"/>
+		<result property="carouselImgUrl" column="carouselImgUrl"/>
+		<result property="remarkImgUrl" column="remarkImgUrl"/>
+		<result property="deleteStatus" column="deleteStatus"/>
+		<result property="createdDate" column="createdDate"/>
+		<result property="nextCategoryName" column="nextCategoryName"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.GoodsEntity">
+		select * from goods where id = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.GoodsEntity">
+		SELECT * FROM (SELECT g.*,gcd.nextCategoryName FROM goods g
+		INNER JOIN goods_category_detail gcd ON g.categoryId = gcd.id
+		<where>
+			g.deleteStatus = 0
+			<if test="name != null and name != ''">
+				AND g.name LIKE concat('%',#{name},'%')
+			</if>
+		</where>
+		GROUP BY g.goodsId) a ORDER BY a.goodsId DESC
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		SELECT COUNT(*) FROM (SELECT g.*,gcd.nextCategoryName FROM goods g
+		INNER JOIN goods_category_detail gcd ON g.categoryId = gcd.id
+		<where>
+			g.deleteStatus = 0
+			<if test="name != null and name != ''">
+				AND g.name LIKE concat('%',#{name},'%')
+			</if>
+		</where>
+		GROUP BY g.goodsId) a
+	</select>
+	<!--广告详情查询商品列表-->
+	<select id="queryGoodsSelectList" resultType="java.util.Map" parameterType="java.util.Map">
+		SELECT
+			goodsId, name, price
+		FROM goods
+		WHERE deleteStatus = 0 AND status = 1
+		<if test="name != null and name != ''">
+			AND name LIKE concat('%',#{name},'%')
+		</if>
+		GROUP BY goodsId
+		ORDER BY createdDate DESC
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	<select id="queryGoodsSelectTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        SELECT count(*)
+            FROM (SELECT id FROM goods
+            WHERE deleteStatus = 0 AND status = 1
+            <if test="name != null and name != ''">
+                AND name LIKE concat('%',#{name},'%')
+            </if>
+            GROUP BY goodsId) a
+	</select>
+	<!--根绝goodsId详情商品-->
+	<select id="selectGoodsDetailList" resultType="java.util.Map">
+		SELECT g.*,gcd.nextCategoryName FROM goods g
+		LEFT JOIN goods_category_detail gcd ON g.categoryId = gcd.id
+		WHERE g.goodsId = #{goodsId} AND g.deleteStatus = 0
+		ORDER BY g.goodsId DESC
+	</select>
+
+	<select id="selectGoodsDetailCount" resultType="java.lang.Integer">
+		SELECT COUNT(*) FROM goods g
+		LEFT JOIN goods_category_detail gcd ON g.categoryId = gcd.id
+		WHERE g.goodsId = #{goodsId} AND g.deleteStatus = 0
+	</select>
+
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.GoodsEntity" useGeneratedKeys="true" keyProperty="id">
+		insert into goods
+		(
+			`goodsId`,
+			`categoryId`,
+			`name`,
+			`price`,
+			`style`,
+			`color`,
+			`size`,
+			`total`,
+			`imgUrl`,
+			`status`,
+			<if test="freight != null">`freight`,</if>
+			`remark`,
+			`carouselImgUrl`,
+			`deleteStatus`,
+			`createdDate`
+		)
+		values
+		(
+			0,
+			#{categoryId},
+			#{name},
+			#{price},
+			#{style},
+			#{color},
+			#{size},
+			#{total},
+			#{imgUrl},
+			#{status},
+			<if test="freight != null">#{freight},</if>
+			#{remark},
+			#{carouselImgUrl},
+			#{deleteStatus},
+			#{createdDate}
+		)
+	</insert>
+
+	<insert id="insertGoods" parameterType="com.dlc.modules.sys.entity.GoodsEntity" useGeneratedKeys="true" keyProperty="id">
+		insert into goods
+		(
+		`goodsId`,
+		`categoryId`,
+		`name`,
+		`price`,
+		<if test="style != null">`style`,</if>
+		`color`,
+		`size`,
+		<if test="total != null">`total`,</if>
+		`imgUrl`,
+		`status`,
+		`freight`,
+		`remark`,
+		`carouselImgUrl`,
+		`deleteStatus`,
+		`createdDate`
+		)
+		values
+		(
+		#{goodsId},
+		#{categoryId},
+		#{name},
+		#{price},
+		<if test="style != null">#{style},</if>
+		#{color},
+		#{size},
+		<if test="total != null">#{total},</if>
+		#{imgUrl},
+		#{status},
+		#{freight},
+		#{remark},
+		#{carouselImgUrl},
+		#{deleteStatus},
+		#{createdDate}
+		)
+	</insert>
+
+	<update id="updateGoodsId" parameterType="com.dlc.modules.sys.entity.GoodsEntity">
+		UPDATE goods SET goodsId = #{id} WHERE id = #{id}
+	</update>
+	 <!--<if test="color != null">`color` = #{color},</if>
+			<if test="size != null">`size` = #{size},</if>
+			<if test="imgUrl != null">`imgUrl` = #{imgUrl},</if>
+			<if test="style != null">`style` = #{style},</if>-->
+	<update id="update" parameterType="com.dlc.modules.sys.entity.GoodsEntity">
+		update goods
+		<set>
+			<if test="categoryId != null">`categoryId` = #{categoryId},</if>
+			<if test="name != null">`name` = #{name},</if>
+			<if test="price != null">`price` = #{price},</if>
+			<if test="total != null">`total` = #{total},</if>
+			<if test="status != null">`status` = #{status},</if>
+			<if test="freight != null">`freight` = #{freight},</if>
+			<if test="remark != null">`remark` = #{remark},</if>
+			<if test="imgUrl != null">`imgUrl` = #{imgUrl},</if>
+			<if test="carouselImgUrl != null">`carouselImgUrl` = #{carouselImgUrl},</if>
+			<if test="createdDate!= null">`createdDate` = #{createdDate}</if>
+		</set>
+		where goodsId = #{goodsId}
+	</update>
+    <!--更新单个商品详情-->
+    <update id="updateDetail" parameterType="com.dlc.modules.sys.entity.GoodsEntity">
+		update goods
+		<set>
+            <if test="color != null">`color` = #{color},</if>
+            <if test="size != null">`size` = #{size},</if>
+            <if test="imgUrl != null">`imgUrl` = #{imgUrl}</if>
+		</set>
+		where id = #{id}
+	</update>
+
+	<update id="updateDeleteByGid">
+		UPDATE goods SET deleteStatus = 1 where goodsId = #{id}
+	</update>
+
+	<update id="updateDeleteById">
+		UPDATE goods SET deleteStatus = 1 where id = #{id}
+	</update>
+
+    <delete id="delete">
+        UPDATE goods SET deleteStatus = 1 where id = #{value}
+    </delete>
+
+	<delete id="deleteBatch">
+		DELETE FROM goods  where goodsId in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	<delete id="deleteGoodsPropertyBatch">
+		DELETE FROM goods SET deleteStatus = 1 where id in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	<select id="queryGoodsId" resultType="long" parameterType="arraylist">
+		SELECT goodsId FROM  goods where
+		id in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</select>
+</mapper>

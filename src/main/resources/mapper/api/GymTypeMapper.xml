@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.GymTypeMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.GymType" >
+    <constructor >
+      <idArg column="gtId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="gtName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    gtId, gtName, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from gym_type
+    where gtId = #{gtId,jdbcType=BIGINT}
+  </select>
+    <select id="selectAllGymType" resultType="com.dlc.modules.api.entity.GymType">
+    select
+      *
+    from gym_type
+    ORDER BY createdDate DESC
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from gym_type
+    where gtId = #{gtId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.GymType" >
+    insert into gym_type (gtId, gtName, createdDate
+      )
+    values (#{gtId,jdbcType=BIGINT}, #{gtName,jdbcType=VARCHAR}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.GymType" >
+    insert into gym_type
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="gtId != null" >
+        gtId,
+      </if>
+      <if test="gtName != null" >
+        gtName,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="gtId != null" >
+        #{gtId,jdbcType=BIGINT},
+      </if>
+      <if test="gtName != null" >
+        #{gtName,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.GymType" >
+    update gym_type
+    <set >
+      <if test="gtName != null" >
+        gtName = #{gtName,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where gtId = #{gtId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.GymType" >
+    update gym_type
+    set gtName = #{gtName,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where gtId = #{gtId,jdbcType=BIGINT}
+  </update>
+  <!--一级分类列表-->
+  <select id="queryOneTypeList" resultType="java.util.Map" parameterType="java.util.Map">
+    select
+      gtId, gtName
+    from gym_type
+    ORDER BY createdDate DESC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+    <!--总数-->
+    <select id="queryOneTypeTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+          count(*)
+        from gym_type
+    </select>
+    <!--queryGymTypeList列表-->
+    <select id="queryGymTypeList" resultType="com.dlc.modules.api.entity.GymType" parameterType="java.util.Map">
+        select
+          *
+        from gym_type
+        <where>
+            <if test="gtName != null and gtName != ''">
+                gtName LIKE concat('%',#{gtName},'%')
+            </if>
+        </where>
+        ORDER BY createdDate DESC
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--queryGymTypeList列表总数-->
+    <select id="queryGymTypeTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+            count(*)
+        from gym_type
+        <where>
+            <if test="gtName != null and gtName != ''">
+                gtName LIKE concat('%',#{gtName},'%')
+            </if>
+        </where>
+
+    </select>
+</mapper>

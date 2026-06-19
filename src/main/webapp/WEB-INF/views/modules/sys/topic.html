@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>话题表</title>
+    <#include "/header.html"/>
+        <style>
+            .logo {
+                display: inline-block;
+                text-align: center;
+                margin-right: 15px;
+            }
+
+            .logo .logo_img {
+                width: 100px;
+                height: 100px;
+                display: block;
+            }
+
+            .logo .upload_file {
+                position: absolute;
+                top: 0;
+                width: 150px;
+                height: 150px;
+                opacity: 0;
+            }
+
+            .upload {
+                margin: 5px 0 15px 0px;
+            }
+
+            .upload-button {
+                position: fixed;
+                bottom: 0px;
+                right: 20px;
+            }
+
+        </style>
+        </head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <#if shiro.hasPermission("sys:topic:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:topic:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:topic:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">话题名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="topic.topicName" placeholder="话题名称"/>
+                </div>
+            </div>
+            <div id="images" class="form-group">
+                <div class="col-sm-2 control-label">封面图</div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img" width="150px" height="150px">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                  &nbsp;&nbsp;  <span>*请上传宽160像素，高113像素的图片</span>
+                </div>
+            </div>
+        <!--    <div v-show="numShow" class="form-group">
+                <div class="col-sm-2 control-label">动态数量</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="topic.dyNum" placeholder="动态数量"
+                           disabled="disabled"/>
+                </div>
+            </div>
+            <div v-show="numShow" class="form-group">
+                <div class="col-sm-2 control-label">关注数量</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="topic.attentionNum" placeholder="关注数量"
+                           disabled="disabled"/>
+                </div>
+            </div>-->
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">话题介绍</div>
+                <div class="col-sm-10">
+                    <textarea rows="6" cols="50" v-model="topic.topicIntroduce" placeholder="话题介绍">
+                  </textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/topic.js?_${.now?long}"></script>
+</body>
+</html>

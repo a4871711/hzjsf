@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>团体课</title>
+    <#include "/header.html"/>
+    <script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.config.js"></script>
+    <script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.all.js"></script>
+
+</head>
+<style type="text/css">
+
+    .logo {
+        display: inline-block;
+        text-align: center;
+        margin-right: 15px;
+    }
+    .logo .logo_img{
+        width: 100px;
+        height: 100px;
+        display: block;
+    }
+    .logo .upload_file {
+        position: absolute;
+        top: 0;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+    }
+
+</style>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+            <div class="form-group col-lg-2">
+                <input type="text" class="form-control" v-model="q.teamClassName" @keyup.enter="query" placeholder="团体课名称">
+            </div>
+            <div class="form-group col-lg-2">
+                <input type="text" class="form-control" v-model="q.storeName" @keyup.enter="query" placeholder="门店名称">
+            </div>
+            <a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+
+            <#if shiro.hasPermission("sys:teamClass:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>
+            <#if shiro.hasPermission("sys:teamClass:update")>
+                <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            </#if>
+            <#if shiro.hasPermission("sys:teamClass:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-window-close"></i>&nbsp;删除</a>
+            </#if>
+
+		</div>
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" action="" method="post"  style="width: 70%;" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">选择门店</div>
+                <div class="form-group col-sm-10">
+                    <select class="form-control" v-model="teamClass.storeId">
+                        <option v-for="item in resultStoreName" :value="item.storeId">
+                            {{ item.storeName }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">团体课名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="teamClass.teamClassName" placeholder="团体课名称"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">团体课类型</div>
+                <div class="form-group col-sm-10">
+                    <select class="form-control" v-model="teamClass.teamClassType" id="teamClassType" @click="teamClassValue">
+                        <option value="0">免费</option>
+                        <option value="1">精品</option>
+                    </select>
+                </div>
+            </div>
+            <!--v-if="teamClass.teamClassType == 1-->
+            <div class="form-group" v-if="Comm == 1">
+                <div class="col-sm-2 control-label">团体课价格</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="teamClass.classPrice" placeholder="团体课价格(单位：元)"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">总名额</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="teamClass.totalNum" placeholder="总名额"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">教练名称</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="teamClass.coachName" placeholder="教练名称"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">能量</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="teamClass.energy" placeholder="能量(单位：kCal千卡)"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">场所</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="teamClass.room" placeholder="上课场所(例:xxx旗舰店)"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">日期</div>
+                <div class="col-sm-10">
+                    <input id="pdate" class="Wdate" v-model="teamClass.classTime"  style="width: 100%;padding: 5px 10px;" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd',minDate:'%y-%M-{%d}',readOnly:true})"  placeholder="设置日期"  />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">开始时间</div>
+                <div class="col-sm-10">
+                    <input id="sdate" name="sdate" class="Wdate"  style="width: 100%;padding: 5px 10px;" onfocus="WdatePicker({dateFmt:'HH:mm',minDate:'%HH-%ss',readOnly:true})"  placeholder="设置时间"  />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">结束时间</div>
+                <div class="col-sm-10">
+                    <input id="edate" name="edate" class="Wdate"  style="width: 100%;padding: 5px 10px;" onfocus="WdatePicker({dateFmt:'HH:mm',minDate:'%HH-%ss',readOnly:true})"  placeholder="设置时间"  />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">地址</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="teamClass.place" placeholder="地址（例:xx省xx市xx区xx路）"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程介绍</div>
+                <div class="col-sm-10">
+                    <textarea class="form-control" rows="5" v-model="teamClass.introduce" placeholder="课程介绍"></textarea>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程标签</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="teamClass.classLabel" placeholder="课程标签  例:减肥,增肌"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">课程详情</div>
+                <div class="col-sm-10">
+                    <div id="editor" v-model="teamClass.classDetail" name="classDetail" type="text/plain" style="width:98%;height:350px;"></div>
+                    <span>*课程详情内容图片建议请上传宽660像素，高346像素的</span>
+                </div>
+            </div>
+
+            <div id="image" class="form-group">
+                <div class="col-sm-2 control-label">封面图</div>
+                <div class="logo">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg" layer-src="../../statics/img/addPhoto.svg" class="logo_img">
+                    <a class="btn btn-primary btn-xs upload">上传</a>
+                </div>
+                <span>*请上传宽690像素，高250像素的图片</span>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">详情图片链接</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="teamClass.classImgUrl" placeholder="详情图片链接"/>
+                </div>
+            </div>
+
+            <br/>
+            <div class="form-group">
+                <div class="col-sm-6 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/plugins/jquery.form.js"></script>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/plugins/My97DatePicker/WdatePicker.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/teamclass.js?_${.now?long}"></script>
+<script type="text/javascript">
+    //初始化ueditor工具
+    var ue = UE.getEditor('editor');
+    vm.ue = ue;
+</script>
+</body>
+</html>

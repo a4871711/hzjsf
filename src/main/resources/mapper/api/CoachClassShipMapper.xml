@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.CoachClassShipMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.CoachClassShip" >
+    <constructor >
+      <idArg column="coachClassShipId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="classId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="classFee" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="lowestClass" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="classStatus" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    coachClassShipId, coachId, classId, classFee, lowestClass, classStatus, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from coach_class_ship
+    where coachClassShipId = #{coachClassShipId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from coach_class_ship
+    where coachClassShipId = #{coachClassShipId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.CoachClassShip" >
+    insert into coach_class_ship (coachClassShipId, coachId, classId, 
+      classFee, lowestClass, classStatus, 
+      createdDate)
+    values (#{coachClassShipId,jdbcType=BIGINT}, #{coachId,jdbcType=BIGINT}, #{classId,jdbcType=BIGINT}, 
+      #{classFee,jdbcType=INTEGER}, #{lowestClass,jdbcType=TINYINT}, #{classStatus,jdbcType=TINYINT}, 
+      #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.CoachClassShip" >
+    insert into coach_class_ship
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="coachClassShipId != null" >
+        coachClassShipId,
+      </if>
+      <if test="coachId != null" >
+        coachId,
+      </if>
+      <if test="classId != null" >
+        classId,
+      </if>
+      <if test="classFee != null" >
+        classFee,
+      </if>
+      <if test="lowestClass != null" >
+        lowestClass,
+      </if>
+      <if test="classStatus != null" >
+        classStatus,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="coachClassShipId != null" >
+        #{coachClassShipId,jdbcType=BIGINT},
+      </if>
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="classId != null" >
+        #{classId,jdbcType=BIGINT},
+      </if>
+      <if test="classFee != null" >
+        #{classFee,jdbcType=DECIMAL},
+      </if>
+      <if test="lowestClass != null" >
+        #{lowestClass,jdbcType=TINYINT},
+      </if>
+      <if test="classStatus != null" >
+        #{classStatus,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.CoachClassShip" >
+    update coach_class_ship
+    <set >
+      <if test="coachId != null" >
+        coachId = #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="classId != null" >
+        classId = #{classId,jdbcType=BIGINT},
+      </if>
+      <if test="classFee != null" >
+        classFee = #{classFee,jdbcType=DECIMAL},
+      </if>
+      <if test="lowestClass != null" >
+        lowestClass = #{lowestClass,jdbcType=TINYINT},
+      </if>
+      <if test="classStatus != null" >
+        classStatus = #{classStatus,jdbcType=TINYINT},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where coachClassShipId = #{coachClassShipId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.CoachClassShip" >
+    update coach_class_ship
+    set coachId = #{coachId,jdbcType=BIGINT},
+      classId = #{classId,jdbcType=BIGINT},
+      classFee = #{classFee,jdbcType=INTEGER},
+      lowestClass = #{lowestClass,jdbcType=TINYINT},
+      classStatus = #{classStatus,jdbcType=TINYINT},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where coachClassShipId = #{coachClassShipId,jdbcType=BIGINT}
+  </update>
+
+   <select id="queryCoachClass" resultType="map" parameterType="map">
+       SELECT p.firstImgUrl,c.classId,p.className,c.coachClassShipId,concat(p.classPrice,'') AS classFee,c.lowestClass
+       FROM coach_class_ship c LEFT JOIN private_class p ON p.privateClassId = c.classId
+       WHERE c.coachId = #{coachId}
+       <if test="offset != null and limit != null">
+           limit #{offset}, #{limit}
+       </if>
+   </select>
+
+    <select id="queryCoachClassRecordTotal" resultType="int" parameterType="map">
+       SELECT COUNT(1)
+       FROM coach_class_ship c LEFT JOIN private_class p ON p.privateClassId = c.classId
+       WHERE c.coachId = #{coachId}
+    </select>
+
+    <insert id="batchCoachClassShip" parameterType="com.dlc.modules.api.entity.CoachClassShip">
+
+        INSERT INTO coach_class_ship
+        (coachId,classId,classFee)
+        VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            (#{item.coachId},#{item.classId},#{item.classFee})
+        </foreach>
+    </insert>
+
+    <select id="isExistClass" resultType="map" parameterType="com.dlc.modules.api.entity.CoachClassShip">
+        SELECT *from coach_class_ship WHERE coachId = #{coachId} AND classId=#{classId}
+    </select>
+
+  <!--查询某教练 所有课程关系-->
+    <select id="queryAllCoachClass" resultType="com.dlc.modules.api.entity.CoachClassShip" parameterType="java.lang.Long">
+      SELECT coachClassShipId, coachId, classId, classFee, lowestClass, classStatus, createdDate
+      FROM coach_class_ship
+      WHERE coachId = #{coachId}
+      ORDER BY classFee ASC
+    </select>
+</mapper>

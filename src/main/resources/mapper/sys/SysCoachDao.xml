@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysCoachDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysCoachEntity" id="sysCoachMap">
+        <result property="coachId" column="coachId"/>
+        <result property="userId" column="userId"/>
+        <result property="grade" column="grade"/>
+        <result property="headImgUrl" column="headImgUrl"/>
+        <result property="coachName" column="coachName"/>
+        <result property="phone" column="phone"/>
+        <result property="sex" column="sex"/>
+        <result property="province" column="province"/>
+        <result property="city" column="city"/>
+        <result property="zone" column="zone"/>
+        <result property="identity" column="identity"/>
+        <result property="employTime" column="employTime"/>
+        <result property="identImgUrl" column="identImgUrl"/>
+        <result property="diplomaImgUrl" column="diplomaImgUrl"/>
+        <result property="storeId" column="storeId"/>
+        <result property="level" column="level"/>
+        <result property="approveStatus" column="approveStatus"/>
+        <result property="approveTime" column="approveTime"/>
+        <result property="approveResult" column="approveResult"/>
+        <result property="minClassMoney" column="minClassMoney"/>
+        <result property="classCount" column="classCount"/>
+        <result property="introduce" column="introduce"/>
+        <result property="createdDate" column="createdDate"/>
+
+    </resultMap>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysCoachEntity">
+		select * from coach where coachId = #{value}
+	</select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysCoachEntity">
+        SELECT * FROM coach ch
+        <where>
+            <if test="phone != null and phone != ''">
+                AND ch.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="coachName != null and coachName != ''">
+                AND ch.coachName LIKE concat('%',#{coachName},'%')
+            </if>
+            <if test="approveStatus !=null and approveStatus !=''">
+                AND ch.approveStatus = #{approveStatus}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by ch.createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM coach ch
+        <where>
+            <if test="phone != null and phone != ''">
+                AND ch.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="coachName != null and coachName != ''">
+                AND ch.coachName LIKE concat('%',#{coachName},'%')
+            </if>
+            <if test="approveStatus !=null and approveStatus !=''">
+                AND ch.approveStatus = #{approveStatus}
+            </if>
+        </where>
+    </select>
+
+    <!--审核成功-->
+    <update id="updateSuccess" parameterType="com.dlc.modules.sys.entity.SysCoachEntity">
+        update coach
+        <set>
+            <if test="approveStatus != null">`approveStatus` = #{approveStatus},</if>
+            <if test="grade != null">`grade` = #{grade},</if>
+            <if test="approveTime != null">`approveTime` = #{approveTime}</if>
+        </set>
+        where coachId = #{coachId}
+    </update>
+
+    <!--审核失败-->
+    <update id="updateFailure" parameterType="com.dlc.modules.sys.entity.SysCoachEntity">
+        update coach
+        <set>
+            <if test="approveStatus != null">`approveStatus` = #{approveStatus},</if>
+            <if test="approveResult != null">`approveResult` = #{approveResult},</if>
+            <if test="approveTime != null">`approveTime` = #{approveTime}</if>
+        </set>
+        where coachId = #{coachId}
+    </update>
+    <!--编辑教练-->
+    <update id="coachUpdateGrade" parameterType="com.dlc.modules.sys.entity.SysCoachEntity">
+        update coach
+        <set>
+            <if test="grade != null">`grade` = #{grade},</if>
+            <if test="employTime != null">`employTime` = #{employTime}</if>
+        </set>
+        where coachId = #{coachId}
+    </update>
+
+    <delete id="delete">
+		DELETE FROM coach where coachId = #{value}
+	</delete>
+
+    <delete id="deleteBatch">
+        DELETE FROM coach where coachId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <!--批量插入门店教练关系表-->
+    <insert id="batchShipPlace" parameterType="java.util.Map">
+        INSERT INTO coach_place_ship
+        (coachId,storeId,storeName)
+        VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            (#{item.coachId},#{item.storeId},(select storeName from store where storeId = #{item.storeId}))
+        </foreach>
+    </insert>
+    <!--初始化教练钱包-->
+    <insert id="insertCoachWallt" parameterType="java.lang.Long">
+        insert into coach_wallet
+        (coachId) values (#{coachId})
+    </insert>
+    <!--教练审核消息-->
+    <select id="newMsg" resultType="com.dlc.modules.sys.entity.MessageEntity">
+        select coachId id,coachName nickName ,'教练审核' module,'#modules/sys/coach.html' href,createdDate createTime
+        FROM coach WHERE approveStatus=0
+        ORDER BY createdDate desc
+    </select>
+    <!--更新教练上课次数+1-->
+    <update id="updateClassCount" parameterType="java.lang.Long">
+        update coach
+           set classCount = ifnull(classCount,0) + 1
+        where coachId = #{coachId}
+    </update>
+    <!--查询店铺营业状况-->
+    <select id="queryStoreStatus" resultType="java.lang.Integer" parameterType="java.lang.Long">
+        select count(*) from store where storeId=#{storeId} and status=1
+    </select>
+</mapper>

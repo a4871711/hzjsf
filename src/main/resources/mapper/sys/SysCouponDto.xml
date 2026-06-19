@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysCouponDao">
+
+    <resultMap type="com.dlc.modules.sys.entity.SysCouponEntity" id="SysCouponResult">
+        <result property="sysCouponId"    column="sysCouponId"    />
+        <result property="couponStatus"    column="couponStatus"    />
+        <result property="validity"    column="validity"    />
+        <result property="couponPrice"    column="couponPrice"    />
+        <result property="createdDate"    column="createdDate"    />
+        <result property="limitPrice"    column="limitPrice"    />
+        <result property="couponType"    column="couponType"    />
+        <result property="storeAddrIds"    column="storeAddrIds"    />
+        <result property="couponTitle"    column="couponTitle"    />
+        <result property="limitUser"    column="limitUser"    />
+        <result property="limitAll"    column="limitAll"    />
+        <result property="sendCount"    column="sendCount"    />
+        <result property="fitCardIds"    column="fitCardIds"    />
+        <result property="goodsId"    column="goodsId"    />
+        <result property="douyinSkuId"    column="douyin_sku_id"    />
+        <result property="couponNew"    column="couponNew"    />
+    </resultMap>
+
+    <sql id="selectSysCouponVo">
+        select sysCouponId, couponStatus, validity, couponPrice, createdDate, limitPrice, couponType, storeAddrIds, couponTitle, limitUser, limitAll, sendCount, fitCardIds, goodsId, douyin_sku_id, couponNew from sys_coupon
+    </sql>
+
+    <select id="selectSysCouponList" parameterType="com.dlc.modules.sys.entity.SysCouponEntity" resultMap="SysCouponResult">
+        <include refid="selectSysCouponVo"/>
+        <where>  
+            <if test="couponStatus != null "> and couponStatus = #{couponStatus}</if>
+            <if test="validity != null "> and validity = #{validity}</if>
+            <if test="couponPrice != null "> and couponPrice = #{couponPrice}</if>
+            <if test="createdDate != null "> and createdDate = #{createdDate}</if>
+            <if test="limitPrice != null "> and limitPrice = #{limitPrice}</if>
+            <if test="couponType != null "> and couponType = #{couponType}</if>
+            <if test="couponNew != null "> and couponNew = #{couponNew}</if>
+            <if test="goodsId != null "> and goodsId = #{goodsId}</if>
+            <if test="douyinSkuId != null and douyinSkuId != ''"> and douyin_sku_id = #{douyinSkuId}</if>
+            <if test="couponTitle != null  and couponTitle != ''"> and couponTitle like concat('%', #{couponTitle}, '%')</if>
+            <if test="limitUser != null "> and limitUser = #{limitUser}</if>
+            <if test="limitAll != null "> and limitAll = #{limitAll}</if>
+            <if test="sendCount != null "> and sendCount = #{sendCount}</if>
+            <if test="fitCardIds != null  and fitCardIds != ''"> and find_in_set(#{fitCardIds}, fitCardIds)</if>
+            <if test="startTime != null and ''!=startTime and endTime!=null and endTime!=''">
+                AND createdDate between #{startTime} and #{endTime}
+            </if>
+            <if test="storeAddrIds != null and storeAddrIds != ''">
+                AND (HaveCommonElements(storeAddrIds, #{storeAddrIds}) or storeAddrIds='' or storeAddrIds is null)
+            </if>
+        </where>
+        ORDER BY sysCouponId DESC
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    
+    <select id="selectSysCouponCount" parameterType="com.dlc.modules.sys.entity.SysCouponEntity" resultType="int">
+        select count(*) from sys_coupon
+        <where>  
+            <if test="couponStatus != null "> and couponStatus = #{couponStatus}</if>
+            <if test="validity != null "> and validity = #{validity}</if>
+            <if test="couponPrice != null "> and couponPrice = #{couponPrice}</if>
+            <if test="createdDate != null "> and createdDate = #{createdDate}</if>
+            <if test="limitPrice != null "> and limitPrice = #{limitPrice}</if>
+            <if test="couponType != null "> and couponType = #{couponType}</if>
+            <if test="couponNew != null "> and couponNew = #{couponNew}</if>
+            <if test="goodsId != null "> and goodsId = #{goodsId}</if>
+            <if test="douyinSkuId != null and douyinSkuId != ''"> and douyin_sku_id = #{douyinSkuId}</if>
+            <if test="couponTitle != null  and couponTitle != ''"> and couponTitle like concat('%', #{couponTitle}, '%')</if>
+            <if test="limitUser != null "> and limitUser = #{limitUser}</if>
+            <if test="limitAll != null "> and limitAll = #{limitAll}</if>
+            <if test="sendCount != null "> and sendCount = #{sendCount}</if>
+            <if test="fitCardIds != null  and fitCardIds != ''"> and find_in_set(#{fitCardIds}, fitCardIds)</if>
+            <if test="startTime != null and ''!=startTime and endTime!=null and endTime!=''">
+                AND createdDate between #{startTime} and #{endTime}
+            </if>
+            <if test="storeAddrIds != null and storeAddrIds != ''">
+                AND (HaveCommonElements(storeAddrIds, #{storeAddrIds}) or storeAddrIds='' or storeAddrIds is null)
+            </if>
+        </where>
+    </select>
+    
+    <select id="selectSysCouponById" parameterType="Long" resultMap="SysCouponResult">
+        <include refid="selectSysCouponVo"/>
+        where sysCouponId = #{sysCouponId}
+    </select>
+        
+    <insert id="insertSysCoupon" parameterType="com.dlc.modules.sys.entity.SysCouponEntity" useGeneratedKeys="true" keyProperty="sysCouponId">
+        insert into sys_coupon
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="couponStatus != null">couponStatus,</if>
+            <if test="validity != null">validity,</if>
+            <if test="couponPrice != null">couponPrice,</if>
+            <if test="createdDate != null">createdDate,</if>
+            <if test="limitPrice != null">limitPrice,</if>
+            <if test="couponType != null">couponType,</if>
+            <if test="couponNew != null">couponNew,</if>
+            <if test="storeAddrIds != null">storeAddrIds,</if>
+            <if test="couponTitle != null">couponTitle,</if>
+            <if test="limitUser != null">limitUser,</if>
+            <if test="limitAll != null">limitAll,</if>
+            <if test="sendCount != null">sendCount,</if>
+            <if test="fitCardIds != null">fitCardIds,</if>
+            <if test="goodsId != null">goodsId,</if>
+            <if test="douyinSkuId != null">douyin_sku_id,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="couponStatus != null">#{couponStatus},</if>
+            <if test="validity != null">#{validity},</if>
+            <if test="couponPrice != null">#{couponPrice},</if>
+            <if test="createdDate != null">#{createdDate},</if>
+            <if test="limitPrice != null">#{limitPrice},</if>
+            <if test="couponType != null">#{couponType},</if>
+            <if test="couponNew != null">#{couponNew},</if>
+            <if test="storeAddrIds != null">#{storeAddrIds},</if>
+            <if test="couponTitle != null">#{couponTitle},</if>
+            <if test="limitUser != null">#{limitUser},</if>
+            <if test="limitAll != null">#{limitAll},</if>
+            <if test="sendCount != null">#{sendCount},</if>
+            <if test="fitCardIds != null">#{fitCardIds},</if>
+            <if test="goodsId != null">#{goodsId},</if>
+            <if test="douyinSkuId != null">#{douyinSkuId},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSysCoupon" parameterType="com.dlc.modules.sys.entity.SysCouponEntity">
+        update sys_coupon
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="couponStatus != null">couponStatus = #{couponStatus},</if>
+            <if test="validity != null">validity = #{validity},</if>
+            <if test="couponPrice != null">couponPrice = #{couponPrice},</if>
+            <if test="createdDate != null">createdDate = #{createdDate},</if>
+            <if test="limitPrice != null">limitPrice = #{limitPrice},</if>
+            <if test="couponType != null">couponType = #{couponType},</if>
+            <if test="couponNew != null">couponNew = #{couponNew},</if>
+            <if test="storeAddrIds != null">storeAddrIds = #{storeAddrIds},</if>
+            <if test="couponTitle != null">couponTitle = #{couponTitle},</if>
+            <if test="limitUser != null">limitUser = #{limitUser},</if>
+            <if test="limitAll != null">limitAll = #{limitAll},</if>
+            <if test="sendCount != null">sendCount = #{sendCount},</if>
+            <if test="fitCardIds != null">fitCardIds = #{fitCardIds},</if>
+            <if test="goodsId != null">goodsId = #{goodsId},</if>
+            <if test="douyinSkuId != null">douyin_sku_id = #{douyinSkuId},</if>
+        </trim>
+        where sysCouponId = #{sysCouponId}
+    </update>
+
+    <delete id="deleteSysCouponById" parameterType="Long">
+        delete from sys_coupon where sysCouponId = #{sysCouponId}
+    </delete>
+
+    <delete id="deleteSysCouponByIds" parameterType="String">
+        delete from sys_coupon where sysCouponId in 
+        <foreach item="sysCouponId" collection="array" open="(" separator="," close=")">
+            #{sysCouponId}
+        </foreach>
+    </delete>
+    
+    <!--统计-->
+    <select id="selectCouponStats" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT         	
+        	sum(if(c.couponType=1,1,0)) as douyin,
+        	sum(if(c.couponType=2,1,0)) as meituan
+        FROM coupon c
+        <where>
+        	c.couponStatus in (0,1,2)
+            <if test="storeAddressId != null  and storeAddressId != ''"> and find_in_set(#{storeAddressId}, c.storeAddrIds)</if>    
+            <if test="storeAddressIds != null and storeAddressIds != ''">
+                AND HaveCommonElements(c.storeAddrIds, #{storeAddressIds})
+            </if>        
+            <if test="sdate!=null and sdate!='' and edate!=null and edate!=''">
+                AND c.createdDate BETWEEN #{sdate} AND #{edate}
+            </if>
+        </where>
+    </select>
+</mapper>

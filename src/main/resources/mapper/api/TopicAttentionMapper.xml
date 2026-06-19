@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.TopicAttentionMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.TopicAttention" >
+    <constructor >
+      <arg column="topicAttentionId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="observerId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="topicId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="attentionStatus" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="reportType" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="attentionDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.TopicAttention" >
+    insert into topic_attention (topicAttentionId, observerId, topicId, 
+      attentionStatus, reportType, attentionDate
+      )
+    values (#{topicAttentionId,jdbcType=BIGINT}, #{observerId,jdbcType=BIGINT}, #{topicId,jdbcType=BIGINT}, 
+      #{attentionStatus,jdbcType=TINYINT}, #{reportType,jdbcType=TINYINT}, #{attentionDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.TopicAttention" >
+    insert into topic_attention
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="topicAttentionId != null" >
+        topicAttentionId,
+      </if>
+      <if test="observerId != null" >
+        observerId,
+      </if>
+      <if test="topicId != null" >
+        topicId,
+      </if>
+      <if test="attentionStatus != null" >
+        attentionStatus,
+      </if>
+      <if test="reportType != null" >
+        reportType,
+      </if>
+      <if test="attentionDate != null" >
+        attentionDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="topicAttentionId != null" >
+        #{topicAttentionId,jdbcType=BIGINT},
+      </if>
+      <if test="observerId != null" >
+        #{observerId,jdbcType=BIGINT},
+      </if>
+      <if test="topicId != null" >
+        #{topicId,jdbcType=BIGINT},
+      </if>
+      <if test="attentionStatus != null" >
+        #{attentionStatus,jdbcType=TINYINT},
+      </if>
+      <if test="reportType != null" >
+        #{reportType,jdbcType=TINYINT},
+      </if>
+      <if test="attentionDate != null" >
+        #{attentionDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <!--根据topicid查询会员信息默认显示5个-->
+  <select id="queryTopicMenbers" resultType="java.util.Map" parameterType="java.lang.Long">
+    select
+        ui.userId,
+        ui.nickname,
+        ui.headImgUrl
+      from topic_attention ta
+      inner join user_info ui on ui.userId = ta.observerId
+    where ta.topicId = #{topicId,jdbcType=BIGINT}
+  </select>
+    <!--查询话题下的成员列表-->
+    <select id="queryMemberList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+            ui.userId,
+            ui.nickname,
+            ui.headImgUrl,
+            ui.sex,
+            case when ua.attentionStatus = 1 then 1 else 0 END as attentionStatus
+         from topic_attention ta
+         inner join user_info ui on ui.userId = ta.observerId
+         left join user_attention ua on ua.attentedId = ta.observerId and ua.observerId = #{userId}
+        where ta.topicId = #{topicId,jdbcType=BIGINT} limit #{offset}, #{limit}
+    </select>
+  <!--查询话题下的成员总数-->
+  <select id="queryMemberCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+    select
+    count(*)
+    from topic_attention ta
+    inner join user_info ui on ui.userId = ta.observerId
+    where ta.topicId = #{topicId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteAttend" parameterType="com.dlc.modules.api.entity.TopicAttention">
+    delete from topic_attention
+    where observerId = #{observerId,jdbcType=BIGINT}
+    and topicId = #{topicId,jdbcType=BIGINT}
+  </delete>
+</mapper>

@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysDeviceChangeDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysDeviceChangeEntity" id="deviceMap">
+        <result property="changeId" column="changeId"/>
+        <result property="deviceId" column="deviceId"/>
+        <result property="deviceNo" column="deviceNo"/>
+        <result property="deviceName" column="deviceName"/>
+        <result property="proxyId" column="proxyId"/>
+        <result property="deviceImgUrl" column="deviceImgUrl"/>
+        <result property="storeId" column="storeId"/>
+        <result property="storeAddressId" column="storeAddressId"/>
+        <result property="proxyName" column="proxyName"/>
+        <result property="phone" column="phone"/>
+        <result property="devicePrice" column="devicePrice"/>
+        <result property="imei" column="imei"/>
+        <result property="addressDetail" column="addressDetail"/>
+        <result property="addressId" column="addressId"/>
+        <result property="status" column="status"/>
+        <result property="type" column="type"/>
+        <result property="validityDate" column="validityDate"/>
+        <result property="inventory" column="inventory"/>
+        <result property="onLineTime" column="onLineTime"/>
+        <result property="createTime" column="createTime"/>
+        <result property="fitCardId" column="fitCardId"/>
+        <result property="newStoreAddressId" column="newStoreAddressId"/>
+        <result property="changeDate" column="changeDate"/>
+        <result property="sysUserId" column="sysUserId"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        deviceId,deviceNo,deviceName,proxyId,deviceImgUrl,storeId,proxyName,phone,devicePrice,imei,addressDetail,addressId,status,inventory,onLineTime,createTime,newStoreAddressId,changeDate,sysUserId
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysDeviceChangeEntity" parameterType="map">
+        SELECT
+          d.*, ss.username, s.storeName, sa.storeName as newStoreName, u.nickname,u.phone as userPhone,u.headImgUrl,u.wtState,u.auditStatus,
+          (select ct.ctName from card_type ct where ct.cardType=d.type limit 1) as ctName,
+          (select group_concat(storeName) from store_address where find_in_set(storeAddrId, d.storeAddrIds)) as supportStoreName
+        FROM device_change d 
+        inner join store_address s on s.storeAddrId= d.storeAddressId
+        inner join store_address sa on sa.storeAddrId= d.newStoreAddressId
+        INNER JOIN sys_user ss ON ss.user_id = d.sysUserId
+        INNER JOIN user_info u ON u.userId=d.proxyId
+        where 1=1
+        <if test="storeId != null and storeId != ''">
+            AND d.storeId=#{storeId}
+        </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND d.storeId in (${storeIds})
+            </if>
+            <if test="storeAddressId != null and storeAddressId != ''">
+                AND d.storeAddressId = #{storeAddressId}
+            </if>
+            <if test="newStoreAddressId != null and newStoreAddressId != ''">
+                AND d.newStoreAddressId = #{newStoreAddressId}
+            </if>            
+        <if test="deviceNo != null and deviceNo != ''">
+            AND d.deviceNo LIKE concat('%',#{deviceNo},'%')
+        </if>
+        <if test="storeName != null and storeName != ''">
+            AND s.storeName LIKE concat('%',#{storeName},'%')
+        </if>
+        <if test="newStoreName != null and newStoreName != ''">
+            AND sa.storeName LIKE concat('%',#{newStoreName},'%')
+        </if>
+        <if test="username != null and username != ''">
+            AND ss.username LIKE concat('%',#{username},'%')
+        </if>
+        <if test="nickname != null and nickname != ''">
+            AND u.nickname LIKE concat('%',#{nickname},'%')
+        </if>
+        <if test="phone != null and phone != ''">
+            AND u.phone LIKE concat('%',#{phone},'%')
+        </if>
+        <if test="status != null and status != ''">
+            AND d.status = #{status}
+        </if>          
+        <if test="startTime != null and !''.equals(startTime)">
+            AND d.changeDate <![CDATA[>=]]> #{startTime}
+        </if>
+        <if test="endTime != null and !''.equals(endTime)">
+            AND d.changeDate <![CDATA[<=]]> #{endTime}
+        </if>
+        order BY d.changeDate desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT
+          count(*)
+        FROM device_change d 
+        inner join store_address s on s.storeAddrId= d.storeAddressId
+        inner join store_address sa on sa.storeAddrId= d.newStoreAddressId
+        INNER JOIN sys_user ss ON ss.user_id = d.sysUserId
+        INNER JOIN user_info u ON u.userId=d.proxyId
+        where 1=1
+        <if test="storeId != null and storeId != ''">
+            AND d.storeId=#{storeId}
+        </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND d.storeId in (${storeIds})
+            </if>
+            <if test="storeAddressId != null and storeAddressId != ''">
+                AND d.storeAddressId = #{storeAddressId}
+            </if>
+            <if test="newStoreAddressId != null and newStoreAddressId != ''">
+                AND d.newStoreAddressId = #{newStoreAddressId}
+            </if>            
+        <if test="deviceNo != null and deviceNo != ''">
+            AND d.deviceNo LIKE concat('%',#{deviceNo},'%')
+        </if>
+        <if test="storeName != null and storeName != ''">
+            AND s.storeName LIKE concat('%',#{storeName},'%')
+        </if>
+        <if test="newStoreName != null and newStoreName != ''">
+            AND sa.storeName LIKE concat('%',#{newStoreName},'%')
+        </if>
+        <if test="username != null and username != ''">
+            AND ss.username LIKE concat('%',#{username},'%')
+        </if>
+        <if test="nickname != null and nickname != ''">
+            AND u.nickname LIKE concat('%',#{nickname},'%')
+        </if>
+        <if test="phone != null and phone != ''">
+            AND u.phone LIKE concat('%',#{phone},'%')
+        </if>
+        <if test="status != null and status != ''">
+            AND d.status = #{status}
+        </if>          
+        <if test="startTime != null and !''.equals(startTime)">
+            AND d.changeDate <![CDATA[>=]]> #{startTime}
+        </if>
+        <if test="endTime != null and !''.equals(endTime)">
+            AND d.changeDate <![CDATA[<=]]> #{endTime}
+        </if>
+    </select>
+    <!--插入新数据-->
+    <insert id="insertDeviceSelective" parameterType="com.dlc.modules.sys.entity.SysDeviceChangeEntity" >
+        insert into device_change
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="deviceId != null" >
+        deviceId,
+      </if>
+      <if test="deviceNo != null" >
+        deviceNo,
+      </if>
+      <if test="deviceName != null" >
+        deviceName,
+      </if>
+      <if test="proxyId != null" >
+        proxyId,
+      </if>
+      <if test="deviceImgUrl != null" >
+        deviceImgUrl,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="storeAddressId != null" >
+        storeAddressId,
+      </if>
+      <if test="proxyName != null" >
+        proxyName,
+      </if>
+      <if test="phone != null" >
+        phone,
+      </if>
+      <if test="devicePrice != null" >
+        devicePrice,
+      </if>
+      <if test="imei != null" >
+        imei,
+      </if>
+      <if test="addressDetail != null" >
+        addressDetail,
+      </if>
+      <if test="addressId != null" >
+        addressId,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="inventory != null" >
+        inventory,
+      </if>
+        <if test="type != null" >
+            type,
+        </if>
+        <if test="validityDate != null" >
+            validityDate,
+        </if>
+      <if test="onLineTime != null" >
+        onLineTime,
+      </if>
+      <if test="createTime != null" >
+        createTime,
+      </if>
+      <if test="fitCardId != null" >
+        fitCardId,
+      </if>
+      <if test="autoPay != null" >
+        autoPay,
+      </if>
+      <if test="selecteFree != null" >
+        selecteFree,
+      </if>
+      <if test="storeAddrIds != null" >
+        storeAddrIds,
+      </if>
+      <if test="nextPrice != null" >
+        nextPrice,
+      </if>
+      <if test="nextPriceTitle != null" >
+        nextPriceTitle,
+      </if>
+      <if test="nextPrice2 != null" >
+        nextPrice2,
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        nextPriceTitle2,
+      </if>
+      <if test="nextPrice3 != null" >
+        nextPrice3,
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        nextPriceTitle3,
+      </if>
+      <if test="useCount != null" >
+        useCount,
+      </if>
+      <if test="buyCount != null" >
+        buyCount,
+      </if>
+      <if test="validity != null" >
+        validity,
+      </if>
+            <if test="newStoreAddressId != null" >
+                newStoreAddressId,
+            </if>
+            <if test="changeDate != null" >
+                changeDate,
+            </if>
+            <if test="sysUserId != null" >
+                sysUserId,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="deviceId != null" >
+        #{deviceId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceNo != null" >
+        #{deviceNo,jdbcType=VARCHAR},
+      </if>
+      <if test="deviceName != null" >
+        #{deviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="proxyId != null" >
+        #{proxyId,jdbcType=BIGINT},
+      </if>
+      <if test="deviceImgUrl != null" >
+        #{deviceImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="storeAddressId != null" >
+        #{storeAddressId,jdbcType=BIGINT},
+      </if>
+      <if test="proxyName != null" >
+        #{proxyName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="devicePrice != null" >
+        #{devicePrice,jdbcType=DECIMAL},
+      </if>
+      <if test="imei != null" >
+        #{imei,jdbcType=VARCHAR},
+      </if>
+      <if test="addressDetail != null" >
+        #{addressDetail,jdbcType=VARCHAR},
+      </if>
+      <if test="addressId != null" >
+        #{addressId,jdbcType=BIGINT},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="inventory != null" >
+        #{inventory,jdbcType=INTEGER},
+      </if>
+        <if test="type != null" >
+            #{type,jdbcType=INTEGER},
+        </if>
+        <if test="validityDate != null" >
+            #{validityDate,jdbcType=TIMESTAMP},
+        </if>
+      <if test="onLineTime != null" >
+        #{onLineTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="fitCardId != null" >
+        #{fitCardId,jdbcType=BIGINT},
+      </if>
+      <if test="autoPay != null" >
+        #{autoPay,jdbcType=INTEGER},
+      </if>
+      <if test="selecteFree != null" >
+        #{selecteFree,jdbcType=INTEGER},
+      </if>
+      <if test="storeAddrIds != null" >
+        #{storeAddrIds,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice != null" >
+        #{nextPrice,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle != null" >
+        #{nextPriceTitle,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice2 != null" >
+        #{nextPrice2,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle2 != null" >
+        #{nextPriceTitle2,jdbcType=VARCHAR},
+      </if>
+      <if test="nextPrice3 != null" >
+        #{nextPrice3,jdbcType=DECIMAL},
+      </if>
+      <if test="nextPriceTitle3 != null" >
+        #{nextPriceTitle3,jdbcType=VARCHAR},
+      </if>
+      <if test="useCount != null" >
+        #{useCount,jdbcType=INTEGER},
+      </if>
+      <if test="buyCount != null" >
+        #{buyCount,jdbcType=INTEGER},
+      </if>
+      <if test="validity != null" >
+        #{validity,jdbcType=INTEGER},
+      </if>
+            <if test="newStoreAddressId != null" >
+                #{newStoreAddressId,jdbcType=BIGINT},
+            </if>
+            <if test="changeDate != null" >
+                #{changeDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="sysUserId != null" >
+                #{sysUserId,jdbcType=BIGINT},
+            </if>
+        </trim>
+    </insert>
+
+    <delete id="deleteBatch">
+        delete from device_change where changeId in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

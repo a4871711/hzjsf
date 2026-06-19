@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>协议条款</title>
+    <#include "/header.html"/>
+</head>
+<body>
+<script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.config.js"></script>
+<script src="${request.contextPath}/statics/plugins/ueditor-1.4.3.3/ueditor.all.js"></script>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+
+        <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+
+        <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+
+        <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <form class="form-horizontal" style="width: 100%">
+            <div class="form-group">
+                <div class="col-sm-2 control-label"><strong>协议类型</strong></div>
+                <label class="radio-inline">
+                    <input type="radio" value="0" name="type" v-model="protocol.type"/> 用户协议
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" value="1" name="type" v-model="protocol.type"/> 隐私协议
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" value="2" name="type" v-model="protocol.type"/> 矢历连续包月协议
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" value="3" name="type" v-model="protocol.type"/> 矢历连续会员协议
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" value="4" name="type" v-model="protocol.type"/> 矢历连续次卡会员协议
+                </label>
+            </div>
+
+            <!--<div class="form-group">
+                <div class="col-sm-2 control-label">条款内容</div>
+                <div class="col-sm-10">
+                    <textarea rows="12" cols="12" class="form-control" v-model="protocol.protocols" placeholder="请输入条款内容"></textarea>
+                </div>
+            </div>-->
+            <div class="form-group">
+                <div class="col-sm-12" style="height: 30px;width: 100%;margin-left: 18%;"><strong>条款内容</strong></div>
+                <div class="col-sm-12" style="margin-left: 18%;">
+                    <div style="width: 800px;">
+                        <script type="text/javascript">
+                            //初始化ueditor工具
+                            var ue = UE.getEditor('editor');
+                        </script>
+                        <textarea id="editor" v-model="protocol.protocols" name="protocols" type="text/plain"
+                                  style="width:100%;height:450px;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label"><strong>默认是否勾选</strong></div>
+                <label class="radio-inline_selected">
+                    <input type="radio" value="0" name="selected" v-model="protocol.selected"/> 不勾选
+                </label>
+                <label class="radio-inline_selected">
+                    <input type="radio" value="1" name="selected" v-model="protocol.selected"/> 勾选
+                </label>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/js/modules/sys/protocol.js"></script>
+</body>
+</html>

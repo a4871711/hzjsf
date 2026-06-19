@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="../css/o_base.css">
+    <link rel="stylesheet" href="../css/o_style.css">
+    <title>购卡续费</title>
+</head>
+
+<body class="bfff">
+    <div id="cardList">
+        <div class="list pd-15">
+            <!-- <div class="card flex mg-b-15">
+                <div class="img wd-65">
+                    <img src="../img/bg1.png" class="wd-100">
+                </div>
+                <div class="msg flex flexWrap flexA-around wd-35">
+                    <div class="title font18 fontb wd-70 mg-auto">健身月卡</div>
+                    <div class="price wd-70 mg-auto cred font16">￥300</div>
+                    <div class="buyBtn mainBtn wd-70" onclick="buy()">购买</div>
+                </div>
+            </div> -->
+        </div>
+    </div>
+
+    <script type="text/javascript" src="../js/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="../js/layer.js"></script>
+    <script type="text/javascript" src="../js/dlc.js"></script>
+    <script type="text/javascript" src="../js/o_base.js"></script>
+    <script>
+        var userInfo = JSON.parse(getItem("userInfo"));
+
+        if (getItem("userInfo")) {
+            if (userInfo.phone == "") {
+                if (userInfo.wristId != "") {
+                    goTo("o_cardDetail.html")
+                } else {
+                    goBinding()
+                }
+
+            } else {
+                if (userInfo.wristId != "") {
+                    goTo("o_cardDetail.html")
+                } else {
+                    init();
+                }
+            }
+        } else {
+            getToken(
+                console.log(1)
+            )
+        }
+
+
+        function buy(id) {
+            window.location.href = "./o_cardDetail.html?id=" + id
+        }
+
+        function init() {
+            ajaxPost({}, "api/fitCard/list", function (res) {
+                if (res.code == 101) {
+                    moveItem("userInfo")
+                    getToken();
+                }
+                var str = "";
+                res.data.forEach(item => {
+                    var name;
+                    switch (item.cardType) {
+                        case 0:
+                            name = "健身月卡"
+                            break;
+                        case 1:
+                            name = "健身季卡"
+                            break;
+                        case 2:
+                            name = "健身半年卡"
+                            break;
+                        case 3:
+                            name = "健身年卡"
+                            break;
+                    }
+                    str +=
+                        '<div class="card flex mg-b-15">' +
+                        '<div class="img wd-65">' +
+                        '<img src="' + item.cardImgUrl + '" class="wd-100">' +
+                        '</div>' +
+                        '<div class="msg flex flexWrap flexA-around wd-35">' +
+                        '<div class="title font18 fontb wd-70 mg-auto">' + name + '</div>' +
+                        '<div class="price wd-70 mg-auto cred font16">￥' + item.cardPrice +
+                        '</div>' +
+                        '<div class="buyBtn mainBtn wd-70" onclick="buy(' + item.fitCardId +
+                        ')">购买</div>' +
+                        '</div>' +
+                        '</div>'
+                });
+                $(".list").html(str)
+            });
+        }
+    </script>
+</body>
+
+</html>

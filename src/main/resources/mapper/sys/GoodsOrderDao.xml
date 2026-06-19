@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.GoodsOrderDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.GoodsOrderEntity" id="goodsOrderMap">
+        <result property="goodsOrderId" column="goodsOrderId" jdbcType="BIGINT"/>
+        <result property="openId" column="openId" jdbcType="VARCHAR"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="goodsId" column="goodsId" jdbcType="BIGINT"/>
+        <result property="goodsProperty" column="goodsProperty" jdbcType="VARCHAR"/>
+        <result property="buyCount" column="buyCount" jdbcType="INTEGER"/>
+        <result property="orderType" column="orderType" jdbcType="TINYINT"/>
+        <result property="orderNo" column="orderNo" jdbcType="VARCHAR"/>
+        <result property="receiveName" column="receiveName" jdbcType="VARCHAR"/>
+        <result property="receivePhone" column="receivePhone" jdbcType="VARCHAR"/>
+        <result property="receiveAddr" column="receiveAddr" jdbcType="VARCHAR"/>
+        <result property="receiveAddrId" column="receiveAddrId" jdbcType="BIGINT"/>
+        <result property="shopAddrId" column="shopAddrId" jdbcType="BIGINT"/>
+        <result property="transactionNo" column="transactionNo" jdbcType="VARCHAR"/>
+        <result property="goodsSum" column="goodsSum" jdbcType="DECIMAL"/>
+        <result property="fare" column="fare" jdbcType="DECIMAL"/>
+        <result property="couponId" column="couponId" jdbcType="BIGINT"/>
+        <result property="couponMoney" column="couponMoney" jdbcType="DECIMAL"/>
+        <result property="payType" column="payType" jdbcType="TINYINT"/>
+        <result property="company" column="company" jdbcType="VARCHAR"/>
+        <result property="realPayment" column="realPayment" jdbcType="DECIMAL"/>
+        <result property="logisticsNo" column="logisticsNo" jdbcType="VARCHAR"/>
+        <result property="logisticsName" column="logisticsName" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="createdDate" column="createdDate" jdbcType="TIMESTAMP"/>
+        <result property="payTime" column="payTime" jdbcType="TIMESTAMP"/>
+        <result property="deliveryTime" column="deliveryTime" jdbcType="TIMESTAMP"/>
+        <result property="finish" column="finish" jdbcType="TIMESTAMP"/>
+        <result property="tradeTime" column="tradeTime" jdbcType="TIMESTAMP"/>
+        <result property="imgUrl" column="imgUrl" jdbcType="VARCHAR"/>
+        <result property="messages" column="messages" jdbcType="VARCHAR"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.GoodsOrderEntity">
+		select * from goods_order where goodsOrderId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.GoodsOrderEntity">
+		select * from goods_order
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by goodsOrderId desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from goods_order 
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.GoodsOrderEntity" useGeneratedKeys="true" keyProperty="goodsOrderId">
+		insert into goods_order
+		(
+			`openId`, 
+			`userId`, 
+			`goodsId`, 
+			`goodsProperty`, 
+			`buyCount`, 
+			`orderType`, 
+			`orderNo`, 
+			`receiveName`, 
+			`receivePhone`, 
+			`receiveAddr`, 
+			`receiveAddrId`, 
+			`shopAddrId`, 
+			`transactionNo`, 
+			`goodsSum`, 
+			`fare`, 
+			`couponId`, 
+			`couponMoney`, 
+			`payType`, 
+			`company`, 
+			`realPayment`, 
+			`logisticsNo`, 
+			`logisticsName`, 
+			`status`, 
+			`createdDate`, 
+			`payTime`, 
+			`deliveryTime`, 
+			`finish`, 
+			`tradeTime`, 
+			`imgUrl`, 
+			`messages`
+		)
+		values
+		(
+			#{openId}, 
+			#{userId}, 
+			#{goodsId}, 
+			#{goodsProperty}, 
+			#{buyCount}, 
+			#{orderType}, 
+			#{orderNo}, 
+			#{receiveName}, 
+			#{receivePhone}, 
+			#{receiveAddr}, 
+			#{receiveAddrId}, 
+			#{shopAddrId}, 
+			#{transactionNo}, 
+			#{goodsSum}, 
+			#{fare}, 
+			#{couponId}, 
+			#{couponMoney}, 
+			#{payType}, 
+			#{company}, 
+			#{realPayment}, 
+			#{logisticsNo}, 
+			#{logisticsName}, 
+			#{status}, 
+			#{createdDate}, 
+			#{payTime}, 
+			#{deliveryTime}, 
+			#{finish}, 
+			#{tradeTime}, 
+			#{imgUrl}, 
+			#{messages}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.sys.entity.GoodsOrderEntity">
+		update goods_order 
+		<set>
+			<if test="openId != null">`openId` = #{openId}, </if>
+			<if test="userId != null">`userId` = #{userId}, </if>
+			<if test="goodsId != null">`goodsId` = #{goodsId}, </if>
+			<if test="goodsProperty != null">`goodsProperty` = #{goodsProperty}, </if>
+			<if test="buyCount != null">`buyCount` = #{buyCount}, </if>
+			<if test="orderType != null">`orderType` = #{orderType}, </if>
+			<if test="orderNo != null">`orderNo` = #{orderNo}, </if>
+			<if test="receiveName != null">`receiveName` = #{receiveName}, </if>
+			<if test="receivePhone != null">`receivePhone` = #{receivePhone}, </if>
+			<if test="receiveAddr != null">`receiveAddr` = #{receiveAddr}, </if>
+			<if test="receiveAddrId != null">`receiveAddrId` = #{receiveAddrId}, </if>
+			<if test="shopAddrId != null">`shopAddrId` = #{shopAddrId}, </if>
+			<if test="transactionNo != null">`transactionNo` = #{transactionNo}, </if>
+			<if test="goodsSum != null">`goodsSum` = #{goodsSum}, </if>
+			<if test="fare != null">`fare` = #{fare}, </if>
+			<if test="couponId != null">`couponId` = #{couponId}, </if>
+			<if test="couponMoney != null">`couponMoney` = #{couponMoney}, </if>
+			<if test="payType != null">`payType` = #{payType}, </if>
+			<if test="company != null">`company` = #{company}, </if>
+			<if test="realPayment != null">`realPayment` = #{realPayment}, </if>
+			<if test="logisticsNo != null">`logisticsNo` = #{logisticsNo}, </if>
+			<if test="logisticsName != null">`logisticsName` = #{logisticsName}, </if>
+			<if test="status != null">`status` = #{status}, </if>
+			<if test="createdDate != null">`createdDate` = #{createdDate}, </if>
+			<if test="payTime != null">`payTime` = #{payTime}, </if>
+			<if test="deliveryTime != null">`deliveryTime` = #{deliveryTime}, </if>
+			<if test="finish != null">`finish` = #{finish}, </if>
+			<if test="tradeTime != null">`tradeTime` = #{tradeTime}, </if>
+			<if test="imgUrl != null">`imgUrl` = #{imgUrl}, </if>
+			<if test="messages != null">`messages` = #{messages}</if>
+		</set>
+		where goodsOrderId = #{goodsOrderId}
+	</update>
+	
+	<delete id="delete">
+		delete from goods_order where goodsOrderId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from goods_order where goodsOrderId in 
+		<foreach item="goodsOrderId" collection="array" open="(" separator="," close=")">
+			#{goodsOrderId}
+		</foreach>
+	</delete>
+	<!--查询订单列表-->
+	<select id="queryLists" resultType="com.dlc.modules.sys.entity.GoodsOrderEntity" parameterType="java.util.Map">
+		select goodsOrderId,orderNo,receiveName,receivePhone,receiveAddr,goodsSum,logisticsNo,logisticsName,
+		couponMoney,fare,realPayment,status, createdDate,deliveryTime,finish,payTime,
+		(SELECT od.goodsName FROM order_detail od WHERE od.orderNo=orderNo limit 1) goodsName
+			from goods_order
+		<where>
+			<if test="status != null">
+				and status = #{status}
+			</if>
+			<if test="orderNo != null and orderNo.trim() != ''">
+				and orderNo like concat('%',trim(#{orderNo}),'%')
+			</if>
+			<if test="receiveName != null and receiveName.trim() != ''">
+				and receiveName like concat('%',trim(#{receiveName}),'%')
+			</if>
+			<if test="receivePhone != null and receivePhone.trim() != ''">
+				and receivePhone like concat('%', trim(#{receivePhone}),'%')
+			</if>
+		</where>
+		order by createdDate desc
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	<!--总数-->
+	<select id="queryListsCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+		select count(*)
+		from goods_order
+		<where>
+			<if test="status != null">
+				and status = #{status}
+			</if>
+			<if test="orderNo != null and orderNo.trim() != ''">
+				and orderNo = trim(#{orderNo})
+			</if>
+			<if test="receiveName != null and receiveName.trim() != ''">
+				and receiveName = trim(#{receiveName})
+			</if>
+			<if test="receivePhone != null and receivePhone.trim() != ''">
+				and receivePhone = trim(#{receivePhone})
+			</if>
+		</where>
+
+	</select>
+	<!--根据订单编号查详情列表-->
+	<select id="queryDetails" resultType="java.util.Map" parameterType="java.lang.Long">
+		select od.*
+		  from goods_order gor
+		  inner join order_detail od on od.orderNo=gor.orderNo
+		  where gor.goodsOrderId = #{goodsOrderId, jdbcType=BIGINT}
+	</select>
+</mapper>

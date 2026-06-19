@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.TeamClassOrderMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.TeamClassOrder" >
+    <constructor >
+      <idArg column="teamClassOrderId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="openId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="orderType" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="teamClassId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="orderNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="transactionNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="paySum" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="payType" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="realPayment" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="status" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="coachName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classTime" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classRoom" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classAddress" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="className" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="energy" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="price" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="imgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classLabel" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="payTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="finish" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    teamClassOrderId, openId, userId, orderType, teamClassId, orderNo, transactionNo, 
+    paySum, payType, realPayment, status, coachName, classTime, classRoom, classAddress, className,price,imgUrl,
+    createdDate, payTime, finish
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from team_class_order
+    where teamClassOrderId = #{teamClassOrderId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from team_class_order
+    where teamClassOrderId = #{teamClassOrderId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.TeamClassOrder" >
+    insert into team_class_order (teamClassOrderId, openId, userId, 
+      orderType, teamClassId, orderNo, 
+      transactionNo, paySum, payType, 
+      realPayment, status, coachName, 
+      classTime, classRoom, classAddress, className,price,imgUrl,
+      createdDate, payTime, finish
+      )
+    values (#{teamClassOrderId,jdbcType=BIGINT}, #{openId,jdbcType=VARCHAR}, #{userId,jdbcType=BIGINT}, 
+      #{orderType,jdbcType=TINYINT}, #{teamClassId,jdbcType=BIGINT}, #{orderNo,jdbcType=VARCHAR}, 
+      #{transactionNo,jdbcType=VARCHAR}, #{paySum,jdbcType=DOUBLE}, #{payType,jdbcType=TINYINT},
+      #{realPayment,jdbcType=DOUBLE}, #{status,jdbcType=TINYINT}, #{coachName,jdbcType=VARCHAR},
+      #{classTime,jdbcType=VARCHAR}, #{classRoom,jdbcType=VARCHAR}, #{classAddress,jdbcType=VARCHAR}, #{className,jdbcType=VARCHAR},
+      #{price,jdbcType=DOUBLE},#{imgUrl,jdbcType=VARCHAR},
+      #{createdDate,jdbcType=TIMESTAMP}, #{payTime,jdbcType=TIMESTAMP}, #{finish,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.TeamClassOrder" >
+    insert into team_class_order
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="teamClassOrderId != null" >
+        teamClassOrderId,
+      </if>
+      <if test="openId != null" >
+        openId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="orderType != null" >
+        orderType,
+      </if>
+      <if test="teamClassId != null" >
+        teamClassId,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="orderNo != null" >
+        orderNo,
+      </if>
+      <if test="transactionNo != null" >
+        transactionNo,
+      </if>
+      <if test="paySum != null" >
+        paySum,
+      </if>
+      <if test="payType != null" >
+        payType,
+      </if>
+      <if test="realPayment != null" >
+        realPayment,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="coachName != null" >
+        coachName,
+      </if>
+      <if test="classTime != null" >
+        classTime,
+      </if>
+      <if test="classRoom != null" >
+        classRoom,
+      </if>
+      <if test="classAddress != null" >
+        classAddress,
+      </if>
+      <if test="className != null" >
+        className,
+      </if>
+      <if test="energy != null" >
+        energy,
+      </if>
+      <if test="price != null" >
+        price,
+      </if>
+      <if test="imgUrl != null" >
+        imgUrl,
+      </if>
+      <if test="classLabel != null" >
+        classLabel,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="payTime != null" >
+        payTime,
+      </if>
+      <if test="finish != null" >
+        finish,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="teamClassOrderId != null" >
+        #{teamClassOrderId,jdbcType=BIGINT},
+      </if>
+      <if test="openId != null" >
+        #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="orderType != null" >
+        #{orderType,jdbcType=TINYINT},
+      </if>
+      <if test="teamClassId != null" >
+        #{teamClassId,jdbcType=BIGINT},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="orderNo != null" >
+        #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="transactionNo != null" >
+        #{transactionNo,jdbcType=VARCHAR},
+      </if>
+      <if test="paySum != null" >
+        #{paySum,jdbcType=DOUBLE},
+      </if>
+      <if test="payType != null" >
+        #{payType,jdbcType=TINYINT},
+      </if>
+      <if test="realPayment != null" >
+        #{realPayment,jdbcType=DOUBLE},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="coachName != null" >
+        #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="classTime != null" >
+        #{classTime,jdbcType=VARCHAR},
+      </if>
+      <if test="classRoom != null" >
+        #{classRoom,jdbcType=VARCHAR},
+      </if>
+      <if test="classAddress != null" >
+        #{classAddress,jdbcType=VARCHAR},
+      </if>
+      <if test="className != null" >
+        #{className,jdbcType=VARCHAR},
+      </if>
+      <if test="energy != null" >
+        #{energy,jdbcType=DOUBLE},
+      </if>
+      <if test="price != null" >
+        #{price,jdbcType=DOUBLE},
+      </if>
+      <if test="imgUrl != null" >
+        #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="classLabel != null" >
+        #{classLabel,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="payTime != null" >
+        #{payTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="finish != null" >
+        #{finish,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.TeamClassOrder" >
+    update team_class_order
+    <set >
+      <if test="openId != null" >
+        openId = #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="orderType != null" >
+        orderType = #{orderType,jdbcType=TINYINT},
+      </if>
+      <if test="teamClassId != null" >
+        teamClassId = #{teamClassId,jdbcType=BIGINT},
+      </if>
+      <if test="orderNo != null" >
+        orderNo = #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="transactionNo != null" >
+        transactionNo = #{transactionNo,jdbcType=VARCHAR},
+      </if>
+      <if test="paySum != null" >
+        paySum = #{paySum,jdbcType=DOUBLE},
+      </if>
+      <if test="payType != null" >
+        payType = #{payType,jdbcType=TINYINT},
+      </if>
+      <if test="realPayment != null" >
+        realPayment = #{realPayment,jdbcType=DOUBLE},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="coachName != null" >
+        coachName = #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="classTime != null" >
+        classTime = #{classTime,jdbcType=VARCHAR},
+      </if>
+      <if test="classRoom != null" >
+        classRoom = #{classRoom,jdbcType=VARCHAR},
+      </if>
+      <if test="classAddress != null" >
+        classAddress = #{classAddress,jdbcType=VARCHAR},
+      </if>
+      <if test="className != null" >
+        className = #{className,jdbcType=VARCHAR},
+      </if>
+      <if test="price != null" >
+        price = #{price,jdbcType=DOUBLE},
+      </if>
+      <if test="imgUrl != null" >
+        imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="payTime != null" >
+        payTime = #{payTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="finish != null" >
+        finish = #{finish,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where teamClassOrderId = #{teamClassOrderId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.TeamClassOrder" >
+    update team_class_order
+    set openId = #{openId,jdbcType=VARCHAR},
+      userId = #{userId,jdbcType=BIGINT},
+      orderType = #{orderType,jdbcType=TINYINT},
+      teamClassId = #{teamClassId,jdbcType=BIGINT},
+      orderNo = #{orderNo,jdbcType=VARCHAR},
+      transactionNo = #{transactionNo,jdbcType=VARCHAR},
+      paySum = #{paySum,jdbcType=DOUBLE},
+      payType = #{payType,jdbcType=TINYINT},
+      realPayment = #{realPayment,jdbcType=DOUBLE},
+      status = #{status,jdbcType=TINYINT},
+      coachName = #{coachName,jdbcType=VARCHAR},
+      classTime = #{classTime,jdbcType=VARCHAR},
+      classRoom = #{classRoom,jdbcType=VARCHAR},
+      classAddress = #{classAddress,jdbcType=VARCHAR},
+      className = #{className,jdbcType=VARCHAR},
+      price = #{price,jdbcType=DOUBLE},
+      imgUrl = #{imgUrl,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      payTime = #{payTime,jdbcType=TIMESTAMP},
+      finish = #{finish,jdbcType=TIMESTAMP}
+    where teamClassOrderId = #{teamClassOrderId,jdbcType=BIGINT}
+  </update>
+  <!-- 查询我的团课订单-->
+  <select id="queryTeamClassOrder" resultType="java.util.Map" parameterType="java.util.Map">
+    select
+      tco.userId,
+      tco.orderNo,
+      tco.teamClassId as classId,
+      tco.className,
+      tco.imgUrl as firstImgUrl,
+      concat(tco.realPayment,'') as paySum,
+      tco.status,
+      date_format(tco.createdDate, '%Y-%m-%d %H:%i') as createdDate
+    from team_class_order tco
+    where tco.userId = #{userId,jdbcType=BIGINT}
+    order by tco.createdDate desc LIMIT #{offset}, #{limit}
+  </select>
+  <!-- 查询我的团课订单-->
+  <select id="queryTeamClassOrderNum" resultType="java.lang.Integer" parameterType="java.util.Map">
+    select
+      count(*)
+    from team_class_order tco
+    where tco.userId = #{userId,jdbcType=BIGINT}
+  </select>
+  <!-- 查询团教课订单详情-->
+  <select id="queryTeamOrderDetail" resultType="java.util.Map">
+      select
+         tco.userId,
+         tco.orderNo,
+         concat(tco.realPayment,'') as realPayment,
+         tco.status,
+         tco.coachName,
+         tco.classTime,
+         tco.classRoom,
+         tco.classAddress,
+         tco.className,
+         concat(tco.price,'') as price,
+         tco.imgUrl,
+         date_format(tco.createdDate, '%Y-%m-%d %H:%i') as createdDate,
+         date_format(tco.payTime, '%Y-%m-%d %H:%i') as payTime,
+         date_format(tco.finish, '%Y-%m-%d %H:%i') as finish,
+         tco.teamClassId as classId,
+         tco.className,
+         concat(tco.price,'') as classPrice,
+         tco.imgUrl as firstImgUrl
+      from team_class_order tco
+      where tco.userId = #{userId,jdbcType=BIGINT}
+	   and tco.orderNo = #{orderNo,jdbcType=VARCHAR}
+  </select>
+  <!--根据订单号查询订单-->
+  <select id="selectTeamClassOrderByOrderNo" resultType="com.dlc.modules.api.entity.TeamClassOrder" parameterType="java.lang.String">
+    SELECT teamClassOrderId, openId, userId, orderType, teamClassId, orderNo, transactionNo, storeId,energy,
+    paySum, payType, realPayment, status, coachName, classTime, classRoom, classAddress,className,price,imgUrl,
+    createdDate, payTime, finish
+    FROM team_class_order
+    WHERE orderNo = #{orderNo}
+  </select>
+  <!--取消订单-->
+  <update id="updateTeamOrderStatus" parameterType="java.util.Map">
+    update team_class_order
+      set status = #{status}
+    where userId = #{userId,jdbcType=BIGINT}
+	   and orderNo = #{orderNo,jdbcType=VARCHAR}
+  </update>
+
+  <!--查询所有未付款的团体课订单-->
+  <select id="selectAllTcListByStatus" resultType="com.dlc.modules.api.entity.TeamClassOrder">
+    SELECT teamClassOrderId, status,createdDate
+    FROM team_class_order
+    WHERE status = 0
+  </select>
+ </mapper>

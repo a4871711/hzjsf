@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysAboutDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysAboutEntity" id="SysAboutEntity">
+        <result property="id" column="id"/>
+        <result property="appImgUrl" column="app_img_url"/>
+        <result property="appName" column="app_name"/>
+        <result property="appUrl" column="app_url"/>
+        <result property="appUrlIos" column="app_url_ios"/>
+        <result property="serviceTel" column="service_tel"/>
+        <result property="createTime" column="create_time"/>
+        <result property="version" column="version"/>
+        <result property="companyNameCHN" column="companyNameCHN"/>
+        <result property="companyNameENG" column="companyNameENG"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        app_img_url, app_name, app_url, app_url_ios, service_tel, create_time, version, companyNameCHN, companyNameENG,
+        open_door, qrcode_valid
+    </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysAboutEntity" parameterType="map">
+        SELECT
+            id AS id, app_img_url AS appImgUrl, app_name AS appName, app_url AS appUrl, app_url_ios as appUrlIos,
+            service_tel AS serviceTel, create_time, version AS version, companyNameCHN AS companyNameCHN,
+            companyNameENG AS companyNameENG, open_door as openDoor, qrcode_valid as qrcodeValid
+        FROM about_us
+        order BY #{ORDER }
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="int">
+        SELECT COUNT(1) FROM  about_us
+    </select>
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.SysAboutEntity" parameterType="long">
+        SELECT
+        id, <include refid="Base_Column_List"/>
+        FROM about_us
+        WHERE id=#{id}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysAboutEntity">
+        INSERT INTO about_us
+        (
+            `app_img_url`,
+			`app_name`,
+			`service_tel`,
+			`create_time`,
+			`version`,
+			`companyNameCHN`,
+            `companyNameENG`,
+            `open_door`,
+            `qrcode_valid`
+        )
+        VALUES
+        (
+            #{appImgUrl},
+            #{appName},
+            #{serviceTel},
+            #{createTime},
+            #{version},
+            #{companyNameCHN},
+            #{companyNameENG},
+            #{openDoor},
+            #{qrcodeValid}
+        )
+    </insert>
+    <delete id="deleteBatch">
+        delete from about_us where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysAboutEntity">
+        UPDATE about_us SET
+        app_img_url=#{appImgUrl},
+        app_name=#{appName},
+        app_url=#{appUrl},
+        app_url_ios=#{appUrlIos},
+        service_tel=#{serviceTel},
+        create_time=#{createTime},
+        version=#{version},
+        companyNameCHN=#{companyNameCHN},
+        companyNameENG=#{companyNameENG},
+        open_door=#{openDoor},
+        qrcode_valid=#{qrcodeValid}
+        WHERE  id=#{id}
+    </update>
+</mapper>

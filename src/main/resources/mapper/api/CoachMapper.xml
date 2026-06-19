@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.CoachMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.Coach" >
+    <constructor >
+      <idArg column="coachId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="headImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="grade" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="coachName" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="phone" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="sex" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="province" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="city" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="zone" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="identity" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="employTime" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="identImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="diplomaImgUrl" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="storeId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="level" jdbcType="DOUBLE" javaType="java.lang.Double" />
+
+      <arg column="approveStatus" jdbcType="TINYINT" javaType="java.lang.Byte" />
+      <arg column="approveTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="approveResult" jdbcType="VARCHAR" javaType="java.lang.String" />
+
+      <arg column="minClassMoney" jdbcType="DECIMAL" javaType="java.math.BigDecimal" />
+      <arg column="classCount" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="introduce" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    coachId, userId,headImgUrl, grade, coachName, phone, sex, province, city, zone, identity, employTime,
+    identImgUrl, diplomaImgUrl, storeId, level,approveStatus,approveTime,approveResult, minClassMoney, classCount, introduce,
+    createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultType="com.dlc.modules.api.entity.Coach" parameterType="java.lang.Long" >
+    select 
+    coachId, userId, headImgUrl,grade, coachName, phone, sex, province, city, zone, identity, employTime,
+    identImgUrl, diplomaImgUrl, storeId, level,approveStatus,approveTime,approveResult, minClassMoney, classCount, introduce,
+    createdDate
+    from coach
+    where coachId = #{coachId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from coach
+    where coachId = #{coachId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.Coach" >
+    insert into coach (coachId, userId,headImgUrl, coachName,
+      phone, sex, province, 
+      city, zone, identity, 
+      employTime, identImgUrl, diplomaImgUrl,
+      storeId, level, approveStatus,approveTime,approveResult,minClassMoney,
+      classCount, introduce, createdDate
+      )
+    values (#{coachId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{headImgUrl,jdbcType=VARCHAR},#{coachName,jdbcType=VARCHAR},
+      #{phone,jdbcType=VARCHAR}, #{sex,jdbcType=TINYINT}, #{province,jdbcType=VARCHAR}, 
+      #{city,jdbcType=VARCHAR}, #{zone,jdbcType=VARCHAR}, #{identity,jdbcType=VARCHAR}, 
+      #{employTime,jdbcType=TINYINT}, #{identImgUrl,jdbcType=VARCHAR}, #{diplomaImgUrl,jdbcType=VARCHAR},
+      #{storeId,jdbcType=VARCHAR}, #{level,jdbcType=INTEGER},#{approveStatus,jdbcType=TINYINT}, #{approveTime,jdbcType=TIMESTAMP} ,
+      #{approveResult,jdbcType=VARCHAR},#{minClassMoney,jdbcType=INTEGER},
+      #{classCount,jdbcType=TINYINT}, #{introduce,jdbcType=VARCHAR}, #{createdDate,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.Coach" >
+    insert into coach
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="coachId != null" >
+        coachId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="headImgUrl != null" >
+        headImgUrl,
+      </if>
+      <if test="coachName != null" >
+        coachName,
+      </if>
+      <if test="phone != null" >
+        phone,
+      </if>
+      <if test="sex != null" >
+        sex,
+      </if>
+      <if test="province != null" >
+        province,
+      </if>
+      <if test="city != null" >
+        city,
+      </if>
+      <if test="zone != null" >
+        zone,
+      </if>
+      <if test="identity != null" >
+        identity,
+      </if>
+      <if test="employTime != null" >
+        employTime,
+      </if>
+      <if test="identImgUrl != null" >
+        identImgUrl,
+      </if>
+      <if test="identBackImgUrl != null" >
+          identBackImgUrl,
+      </if>
+      <if test="diplomaImgUrl != null" >
+        diplomaImgUrl,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="level != null" >
+        level,
+      </if>
+      <if test="approveStatus != null" >
+        approveStatus,
+      </if>
+      <if test="approveTime != null" >
+        approveTime,
+      </if>
+      <if test="approveResult != null" >
+        approveResult,
+      </if>
+      <if test="minClassMoney != null" >
+        minClassMoney,
+      </if>
+      <if test="classCount != null" >
+        classCount,
+      </if>
+      <if test="introduce != null" >
+        introduce,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="coachId != null" >
+        #{coachId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="headImgUrl != null" >
+        #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="coachName != null" >
+        #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="sex != null" >
+        #{sex,jdbcType=TINYINT},
+      </if>
+      <if test="province != null" >
+        #{province,jdbcType=VARCHAR},
+      </if>
+      <if test="city != null" >
+        #{city,jdbcType=VARCHAR},
+      </if>
+      <if test="zone != null" >
+        #{zone,jdbcType=VARCHAR},
+      </if>
+      <if test="identity != null" >
+        #{identity,jdbcType=VARCHAR},
+      </if>
+      <if test="employTime != null" >
+        #{employTime,jdbcType=TINYINT},
+      </if>
+      <if test="identImgUrl != null" >
+        #{identImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="identBackImgUrl != null" >
+        #{identBackImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="diplomaImgUrl != null" >
+        #{diplomaImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=VARCHAR},
+      </if>
+      <if test="level != null" >
+        #{level,jdbcType=INTEGER},
+      </if>
+
+      <if test="approveStatus != null" >
+        #{approveStatus,jdbcType=TINYINT},
+      </if>
+      <if test="approveTime != null" >
+        #{approveTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="approveResult != null" >
+      #{approveResult,jdbcType=VARCHAR},
+      </if>
+
+      <if test="minClassMoney != null" >
+        #{minClassMoney,jdbcType=DECIMAL},
+      </if>
+      <if test="classCount != null" >
+        #{classCount,jdbcType=TINYINT},
+      </if>
+      <if test="introduce != null" >
+        #{introduce,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.Coach" >
+    update coach
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="headImgUrl != null" >
+        headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="coachName != null" >
+        coachName = #{coachName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        phone = #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="sex != null" >
+        sex = #{sex,jdbcType=TINYINT},
+      </if>
+      <if test="province != null" >
+        province = #{province,jdbcType=VARCHAR},
+      </if>
+      <if test="city != null" >
+        city = #{city,jdbcType=VARCHAR},
+      </if>
+      <if test="zone != null" >
+        zone = #{zone,jdbcType=VARCHAR},
+      </if>
+      <if test="identity != null" >
+        identity = #{identity,jdbcType=VARCHAR},
+      </if>
+      <if test="employTime != null" >
+        employTime = #{employTime,jdbcType=TINYINT},
+      </if>
+      <if test="identImgUrl != null" >
+        identImgUrl = #{identImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="identBackImgUrl != null" >
+          identBackImgUrl = #{identBackImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="diplomaImgUrl != null" >
+        diplomaImgUrl = #{diplomaImgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="storeId != null" >
+        storeId = #{storeId,jdbcType=VARCHAR},
+      </if>
+      <if test="level != null" >
+        level = #{level,jdbcType=INTEGER},
+      </if>
+      <if test="approveStatus != null" >
+        approveStatus = #{approveStatus,jdbcType=TINYINT},
+      </if>
+      <if test="approveTime != null" >
+        approveTime = #{approveTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="approveResult != null" >
+        approveResult = #{approveResult,jdbcType=VARCHAR},
+      </if>
+      <if test="minClassMoney != null" >
+        minClassMoney = #{minClassMoney,jdbcType=DECIMAL},
+      </if>
+      <if test="classCount != null" >
+        classCount = #{classCount,jdbcType=TINYINT},
+      </if>
+      <if test="introduce != null" >
+        introduce = #{introduce,jdbcType=VARCHAR},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where coachId = #{coachId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.Coach" >
+    update coach
+    set userId = #{userId,jdbcType=BIGINT},
+      headImgUrl = #{headImgUrl,jdbcType=VARCHAR},
+      coachName = #{coachName,jdbcType=VARCHAR},
+      phone = #{phone,jdbcType=VARCHAR},
+      sex = #{sex,jdbcType=TINYINT},
+      province = #{province,jdbcType=VARCHAR},
+      city = #{city,jdbcType=VARCHAR},
+      zone = #{zone,jdbcType=VARCHAR},
+      identity = #{identity,jdbcType=VARCHAR},
+      employTime = #{employTime,jdbcType=TINYINT},
+      identImgUrl = #{identImgUrl,jdbcType=VARCHAR},
+      diplomaImgUrl = #{diplomaImgUrl,jdbcType=VARCHAR},
+      storeId = #{storeId,jdbcType=VARCHAR},
+      level = #{level,jdbcType=INTEGER},
+      approveStatus = #{approveStatus,jdbcType=TINYINT},
+      approveTime = #{approveTime,jdbcType=TIMESTAMP},
+      approveResult = #{approveResult,jdbcType=VARCHAR},
+      minClassMoney = #{minClassMoney,jdbcType=DECIMAL},
+      classCount = #{classCount,jdbcType=TINYINT},
+      introduce = #{introduce,jdbcType=VARCHAR},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where coachId = #{coachId,jdbcType=BIGINT}
+  </update>
+
+  <select id="queryCoachList" resultType="map" parameterType="map">
+    SELECT c.coachId,c.coachName,cps.grade,c.level,c.minClassMoney,c.classCount, c.headImgUrl,
+      (select
+      u.userSign
+      from user_info u where u.userId=c.userId limit 1) as introduce
+    FROM coach_place_ship cps
+    LEFT JOIN coach c
+    ON c.coachId = cps.coachId
+    WHERE 1=1
+    <if test="storeId != null and storeId != ''">
+        AND cps.storeId=#{storeId}
+    </if>
+    <if test="grade != null and grade != ''">
+        AND cps.grade=#{grade}
+    </if>
+    ORDER BY c.level DESC
+    <if test="offset != null and limit != null">
+      limit #{offset}, #{limit}
+    </if>
+  </select>
+  <select id="queryCoachTotal" resultType="java.lang.Integer" parameterType="map">
+    SELECT count(*)
+    FROM coach_place_ship cps
+    LEFT JOIN coach c
+    ON c.coachId = cps.coachId
+    WHERE 1=1
+    <if test="storeId != null and storeId != ''">
+        AND cps.storeId=#{storeId}
+    </if>
+    <if test="grade != null and grade != ''">
+        AND cps.grade=#{grade}
+    </if>
+  </select>
+
+  <!--推荐教练#grade=1门店已认证过的-->
+  <select id="recommendCoach" resultType="map" parameterType="map">
+    SELECT c.coachId,c.coachName,cps.grade,c.level,c.classCount, c.headImgUrl, c.introduce
+    FROM coach_place_ship cps
+    LEFT JOIN coach c
+    ON c.coachId = cps.coachId
+    WHERE cps.storeId = #{storeId}
+    and cps.grade=1
+    ORDER BY c.level DESC
+  </select>
+  <select id="queryTotal" resultType="java.lang.Integer" parameterType="map">
+    SELECT count(*)
+    FROM coach_place_ship cps
+    LEFT JOIN coach c
+    ON c.coachId = cps.coachId
+    WHERE cps.storeId = #{storeId}
+    and cps.grade=1
+  </select>
+
+  <select id="queryCoachInfo" resultType="map" parameterType="Long">
+    SELECT c.approveStatus,c.coachName,c.grade as level,c.coachId,c.approveResult,u.headImgUrl,
+    (select d.description from data_map d where d.idxLabel=2 and d.nextLabel=3 and d.price=c.grade) as introduce
+    FROM coach c LEFT JOIN user_info u ON u.userId = c.userId
+    WHERE c.userId =#{userId}
+  </select>
+
+   <select id="queryCoachGradeByCoachId" parameterType="Long" resultType="int">
+       SELECT grade FROM coach WHERE coachId = #{coachId}
+   </select>
+
+    <select id="queryAddClassByGrade" parameterType="int" resultType="map">
+        SELECT concat(g.price,'') as classFee,p.firstImgUrl,p.className,p.privateClassId as classId
+        from grade_price_ship g LEFT JOIN private_class p ON p.privateClassId = g.privateClassId
+        WHERE g.grade <![CDATA[ <= ]]> #{grade}
+    </select>
+    <select id="queryCoachStoreIds" resultType="String" parameterType="Long">
+        SELECT storeId FROM coach_place_ship WHERE coachId = #{coachId} AND <![CDATA[ grade <> 2 ]]>
+    </select>
+
+    <update id="updateCoachStore" parameterType="map">
+        UPDATE coach SET storeId = #{storeId} WHERE coachId = #{coachId}
+    </update>
+
+    <select id="queryExistShip" parameterType="map" resultType="map">
+        SELECT *FROM coach_place_ship WHERE coachId = #{coachId} AND storeId = #{storeId} 
+    </select>
+    <!--统计教练总分-->
+    <select id="sumCoachEvleve" resultType="java.lang.Integer" parameterType="java.lang.Long">
+      SELECT SUM(evLevel) FROM coach_evaluate WHERE coachId = #{coachId}
+    </select>
+
+    <select id="queryAlipayCountInfo" resultType="map" parameterType="Long">
+        SELECT concat(money,'') as money,alipay,realName FROM coach_wallet WHERE coachId =#{coachId}
+    </select>
+    <select id="queryLowPriceFromDataMap" resultType="int">
+        SELECT price FROM data_map WHERE dataMapId = 24
+    </select>
+
+    <select id="queryCoachInfoByCoachId" resultType="map" parameterType="Long">
+        SELECT coachName,phone,sex,province,identity,identImgUrl,identBackImgUrl,employTime,diplomaImgUrl,storeId FROM coach where coachId = #{coachId}
+    </select>
+    <!---->
+    <select id="selectCoachByCoachId" resultType="map" parameterType="map">
+    SELECT c.coachId, c.headImgUrl, (select cps.grade from coach_place_ship cps where cps.coachId = c.coachId  AND cps.storeId = #{storeId}) as grade,
+     c.coachName, c.level, c.classCount,
+     (select
+      u.userSign
+      from user_info u where u.userId=c.userId limit 1) as introduce
+    FROM coach c
+    WHERE c.coachId = #{coachId}
+    </select>
+    <!--统计教练的评价条数-->
+    <select id="countCoachEvleve" resultType="java.lang.Integer" parameterType="java.lang.Long">
+      SELECT COUNT(*) FROM coach_evaluate WHERE coachId = #{coachId}
+    </select>
+    <!--更新用户头像-->
+   <update id="updateCoachInfo">
+     update coach set headImgUrl = #{headImgUrl} where userId = #{userId}
+   </update>
+  <!--查询已经添加过且状态不为失败的门店-->
+    <select id="queryExistStoreId" resultType="java.lang.Long">
+        SELECT storeId FROM coach_place_ship WHERE coachId = #{coachId} AND <![CDATA[ grade <> 2 ]]>
+        AND storeId IN
+        <foreach item="item" index="index" collection="storeIds"
+                 open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+    <!--查询教练简介（用户签名）-->
+    <select id="queryIntroduceByUId" resultType="java.lang.String" parameterType="java.lang.Long">
+        select
+          u.userSign
+        from user_info u inner join coach c on c.userId=u.userId
+        where c.coachId=#{coachId} limit 1
+    </select>
+</mapper>

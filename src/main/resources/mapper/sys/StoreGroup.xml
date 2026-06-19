@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysStoreGroupDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysStoreGroupEntity" id="storeGroupMap">
+        <result property="storeGroupId" column="storeGroupId"/>
+        <result property="storeId" column="storeId"/>
+		<result property="groupName" column="groupName"/>
+		<result property="groupImg" column="groupImg"/>
+		<result property="storeAddrId" column="storeAddrId"/>
+		<result property="groupAddr" column="groupAddr"/>
+		<result property="createdDate" column="createdDate"/>
+		<result property="storeName" column="storeName"/>
+		<result property="storePhone" column="storePhone"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.sys.entity.SysStoreGroupEntity">
+		select * from store_group where storeGroupId = #{value}
+	</select>
+
+	<select id="queryStoreAddressById" resultType="com.dlc.modules.sys.entity.SysStoreGroupEntity">
+		select * from store_group where storeId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.sys.entity.SysStoreGroupEntity">
+		SELECT sg.*,s.storeName,s.storePhone FROM store_group sg INNER JOIN store s ON sg.storeId = s.storeId
+		<where>
+			<if test="storeAddrId != null and storeAddrId != ''">
+				AND sg.storeAddrId = #{storeAddrId}
+			</if>
+			<if test="storeId != null and storeId != ''">
+				AND sg.storeId = #{storeId}
+			</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND sg.storeId in (${storeIds})
+            </if>
+			<if test="groupName != null and groupName != ''">
+				AND sg.groupName LIKE concat('%',#{groupName},'%')
+			</if>
+		</where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by sg.createdDate desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from store_group sg INNER JOIN store s ON sg.storeId = s.storeId
+		<where>
+			<if test="storeAddrId != null and storeAddrId != ''">
+				AND sg.storeAddrId = #{storeAddrId}
+			</if>
+			<if test="storeId != null and storeId != ''">
+				AND sg.storeId = #{storeId}
+			</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND sg.storeId in (${storeIds})
+            </if>
+			<if test="groupName != null and groupName != ''">
+				AND sg.groupName LIKE concat('%',#{groupName},'%')
+			</if>
+		</where>
+	</select>
+
+	<insert id="save" parameterType="com.dlc.modules.sys.entity.SysStoreGroupEntity" useGeneratedKeys="true" keyProperty="storeGroupId">
+		insert into store_group
+		(
+			`storeId`,
+			`storeAddrId`,
+			`groupName`,
+			`groupImg`,
+			`groupAddr`,
+			`createdDate`
+		)
+		values
+		(
+			#{storeId},
+			#{storeAddrId},
+			#{groupName},
+			#{groupImg},
+			#{groupAddr},
+			#{createdDate}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.sys.entity.SysStoreGroupEntity">
+		update store_group
+		<set>
+			<if test="groupName != null">`groupName` = #{groupName},</if>
+			<if test="groupImg != null">`groupImg` = #{groupImg},</if>
+			<if test="groupAddr != null">`groupAddr` = #{groupAddr},</if>
+			<if test="createdDate != null">`createdDate` = #{createdDate}</if>
+		</set>
+		where storeId = #{storeId}
+	</update>
+
+	<delete id="delete">
+		delete from store_group where storeGroupId = #{value}
+	</delete>
+
+	<delete id="deleteBatch">
+		delete from store_group where storeGroupId in
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+	<select id="queryStoreById" resultType="int">
+		SELECT COUNT(*) FROM store_group WHERE storeId = #{storeId}
+	</select>
+	<!--queryDyStoreNum-->
+	<select id="queryDyStoreNum" resultType="java.lang.Integer" parameterType="java.lang.Long">
+		select count(*) from store_group sg inner join dynamic d on d.socialGroupId=sg.storeGroupId
+		where sg.storeId=#{storeId}
+	</select>
+    <!--queryAttionCounts-->
+    <select id="queryAttionCounts" resultType="java.lang.Integer" parameterType="java.lang.Long">
+		select count(*) from store_group sg inner join store_attention st on st.storeGroupId=sg.storeGroupId
+		where sg.storeId=#{storeId}
+	</select>
+</mapper>

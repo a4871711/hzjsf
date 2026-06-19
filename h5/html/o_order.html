@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no, email=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="../css/aui.css" />
+    <link rel="stylesheet" type="text/css" href="../css/o_base.css">
+    <link rel="stylesheet" type="text/css" href="../css/o_style.css">
+    <title>填写订单</title>
+    <style>
+        html,body {
+            height: 100%;
+        }
+        .aui-list .aui-list-item {
+            border-bottom: 1px solid #dddddd;
+        }
+        .aui-radio:checked, .aui-radio.aui-checked, .aui-checkbox:checked, .aui-checkbox.aui-checked {
+            background-color: #ef611e;
+            border: solid 1px #ef611e;
+        }
+        .hideMast {
+            display: none!important
+        }
+    </style>
+</head>
+
+<body>
+    <div id="order" class="aui-content h100">
+        <div class="orderMsg flex pd-15 mg-t-10 bfff">
+            <div class="img wd-25">
+                <img src="../img/img1.png" class="wd-100 radius15 cardImgUrl">
+            </div>
+            <div class="wd-75 flex flexWrap flexA-between pd-l-15">
+                <div class="name wd-100">健身半年卡</div>
+                <div class="flex flexBetween wd-100">
+                    <div class="price font15 cmain">￥<span>300.00</span></div>
+                    <div class="num">x1</div>
+                </div>
+            </div>
+        </div>
+        <ul class="orderMsg mg-t-10 bfff aui-list aui-form-list">
+            <li class="aui-list-item" tapmode onclick="shop()">
+                <div class="aui-list-item-inner aui-list-item-arrow pd-10">
+                    <div class="aui-list-item-label">
+                        门店
+                    </div>
+                    <div class="aui-list-item-input">
+                        <input class="shop" name="shop" type="text" placeholder="请选择门店" readonly>
+                    </div>
+                </div>
+            </li>
+            <li class="aui-list-item hideMast">
+                <div class="aui-list-item-inner pd-10">
+                    <div class="aui-list-item-label">
+                        手环
+                    </div>
+                    <div class="aui-list-item-input">
+                        <label><input class="aui-radio" type="radio" name="product" value="0" onchange="changeWatch()"
+                                checked> 免费手环</label>
+                        <label><input class="aui-radio" type="radio" name="product" value="1" onchange="changeWatch()">
+                            手环<span class="cmain">(￥<span class="watchPrice">100.00</span>)</span></label>
+                    </div>
+                </div>
+            </li>
+            <li class="aui-list-item hideMast">
+                <div class="aui-list-item-inner pd-10">
+                    <div class="aui-list-item-label">
+                        配送方式
+                    </div>
+                    <div class="aui-list-item-input getWay">
+                        <label><input class="aui-radio" type="radio" name="getWay" value="0" onchange="changeGetWay()"
+                                checked>
+                            自取</label>
+                        <label><input class="aui-radio" type="radio" name="getWay" value="1" onchange="changeGetWay()">配送</label>
+                    </div>
+                </div>
+            </li>
+            <li class="aui-list-item hideImportant addressLi" tapmode onclick="goTo('o_address.html')">
+                <div class="aui-list-item-inner aui-list-item-arrow pd-10">
+                    <div class="aui-list-item-label">
+                        收货地址
+                    </div>
+                    <div class="aui-list-item-input">
+                        <input class="address" name="address" type="text" placeholder="请选择收货地址" readonly>
+                    </div>
+                </div>
+            </li>
+        </ul>
+        <div class="orderDetailMsg bfff pd-15 mg-t-10">
+            <div class="flex flexBetween font13 card">
+                <div class="name">健身半年卡</div>
+                <div class="countPrice">￥300.00</div>
+            </div>
+            <div class="flex flexBetween font13 product hideImportant">
+                <div class="watchName">手环</div>
+                <div><span>￥</span><span class="watchPrice">100.00</span></div>
+            </div>
+            <div class="flex flexBetween font13 couponMsg hideImportant">
+                <div>优惠价格</div>
+                <div class="cutCouponPrice">￥300.00</div>
+            </div>
+            <div class="tar font16">合计:<span class="cmain">￥<span class="total">400.00</span></span></div>
+        </div>
+        <footer class="aui-bar aui-bar-tab aui-margin-t-15">
+            <div class="font18 lh45 mg-r-10 tar fontb">合计：￥<span class="total">400</span></div>
+            <div class="aui-bar-tab-item wd-30 mainBuyBtn" tapmode style="width: auto;" onclick="buyNow()">立即购买</div>
+        </footer>
+        <!-- 遮罩层 -->
+        <div class="mask"></div>
+        <div class="maskBox bfff payMaskBox hide">
+            <div class="boxTitle flex pd-10 border-b">
+                <div class="wd-100 tac title">请选择支付方式</div>
+                <div class="cancel" onclick="cancel()">取消</div>
+            </div>
+            <div class="main pd-10 border-b aui-list aui-form-list">
+                <div class="priceMsg border-b">
+                    <div>需支付</div>
+                    <div class="tac font13 cbbb">金额</div>
+                    <div class="tac font24">
+                        ￥<span class="total">10000.00</span>
+                    </div>
+                </div>
+                <div class="payWay">
+                    <div class="aui-list-item-inner aui-list-item-arrow pd-tb-10 border-b coupon" onclick="openCoupon()">
+                        <div class="img wd-10 pd-5">
+                            <img src="../img/ic_ticket.png" class="wd-100">
+                        </div>
+                        <div class="aui-list-item-label wd-90 pd-r-20 flexBetween">
+                            <div>优惠券</div>
+                            <div class="cutCouponPrice"></div>
+                        </div>
+                    </div>
+                    <div class="aui-list-item-inner pd-tb-10">
+                        <div class="img wd-10 pd-5">
+                            <img src="../img/ic_yue.png" class="wd-100">
+                        </div>
+                        <label class="aui-list-item-label wd-100 flex flexBetween">
+                            <div>余额支付</div>
+                            <input class="aui-radio" type="radio" name="payWay" checked value="1">
+                        </label>
+                    </div>
+                    <div class="aui-list-item-inner pd-tb-10">
+                        <div class="img wd-10 pd-5">
+                            <img src="../img/ic_wechatpay.png" class="wd-100">
+                        </div>
+                        <label class="aui-list-item-label wd-100 flex flexBetween">
+                            <div>微信支付</div>
+                            <input class="aui-radio" type="radio" name="payWay" value="2">
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="payBox pd-10">
+                <div class="confirnBtn mainBuyBtn pd-10 radius5" onclick="orderConfirm()">确定</div>
+            </div>
+        </div>
+        <div class="maskBox bfff couponMaskBox hide">
+            <div class="boxTitle flex pd-10 border-b">
+                <div class="wd-100 tac title">选择优惠券</div>
+                <div class="back" onclick="back()">返回</div>
+            </div>
+            <div class="main pd-10 border-b aui-list aui-form-list">
+                <div class="couponList">
+                    <div class="aui-list-item-inner pd-tb-10">
+                        <label class="aui-list-item-label wd-95 flex flexBetween">
+                            <div>不使用优惠券</div>
+                            <input class="aui-radio" type="radio" name="coupon" checked value="0">
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="payBox pd-10">
+                <div class="confirnBtn mainBuyBtn pd-10 radius5" onclick="couponConfirm()">确定</div>
+            </div>
+        </div>
+        <div class="maskBox bfff shopMaskBox hide">
+            <div class="boxTitle flex pd-10 border-b">
+                <div class="wd-100 tac title">请选择门店</div>
+            </div>
+            <div class="main pd-10 border-b aui-list aui-form-list" style="max-height: 300px;overflow-y: scroll">
+                <div class="shopList">
+
+                </div>
+            </div>
+            <div class="payBox pd-10">
+                <div class="confirnBtn mainBuyBtn pd-10 radius5" onclick="shopConfirm()">确定</div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="../js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="http://res2.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
+<script type="text/javascript" charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=WXocean"></script>
+<script type="text/javascript" src="https://3gimg.qq.com/lightmap/components/geolocation/geolocation.min.js"></script>
+<script type="text/javascript" src="../js/api.js"></script>
+<script type="text/javascript" src="../js/layer.js"></script>
+<script type="text/javascript" src="../js/dlc.js"></script>
+<script type="text/javascript" src="../js/o_base.js"></script>
+<script>
+    /**
+     * 获取定位信息——>开始 
+     **/
+    var first = true,
+        userInfo = JSON.parse(getItem("userInfo"));
+
+    if (userInfo.wristId != "") {
+        first = false
+    }
+
+    if (getItem("location")) {
+        getShop(JSON.parse(getItem("location")))
+    } else {
+        getLocation();
+    }
+
+    function getLocation() {
+        // var geolocation = new qq.maps.Geolocation("N6RBZ-AJN35-AACI2-Q2ICF-HYV6O-JRBBZ", "myapp");
+        // var positionNum = 0;
+        // var options = {
+
+        //     timeout: 10000
+        // };
+
+        // function showErr() {
+        //     positionNum++;
+        //     console.log('定位失败！');
+        // };
+
+        // geolocation.getLocation(getShop, showErr, options);
+        getTicket({}, "api/userInfo/getTicket", function (res) {
+            if (res.code == 101) {
+                moveItem("userInfo")
+                getToken();
+            }
+        })
+        wx.ready(function () {
+            console.log(111111)
+            wx.getLocation({
+                type: 'wgs84', // 默认为wgs84的gps坐标，如果要返回直接给openLocation用的火星坐标，可传入'gcj02'
+                success: function (res) {
+                    var latitude = res.latitude; // 纬度，浮点数，范围为90 ~ -90
+                    var longitude = res.longitude; // 经度，浮点数，范围为180 ~ -180。
+                    var speed = res.speed; // 速度，以米/每秒计
+                    var accuracy = res.accuracy; // 位置精度
+                    console.log(res)
+                    var location = {
+                        lat: res.latitude,
+                        lng: res.longitude
+                    }
+                    setItem("location", JSON.stringify(location))
+                    getShop(location)
+                }
+            });
+        });
+
+
+    }
+
+    // 获取门店信息
+    function getShop(position) {
+        setItem("location", JSON.stringify({
+            lat: position.lat,
+            lng: position.lng
+        }))
+        var shopList = "";
+        ajaxPost({
+            userLng: position.lng,
+            userLat: position.lat,
+            page: 1,
+            limit: 99
+        }, "api/storeAddress/list", function (res) {
+            if (res.code == 101) {
+                moveItem("userInfo")
+                getToken();
+            }
+            if (res.code == 1) {
+                res.page.list.forEach(item => {
+                    shopList +=
+                        '<div class="aui-list-item-inner pd-tb-10">' +
+                        '<label class="aui-list-item-label wd-95 flex flexBetween">' +
+                        '<div class="storeName">' + item.storeName + '</div>' +
+                        '<input class="aui-radio" type="radio" name="shop" checked value="' + item.storeAddrId +
+                        '">' +
+                        '</label>' +
+                        '</div>'
+                });
+                $(".shopList").html(shopList)
+            } else {
+                layer_msg(res.msg)
+            }
+        });
+    }
+    /**
+     * 获取定位信息——>结束 
+     **/
+
+    var watchPrice, watchName, couponPrice, couponId, storeAddressId, totalPrice, fitCardId, param, cardMsg, wristPrice =
+        0;
+
+    // 初始化信息
+    init()
+
+    function init() {
+        param = {
+            fitCardId: fitCardId,
+            paySum: totalPrice,
+            wrist: 1,
+            storeAddressId: storeAddressId,
+            sendType: 1
+        }
+        if (getParam().addressId) {
+            $(".getWay").html(
+                '<label><input class="aui-radio" type="radio" name="getWay" value="0" onchange="changeGetWay()"> 自取</label>' +
+                '<label><input class="aui-radio" type="radio" name="getWay" value="1" onchange="changeGetWay()" checked>配送</label>'
+            );
+            $(".addressLi").removeClass("hideImportant");
+            $(".address").val(getItem("address"));
+            param.userAddressId = getParam().addressId;
+            param.sendType = 0
+        }
+        ajaxPost({}, "api/dataMap/braceletPrice", function (res) {
+            if (res.code == 101) {
+                moveItem("userInfo")
+                getToken();
+            }
+            if (res.code == 1) {
+                // 填充手环信息
+                watchPrice = res.data.price;
+                watchName = res.data.dataName;
+                $(".watchPrice").text(watchPrice)
+                $(".watchName").text(watchName)
+                // 填充其余信息
+                cardMsg = JSON.parse(getItem("cardMsg"));
+                $(".cardImgUrl").attr("src", cardMsg.img);
+                $(".price").text("￥" + cardMsg.price);
+                $(".num").text("x" + cardMsg.num)
+                $(".name").text(cardMsg.name)
+                $(".countPrice").text("￥" + (cardMsg.price * cardMsg.num).toFixed(2))
+                $(".total").text((cardMsg.totalPrice).toFixed(2))
+                fitCardId = cardMsg.id
+                param.paySum = cardMsg.totalPrice
+                param.fitCardId = fitCardId
+            } else {
+                layer_msg(res.msg)
+            }
+        });
+    }
+    // 获取优惠券信息
+    getCoupon();
+
+    function getCoupon() {
+        ajaxPost({
+            couponStatus: 0
+        }, "api/coupon/couponList", function (res) {
+            if (res.code == 101) getToken();
+            if (res.code == 1) {
+                res.data.forEach(item => {
+                    // if(item.)
+                    $(".couponList").append(
+                        '<div class="aui-list-item-inner pd-tb-10">' +
+                        '<label class="aui-list-item-label wd-95 flex flexBetween">' +
+                        '<div><span class="couponPrice">' + item.couponPrice + '</span>元优惠券</div>' +
+                        '<input class="aui-radio" type="radio" name="coupon" value="' + item.couponId +
+                        '">' +
+                        '</label>' +
+                        '</div>'
+                    )
+                });
+            } else {
+                layer_msg(res.msg)
+            }
+        });
+    }
+    // 确认下单
+    function orderConfirm() {
+        var payType = $("input[name=payWay]:checked").val();
+        if (isNull(storeAddressId)) return layer_msg("请选择门店");
+        if (!first) {
+            delete param.wrist
+            delete param.sendType
+            delete param.storeAddressId
+        }
+        if (param.paySum == 0) payType = 1;
+        ajaxPost(param, "api/cardOrder/createOrder", function (data) {
+            if (data.code == 101) getToken();
+            if (payType == 2) {
+                ajaxPost({
+                    money: data.data.paySum,
+                    orderNo: data.data.orderNo,
+                    openId: JSON.parse(getItem("userInfo")).openId
+                }, "api/pay/orderPayH5", function (res) {
+                    if (res.code == 1) {
+                        jsApiParameters = res.data;
+                        callpay();
+                    } else {
+                        layer_msg(res.msg)
+                    }
+                });
+            } else {
+                ajaxPost({
+                    money: data.data.paySum,
+                    orderNo: data.data.orderNo,
+                    payType: 1
+                }, "api/pay/rechargePay", function (res) {
+                    if (res.code == 101) getToken();
+                    layer_msg(res.msg)
+                    if (res.code == 1) {
+                        WeixinJSBridge.call('closeWindow')
+                    }
+                });
+            }
+        });
+    }
+    // 确认选择优惠券
+    function couponConfirm() {
+        couponId = $("input[name=coupon]:checked").val();
+        couponPrice = $("input[name=coupon]:checked").siblings().find(".couponPrice").text();
+        if (couponId != 0) {
+            param.couponId = couponId;
+            $(".couponMsg").removeClass("hideImportant")
+            $(".cutCouponPrice").text("-￥" + Number(couponPrice).toFixed(2))
+        } else {
+            $(".couponMsg").addClass("hideImportant")
+            $(".cutCouponPrice").text()
+        }
+        var tPrice = cardMsg.totalPrice + wristPrice - Number(couponPrice);
+        tPrice = tPrice < 0 ? 0 : tPrice;
+        $(".total").text(tPrice.toFixed(2))
+        param.paySum = tPrice;
+        $(".couponMaskBox").slideToggle();
+        $(".payMaskBox").slideToggle();
+    }
+    // 确认选择门店
+    function shopConfirm() {
+        storeAddressId = $("input[name=shop]:checked").val();
+        param.storeAddressId = storeAddressId;
+        $(".shop").val($("input[name=shop]:checked").siblings(".storeName").text())
+        $(".mask").hide();
+        $(".shopMaskBox").slideToggle();
+    }
+    // 选择手环类型
+    function changeWatch() {
+        var getWatch = $("input[name='product']:checked").val();
+        switch (getWatch) {
+            case "0":
+                $(".product").addClass("hideImportant")
+                param.wrist = 1;
+                param.wristPrice = 0;
+                $(".total").text((cardMsg.totalPrice).toFixed(2))
+                param.paySum = cardMsg.totalPrice
+                break;
+            case "1":
+                $(".product").removeClass("hideImportant")
+                param.wrist = 2;
+                param.wristPrice = watchPrice;
+                wristPrice = watchPrice
+                $(".total").text((Number(cardMsg.totalPrice) + Number(watchPrice)).toFixed(2))
+                param.paySum = cardMsg.totalPrice + watchPrice
+                break;
+        }
+    }
+</script>
+
+</html>

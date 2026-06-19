@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.DynamicMapper">
+    <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.Dynamic">
+        <constructor>
+            <idArg column="dynamicId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="publishId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="content" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="publishImgUrl" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="topicId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="socialGroupId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="readCount" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="dzCount" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="plCount" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="publishDate" jdbcType="TIMESTAMP" javaType="java.util.Date"/>
+        </constructor>
+    </resultMap>
+    <sql id="Base_Column_List">
+    dynamicId, publishId, content, publishImgUrl, topicId, socialGroupId, readCount, dzCount, plCount,
+    publishDate
+  </sql>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        select
+        <include refid="Base_Column_List"/>
+        from dynamic
+        where dynamicId = #{dynamicId,jdbcType=BIGINT}
+    </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from dynamic
+    where dynamicId = #{dynamicId,jdbcType=BIGINT}
+  </delete>
+    <!--动态删除-->
+  <delete id="deleteByPubIdDyId" parameterType="java.util.Map">
+    delete from dynamic
+    where dynamicId = #{dynamicId,jdbcType=BIGINT}
+    and publishId = #{publishId,jdbcType=BIGINT}
+  </delete>
+    <insert id="insert" parameterType="com.dlc.modules.api.entity.Dynamic">
+    insert into dynamic (dynamicId, publishId, content, 
+      publishImgUrl, topicId, socialGroupId, 
+      readCount, publishDate)
+    values (#{dynamicId,jdbcType=BIGINT}, #{publishId,jdbcType=BIGINT}, #{content,jdbcType=VARCHAR}, 
+      #{publishImgUrl,jdbcType=VARCHAR}, #{topicId,jdbcType=BIGINT}, #{socialGroupId,jdbcType=BIGINT}, 
+      #{readCount,jdbcType=INTEGER}, #{publishDate,jdbcType=TIMESTAMP})
+
+  </insert>
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.Dynamic">
+        insert into dynamic
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="dynamicId != null">
+                dynamicId,
+            </if>
+            <if test="publishId != null">
+                publishId,
+            </if>
+            <if test="content != null">
+                content,
+            </if>
+            <if test="publishImgUrl != null">
+                publishImgUrl,
+            </if>
+            <if test="topicId != null">
+                topicId,
+            </if>
+            <if test="socialGroupId != null">
+                socialGroupId,
+            </if>
+            <if test="readCount != null">
+                readCount,
+            </if>
+            <if test="publishDate != null">
+                publishDate,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="dynamicId != null">
+                #{dynamicId,jdbcType=BIGINT},
+            </if>
+            <if test="publishId != null">
+                #{publishId,jdbcType=BIGINT},
+            </if>
+            <if test="content != null">
+                #{content,jdbcType=VARCHAR},
+            </if>
+            <if test="publishImgUrl != null">
+                #{publishImgUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="topicId != null">
+                #{topicId,jdbcType=BIGINT},
+            </if>
+            <if test="socialGroupId != null">
+                #{socialGroupId,jdbcType=BIGINT},
+            </if>
+            <if test="readCount != null">
+                #{readCount,jdbcType=INTEGER},
+            </if>
+            <if test="publishDate != null">
+                #{publishDate,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.Dynamic">
+        update dynamic
+        <set>
+            <if test="publishId != null">
+                publishId = #{publishId,jdbcType=BIGINT},
+            </if>
+            <if test="content != null">
+                content = #{content,jdbcType=VARCHAR},
+            </if>
+            <if test="publishImgUrl != null">
+                publishImgUrl = #{publishImgUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="topicId != null">
+                topicId = #{topicId,jdbcType=BIGINT},
+            </if>
+            <if test="socialGroupId != null">
+                socialGroupId = #{socialGroupId,jdbcType=BIGINT},
+            </if>
+            <if test="readCount != null">
+                readCount = #{readCount,jdbcType=INTEGER},
+            </if>
+            <if test="dzCount != null">
+                dzCount = #{dzCount,jdbcType=INTEGER},
+            </if>
+            <if test="plCount != null">
+                plCount = #{plCount,jdbcType=INTEGER},
+            </if>
+            <if test="publishDate != null">
+                publishDate = #{publishDate,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where dynamicId = #{dynamicId,jdbcType=BIGINT}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.Dynamic">
+    update dynamic
+    set publishId = #{publishId,jdbcType=BIGINT},
+      content = #{content,jdbcType=VARCHAR},
+      publishImgUrl = #{publishImgUrl,jdbcType=VARCHAR},
+      topicId = #{topicId,jdbcType=BIGINT},
+      socialGroupId = #{socialGroupId,jdbcType=BIGINT},
+      readCount = #{readCount,jdbcType=INTEGER},
+      publishDate = #{publishDate,jdbcType=TIMESTAMP}
+    where dynamicId = #{dynamicId,jdbcType=BIGINT}
+  </update>
+    <!--查询会员动态列表（已关注）where dy.publishDate > DATE_SUB(CURDATE(), INTERVAL 1 WEEK)-->
+  <select id="queryDylist" resultType="java.util.Map" parameterType="java.util.Map">
+    select
+        dy.dynamicId,
+        dy.publishId,
+        ui.nickname,
+        ui.headImgUrl,
+        dy.content,
+        dy.publishImgUrl,
+        dy.socialGroupId,
+        case when dy.socialGroupId is null then 0 when dy.socialGroupId=0 then 0 else 1 end as moreFlag,
+        sg.groupName,
+        dy.readCount,
+        dy.dzCount,
+        dy.plCount,
+        (select count(1) from dz_record dr where dr.dynamicId=dy.dynamicId and dr.dzUserId=#{userId}) as dzStatus,
+        (select ua.attentionStatus from user_attention ua
+          where ua.attentedId = dy.publishId and ua.observerId = #{userId}) as attentionStatus,
+        date_format(dy.publishDate, '%Y-%m-%d %H:%i') as publishDate
+        from dynamic dy
+        left join user_info ui on ui.userId = dy.publishId
+        left join store_group sg on sg.storeGroupId = dy.socialGroupId
+        WHERE dy.dynamicId NOT IN (SELECT ds.dynamicId FROM dynamic_shield ds WHERE ds.userId=#{userId})
+      order by dy.publishDate desc LIMIT #{offset}, #{limit}
+  </select>
+    <select id="queryDylistCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from dynamic dy
+        left join user_info ui on ui.userId = dy.publishId
+        left join store_group sg on sg.storeGroupId = dy.socialGroupId
+        WHERE dy.dynamicId NOT IN (SELECT ds.dynamicId FROM dynamic_shield ds WHERE ds.userId=#{userId})
+    </select>
+    <!--查动态详情-->
+  <select id="queryDynamicDetail" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        dy.publishId,
+        ui.nickname,
+        ui.headImgUrl,
+        ui.sex,
+        dy.content,
+        dy.publishImgUrl,
+        dy.socialGroupId,
+        sg.groupName,
+        (select ua.attentionStatus from user_attention ua
+          where ua.attentedId = dy.publishId and ua.observerId = #{userId}) as attentionStatus,
+        dy.readCount,
+        dy.dzCount,
+        dy.plCount,
+        (select count(1) from dz_record dr where dr.dynamicId=dy.dynamicId and dr.dzUserId=#{userId}) as dzStatus,
+        date_format(dy.publishDate, '%Y-%m-%d %H:%i') as publishDate
+        from dynamic dy
+        left join user_info ui on ui.userId = dy.publishId
+        left join store_group sg on sg.storeGroupId = dy.socialGroupId
+        where dy.dynamicId = #{dynamicId,jdbcType=BIGINT}
+  </select>
+    <insert id="save" parameterType="com.dlc.modules.api.entity.Dynamic" useGeneratedKeys="true" keyProperty="dynamicId">
+        insert into dynamic
+        (
+        `publishId`,
+        `content`,
+        `publishImgUrl`,
+        `socialGroupId`
+        )
+        values
+        (
+        #{publishId},
+        #{content},
+        #{publishImgUrl},
+        #{socialGroupId}
+        )
+    </insert>
+    <!--评论数+1-->
+    <update id="updatePlCount" parameterType="java.lang.Long">
+        update dynamic
+        set plCount = plCount+1,
+        readCount = readCount + 1
+        where dynamicId = #{dynamicId,jdbcType=BIGINT}
+    </update>
+    <!--点赞数+1-->
+    <update id="updateDzCount" parameterType="java.util.Map">
+        update dynamic
+        set dzCount = dzCount + #{dzCount},
+        readCount = readCount + 1
+        where dynamicId = #{dynamicId,jdbcType=BIGINT}
+    </update>
+    <!--阅读数+1-->
+    <update id="updateReCount" parameterType="java.lang.Long">
+        update dynamic
+        set readCount = readCount + 1
+        where dynamicId = #{dynamicId,jdbcType=BIGINT}
+    </update>
+    <!--批量阅读数+1-->
+    <update id="batchUpdateReCount">
+        update dynamic
+        set readCount = readCount + 1
+        where dynamicId in
+        <foreach item="dynamicId" collection="list" open="(" separator="," close=")">
+             #{dynamicId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <!--查询会员动态列表根据userID-->
+    <select id="queryMyDylist" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        dy.dynamicId,
+        dy.publishId,
+        ui.nickname,
+        ui.headImgUrl,
+        dy.content,
+        dy.publishImgUrl,
+        dy.socialGroupId,
+        case when dy.socialGroupId is null then 0 when dy.socialGroupId=0 then 0 else 1 end as moreFlag,
+        sg.groupName,
+        dy.readCount,
+        dy.dzCount,
+        dy.plCount,
+        (select count(1) from dz_record dr where dr.dynamicId=dy.dynamicId and dr.dzUserId=#{myId}) as dzStatus,
+        date_format(dy.publishDate, '%Y-%m-%d %H:%i') as publishDate
+        from dynamic dy
+        left join user_info ui on ui.userId = dy.publishId
+        left join store_group sg on sg.storeGroupId = dy.socialGroupId
+        where dy.publishId = #{userId}
+        order by dy.publishDate desc LIMIT #{offset}, #{limit}
+    </select>
+    <!--查询会员动态列表根据userID-->
+    <select id="queryMyDylistCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        count(*)
+        from dynamic dy
+        left join user_info ui on ui.userId = dy.publishId
+        left join store_group sg on sg.storeGroupId = dy.socialGroupId
+        where dy.publishId = #{userId}
+    </select>
+    <!--点赞用户列表查询-->
+    <select id="queryDyUserlist" resultType="java.util.Map" parameterType="java.lang.Long">
+        SELECT
+            u.userId, u.nickname, u.headImgUrl
+          FROM dz_record d INNER JOIN user_info u ON u.userId=d.dzUserId
+          WHERE d.dynamicId=#{dynamicId} ORDER BY d.dzRecordId desc limit 0, 9
+    </select>
+    <!--查询点赞成员列表-->
+    <select id="queryDzMembersList" resultType="java.util.Map" parameterType="java.util.Map">
+        select
+        ui.userId,
+        ui.nickname,
+        ui.headImgUrl,
+        ui.sex,
+        case when ua.attentionStatus = 1 then 1 else 0 END as attentionStatus
+        from dz_record dz
+        inner join user_info ui on ui.userId = dz.dzUserId
+        left join user_attention ua on ua.attentedId = dz.dzUserId and ua.observerId = #{userId}
+        where dz.dynamicId=#{dynamicId} ORDER BY dz.dzRecordId desc limit #{offset}, #{limit}
+    </select>
+    <!--查询点赞成员列表-->
+    <select id="queryDzMembersTotal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select
+        COUNT(*)
+        from dz_record dz
+        inner join user_info ui on ui.userId = dz.dzUserId
+        where dz.dynamicId=#{dynamicId}
+    </select>
+</mapper>

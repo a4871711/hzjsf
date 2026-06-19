@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.SysSetDao">
+
+
+    <select id="queryCreditsetList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+    SELECT * FROM `data_map`
+        WHERE idxLabeL=5
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+</select>
+    <select id="queryCreditsetObject" resultType="com.dlc.modules.sys.entity.SysDataMapEntity" parameterType="long">
+        SELECT
+        *
+        FROM data_map
+        WHERE dataMapId=#{dataMapId}
+    </select>
+    <select id="queryCreditsetTotal" resultType="int">
+      SELECT COUNT(1) FROM `data_map`
+      WHERE idxLabeL=5
+    </select>
+
+    <insert id="saveCreditset" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        insert into data_map
+        (
+        `idxLabel`,
+        `nextLabel`,
+        `dataName`,
+        `price`,
+        `description`
+        )
+        values
+        (
+        #{idxLabel},
+        #{nextLabel},
+        #{dataName},
+        #{price},
+        #{description}
+        )
+    </insert>
+    <update id="updateCreditset" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+         UPDATE data_map SET
+		idxLabel=#{idxLabel},
+		nextLabel=#{nextLabel},
+		dataName=#{dataName},
+		price=#{price},
+		val=#{val},
+		description=#{description}
+		WHERE  dataMapId = #{dataMapId}
+    </update>
+
+    <select id="queryBraceletsetList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        SELECT * FROM `data_map`
+        WHERE idxLabeL=3
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryBraceletsetObject" resultType="com.dlc.modules.sys.entity.SysDataMapEntity" parameterType="long">
+        SELECT
+        *
+        FROM data_map
+        WHERE dataMapId=#{dataMapId}
+    </select>
+    <select id="queryBraceletsetTotal" resultType="int">
+        SELECT COUNT(1) FROM `data_map`
+        WHERE idxLabeL=3
+    </select>
+    <update id="updateBraceletset" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        UPDATE data_map SET
+        idxLabel=#{idxLabel},
+        nextLabel=#{nextLabel},
+        dataName=#{dataName},
+        price=#{price},
+        description=#{description}
+        WHERE  dataMapId = #{dataMapId}
+    </update>
+    <select id="queryMembersetList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        SELECT * FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=1
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询会员规则列表-->
+    <select id="queryMembersetRuleList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        SELECT * FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=2
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询规则总数-->
+    <select id="queryMembersetRuleTotal" resultType="int">
+        SELECT COUNT(1) FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=2
+    </select>
+    <select id="queryMembersetObject" resultType="com.dlc.modules.sys.entity.SysDataMapEntity" parameterType="long">
+        SELECT
+        *
+        FROM data_map
+        WHERE dataMapId=#{dataMapId}
+    </select>
+    <select id="queryMembersetTotal" resultType="int">
+        SELECT COUNT(1) FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=1
+    </select>
+    <update id="updateMemberset" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        UPDATE data_map SET
+        dataName=#{dataName},
+        price=#{price},
+        val=#{val},
+        description=#{description}
+        WHERE  dataMapId = #{dataMapId}
+    </update>
+    <update id="updateMemberRule" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        UPDATE data_map SET
+        dataName=#{dataName},
+        price=#{price},
+        val=#{val},
+        description=#{description}
+        WHERE  dataMapId = #{dataMapId}
+    </update>
+    <select id="queryFeileiList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        SELECT * FROM data_map
+        WHERE idxLabeL=6
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryMoney" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        SELECT * FROM data_map
+        WHERE idxLabeL=7
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询等级价格关系列表-->
+    <select id="queryClassGradeList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        SELECT * FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=3
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询等级价格关系列表总数-->
+    <select id="queryClassGradeListTotal" resultType="int">
+        SELECT COUNT(1) FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=3
+    </select>
+    <!--更新等级关系-->
+    <update id="updateClassGradeUpdate" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        UPDATE data_map SET
+        dataName=#{dataName},
+        price=#{price},
+        val=#{val},
+        nextVal=#{nextVal},
+        description=#{description}
+        WHERE  dataMapId = #{dataMapId}
+    </update>
+    <!--新增关系等级记录-->
+    <insert id="saveClassGrade" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        insert into data_map
+        (
+        `idxLabel`,
+        `nextLabel`,
+        `dataName`,
+        `price`,
+        `val`,
+        `nextVal`,
+        `description`
+        )
+        values
+        (
+        #{idxLabel},
+        #{nextLabel},
+        #{dataName},
+        #{price},
+        #{val},
+        #{nextVal},
+        #{description}
+        )
+    </insert>
+    <!--删除-->
+    <delete id="deleteGrade" parameterType="java.lang.Long">
+        delete from data_map where dataMapId=#{dataMapId}
+    </delete>
+    <!--查询课程分类-->
+    <select id="queryClassClassifyList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        SELECT * FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=4
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryClassClassifyListTotal" resultType="int">
+        SELECT COUNT(1) FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=4
+    </select>
+    <!--查询列表不分页-->
+    <select id="queryClassClassifyL" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        SELECT * FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=4
+    </select>
+    <!--查分类最大编号-->
+    <select id="queryMaxPrice" resultType="int">
+        SELECT price FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=4 order by price desc limit 1
+    </select>
+    <!--保存课程分类-->
+    <insert id="saveClassClassify" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        insert into data_map
+        (
+        `idxLabel`,
+        `nextLabel`,
+        `dataName`,
+        `price`,
+        `description`
+        )
+        values
+        (
+        #{idxLabel},
+        #{nextLabel},
+        #{dataName},
+        #{price},
+        #{description}
+        )
+    </insert>
+    <!--更新课程分类-->
+    <update id="updateClassClassify" parameterType="com.dlc.modules.sys.entity.SysDataMapEntity">
+        UPDATE data_map SET
+        dataName=#{dataName},
+        description=#{description}
+        WHERE  dataMapId = #{dataMapId}
+    </update>
+    <!--查询教练列表-->
+    <select id="getCoachList" resultType="com.dlc.modules.sys.entity.SysDataMapEntity">
+         SELECT * FROM `data_map`
+        WHERE idxLabeL=2 and nextLabel=3
+    </select>
+    <!--查询等级是否存在-->
+    <select id="querySameGrade" resultType="java.lang.Integer" parameterType="java.math.BigDecimal">
+        SELECT COUNT(*) FROM data_map WHERE idxLabeL=2 and nextLabel=3 and price=#{price}
+    </select>
+    <!--查询最大举报类型并+1-->
+    <select id="queryMaxLableNext" resultType="java.lang.Long">
+        select ifnull(nextLabel+1,1) from data_map where idxLabeL=6 order by nextLabel desc limit 1
+    </select>
+    <delete id="deleteBatch">
+        DELETE FROM data_map
+        WHERE dataMapId
+        IN
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

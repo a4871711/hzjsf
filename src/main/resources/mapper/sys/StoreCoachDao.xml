@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysStoreCoachDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.sys.entity.SysStoreCoachEntity" id="storeCoachMap">
+        <result property="scId" column="scId"/>
+        <result property="storeId" column="storeId"/>
+        <result property="grade" column="grade"/>
+        <result property="headImgUrl" column="headImgUrl"/>
+        <result property="coachName" column="coachName"/>
+        <result property="phone" column="phone"/>
+        <result property="sex" column="sex"/>
+        <result property="address" column="address"/>
+        <result property="identity" column="identity"/>
+        <result property="employTime" column="employTime"/>
+        <result property="diplomaImgUrl" column="diplomaImgUrl"/>
+        <result property="identBackImgUrl" column="identBackImgUrl"/>
+        <result property="identImgUrl" column="identImgUrl"/>
+        <result property="salary" column="salary"/>
+        <result property="level" column="level"/>
+        <result property="status" column="status"/>
+        <result property="introduce" column="introduce"/>
+        <result property="createdDate" column="createdDate"/>
+    </resultMap>
+    <sql id="base_col">
+            storeId,   grade, headImgUrl, coachName,  phone, sex,address, identity,
+            employTime, diplomaImgUrl, identBackImgUrl, identImgUrl,  salary,  level, status,introduce, createdDate
+                            </sql>
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.SysStoreCoachEntity" parameterType="map">
+        select (select group_concat(storeName) from store where find_in_set(storeId, sc.storeId)) as storeName,sc.* from store_coach sc        
+        <where>
+            <if test="coachName != null and coachName != ''">
+                and sc.coachName LIKE concat('%',#{coachName},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                and sc.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                and sc.storeId REGEXP (select concat('(,|^)', group_concat(storeId SEPARATOR '(,|$)|^'), '(,|$)') from store where storeName like concat('%',#{storeName},'%'))
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND find_in_set(#{storeId}, sc.storeId)
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND HaveCommonElements(sc.storeId, #{storeIds})
+            </if>
+            <if test="status != null and status != ''">
+                and sc.status =#{status}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by sc.createdDate desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <select id="queryTotal" resultType="integer" parameterType="map">
+        select count(1) from store_coach sc
+        <where>
+            <if test="coachName != null and coachName != ''">
+                and sc.coachName LIKE concat('%',#{coachName},'%')
+            </if>
+            <if test="phone != null and phone != ''">
+                and sc.phone LIKE concat('%',#{phone},'%')
+            </if>
+            <if test="storeName != null and storeName != ''">
+                and sc.storeId REGEXP (select concat('(,|^)', group_concat(storeId SEPARATOR '(,|$)|^'), '(,|$)') from store where storeName like concat('%',#{storeName},'%'))
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND find_in_set(#{storeId}, sc.storeId)
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND HaveCommonElements(sc.storeId, #{storeIds})
+            </if>
+            <if test="status != null and status != ''">
+                and sc.status =#{status}
+            </if>
+        </where>
+    </select>
+    <select id="queryObject" parameterType="long" resultType="com.dlc.modules.sys.entity.SysStoreCoachEntity">
+        select * from store_coach WHERE scId=#{id}
+    </select>
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.SysStoreCoachEntity">
+        insert into store_coach(
+        <include refid="base_col"/>
+        ) values (
+        #{storeId},
+        #{grade},
+        #{headImgUrl},
+        #{coachName},
+        #{phone},
+        #{sex},
+        #{address},
+        #{identity},
+        #{employTime},
+        #{diplomaImgUrl},
+        #{identBackImgUrl},
+        #{identImgUrl},
+        #{salary},
+        #{level},
+        #{status},
+        #{introduce},
+        #{createdDate} );
+    </insert>
+    <update id="update" parameterType="com.dlc.modules.sys.entity.SysStoreCoachEntity">
+        update store_coach
+        <set>
+			<if test="storeId != null">`storeId` = #{storeId},</if>
+			<if test="grade != null">`grade` = #{grade},</if>
+			<if test="headImgUrl != null">`headImgUrl` = #{headImgUrl},</if>
+			<if test="coachName != null">`coachName` = #{coachName},</if>
+			<if test="phone != null">`phone` = #{phone},</if>
+			<if test="sex != null">`sex` = #{sex},</if>
+			<if test="address != null">`address` = #{address},</if>
+			<if test="identity != null">`identity` = #{identity},</if>
+			<if test="employTime != null">`employTime` = #{employTime},</if>
+			<if test="diplomaImgUrl != null">`diplomaImgUrl` = #{diplomaImgUrl},</if>
+			<if test="identBackImgUrl != null">`identBackImgUrl` = #{identBackImgUrl},</if>
+			<if test="identImgUrl != null">`identImgUrl` = #{identImgUrl},</if>
+			<if test="salary != null">`salary` = #{salary},</if>
+			<if test="level != level">`level` = #{level},</if>
+			<if test="status != null">`status` = #{status},</if>
+			<if test="introduce != null">`introduce` = #{introduce},</if>
+			<if test="createdDate != null">`createdDate` = #{createdDate},</if>
+		</set>
+         where scId=#{scId};
+    </update>
+    <delete id="deleteBatch">
+        DELETE FROM store_coach
+        WHERE scId
+        IN
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+    <delete id="delete">
+		delete from store where storeId = #{value}
+	</delete>
+</mapper>

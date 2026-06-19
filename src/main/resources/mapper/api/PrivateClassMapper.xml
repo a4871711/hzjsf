@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.PrivateClassMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.PrivateClass" >
+    <constructor >
+      <idArg column="privateClassId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="className" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="classType" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="classPrice" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="energy" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="classTime" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="classDetail" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="validityDay" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    privateClassId, className, classType, classPrice, classTime, classDetail, validityDay, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultType="com.dlc.modules.api.entity.PrivateClass" parameterType="java.lang.Long" >
+    select 
+    privateClassId, className, classType, classPrice, classTime, classDetail, validityDay,energy, createdDate
+    from private_class
+    where privateClassId = #{privateClassId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from private_class
+    where privateClassId = #{privateClassId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.PrivateClass" >
+    insert into private_class (privateClassId, className, classType, 
+      classPrice, classDetail, validityDay, 
+      createdDate)
+    values (#{privateClassId,jdbcType=BIGINT}, #{className,jdbcType=VARCHAR}, #{classType,jdbcType=TINYINT}, 
+      #{classPrice,jdbcType=DOUBLE}, #{classDetail,jdbcType=VARCHAR}, #{validityDay,jdbcType=INTEGER},
+      #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.PrivateClass" >
+    insert into private_class
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="privateClassId != null" >
+        privateClassId,
+      </if>
+      <if test="className != null" >
+        className,
+      </if>
+      <if test="classType != null" >
+        classType,
+      </if>
+      <if test="classPrice != null" >
+        classPrice,
+      </if>
+      <if test="classDetail != null" >
+        classDetail,
+      </if>
+      <if test="validityDay != null" >
+        validityDay,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="privateClassId != null" >
+        #{privateClassId,jdbcType=BIGINT},
+      </if>
+      <if test="className != null" >
+        #{className,jdbcType=VARCHAR},
+      </if>
+      <if test="classType != null" >
+        #{classType,jdbcType=TINYINT},
+      </if>
+      <if test="classPrice != null" >
+        #{classPrice,jdbcType=DOUBLE},
+      </if>
+      <if test="classDetail != null" >
+        #{classDetail,jdbcType=VARCHAR},
+      </if>
+      <if test="validityDay != null" >
+        #{validityDay,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.PrivateClass" >
+    update private_class
+    <set >
+      <if test="className != null" >
+        className = #{className,jdbcType=VARCHAR},
+      </if>
+      <if test="classType != null" >
+        classType = #{classType,jdbcType=TINYINT},
+      </if>
+      <if test="classPrice != null" >
+        classPrice = #{classPrice,jdbcType=DOUBLE},
+      </if>
+      <if test="classDetail != null" >
+        classDetail = #{classDetail,jdbcType=VARCHAR},
+      </if>
+      <if test="validityDay != null" >
+        validityDay = #{validityDay,jdbcType=INTEGER},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where privateClassId = #{privateClassId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.PrivateClass" >
+    update private_class
+    set className = #{className,jdbcType=VARCHAR},
+      classType = #{classType,jdbcType=TINYINT},
+      classPrice = #{classPrice,jdbcType=DOUBLE},
+      classDetail = #{classDetail,jdbcType=VARCHAR},
+      validityDay = #{validityDay,jdbcType=INTEGER},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where privateClassId = #{privateClassId,jdbcType=BIGINT}
+  </update>
+  <!--课程-->
+  <select id="courseList" resultType="map" parameterType="java.lang.Long">
+    SELECT pc.privateClassId,ccs.classId,pc.className,pc.firstImgUrl,ccs.classFee
+    FROM private_class pc
+    LEFT JOIN coach_class_ship ccs ON pc.privateClassId = ccs.classId
+    WHERE ccs.coachId = #{coachId}
+  </select>
+  <!--课程详情-->
+  <select id="courseInfo" resultType="map" parameterType="map">
+    SELECT pc.privateClassId,pc.className,pc.firstImgUrl,pc.classTime,pc.classDetail,ccs.lowestClass,concat(pc.classPrice,'') as classFee
+    FROM private_class pc
+    LEFT JOIN coach_class_ship ccs ON pc.privateClassId= ccs.classId
+    WHERE ccs.coachId = #{coachId} AND pc.privateClassId = #{privateClassId}
+  </select>
+  <!--查询是否是体验课-->
+  <select id="queryIsOrTyclass" resultType="java.lang.Integer" parameterType="java.lang.Long">
+      select count(*)
+        from private_class pc
+        inner join data_map dm on dm.idxLabel=2 and dm.nextLabel=4 and dm.price=pc.classType
+        where pc.privateClassId=#{privateClassId}
+        and dm.dataName like concat('%','体验课','%')
+  </select>
+</mapper>

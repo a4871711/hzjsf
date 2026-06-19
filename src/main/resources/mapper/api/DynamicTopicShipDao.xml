@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.DynamicTopicShipDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.api.entity.DynamicTopicShipEntity" id="dynamicTopicShipMap">
+        <result property="dtsId" column="dtsId" jdbcType="BIGINT"/>
+        <result property="dynamicId" column="dynamicId" jdbcType="BIGINT"/>
+        <result property="topicId" column="topicId" jdbcType="BIGINT"/>
+        <result property="topicName" column="topicName" jdbcType="VARCHAR"/>
+        <result property="createdDate" column="createdDate" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.api.entity.DynamicTopicShipEntity">
+		select * from dynamic_topic_ship where dtsId = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.api.entity.DynamicTopicShipEntity">
+		select * from dynamic_topic_ship
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by dtsId desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from dynamic_topic_ship 
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.DynamicTopicShipEntity" useGeneratedKeys="true" keyProperty="dtsId">
+		insert into dynamic_topic_ship
+		(
+			`dynamicId`, 
+			`topicId`, 
+			`topicName`, 
+			`createdDate`
+		)
+		values
+		(
+			#{dynamicId}, 
+			#{topicId}, 
+			#{topicName}, 
+			#{createdDate}
+		)
+	</insert>
+    <insert id="saveByMap" parameterType="java.util.Map" useGeneratedKeys="true" keyProperty="dtsId">
+        insert into dynamic_topic_ship
+        (
+        `dynamicId`,
+        `topicId`,
+        `topicName`,
+        `createdDate`
+        )
+        values
+        (
+        #{dynamicId},
+        #{topicId},
+        #{topicName},
+        #{createdDate}
+        )
+    </insert>
+	<update id="update" parameterType="com.dlc.modules.api.entity.DynamicTopicShipEntity">
+		update dynamic_topic_ship 
+		<set>
+			<if test="dynamicId != null">`dynamicId` = #{dynamicId}, </if>
+			<if test="topicId != null">`topicId` = #{topicId}, </if>
+			<if test="topicName != null">`topicName` = #{topicName}, </if>
+			<if test="createdDate != null">`createdDate` = #{createdDate}</if>
+		</set>
+		where dtsId = #{dtsId}
+	</update>
+	
+	<delete id="delete">
+		delete from dynamic_topic_ship where dtsId = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from dynamic_topic_ship where dtsId in 
+		<foreach item="dtsId" collection="array" open="(" separator="," close=")">
+			#{dtsId}
+		</foreach>
+	</delete>
+	<!--根据动态id删除-->
+	<delete id="deleteByDynamicId" parameterType="java.lang.Long">
+		delete from dynamic_topic_ship
+		where dynamicId = #{dynamicId, jdbcType=BIGINT}
+	</delete>
+	<!--查询动态下的所有话题列表 queryMyTopicList-->
+	<select id="queryMyTopicList" resultType="java.util.Map" parameterType="java.lang.Long">
+		select
+			topicId,
+			topicName
+		 from dynamic_topic_ship
+		where dynamicId = #{dynamicId, jdbcType=BIGINT}
+	</select>
+    <!--查询话题详情下的关联动态列表-->
+    <select id="queryTopicDynamic" resultType="java.util.Map" >
+        select
+        dy.dynamicId,
+        dy.publishId,
+        ui.nickname,
+        ui.headImgUrl,
+        dy.content,
+        dy.publishImgUrl,
+        dy.socialGroupId,
+        case when dy.socialGroupId is null then 0 when dy.socialGroupId=0 then 0 else 1 end as moreFlag,
+        (select sg.groupName from store_group sg where sg.storeGroupId=dy.socialGroupId) as groupName,
+        dy.readCount,
+        dy.dzCount,
+        dy.plCount,
+        (select count(1) from dz_record dr where dr.dynamicId=dy.dynamicId and dr.dzUserId=#{userId}) as dzStatus,
+        (select ua.attentionStatus from user_attention ua where ua.attentedId = dy.publishId and ua.observerId = #{userId}) as attentionStatus,
+        date_format(dy.publishDate, '%Y-%m-%d %H:%i') as publishDate
+        from dynamic_topic_ship dts
+        inner join dynamic dy on dy.dynamicId = dts.dynamicId
+        inner join user_info ui on ui.userId = dy.publishId
+      where dts.topicId = #{topicId}
+      AND dy.dynamicId NOT IN (SELECT ds.dynamicId FROM dynamic_shield ds WHERE ds.userId=#{userId})
+      order by dts.createdDate desc limit #{offset},#{limit}
+    </select>
+	<!--查询话题详情下的关联动态列表总数-->
+	<select id="queryTopicDynamicCount" resultType="java.lang.Integer" >
+		select
+		count(*)
+		from dynamic_topic_ship dts
+        inner join dynamic dy on dy.dynamicId = dts.dynamicId
+        inner join user_info ui on ui.userId = dy.publishId
+      where dts.topicId = #{topicId}
+      AND dy.dynamicId NOT IN (SELECT ds.dynamicId FROM dynamic_shield ds WHERE ds.userId=#{userId})
+	</select>
+</mapper>

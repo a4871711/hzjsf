@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.AboutUsDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.dlc.modules.api.entity.AboutUsEntity" id="aboutUsMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="app_Img_Url" column="app_img_url" jdbcType="VARCHAR"/>
+        <result property="app_Name" column="app_name" jdbcType="VARCHAR"/>
+        <result property="app_Url" column="app_url" jdbcType="VARCHAR"/>
+        <result property="app_Url_Ios" column="app_url_ios" jdbcType="VARCHAR"/>
+        <result property="service_Tel" column="service_tel" jdbcType="VARCHAR"/>
+        <result property="create_Time" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="version" column="version" jdbcType="VARCHAR"/>
+        <result property="companyNameCHN" column="companyNameCHN" jdbcType="VARCHAR"/>
+        <result property="companyNameENG" column="companyNameENG" jdbcType="VARCHAR"/>
+		<result property="open_about" column="open_about" jdbcType="INTEGER"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.dlc.modules.api.entity.AboutUsEntity">
+		select * from about_us where id = #{value}
+	</select>
+
+	<select id="queryList" resultType="com.dlc.modules.api.entity.AboutUsEntity">
+		select * from about_us
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+			<otherwise>
+                order by id desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+		select count(*) from about_us 
+	</select>
+	 
+	<insert id="save" parameterType="com.dlc.modules.api.entity.AboutUsEntity" useGeneratedKeys="true" keyProperty="id">
+		insert into about_us
+		(
+			`app_img_url`, 
+			`app_name`, 
+			`app_url`, 
+			`app_url_ios`,
+			`service_tel`,
+			`create_time`, 
+			`version`, 
+			`companyNameCHN`, 
+			`companyNameENG`
+		)
+		values
+		(
+			#{app_Img_Url}, 
+			#{app_Name}, 
+			#{app_Url}, 
+			#{app_Url_Ios},
+			#{service_Tel},
+			#{create_Time}, 
+			#{version}, 
+			#{companyNameCHN}, 
+			#{companyNameENG}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.dlc.modules.api.entity.AboutUsEntity">
+		update about_us 
+		<set>
+			<if test="app_Img_Url != null">`app_img_url` = #{app_Img_Url}, </if>
+			<if test="app_Name != null">`app_name` = #{app_Name}, </if>
+			<if test="app_Url != null">`app_url` = #{app_Url}, </if>
+			<if test="service_Tel != null">`service_tel` = #{service_Tel}, </if>
+			<if test="create_Time != null">`create_time` = #{create_Time}, </if>
+			<if test="version != null">`version` = #{version}, </if>
+			<if test="companyNameCHN != null">`companyNameCHN` = #{companyNameCHN}, </if>
+			<if test="companyNameENG != null">`companyNameENG` = #{companyNameENG}</if>
+			<if test="open_door != null">`open_door` = #{open_door}</if>
+		</set>
+		where id = #{id}
+	</update>
+	
+	<delete id="delete">
+		delete from about_us where id = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from about_us where id in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	<select id="selectByPrimaryKey" resultType="java.util.Map" parameterType="java.lang.Integer">
+		select
+		app_img_url as appImgUrl,
+		app_name as appTitle,
+		case when 1 = #{type} then app_url_ios else app_url end as appUrl,
+		version as appContent
+		from about_us limit 1
+	</select>
+	<select id="queryListMap" resultType="java.util.Map">
+		SELECT
+        app_img_url as appImgUrl,
+        app_Name as appName,
+        service_Tel as serviceTel,
+        version,
+        brand_logo,
+        companyNameCHN,
+        companyNameENG,
+		open_door
+		FROM about_us limit 1
+	</select>
+	<!--h5查询APP下载链接-->
+	<select id="queryDownloadUrl" resultType="java.util.Map">
+		SELECT
+        app_url as android_url,
+        app_url_ios as ios_url
+		FROM about_us limit 1
+	</select>
+
+	<!--查询开门相关设置-->
+	<select id="queryOpenDoor" resultType="java.util.Map">
+		SELECT open_door, qrcode_valid
+		FROM about_us limit 1
+	</select>
+
+</mapper>

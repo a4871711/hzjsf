@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.UserPointsMapper">
+    <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.UserPoints">
+        <constructor>
+            <idArg column="userPointsId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+            <arg column="pointsCount" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="sumPoints" jdbcType="INTEGER" javaType="java.lang.Integer"/>
+            <arg column="pointsRule" jdbcType="VARCHAR" javaType="java.lang.String"/>
+            <arg column="updateDate" jdbcType="TIMESTAMP" javaType="java.util.Date"/>
+        </constructor>
+    </resultMap>
+    <sql id="Base_Column_List">
+    userPointsId, userId, pointsCount,sumPoints, pointsRule, updateDate
+  </sql>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        select
+        <include refid="Base_Column_List"/>
+        from user_points
+        where userPointsId = #{userPointsId,jdbcType=BIGINT}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from user_points
+    where userPointsId = #{userPointsId,jdbcType=BIGINT}
+  </delete>
+    <insert id="insert" parameterType="com.dlc.modules.api.entity.UserPoints">
+    insert into user_points (userPointsId, userId, pointsCount, 
+      pointsRule, updateDate)
+    values (#{userPointsId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{pointsCount,jdbcType=INTEGER}, 
+      #{pointsRule,jdbcType=VARCHAR}, #{updateDate,jdbcType=TIMESTAMP})
+  </insert>
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.UserPoints">
+        insert into user_points
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userPointsId != null">
+                userPointsId,
+            </if>
+            <if test="userId != null">
+                userId,
+            </if>
+            <if test="pointsCount != null">
+                pointsCount,
+            </if>
+            <if test="sumPoints != null">
+                sumPoints,
+            </if>
+            <if test="pointsRule != null">
+                pointsRule,
+            </if>
+            <if test="updateDate != null">
+                updateDate,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userPointsId != null">
+                #{userPointsId,jdbcType=BIGINT},
+            </if>
+            <if test="userId != null">
+                #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="pointsCount != null">
+                #{pointsCount,jdbcType=INTEGER},
+            </if>
+            <if test="sumPoints != null">
+                #{sumPoints,jdbcType=INTEGER},
+            </if>
+            <if test="pointsRule != null">
+                #{pointsRule,jdbcType=VARCHAR},
+            </if>
+            <if test="updateDate != null">
+                #{updateDate,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.UserPoints">
+        update user_points
+        <set>
+            <if test="userId != null">
+                userId = #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="pointsCount != null">
+                pointsCount = #{pointsCount,jdbcType=INTEGER},
+            </if>
+            <if test="pointsRule != null">
+                pointsRule = #{pointsRule,jdbcType=VARCHAR},
+            </if>
+            <if test="updateDate != null">
+                updateDate = #{updateDate,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where userPointsId = #{userPointsId,jdbcType=BIGINT}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.UserPoints">
+    update user_points
+    set userId = #{userId,jdbcType=BIGINT},
+      pointsCount = #{pointsCount,jdbcType=INTEGER},
+      pointsRule = #{pointsRule,jdbcType=VARCHAR},
+      updateDate = #{updateDate,jdbcType=TIMESTAMP}
+    where userPointsId = #{userPointsId,jdbcType=BIGINT}
+  </update>
+    <select id="getPointsByUserId" resultType="java.util.Map" parameterType="java.lang.Long">
+    select
+        up.pointsCount,
+        dm.description,
+        dm.nextLabel as rulePoint,
+        dm.price as ruleMoney,
+        (up.pointsCount div dm.nextLabel)*dm.price as pointMoney,
+        (up.pointsCount div dm.nextLabel)*dm.nextLabel as points
+    from user_points up
+    left join data_map dm on dm.idxLabel = 5
+    where up.userId = #{userId,jdbcType=BIGINT}
+  </select>
+    <update id="updatePointCount" parameterType="java.util.Map">
+        update user_points up
+        set up.pointsCount = up.pointsCount - #{pointsCount,jdbcType=INTEGER}
+        where up.userId = #{userId,jdbcType=BIGINT}
+        and  <![CDATA[up.pointsCount >= #{pointsCount,jdbcType=INTEGER}]]>
+    </update>
+    <update id="updatePointCountTask" parameterType="map">
+        UPDATE user_points SET pointsCount=pointsCount+#{jifen} WHERE userId=#{userId}
+    </update>
+    <!--根据能量更新积分-->
+    <update id="updatePointByCal" parameterType="java.util.Map">
+        update user_points set pointsCount=pointsCount+ ifnull(#{point},0),
+          sumPoints=sumPoints+ ifnull(#{point},0),
+          updateDate = now()
+        where userId = #{userId}
+    </update>
+    <!--根据能量查询积分-->
+    <select id="getPointByCal" resultType="java.lang.Integer" parameterType="java.util.Map">
+        select case when dm.nextLabel=0 then 0 when dm.val=0 then 0
+        else TRUNCATE(ifnull(#{energy}, 0) / (dm.val / dm.nextLabel),0) end from data_map dm where dm.idxLabel = 5
+    </select>
+    <!--查系统标识-->
+    <select id="getSysFlags" resultType="java.lang.Long">
+        select ckey from constant where cId=2
+    </select>
+</mapper>

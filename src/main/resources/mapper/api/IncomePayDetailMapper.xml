@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.dlc.modules.api.dao.IncomePayDetailMapper" >
+  <resultMap id="BaseResultMap" type="com.dlc.modules.api.entity.IncomePayDetail" >
+    <constructor >
+      <idArg column="incomePayDetailId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="userId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="storeId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="anotherId" jdbcType="BIGINT" javaType="java.lang.Long" />
+      <arg column="orderNo" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="transactionNumber" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="payType" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="money" jdbcType="DOUBLE" javaType="java.lang.Double" />
+      <arg column="tradeDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="tradeType" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="openId" jdbcType="VARCHAR" javaType="java.lang.String" />
+      <arg column="tradeStatus" jdbcType="INTEGER" javaType="java.lang.Integer" />
+      <arg column="checkedTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="transactionTime" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+      <arg column="createdDate" jdbcType="TIMESTAMP" javaType="java.util.Date" />
+    </constructor>
+  </resultMap>
+  <sql id="Base_Column_List" >
+    incomePayDetailId, userId, orderNo, transactionNumber, payType, money, tradeDate, 
+    tradeType, openId, tradeStatus, checkedTime, transactionTime, createdDate
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select
+    <include refid="Base_Column_List" />
+    from income_pay_detail
+    where incomePayDetailId = #{incomePayDetailId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from income_pay_detail
+    where incomePayDetailId = #{incomePayDetailId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.dlc.modules.api.entity.IncomePayDetail" >
+    insert into income_pay_detail (incomePayDetailId, userId, orderNo, 
+      transactionNumber, payType, money, 
+      tradeDate, tradeType, openId, 
+      tradeStatus, checkedTime, transactionTime, 
+      createdDate)
+    values (#{incomePayDetailId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{orderNo,jdbcType=VARCHAR}, 
+      #{transactionNumber,jdbcType=VARCHAR}, #{payType,jdbcType=INTEGER}, #{money,jdbcType=DOUBLE},
+      #{tradeDate,jdbcType=TIMESTAMP}, #{tradeType,jdbcType=INTEGER}, #{openId,jdbcType=VARCHAR}, 
+      #{tradeStatus,jdbcType=INTEGER}, #{checkedTime,jdbcType=TIMESTAMP}, #{transactionTime,jdbcType=TIMESTAMP}, 
+      #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.IncomePayDetail" >
+    insert into income_pay_detail
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="incomePayDetailId != null" >
+        incomePayDetailId,
+      </if>
+      <if test="userId != null" >
+        userId,
+      </if>
+      <if test="orderNo != null" >
+        orderNo,
+      </if>
+      <if test="transactionNumber != null" >
+        transactionNumber,
+      </if>
+      <if test="payType != null" >
+        payType,
+      </if>
+      <if test="money != null" >
+        money,
+      </if>
+      <if test="tradeDate != null" >
+        tradeDate,
+      </if>
+      <if test="tradeType != null" >
+        tradeType,
+      </if>
+      <if test="openId != null" >
+        openId,
+      </if>
+      <if test="tradeStatus != null" >
+        tradeStatus,
+      </if>
+      <if test="storeId != null" >
+        storeId,
+      </if>
+      <if test="checkedTime != null" >
+        checkedTime,
+      </if>
+      <if test="transactionTime != null" >
+        transactionTime,
+      </if>
+      <if test="createdDate != null" >
+        createdDate,
+      </if>
+      <if test="anotherId != null" >
+        anotherId,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="incomePayDetailId != null" >
+        #{incomePayDetailId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="orderNo != null" >
+        #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="transactionNumber != null" >
+        #{transactionNumber,jdbcType=VARCHAR},
+      </if>
+      <if test="payType != null" >
+        #{payType,jdbcType=INTEGER},
+      </if>
+      <if test="money != null" >
+        #{money,jdbcType=DOUBLE},
+      </if>
+      <if test="tradeDate != null" >
+        #{tradeDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="tradeType != null" >
+        #{tradeType,jdbcType=INTEGER},
+      </if>
+      <if test="openId != null" >
+        #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="tradeStatus != null" >
+        #{tradeStatus,jdbcType=INTEGER},
+      </if>
+      <if test="storeId != null" >
+        #{storeId,jdbcType=BIGINT},
+      </if>
+      <if test="checkedTime != null" >
+        #{checkedTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="transactionTime != null" >
+        #{transactionTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createdDate != null" >
+        #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="anotherId != null" >
+        #{anotherId,jdbcType=BIGINT},
+      </if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.dlc.modules.api.entity.IncomePayDetail" >
+    update income_pay_detail
+    <set >
+      <if test="userId != null" >
+        userId = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="orderNo != null" >
+        orderNo = #{orderNo,jdbcType=VARCHAR},
+      </if>
+      <if test="transactionNumber != null" >
+        transactionNumber = #{transactionNumber,jdbcType=VARCHAR},
+      </if>
+      <if test="payType != null" >
+        payType = #{payType,jdbcType=INTEGER},
+      </if>
+      <if test="money != null" >
+        money = #{money,jdbcType=DOUBLE},
+      </if>
+      <if test="tradeDate != null" >
+        tradeDate = #{tradeDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="tradeType != null" >
+        tradeType = #{tradeType,jdbcType=INTEGER},
+      </if>
+      <if test="openId != null" >
+        openId = #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="tradeStatus != null" >
+        tradeStatus = #{tradeStatus,jdbcType=INTEGER},
+      </if>
+      <if test="checkedTime != null" >
+        checkedTime = #{checkedTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="transactionTime != null" >
+        transactionTime = #{transactionTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createdDate != null" >
+        createdDate = #{createdDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where incomePayDetailId = #{incomePayDetailId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.dlc.modules.api.entity.IncomePayDetail" >
+    update income_pay_detail
+    set userId = #{userId,jdbcType=BIGINT},
+      orderNo = #{orderNo,jdbcType=VARCHAR},
+      transactionNumber = #{transactionNumber,jdbcType=VARCHAR},
+      payType = #{payType,jdbcType=INTEGER},
+      money = #{money,jdbcType=DOUBLE},
+      tradeDate = #{tradeDate,jdbcType=TIMESTAMP},
+      tradeType = #{tradeType,jdbcType=INTEGER},
+      openId = #{openId,jdbcType=VARCHAR},
+      tradeStatus = #{tradeStatus,jdbcType=INTEGER},
+      checkedTime = #{checkedTime,jdbcType=TIMESTAMP},
+      transactionTime = #{transactionTime,jdbcType=TIMESTAMP},
+      createdDate = #{createdDate,jdbcType=TIMESTAMP}
+    where incomePayDetailId = #{incomePayDetailId,jdbcType=BIGINT}
+  </update>
+
+  <!--LXK:增加收支明细-->
+  <insert id="AddInPayDetail" parameterType="map">
+    insert into income_pay_detail (incomePayDetailId, userId, orderNo,
+      transactionNumber, payType, money,
+      tradeDate, tradeType, openId,
+      tradeStatus, checkedTime, transactionTime,
+      createdDate)
+    values (#{incomePayDetailId,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{orderNo,jdbcType=VARCHAR},
+      #{transactionNumber,jdbcType=VARCHAR}, #{payType,jdbcType=INTEGER}, #{money,jdbcType=DOUBLE},
+      #{tradeDate,jdbcType=TIMESTAMP}, #{tradeType,jdbcType=INTEGER}, #{openId,jdbcType=VARCHAR},
+      #{tradeStatus,jdbcType=INTEGER}, #{checkedTime,jdbcType=TIMESTAMP}, #{transactionTime,jdbcType=TIMESTAMP},
+      #{createdDate,jdbcType=TIMESTAMP})
+  </insert>
+  <!--查询我的交易明细-->
+  <select id="queryTradeDetailByUserId" resultType="java.util.Map" parameterType="java.util.Map">
+    select
+      payType,
+      (select constant from constant where cId =1 and ckey = payType) as typeName,
+      case when payType = 6 then '+' when payType = 8 then '+' when payType = 9 then '+' when payType = 11 then '+' else '-' end as moneyType,
+      concat(money,'') as money,
+      date_format(tradeDate, '%Y-%m-%d %H:%i') as tradeDate,
+      tradeType
+    from income_pay_detail
+    where userId = #{userId,jdbcType=BIGINT}
+    order by tradeDate desc LIMIT #{offset}, #{limit}
+  </select>
+  <!--查询我的交易明细总数-->
+  <select id="queryTradeDetailCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+    select
+      count(*)
+    from income_pay_detail
+    where userId = #{userId,jdbcType=BIGINT}
+  </select>
+  <!--后台提现审核时同时更新明细表的状态-->
+  <update id="updateTradeStatus" parameterType="com.dlc.modules.api.entity.IncomePayDetail" >
+      update income_pay_detail
+      set
+      tradeStatus = #{tradeStatus,jdbcType=INTEGER},
+      checkedTime = #{checkedTime,jdbcType=TIMESTAMP}
+      where orderNo = #{orderNo,jdbcType=VARCHAR}
+ </update>
+</mapper>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>团体课管理</title>
+	<#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+            <div class="form-group col-lg-2">
+                <input type="text" class="form-control" v-model="q.teamClassId" @keyup.enter="query" placeholder="课程编号">
+            </div>
+            <div class="form-group col-lg-2">
+                <input type="text" class="form-control" v-model="q.teamClassName" @keyup.enter="query" placeholder="课程名称">
+            </div>
+
+            <div class="form-group col-lg-2">
+                <select class="form-control" v-model="q.classStatus" >
+                    <option value="-1" style="color: #afafaf">请选择订单状态</option>
+                    <option value="0" >未开课</option>
+                    <option value="1" >已完成</option>
+                </select>
+
+            </div>
+            <a class="btn btn-default" @click="query"><i class="fa fa-search"></i>&nbsp;查询</a>
+
+            <!--<span v-if="q.classStatus == 0">
+                <#if shiro.hasPermission("sys:storeTeamClass:updateStart")>
+                      <a class="btn btn-primary" @click="startClass"><i class="fa fa-check"></i>&nbsp;结束</a>
+                </#if>
+            </span>-->
+
+
+            <span v-if="q.classStatus == 0">
+                <#if shiro.hasPermission("sys:storeTeamClass:updateEnd")>
+                    <a class="btn btn-primary" @click="endClass"><i class="fa fa-hourglass-end"></i>&nbsp;结束</a>
+                </#if>
+            </span>
+            <#if shiro.hasPermission("sys:storeTeamClass:info")>
+                <a class="btn btn-primary" @click="lookStuDetail"><i class="fa fa-users"></i>&nbsp;上课学员</a>
+            </#if>
+		</div>
+
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+
+    <div id="signClass"  style="width: 700px;">
+        <br/>
+        <div class="form-group col-lg-4">
+            <input type="text" class="form-control" v-model="qq.phone" @keyup.enter="queryM" placeholder="用户手机号">
+        </div>
+        <a class="btn btn-primary" @click="queryM"><i class="fa fa-search-minus"></i>&nbsp;查询</a>
+        <a class="btn btn-primary" @click="signIn"><i class="fa fa-sign-in"></i>&nbsp;签到</a>
+        <div class="col-md-12">
+            <table id="jqGridAdd" style="width: 700px"></table>
+            <div id="jqGridPagerAdd"></div>
+        </div>
+    </div>
+</div>
+<script src="${request.contextPath}/statics/js/modules/sys/teamClassManage.js?_${.now?long}"></script>
+</body>
+</html>

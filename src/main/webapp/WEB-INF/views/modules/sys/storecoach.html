@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>场馆教练</title>
+    <#include "/header.html"/>
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <table>
+                <tr>
+                    <td>
+                        <input type="text" class="form-control" id="agentName" v-model="q.phone" @keyup.enter="query"
+                               placeholder="请输入手机号">
+                    </td>
+                    <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                    <td>
+                        <a class="btn btn-default" @click="query">查询</a>
+                    </td>
+                    <td>
+                        <#if shiro.hasPermission("sys:storecoach:save")>
+                            <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+                        </#if>
+                    </td>
+                    <td>
+
+                        <#if shiro.hasPermission("sys:storecoach:updates")>
+                            <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+                        </#if>
+                    </td>
+                    <td>
+                        <#if shiro.hasPermission("sys:storecoach:delete")>
+                            <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+                        </#if>
+                    </td>
+                    <td>
+                        <a class="btn btn-primary" @click="evaluate">&nbsp;查看评价</a>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+    <div v-show="showEvaluate">
+        <div class="grid-btn">
+            <a class="btn btn-primary" @click="goBack">&nbsp;返回</a>
+        </div>
+        <table id="jqGrid2"></table>
+        <div id="jqGridPager2"></div>
+    </div>
+    <div v-show="showEdit" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal" id="form" style="width: 60%">
+               <!--<div class="form-group">
+                   <div class="col-sm-2 control-label">所属门店</div>
+                   <div class="col-sm-10">
+                       <input type="text" class="form-control" v-model="storeCoach.storeId" placeholder="所属门店"/>
+                   </div>
+               </div>-->
+            <div class="form-group">
+                <div class="col-sm-2 control-label">所属门店</div>
+                <div class="form-group col-sm-10">
+                    <select class="form-control" v-model="storeCoach.storeId">
+                        <option v-for="item in resultStoreName" :value="item.storeId">
+                            {{ item.storeName }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">教练等级</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="storeCoach.grade"
+                           placeholder="教练等级"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">教练头像</div>
+                <div class="col-sm-6">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img" width="100px" height="100px">
+                    <a class="btn btn-primary btn-xs uploadHeader">上传</a>
+                    <span>*请上传图片</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">姓名</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="storeCoach.coachName" placeholder="姓名"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">手机号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="storeCoach.phone" placeholder="手机号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">性别</div>
+                <div class="col-sm-10">
+                    <select class="form-control" v-model="storeCoach.sex">
+                        <option value="1">男</option>
+                        <option value="2">女</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">地址(省市区)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="storeCoach.address" placeholder="地址(省市区)"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">身份证号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="storeCoach.identity" placeholder="身份证号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">从业年限</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="storeCoach.employTime" placeholder="从业年限"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">资历证书</div>
+                <!--  <div class="col-sm-6">
+                      <img @click="preview" src="../../statics/img/addPhoto.svg"
+                           layer-src="../../statics/img/addPhoto.svg" class="logo_img" width="100px" height="100px">
+                      <a class="btn btn-primary btn-xs diplomaImgUrl">上传</a>
+                      <span>*请上传宽702像素，高1146像素的图片</span>
+                  </div>-->
+                <div class="col-sm-10" class="form-horizontal">
+                    <input type="button" value="➕ 新增一张" @click="uploadT" class="btn btn-default"/>
+                </div>
+                <div class="col-sm-2 control-label">
+                </div>
+                <div class="col-sm-10">
+                    <div class="row" style="border: none">
+                        <div v-for="item in ad1ImgsList " class="col-sm-3">
+                            <img :src="item" width="100px" height="100px" style="margin: 5px"/>
+                            <input type="file" name="file" class="upload_file" @change="uploadImage1"
+                                   style=" position: absolute;left: 45%;  bottom: 0%;  width: 50px; color: blue;height: 26px;z-index: 10;    opacity: 0;"/><br/>
+                            &nbsp;&nbsp;<input type="button" style="color:red;" @click="removeT"
+                                               value="删除"/>&nbsp;
+                            <input type="button" style="color:blue;    position: absolute;left: 45%;  bottom: 0%;  width: 50px; color: blue;height: 26px;" value="上传"/>
+                        </div>
+                    </div>
+                    <span>*请上传宽702像素，高1146像素的图片</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">身份证反面</div>
+                <div class="col-sm-6">
+                    <img @click="preview" src="../../statics/img/addPhoto.svg"
+                         layer-src="../../statics/img/addPhoto.svg" class="logo_img" width="100px" height="100px">
+                    <a class="btn btn-primary btn-xs uploadidz">上传</a>
+
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">身份证正面</div>
+                <div class="col-sm-6"><img @click="preview" src="../../statics/img/addPhoto.svg"
+                                           layer-src="../../statics/img/addPhoto.svg" class="logo_img" width="100px"
+                                           height="100px">
+                    <a class="btn btn-primary btn-xs uploadidf">上传</a>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">薪水(元）</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="storeCoach.salary" placeholder="薪水(元）"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">状态</div>
+                <div class="col-sm-10">
+                    <select class="form-control" v-model="storeCoach.status">
+                        <option value="1">上架</option>
+                        <option value="2">下架</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">教练简介</div>
+                <div class="col-sm-10">
+                    <textarea type="text" rows="6" class="form-control" v-model="storeCoach.introduce"
+                              placeholder="教练简介"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/libs/ajaxfileupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/storecoach.js"></script>
+</body>
+</html>

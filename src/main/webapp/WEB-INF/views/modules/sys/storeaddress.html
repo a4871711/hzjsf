@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<html xmlns:v-bind="http://www.w3.org/1999/xhtml">
+<head>
+<title>门店地址</title>
+    <#include "/header.html"/>
+</head>
+<style type="text/css">
+    .logo {
+        display: inline-block;
+        text-align: center;
+        margin-right: 15px;
+    }
+    .logo .logo_img{
+        width: 100px;
+        height: 100px;
+        display: block;
+    }
+    .logo .upload_file {
+        position: absolute;
+        top: 0;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+    }
+    .div_inline{
+        display: inline-block;
+    }
+    .upload {
+        margin: 5px 0 15px 0px;
+    }
+    #allmap {width: 100%;height: 100%;overflow: hidden;margin:0;font-family:"微软雅黑";}
+</style>
+<script type="text/javascript" src="https://api.map.baidu.com/api?v=2.0&ak=6qSpmqH1LqV54G8gcOkH6aPSjb7rBIj6"></script>
+<script>
+	window._AMapSecurityConfig = {
+		securityJsCode:'056b3056aafac6893c4018ff10b1bf93'
+	};
+</script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=f773db7993fa1c66eebe78e8265e859d"></script>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+          <!--  <div class="form-group col-sm-2">
+                <select class="form-control" v-model="q.status">
+                    <option value="" selected="selected">全部</option>
+                    <option value="0" >无效</option>
+                    <option value="1" >有效</option>
+                </select>
+            </div>-->
+         <!--   <a class="btn btn-default" @click="query">查询</a>-->
+
+            <!--<#if shiro.hasPermission("sys:storegroup:save")>
+                <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            </#if>-->
+            <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            <a class="btn btn-warning" href="javascript:" onclick="window.history.back(-1)">&nbsp;返回</a>
+            <!--<#if shiro.hasPermission("sys:storegroup:delete")>
+                <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            </#if>-->
+
+		</div>
+	    <table id="jqGrid"></table>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal"  action="" style="width: 100%;" method="post" enctype="multipart/form-data">
+            <div id="main" style="width: 900px;"class="div_inline">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">门店名称</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" v-model="storeAddress.storeName" placeholder="门店名称" disabled="disabled"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">门店电话</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" v-model="storeAddress.phone" placeholder="门店电话" disabled="disabled"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">省、市、区</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" @click="selectAddress" placeholder="单击选择门店地址" readonly="readonly"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">省</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" v-model="storeAddress.province" disabled="disabled" placeholder="省"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">市</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" v-model="storeAddress.city" disabled="disabled" placeholder="市"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">区</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" v-model="storeAddress.zone" id="store.html" disabled="disabled" placeholder="区"/>
+                </div>
+            </div>
+
+                <!--<div class="form-group">
+                    <div class="col-sm-2 control-label">省</div>
+                    <div class="form-group col-sm-7">
+                        <select id="province" class="form-control" v-model="storeAddress.province" onchange="chooseProvince(this)">
+                            <option value="1">请选择省</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">市</div>
+                    <div class="form-group col-sm-7">
+                        <select id="city" class="form-control" v-model="storeAddress.city" onChange="chooseCity(this)">
+                            <option value="1">请选择市</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">区</div>
+                    <div class="form-group col-sm-7">
+                        <select id="area" class="form-control" v-model="storeAddress.zone">
+                            <option value="1">请选择区</option>
+                        </select>
+                    </div>
+                </div>-->
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">美团门店ID</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" v-model="storeAddress.goodsIdStoreId" placeholder="美团核销 storeId"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">抖音门店ID</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" v-model="storeAddress.douyinPoiId" placeholder="抖音核销 poi_id"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">街道详细地址</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" v-model="storeAddress.storeAddrDetail" placeholder="街道详细地址"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">经度</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="jing_du" name="longitude" v-model="storeAddress.longitude" disabled="disabled" placeholder="单击地图获取经度或纬度"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">纬度</div>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="wei_du" name="latitude" v-model="storeAddress.latitude" disabled="disabled" placeholder="单击地图获取经度或纬度"/>
+                </div>
+                <button class="btn btn-sm btn-danger" style="margin-left: 670px;" type="button" onclick="showOrHide()">地图</button>
+            </div>
+
+            <div id="test" style="display: none;margin-left: 180px;">
+                <div id="r-result"> <strong>请输入要找的地址:</strong>
+                    <input type="text" id="suggestId" class="form-control" size="20" value="百度" style="width:150px;width: 350px;" />
+                    <div id="searchResultPanel" style="border:1px solid #C0C0C0;width:150px;height:auto; display:none;"></div>
+                </div><br/>
+                <div id="allmap" style="width: 1200px;height: 550px;"></div>
+            </div>
+
+            <!--<div class="form-group">
+                <div class="col-sm-2 control-label">状态</div>
+                <label class="radio-inline">
+                    <input type="radio" name="status" value="1" v-model="storeAddress.status"/> 有效
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="status" value="0" v-model="storeAddress.status"/> 无效
+                </label>
+            </div>-->
+
+            <div id="addressLayer" style="display: none;padding:10px;">
+                <ul class="list-unstyled" v-for="(e,i) in addressData">
+                    <li @click="liClick" v-bind:data-index="i">{{e.name}}</li>
+                </ul>
+            </div>
+            <br/>
+            <div class="form-group">
+                <div class="col-sm-5 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+
+    </div>
+
+
+
+                <!--<button type="button" onclick="displayHideUI()">单击获取经纬度</button>-->
+                <!--<div>
+                    <label>经度</label>
+                    <span id="jing_du"></span>
+                    <label>纬度</label>
+                    <span id="wei_du"></span>
+                </div>-->
+        </form>
+    </div>
+</div>
+
+<script src="${request.contextPath}/statics/plugins/jquery.form.js"></script>
+<script src="${request.contextPath}/statics/libs/ajaxupload.js"></script>
+<script src="${request.contextPath}/statics/js/modules/sys/storeaddress.js"></script>
+
+<script type="text/javascript">
+    /*function showOrHide(){
+        var obj=document.getElementById('test')
+        if(obj.style.display=="none"){
+            obj.style.display="";
+        }else{
+            obj.style.display="none";
+        }
+    }*/
+    /*function showOrHide(){
+        var obj=document.getElementById('test')
+        if(obj.style.display=="none"){
+            obj.style.display="";
+        }else{
+            obj.style.display="none";
+        }
+    }
+
+    function G(id) {
+        return document.getElementById(id);
+    }
+    /!*function displayHideUI()
+    {
+        var ui = document.getElementById("allmap");
+        ui.style.display="block";
+    }*!/
+    // 百度地图API功能
+    var map = new BMap.Map("allmap");
+    var point = new BMap.Point(vm.storeAddress.longitude,vm.storeAddress.latitude);
+    map.centerAndZoom(point, 15);
+    var marker = new BMap.Marker(point); // 创建标注
+    map.addOverlay(marker); // 将标注添加到地图中
+    marker.setAnimation(BMAP_ANIMATION_BOUNCE); //跳动的动画
+    //单击获取点击的经纬度
+    map.addEventListener("click",function(e){
+        var jing_du_value = e.point.lng ;
+        var wei_du_value = e.point.lat;
+//alert(e.point.lng + "," + e.point.lat);
+        var jing_du = document.getElementById("jing_du");
+        var wei_du = document.getElementById("wei_du");
+        jing_du.value= jing_du_value;
+        wei_du.value= wei_du_value;
+    });
+    //提升框
+    var opts = {
+        width : 200, // 信息窗口宽度
+        height: 100, // 信息窗口高度
+        title : "经纬度" , // 信息窗口标题
+        enableMessage:true,//设置允许信息窗发送短息
+        message:"经纬度"
+    }
+    var infoWindow = new BMap.InfoWindow("地址：东莞", opts); // 创建信息窗口对象
+    marker.addEventListener("click", function(){
+        map.openInfoWindow(infoWindow,point); //开启信息窗口
+    });
+    // 百度地图API功能
+    map.centerAndZoom(point,8);
+    setTimeout(function(){
+        map.setZoom(12);
+    }, 2000); //2秒后放大到14级
+    map.enableScrollWheelZoom(true);
+
+    var ac = new BMap.Autocomplete(    //建立一个自动完成的对象
+        {"input" : "suggestId"
+            ,"location" : map
+        });
+
+    ac.addEventListener("onhighlight", function(e) {  //鼠标放在下拉列表上的事件
+        var str = "";
+        var _value = e.fromitem.value;
+        var value = "";
+        if (e.fromitem.index > -1) {
+            value = _value.province +  _value.city +  _value.district +  _value.street +  _value.business;
+        }
+        str = "FromItem<br />index = " + e.fromitem.index + "<br />value = " + value;
+
+        value = "";
+        if (e.toitem.index > -1) {
+            _value = e.toitem.value;
+            value = _value.province +  _value.city +  _value.district +  _value.street +  _value.business;
+        }
+        str += "<br />ToItem<br />index = " + e.toitem.index + "<br />value = " + value;
+        G("searchResultPanel").innerHTML = str;
+    });
+
+    var myValue;
+    ac.addEventListener("onconfirm", function(e) {    //鼠标点击下拉列表后的事件
+        var _value = e.item.value;
+        myValue = _value.province +  _value.city +  _value.district +  _value.street +  _value.business;
+        G("searchResultPanel").innerHTML ="onconfirm<br />index = " + e.item.index + "<br />myValue = " + myValue;
+
+        setPlace();
+    });
+
+    function setPlace(){
+        map.clearOverlays();    //清除地图上所有覆盖物
+        function myFun(){
+            var pp = local.getResults().getPoi(0).point;    //获取第一个智能搜索的结果
+            map.centerAndZoom(pp, 18);
+            map.addOverlay(new BMap.Marker(pp));    //添加标注
+        }
+        var local = new BMap.LocalSearch(map, { //智能搜索
+            onSearchComplete: myFun
+        });
+        local.search(myValue);
+    }*/
+</script>
+
+</body>
+</html>
