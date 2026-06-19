@@ -22,8 +22,8 @@ import java.util.Date;
 @Component
 public class AliyunSmsUtil {
 	private Logger log =  LoggerFactory.getLogger(getClass());
-//    public static final String accessKeyId = "YOUR_ACCESS_KEY_ID";
-//    public static final String accessKeySecret = "YOUR_ACCESS_KEY_SECRET";
+//    public static final String accessKeyId = "LTAI5tNArBMQ8hDXqRDTA1MV";
+//    public static final String accessKeySecret = "dfgfx9kcOSok5cp5oie0nS9JWPeWsO";
 //    public static final String templateCode = "SMS_248086017";
     public static final String signName = "Slive运动";
 
