@@ -1,0 +1,13 @@
+@for $i from 12 through 100 {
+	.ft#{$i}{
+		font-size: $i *1px;
+	}  
+}
+
+.ft0{
+	font-size:0;
+}
+
+.fw{
+	font-weight: bold;
+}

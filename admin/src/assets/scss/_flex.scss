@@ -1,0 +1,58 @@
+.flex{
+	display: flex;
+}
+  
+.column{
+	flex-direction: column !important;
+}
+	
+.flex_a{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+	
+.flex_j{
+	display: flex;
+	justify-content: center;
+}
+  
+.flex_aj{
+	@extend .flex_a;
+	justify-content: center;
+}
+  
+.flex_column{
+	display: flex;
+	flex-direction: column;
+}
+ 
+.flex_sb{
+	@extend .flex_a;
+	justify-content: space-between;
+}
+  
+.sb{
+	justify-content: space-between;
+}
+  
+.jce{
+	justify-content: flex-end;
+}
+	
+.flex_sa{
+	display: flex;
+	justify-content: space-around;
+}
+
+@for $i from 1 through 5 {
+  .flex#{$i}{
+      flex: $i;
+   }  
+}
+
+.flexWrap {
+	flex-wrap: wrap;
+}
+  
+	
