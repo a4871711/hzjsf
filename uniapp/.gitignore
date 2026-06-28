@@ -1,0 +1,23 @@
+# 依赖(可由 npm install / HBuilderX 重建,不提交)
+node_modules/
+
+# uni-app 编译产物(运行/发行时生成,不提交)
+unpackage/dist/
+# uni-app CLI(vue-cli-service)默认编译输出目录
+dist/
+
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# HBuilderX / IDE
+.hbuilderx/
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

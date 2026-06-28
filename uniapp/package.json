@@ -1,0 +1,57 @@
+{
+  "name": "sljs",
+  "version": "1.0.0",
+  "description": "矢历健身 uni-app 移动端(微信小程序为主)",
+  "scripts": {
+    "dev:mp-weixin": "cross-env UNI_INPUT_DIR=./ NODE_ENV=development UNI_PLATFORM=mp-weixin vue-cli-service uni-build --watch",
+    "build:mp-weixin": "cross-env UNI_INPUT_DIR=./ NODE_ENV=production UNI_PLATFORM=mp-weixin vue-cli-service uni-build",
+    "dev:h5": "cross-env UNI_INPUT_DIR=./ NODE_ENV=development UNI_PLATFORM=h5 vue-cli-service uni-serve",
+    "build:h5": "cross-env UNI_INPUT_DIR=./ NODE_ENV=production UNI_PLATFORM=h5 vue-cli-service uni-build"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "2.0.2-3090920231225001",
+    "@dcloudio/uni-h5": "2.0.2-3090920231225001",
+    "@dcloudio/uni-i18n": "2.0.2-3090920231225001",
+    "@dcloudio/uni-mp-vue": "2.0.2-3090920231225001",
+    "@dcloudio/uni-mp-weixin": "2.0.2-3090920231225001",
+    "@dcloudio/uni-stat": "2.0.2-3090920231225001",
+    "@vue/shared": "^3.0.0",
+    "core-js": "3.8.3",
+    "regenerator-runtime": "^0.12.1",
+    "uni-read-pages": "^1.0.5",
+    "uni-simple-router": "^2.0.7",
+    "uview-ui": "^2.0.36",
+    "vue": "^2.6.14",
+    "vuex": "^3.6.2"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.4.31",
+    "@dcloudio/uni-cli-i18n": "^2.0.2-3090920231225001",
+    "@dcloudio/uni-cli-shared": "2.0.2-3090920231225001",
+    "@dcloudio/uni-helper-json": "^1.0.13",
+    "@dcloudio/uni-template-compiler": "2.0.2-3090920231225001",
+    "@dcloudio/vue-cli-plugin-hbuilderx": "2.0.2-3090920231225001",
+    "@dcloudio/vue-cli-plugin-uni": "2.0.2-3090920231225001",
+    "@dcloudio/vue-cli-plugin-uni-optimize": "2.0.2-3090920231225001",
+    "@dcloudio/webpack-uni-mp-loader": "2.0.2-3090920231225001",
+    "@dcloudio/webpack-uni-pages-loader": "2.0.2-3090920231225001",
+    "@vue/cli-plugin-babel": "~4.5.19",
+    "@vue/cli-service": "~4.5.19",
+    "babel-plugin-import": "^1.11.0",
+    "cross-env": "^7.0.3",
+    "postcss-comment": "^2.0.0",
+    "sass": "^1.79.4",
+    "sass-loader": "^10.5.2",
+    "vue-template-compiler": "^2.6.14",
+    "webpack": "^4.47.0"
+  },
+  "browserslist": [
+    "Android >= 4",
+    "ios >= 8"
+  ],
+  "overrides": {
+    "webpack": "^4.47.0",
+    "copy-webpack-plugin": "^5.1.2",
+    "postcss": "^7.0.39"
+  }
+}

@@ -1,0 +1,161 @@
+{
+	"easycom": {
+		"^u-(.*)": "uview-ui/components/u-$1/u-$1.vue"
+	},
+	"pages": [{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "矢历健身",
+				"navigationStyle": "custom" //设置为自定义导航
+			}
+		},
+		{
+			"path": "pages/shop/shop",
+			"style": {
+				"navigationBarTitleText": "矢历门店",
+				"navigationBarBackgroundColor": "#F4F4F4",
+				"backgroundColor": "#F8F8F8"
+			}
+		},
+		{
+			"path": "pages/member-card/member-card",
+			"style": {
+				"navigationBarTitleText": "会员卡",
+				"navigationBarBackgroundColor": "#F4F4F4",
+				"backgroundColor": "#F8F8F8"
+			}
+		},
+		{
+			"path": "pages/my/my",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationBarBackgroundColor": "#F3E6D1"
+				// "navigationBarBackgroundColor": "#F4F4F4"
+			}
+			// "meta": {
+			// 	"isLogin": true,
+			// 	"title": "登录"
+			// }
+		}
+	],
+	"tabBar": {
+		"color": "#D7D7D7",
+		"selectedColor": "#373838",
+		"borderStyle": "white",
+		"backgroundColor": "#ffffff",
+
+		"list": [{
+			"pagePath": "pages/index/index",
+			"iconPath": "static/tabBer/homeCat.png",
+			"selectedIconPath": "static/tabBer/home.png",
+			"text": "首页"
+		}, {
+			"pagePath": "pages/shop/shop",
+			"iconPath": "static/tabBer/shopCat.png",
+			"selectedIconPath": "static/tabBer/shop.png",
+			"text": "门店"
+		}, {
+			"pagePath": "pages/member-card/member-card",
+			"iconPath": "static/image/icon-zs.png",
+			"selectedIconPath": "static/image/icon-zs.png",
+			"text": "会员卡"
+		}, {
+			"pagePath": "pages/my/my",
+			"iconPath": "static/tabBer/myCat.png",
+			"selectedIconPath": "static/tabBer/my.png",
+			"text": "我的"
+		}]
+	},
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "uni-app",
+		"navigationBarBackgroundColor": "#ffffff",
+		"backgroundColor": "#F8F8F8"
+	},
+	"uniIdRouter": {},
+	"subPackages": [{
+		"root": "pagesA",
+		"pages": [{
+				"path": "login/login",
+				"style": {
+					"navigationBarTitleText": "矢历健身"
+				}
+			},
+			{
+				"path": "open_code/open_code",
+				"style": {
+					"navigationBarTitleText": "开门码"
+				}
+			},
+			{
+				"path": "agreement/agreement",
+				"style": {
+					"navigationBarTitleText": "用户协议"
+				}
+			},
+			{
+				"path": "write_off/write_off",
+				"style": {
+					"navigationBarTitleText": "团购核销"
+				}
+			},
+			{
+				"path": "verification_record/verification_record",
+				"style": {
+					"navigationBarTitleText": "团购核销"
+				}
+			},
+			{
+				"path": "shop_detail/shop_detail",
+				"style": {
+					"navigationBarTitleText": ""
+				}
+			},
+			{
+				"path": "card_record/card_record",
+				"style": {
+					"navigationBarTitleText": "购卡记录"
+				}
+			},
+			{
+				"path": "coupon/coupon",
+				"style": {
+					"navigationBarTitleText": "优惠券"
+				}
+			},
+			{
+				"path": "renew/renew",
+				"style": {
+					"navigationBarTitleText": "自动续费管理"
+				}
+			},
+			{
+				"path": "setup_center/setup_center",
+				"style": {
+					"navigationBarTitleText": "设置中心"
+				}
+			},
+			{
+				"path": "vipAgreement/vipAgreement",
+				"style": {
+					"navigationBarTitleText": "会员协议"
+				}
+			},
+			{
+				"path": "select_store/select_store",
+				"style": {
+					"navigationBarTitleText": "选择门店",
+					"navigationBarBackgroundColor": "#fcede3"
+				}
+			},
+			{
+				"path": "card_renewal/card_renewal",
+				"style": {
+					"navigationBarTitleText": "购卡续费",
+					"navigationBarBackgroundColor": "#141414",
+					"navigationBarTextStyle": "white"
+				}
+			}
+		]
+	}]
+}
