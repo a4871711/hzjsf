@@ -605,4 +605,53 @@ export default {
 			})
 		});
 	},
+
+	//VIP转让费用规则-列表
+	vipFeeRule_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipFeeRule/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
+	//VIP转让费用规则-详情
+	vipFeeRule_info(id) {
+		return $http({
+			url: $http.adornUrl(`/sys/vipFeeRule/info/${id}`),
+			method: 'get'
+		});
+	},
+	//VIP转让费用规则-新增
+	vipFeeRule_save(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipFeeRule/save'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//VIP转让费用规则-编辑
+	vipFeeRule_update(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipFeeRule/update'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//VIP转让费用规则-删除
+	vipFeeRule_delete(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipFeeRule/delete'),
+			method: 'post',
+			contentType: 'json',
+			data: JSON.stringify(data)
+		});
+	},
 }
