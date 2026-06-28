@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.VipBenefitCardMapper">
+
+    <sql id="Base_Column_List">
+        vip_card_id AS vipCardId, card_name AS cardName, benefit_desc AS benefitDesc,
+        price, validity_days AS validityDays, store_addr_ids AS storeAddrIds,
+        fee_rule_id AS feeRuleId, show_buy_count AS showBuyCount,
+        base_buy_count AS baseBuyCount, step_num AS stepNum, step_add_price AS stepAddPrice,
+        price_cap AS priceCap, sold_count AS soldCount, status, created_date AS createdDate
+    </sql>
+
+    <select id="queryList" resultType="com.dlc.modules.api.entity.VipBenefitCard" parameterType="map">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit_card
+        <where>
+            status = 1
+            <if test="cardName != null and cardName != ''">
+                AND card_name LIKE concat('%', #{cardName}, '%')
+            </if>
+            <if test="storeAddrId != null and storeAddrId != ''">
+                AND FIND_IN_SET(#{storeAddrId}, store_addr_ids)
+            </if>
+        </where>
+        ORDER BY created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM vip_benefit_card
+        <where>
+            status = 1
+            <if test="cardName != null and cardName != ''">
+                AND card_name LIKE concat('%', #{cardName}, '%')
+            </if>
+            <if test="storeAddrId != null and storeAddrId != ''">
+                AND FIND_IN_SET(#{storeAddrId}, store_addr_ids)
+            </if>
+        </where>
+    </select>
+
+    <select id="queryObject" resultType="com.dlc.modules.api.entity.VipBenefitCard" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit_card
+        WHERE vip_card_id = #{vipCardId} AND status = 1
+    </select>
+</mapper>
