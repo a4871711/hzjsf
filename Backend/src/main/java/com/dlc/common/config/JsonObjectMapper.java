@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.springframework.context.annotation.Configuration;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.IOException;
 
@@ -18,6 +18,7 @@ public class JsonObjectMapper extends ObjectMapper{
     private static final long serialVersionUID = 1L;
     public JsonObjectMapper() {
         super();
+        this.registerModule(new JavaTimeModule());
         //反序列化忽略不存在的对象
         this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         // 空值处理为空串

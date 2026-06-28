@@ -43,8 +43,9 @@ public class JedisUtil {
 
         //坑爹的玩意，一定要记得配置这里，不然提现不会走应有的业务流程
         JEDIS_IP = "127.0.0.1";
-        JEDIS_PORT = 7000;
-        JEDIS_PASSWORD = "meiktv_123";
+        JEDIS_PORT = 6379;
+        //本地 Redis 未设密码,需传 null;Jedis 2.9 只要密码非 null(含空串"")就会发 AUTH,会被无密码 Redis 拒绝
+        JEDIS_PASSWORD = null;
 
         JedisPoolConfig config=new JedisPoolConfig();
         //config.setMaxActive(5000);
