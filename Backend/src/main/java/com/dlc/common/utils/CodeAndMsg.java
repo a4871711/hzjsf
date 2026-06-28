@@ -49,6 +49,29 @@ public enum CodeAndMsg {
     VALIDATION_ERROR(103,"IOS授权验证失败"),
     VALIDATION_CODE_ERROR(104,"IOS授权解码失败"),
     USER_QROCDE_PASS(0,"用户二维码校验通过"),
+
+    // ===== VIP 权益转让 统一码表（详细技术设计 附录A，-50 ~ -70） =====
+    ERROR_VIP_BENEFIT_NOT_EXIST(-50,"权益不存在"),
+    ERROR_VIP_BENEFIT_NOT_OWNER(-51,"该权益不属于你"),
+    ERROR_VIP_BENEFIT_STATUS_ABNORMAL(-52,"权益状态异常"),
+    ERROR_VIP_BENEFIT_EXPIRED(-53,"权益已过期"),
+    ERROR_VIP_BENEFIT_NOT_TRANSFERABLE(-54,"该权益当前不可转让"),
+    ERROR_VIP_CARD_OFF_SHELF(-55,"权益卡已下架"),
+    ERROR_VIP_TO_USER_NOT_EXIST(-56,"受让人不存在"),
+    ERROR_VIP_TO_USER_SELF(-57,"不能转让给自己"),
+    ERROR_VIP_USER_BLACKLIST(-58,"账号被封禁或在黑名单"),
+    ERROR_VIP_STORE_NOT_APPLICABLE(-59,"受让人门店不在该权益适用的门店范围内"),
+    ERROR_VIP_TRANSFER_NOT_EXIST(-60,"转让单不存在"),
+    ERROR_VIP_TRANSFER_STATUS(-61,"当前转让单状态不允许该操作"),
+    ERROR_VIP_TRANSFER_IN_PROGRESS(-62,"该权益已有进行中的转让"),
+    ERROR_VIP_TRANSFER_ARREARS(-63,"存在欠费，暂不可转让"),
+    ERROR_VIP_TRANSFER_REFUNDED_CARD(-64,"已办理退卡，不可转让"),
+    ERROR_VIP_TRANSFER_VIOLATION(-65,"存在重大违规记录"),
+    ERROR_PAUSE_LIMIT_MONTH(-66,"本月已停卡一次"),
+    ERROR_PAUSE_LIMIT_YEAR(-67,"全年停卡次数已用完，共12次"),
+    ERROR_PAUSE_STATE(-68,"停卡状态异常"),
+    ERROR_VIP_FEE_RULE_NOT_EXIST(-69,"转让费用规则不存在或未配置"),
+    ERROR_VIP_FEE_RULE_FORMAT(-70,"分档配置格式有误"),
     ;
 
     CodeAndMsg(Integer code, String msg) {

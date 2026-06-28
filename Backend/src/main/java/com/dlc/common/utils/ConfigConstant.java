@@ -92,6 +92,10 @@ public class ConfigConstant {
     public static final String PRIVATE_CLASS_ORDER_TYPE = "4";
     /**团体课订单后缀*/
     public static final String TEAM_CLASS_ORDER_TYPE = "5";
+    /**VIP权益卡购买订单后缀(income_pay_detail.payType自动=6)*/
+    public static final String VIP_CARD_BUY_TYPE = "6";
+    /**VIP转让费用订单后缀(income_pay_detail.payType自动=7)*/
+    public static final String VIP_TRANSFER_FEE_TYPE = "7";
 
     /**用户缓存前缀*/
     public static final String USER = "hzjsf_user_";

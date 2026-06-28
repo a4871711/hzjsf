@@ -110,6 +110,3 @@ CREATE TABLE IF NOT EXISTS member_blacklist (
   PRIMARY KEY (id),
   KEY idx_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员黑名单';
-
--- 7) 门店表加"等级"字段（高级门店权益可向等于/低于等级门店转让）
-ALTER TABLE store ADD COLUMN store_level INT NOT NULL DEFAULT 1 COMMENT '门店等级,越大越高';

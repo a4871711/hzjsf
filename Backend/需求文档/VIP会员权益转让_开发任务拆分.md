@@ -2,7 +2,7 @@
 
 > 依据：《VIP会员权益转让_详细技术设计.md》（命名/枚举/DDL/接口/事务以那份为准，尤其第 13 章附录为最终口径）。
 > 用途：把实现拆成 15 个可独立交付、可单独验收的步骤，按顺序推进。每步给出「目标 / 新建文件 / 改动文件 / 关键点 / 验收」。
-> 总体顺序：先地基（建表+常量）→ 再独立小项（门店等级/权益卡/购买/停卡，风险低、能单独验收）→ 再转让主流程（核心）→ 最后黑名单 + admin 前端。
+> 总体顺序：先地基（建表+常量）→ 再独立小项（权益卡/购买/停卡，风险低、能单独验收）→ 再转让主流程（核心）→ 最后黑名单 + admin 前端。
 
 ---
 
@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 1 | 数据库 DDL 脚本 | 地基 | — | ✅ 已完成 |
 | 2 | 公共常量 + 统一返回码 | 地基 | 1 | ☐ |
-| 3 | 门店等级 store_level 贯通 | 独立小项 | 1 | ☐ |
+| 3 | ~~门店等级~~ 已废弃（适用门店校验并入第 9 步前置校验） | — | — | — |
 | 4 | 转让费用规则 vip_fee_rule 后台 CRUD | 独立小项 | 1,2 | ☐ |
 | 5 | 权益卡商品 vip_benefit_card 后台 CRUD | 独立小项 | 1,2,4 | ☐ |
 | 6 | 动态定价 + 权益卡 list/detail（移动端） | 独立小项 | 1,2,5 | ☐ |
@@ -24,7 +24,7 @@
 | 12 | 退费 doRefund + 受让超时定时任务 | 转让主流程 | 11 | ☐ |
 | 13 | 后台转让审核 list/audit | 转让主流程 | 11,12 | ☐ |
 | 14 | 会员黑名单 + 接入校验 | 收尾 | 9 | ☐ |
-| 15 | admin 前端 5 页面 + apis.js + 菜单 | 收尾 | 3,5,13,14 | ☐ |
+| 15 | admin 前端 5 页面 + apis.js + 菜单 | 收尾 | 5,13,14 | ☐ |
 
 > 文件路径约定：后端根 `Backend/src/main/java/com/dlc/`，Mapper XML 在 `Backend/src/main/resources/mapper/{api,sys}/`；前端根 `admin/src/`。**改 `mapper/api/*.xml` 需重启 Tomcat，改 `mapper/sys/*.xml` 热刷新。**
 
@@ -34,8 +34,8 @@
 
 - **目标**：建好全部新表与改造，含并发护栏唯一键。
 - **新建**：`Backend/sql/vip_benefit_transfer.sql`。
-- **内容**：6 张新表（`vip_fee_rule`/`vip_benefit_card`/`vip_benefit`/`vip_benefit_transfer`/`card_pause_record`/`member_blacklist`）+ `ALTER store ADD store_level` + 唯一键 `uk_source_order`、`uk_fee_order`、`uk_card_month`。
-- **验收**：在开发库执行脚本无报错、6 表 + `store.store_level` 就位。
+- **内容**：6 张新表（`vip_fee_rule`/`vip_benefit_card`/`vip_benefit`/`vip_benefit_transfer`/`card_pause_record`/`member_blacklist`）+ 唯一键 `uk_source_order`、`uk_fee_order`、`uk_card_month`。
+- **验收**：在开发库执行脚本无报错、6 表就位。
 
 ## 第 2 步 · 公共常量 + 统一返回码
 
@@ -46,11 +46,11 @@
 - **关键点**：码值/命名以详细设计附录 A 为唯一来源，正文早稿里的旧码值作废。
 - **验收**：编译通过；常量可被引用。
 
-## 第 3 步 · 门店等级 store_level 贯通
+## 第 3 步 · ~~门店等级 store_level 贯通~~ 已废弃
 
-- **目标**：门店可维护"等级"，供转让校验"源≥目标"。
-- **改动**：`sys/entity/SysStoreEntity.java`（加 `storeLevel`）、`mapper/sys/StoreDao.xml`（insert/update/select 补 `store_level`）、`sys/controller/SysStoreController.java` 与 service 透传；如移动端需读取再补 `api/entity/Store.java`。
-- **验收**：后台门店新增/编辑能存取等级；列表展示等级列。
+- **本步取消**：原"门店等级"方案整体废弃，不再给 `store` 表加字段、不再有门店等级维护页面。
+- **替代实现**：转让的"适用门店校验"并入**第 9 步**前置校验，用「受让人当前所属门店 `user_info.nowStoreId`（实际存的就是 `store_addr_id`）是否 ∈ 该权益来源权益卡 `vip_benefit_card.store_addr_ids`（逗号分隔的 `store_addr_id` 集合）」判定，不在范围内则拦截。
+- **无需改动**：不改 `store` 表 / `SysStoreEntity.java` / `StoreDao.xml` / `SysStoreController.java` / `admin` 的 `store.vue`，无独立改动。
 
 ## 第 4 步 · 转让费用规则 vip_fee_rule 后台 CRUD
 
@@ -94,7 +94,7 @@
 
 - **目标**：可复用的校验集与费用计算（发起、审核两处都用）。
 - **新建**：`api/entity/VipBenefitTransfer.java`、dao、`mapper/api/VipBenefitTransferMapper.xml`、`api/service/VipTransferService.java` + `impl/VipTransferServiceImpl.java`（`checkTransferable`、`calcTransferFee`）。
-- **关键点**：`checkTransferable` 覆盖 R-08/17 全部情形（有效期/封禁/黑名单/欠费占位/退卡占位/违规占位/门店等级/属本人/不转给自己/卡未下架），命中抛附录 A 对应码；`calcTransferFee` 解析 `tiers_json` 按 `transfer_count+1` 命中。**校验集放在 api 的 service.impl，sys 审核直接 `@Autowired` 注入复用（同一 Spring 容器）**（附录 E）。
+- **关键点**：`checkTransferable` 覆盖 R-08/17 全部情形（有效期/封禁/黑名单/欠费占位/退卡占位/违规占位/适用门店（受让人门店 ∈ 权益卡 `store_addr_ids`）/属本人/不转给自己/卡未下架），命中抛附录 A 对应码；`calcTransferFee` 解析 `tiers_json` 按 `transfer_count+1` 命中。**校验集放在 api 的 service.impl，sys 审核直接 `@Autowired` 注入复用（同一 Spring 容器）**（附录 E）。
 - **验收**：单测各校验分支与费用命中（含边界：step=0、封顶、空规则=免费）。
 
 ## 第 10 步 · 转让发起/试算/撤回/确认/拒绝 + 状态机
@@ -156,6 +156,6 @@
 ## 落地建议
 
 1. 先把 **1→2** 地基铺好（建表 + 常量码表），后面所有步骤都依赖它。
-2. 再做 **3、4、5、6、7、8** 这批独立小项——每个都能单独编译、单独在后台/小程序验收，风险最低、最快见到东西。
+2. 再做 **4、5、6、7、8** 这批独立小项——每个都能单独编译、单独在后台/小程序验收，风险最低、最快见到东西（原第 3 步门店等级已废弃，适用门店校验并入第 9 步）。
 3. 然后 **9→10→11→12→13** 啃转让主流程（核心、相互依赖，按序来）。
 4. 最后 **14、15** 黑名单与前端页面收尾。
