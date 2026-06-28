@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.VipBenefitCardDao">
+
+    <!-- mybatis 全局已开启 mapUnderscoreToCamelCase,snake_case 列自动映射驼峰属性 -->
+
+    <sql id="Base_Column_List">
+        vip_card_id, card_name, benefit_desc, price, validity_days, store_addr_ids, fee_rule_id,
+        show_buy_count, base_buy_count, step_num, step_add_price, price_cap, sold_count, status, created_date
+    </sql>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.VipBenefitCardEntity" parameterType="map">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM vip_benefit_card
+        <where>
+            <if test="cardName != null and cardName != ''">
+                AND card_name LIKE concat('%', #{cardName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM vip_benefit_card
+        <where>
+            <if test="cardName != null and cardName != ''">
+                AND card_name LIKE concat('%', #{cardName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.VipBenefitCardEntity" parameterType="long">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM vip_benefit_card
+        WHERE vip_card_id = #{vipCardId}
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.VipBenefitCardEntity"
+            useGeneratedKeys="true" keyProperty="vipCardId">
+        INSERT INTO vip_benefit_card
+        (card_name, benefit_desc, price, validity_days, store_addr_ids, fee_rule_id,
+        show_buy_count, base_buy_count, step_num, step_add_price, price_cap, sold_count, status, created_date)
+        VALUES
+        (#{cardName}, #{benefitDesc}, #{price}, #{validityDays}, #{storeAddrIds}, #{feeRuleId},
+        #{showBuyCount}, #{baseBuyCount}, #{stepNum}, #{stepAddPrice}, #{priceCap}, 0, #{status}, #{createdDate})
+    </insert>
+
+    <!-- 全量更新:不含 sold_count(系统维护,后台只读)、不含 created_date -->
+    <update id="update" parameterType="com.dlc.modules.sys.entity.VipBenefitCardEntity">
+        UPDATE vip_benefit_card SET
+        card_name = #{cardName},
+        benefit_desc = #{benefitDesc},
+        price = #{price},
+        validity_days = #{validityDays},
+        store_addr_ids = #{storeAddrIds},
+        fee_rule_id = #{feeRuleId},
+        show_buy_count = #{showBuyCount},
+        base_buy_count = #{baseBuyCount},
+        step_num = #{stepNum},
+        step_add_price = #{stepAddPrice},
+        price_cap = #{priceCap},
+        status = #{status}
+        WHERE vip_card_id = #{vipCardId}
+    </update>
+
+    <delete id="deleteBatch">
+        DELETE FROM vip_benefit_card WHERE vip_card_id IN
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 删除前拦截:统计该权益卡已产生的持有实例数 -->
+    <select id="benefitCount" resultType="int" parameterType="long">
+        SELECT COUNT(1) FROM vip_benefit WHERE vip_card_id = #{vipCardId}
+    </select>
+
+    <!-- 上/下架 -->
+    <update id="updateOnOffCard">
+        UPDATE vip_benefit_card SET status = #{status} WHERE vip_card_id = #{vipCardId}
+    </update>
+</mapper>

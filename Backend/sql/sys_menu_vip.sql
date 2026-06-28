@@ -21,5 +21,15 @@ SELECT t.menu_id, '转让费用规则', 'modules/sys/vipFeeRule.html',
 FROM (SELECT menu_id FROM sys_menu WHERE name='VIP权益' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/vipFeeRule.html');
 
--- 后续 VIP 子菜单(权益卡管理 / 转让审核 / 停卡记录 / 会员黑名单)待各自后端+前端完成后,
--- 仿第 2) 条追加,parent_id 同样取「VIP权益」目录的 menu_id。
+-- 3) 「权益卡管理」菜单(type=1,挂在「VIP权益」目录下)
+--    url modules/sys/vipCard.html → 前端动态路由加载 views/modules/sys/vipCard.vue
+--    perms 平铺该页 5 个按钮权限(onCard/offCard 复用 sys:vipcard:update,无需单列)
+INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
+SELECT t.menu_id, '权益卡管理', 'modules/sys/vipCard.html',
+       'sys:vipcard:list,sys:vipcard:info,sys:vipcard:save,sys:vipcard:update,sys:vipcard:delete',
+       1, 'fa fa-id-card', 1
+FROM (SELECT menu_id FROM sys_menu WHERE name='VIP权益' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/vipCard.html');
+
+-- 后续 VIP 子菜单(转让审核 / 停卡记录 / 会员黑名单)待各自后端+前端完成后,
+-- 仿第 2)/3) 条追加,parent_id 同样取「VIP权益」目录的 menu_id。

@@ -654,4 +654,71 @@ export default {
 			data: JSON.stringify(data)
 		});
 	},
+
+	//VIP权益卡商品-列表
+	vipCard_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipCard/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
+	//VIP权益卡商品-详情
+	vipCard_info(id) {
+		return $http({
+			url: $http.adornUrl(`/sys/vipCard/info/${id}`),
+			method: 'get'
+		});
+	},
+	//VIP权益卡商品-新增
+	vipCard_save(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipCard/save'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//VIP权益卡商品-编辑
+	vipCard_update(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipCard/update'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//VIP权益卡商品-删除
+	vipCard_delete(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipCard/delete'),
+			method: 'post',
+			contentType: 'json',
+			data: JSON.stringify(data)
+		});
+	},
+	//VIP权益卡商品-上架
+	vipCard_onCard(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipCard/onCard'),
+			method: 'post',
+			contentType: 'json',
+			data: JSON.stringify(data)
+		});
+	},
+	//VIP权益卡商品-下架
+	vipCard_offCard(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipCard/offCard'),
+			method: 'post',
+			contentType: 'json',
+			data: JSON.stringify(data)
+		});
+	},
 }
