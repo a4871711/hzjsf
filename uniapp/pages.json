@@ -18,14 +18,6 @@
 			}
 		},
 		{
-			"path": "pages/member-card/member-card",
-			"style": {
-				"navigationBarTitleText": "会员卡",
-				"navigationBarBackgroundColor": "#F4F4F4",
-				"backgroundColor": "#F8F8F8"
-			}
-		},
-		{
 			"path": "pages/my/my",
 			"style": {
 				"navigationBarTitleText": "我的",
@@ -54,11 +46,6 @@
 			"iconPath": "static/tabBer/shopCat.png",
 			"selectedIconPath": "static/tabBer/shop.png",
 			"text": "门店"
-		}, {
-			"pagePath": "pages/member-card/member-card",
-			"iconPath": "static/image/icon-zs.png",
-			"selectedIconPath": "static/image/icon-zs.png",
-			"text": "会员卡"
 		}, {
 			"pagePath": "pages/my/my",
 			"iconPath": "static/tabBer/myCat.png",

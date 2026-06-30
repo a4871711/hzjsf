@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "矢历健身 uni-app 移动端(微信小程序为主)",
   "scripts": {
-    "dev:mp-weixin": "cross-env UNI_INPUT_DIR=./ NODE_ENV=development UNI_PLATFORM=mp-weixin vue-cli-service uni-build --watch",
-    "build:mp-weixin": "cross-env UNI_INPUT_DIR=./ NODE_ENV=production UNI_PLATFORM=mp-weixin vue-cli-service uni-build",
-    "dev:h5": "cross-env UNI_INPUT_DIR=./ NODE_ENV=development UNI_PLATFORM=h5 vue-cli-service uni-serve",
-    "build:h5": "cross-env UNI_INPUT_DIR=./ NODE_ENV=production UNI_PLATFORM=h5 vue-cli-service uni-build"
+    "dev:mp-weixin": "PATH=$HOME/.nvm/versions/node/v16.20.2/bin:$PATH cross-env UNI_INPUT_DIR=./ UNI_OUTPUT_DIR=./dist/build/mp-weixin NODE_ENV=development UNI_PLATFORM=mp-weixin vue-cli-service uni-build --watch",
+    "build:mp-weixin": "PATH=$HOME/.nvm/versions/node/v16.20.2/bin:$PATH cross-env UNI_INPUT_DIR=./ UNI_OUTPUT_DIR=./dist/build/mp-weixin NODE_ENV=production UNI_PLATFORM=mp-weixin vue-cli-service uni-build",
+    "dev:h5": "PATH=$HOME/.nvm/versions/node/v16.20.2/bin:$PATH cross-env UNI_INPUT_DIR=./ NODE_ENV=development UNI_PLATFORM=h5 vue-cli-service uni-serve",
+    "build:h5": "PATH=$HOME/.nvm/versions/node/v16.20.2/bin:$PATH cross-env UNI_INPUT_DIR=./ NODE_ENV=production UNI_PLATFORM=h5 vue-cli-service uni-build"
   },
   "dependencies": {
     "@dcloudio/uni-app": "2.0.2-3090920231225001",

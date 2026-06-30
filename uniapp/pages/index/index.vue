@@ -49,19 +49,17 @@
 			</view>
 		</view>
 
-		<!-- 商品入口 -->
-		<view class="mall-entry">
-			<view class="mall-card" v-for="(item,index) in mallEntries" :key="index" @click="handleMallEntry(item)">
-				<image class="mall-img" :src="item.image" mode="aspectFill"></image>
-				<view class="mall-mask"></view>
-				<view class="mall-content">
-					<view>
-						<view class="mall-title">{{item.title}}</view>
-						<view class="mall-subtitle">{{item.subtitle}}</view>
-					</view>
-					<view class="mall-btn">{{item.button}}</view>
+		<!-- vip -->
+		<view class="vip-box">
+			<view class="index-title flex_s">
+				<view>VIP会员</view>
+				<view class="grey" @click="switchTab">
+					<text>全国{{total}}家门店适用</text>
+					<image src="/static/image/index_more.png" alt="" class="qh" />
 				</view>
 			</view>
+			<!-- 会员卡组件 -->
+			<vip-card :card-list="cardList" :storeId="myStore.storeId"></vip-card>
 		</view>
 		<!-- 门店教练 -->
 		<view class="shop-jl">
@@ -127,16 +125,19 @@
 
 <script>
 	import CoachScrollView from '@/components/coach-scroll-view.vue';
+	import VipCard from '@/components/vip-card.vue';
 
 	import {
 		getSwiper,
 		getMyStore,
+		getfitCardList,
 		getCoachList,
 		getStoreCount,
 	} from '@/api/index'
 	export default {
 		components: {
 			CoachScrollView,
+			VipCard,
 		},
 		data() {
 			return {
@@ -147,24 +148,12 @@
 				duration: 500,
 				imageList: [], //轮播
 				coachList: [], // 门店教练
+				cardList: [], // vip卡片列表
 				myStore: {}, //我的门店
 				latitude: '',
 				longitude: '',
 				total: 1, //门店总数
 				showModal: false,
-				mallEntries: [{
-						title: '商品商城',
-						subtitle: '周边商城',
-						button: '查看详情',
-						image: '/static/banner01.png'
-					},
-					{
-						title: '积分商品',
-						subtitle: '积分兑换',
-						button: '点击兑换',
-						image: '/static/banner02.png'
-					}
-				],
 			}
 		},
 		onLoad() {
@@ -209,7 +198,7 @@
 					this.showModal = true;
 				});
 			},
-			// 获取当前位置 
+			// 获取当前位置
 			async init() {
 				this.getSwiper();
 				await this.common.getMyLocation(this).then((res) => {
@@ -259,6 +248,7 @@
 					store.distance = parseFloat((store.distance / 1000).toFixed(2));
 					this.myStore = store
 					this.getCoachList(store.storeId);
+					this.getfitCardList(store.storeAddrId);
 					this.getStoreCount(this.latitude, this.longitude)
 				});
 			},
@@ -286,8 +276,21 @@
 					this.$store.state.total = res.total;
 				});
 			},
-			handleMallEntry() {
-				this.config.Toast('功能建设中')
+			// vip会员套餐
+			getfitCardList(storeAddrId) {
+				let data = {
+					storeId: storeAddrId
+					// cardType:3
+				}
+				getfitCardList(data).then((res) => {
+					res.data = res.data.slice(0, 3);
+					this.cardList = res.data.map((item) => {
+						return {
+							...item,
+							cardPrice: item.cardPrice
+						}
+					});
+				});
 			},
 			// 图片预览
 			previewImage(index) {
@@ -320,6 +323,12 @@
 					fail(error) {
 						console.error('调用地图失败：', error);
 					}
+				});
+			},
+			// 跳门店
+			switchTab() {
+				uni.switchTab({
+					url: '/pages/shop/shop'
 				});
 			}
 		}
@@ -458,75 +467,6 @@
 			}
 		}
 
-	}
-
-	.mall-entry {
-		margin-bottom: 38rpx;
-
-		.mall-card {
-			position: relative;
-			height: 156rpx;
-			border-radius: 16rpx;
-			overflow: hidden;
-			margin-bottom: 22rpx;
-			background: #d9d9d9;
-			box-shadow: 0rpx 0rpx 9rpx 0rpx rgba(26, 26, 26, 0.08);
-
-			.mall-img {
-				width: 100%;
-				height: 100%;
-				display: block;
-			}
-
-			.mall-mask {
-				position: absolute;
-				left: 0;
-				top: 0;
-				right: 0;
-				bottom: 0;
-				background: linear-gradient(90deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.08) 54%, rgba(0, 0, 0, 0.5));
-			}
-
-			.mall-content {
-				position: absolute;
-				left: 28rpx;
-				right: 0;
-				top: 0;
-				bottom: 0;
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-			}
-
-			.mall-title {
-				font-size: 36rpx;
-				line-height: 44rpx;
-				color: #ffffff;
-				font-weight: 800;
-				text-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.35);
-			}
-
-			.mall-subtitle {
-				margin-top: 8rpx;
-				font-size: 20rpx;
-				line-height: 26rpx;
-				color: rgba(255, 255, 255, 0.9);
-				font-weight: 600;
-				text-transform: uppercase;
-			}
-
-			.mall-btn {
-				width: 150rpx;
-				height: 72rpx;
-				line-height: 72rpx;
-				background: #000000;
-				color: #ffffff;
-				font-size: 26rpx;
-				font-weight: 800;
-				text-align: center;
-				border-radius: 0;
-			}
-		}
 	}
 
 	// 公共标题
