@@ -72,6 +72,39 @@ public enum CodeAndMsg {
     ERROR_PAUSE_STATE(-68,"停卡状态异常"),
     ERROR_VIP_FEE_RULE_NOT_EXIST(-69,"转让费用规则不存在或未配置"),
     ERROR_VIP_FEE_RULE_FORMAT(-70,"分档配置格式有误"),
+
+    /* ===== 私教管理后台业务码(全局收口,唯一来源;避开 -1~-36 / 101~104 / VIP -50~-70) ===== */
+    /* —— 交易域 -80 ~ -99 —— */
+    ERROR_PRODUCT_OFF(-80,"商品已下架"),
+    ERROR_PRODUCT_NOT_EXIST(-81,"私教商品不存在"),
+    ERROR_STOCK_NOT_ENOUGH(-82,"库存不足"),
+    ERROR_PURCHASE_LIMIT(-83,"已达每人限购数量"),
+    ERROR_COUPON_INVALID(-84,"优惠券不可用"),
+    ERROR_BENEFIT_NOT_EXIST(-85,"会员私教权益不存在"),
+    ERROR_BENEFIT_EXPIRED(-86,"私教权益已过期"),
+    ERROR_BENEFIT_STATUS_ABNORMAL(-87,"私教权益状态异常"),
+    ERROR_LESSON_NOT_ENOUGH(-88,"剩余课时不足"),
+    ERROR_SLOT_TAKEN(-89,"该时段已被约满"),
+    ERROR_SLOT_ILLEGAL(-90,"预约时段不合法"),
+    ERROR_CANCEL_WINDOW(-91,"已超过可无责取消时间"),
+    ERROR_PT_ORDER_NOT_EXIST(-92,"私教订单不存在"),
+    ERROR_PT_ORDER_STATUS(-93,"订单状态不允许该操作"),
+    ERROR_REFUND_AMOUNT_ILLEGAL(-94,"退款金额不合法"),
+    ERROR_COACH_UNAVAILABLE(-95,"该教练当前不可预约"),
+    ERROR_APPOINTMENT_NOT_EXIST(-96,"预约记录不存在"),
+    /* —— 资金域 -100 ~ -119 —— */
+    ERROR_WALLET_NOT_EXIST(-100,"储值账户不存在"),
+    ERROR_WALLET_FROZEN(-101,"储值账户已冻结"),
+    ERROR_WALLET_BALANCE_NOT_ENOUGH(-102,"储值余额不足"),
+    ERROR_INSTALLMENT_PLAN_NOT_EXIST(-103,"分期计划不存在"),
+    ERROR_INSTALLMENT_BILL_NOT_EXIST(-104,"分期账单不存在"),
+    ERROR_INSTALLMENT_BILL_PAID(-105,"该期账单已支付"),
+    ERROR_INSTALLMENT_NOT_CURRENT_PERIOD(-106,"请按顺序支付当前期账单"),
+    /* —— 运营域 -120 ~ -129 —— */
+    ERROR_APPOINTMENT_NOT_FINISH(-120,"仅已完成预约可评价"),
+    ERROR_COMMENT_EXISTS(-121,"该预约已评价"),
+    ERROR_APPOINTMENT_NOT_OWNER(-122,"该预约不属于你"),
+    ERROR_SETTLE_RATIO(-123,"门店分成比例之和必须为100%"),
     ;
 
     CodeAndMsg(Integer code, String msg) {
