@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtCoachLevelDao">
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtCoachLevelEntity">
+        select * from pt_coach_level where id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachLevelEntity">
+        select * from pt_coach_level
+        <where>
+            deleted = 0
+            <if test="levelName != null and levelName != ''">
+                AND level_name LIKE concat('%',#{levelName},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by sort_no desc, id desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from pt_coach_level
+        <where>
+            deleted = 0
+            <if test="levelName != null and levelName != ''">
+                AND level_name LIKE concat('%',#{levelName},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachLevelEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_coach_level
+        (`level_name`, `sort_no`, `is_default`, `status`, `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{levelName}, #{sortNo}, #{isDefault}, #{status}, #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtCoachLevelEntity">
+        update pt_coach_level
+        <set>
+            <if test="levelName != null">`level_name` = #{levelName},</if>
+            <if test="sortNo != null">`sort_no` = #{sortNo},</if>
+            <if test="isDefault != null">`is_default` = #{isDefault},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 逻辑删除 -->
+    <update id="deleteBatch">
+        update pt_coach_level set deleted = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="clearAllDefault">
+        update pt_coach_level set is_default = 0 where deleted = 0 and is_default = 1
+    </update>
+
+    <select id="countByName" resultType="int">
+        select count(*) from pt_coach_level
+        where deleted = 0 and level_name = #{levelName}
+        <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
+    </select>
+
+    <select id="queryOptions" resultType="com.dlc.modules.sys.entity.PtCoachLevelEntity">
+        select id, level_name, sort_no, is_default
+        from pt_coach_level
+        where deleted = 0 and status = 1
+        order by sort_no desc, id asc
+    </select>
+
+</mapper>

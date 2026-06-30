@@ -14,13 +14,15 @@ INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
 SELECT 0, '私教管理', NULL, NULL, 0, 'fa fa-user-circle-o', 20 FROM dual
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.name='私教管理' AND m.parent_id=0);
 
--- 2) 「教练管理」菜单 → 前端 views/modules/sys/coach.vue；perms 平铺 7 个按钮
+-- 2) 「教练管理」菜单 → 前端 views/modules/sys/ptCoach.vue；perms 平铺 7 个按钮
+--    注：路径用 ptCoach（不用 coach），因后端已存在旧 SysCoachController 占用 /sys/coach（旧教练入驻审核），
+--        私教教练为新表 pt_coach，控制器 SysPtCoachController(/sys/ptCoach)，避免 Spring 映射冲突。
 INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
-SELECT t.menu_id, '教练管理', 'modules/sys/coach.html',
-       'sys:coach:list,sys:coach:info,sys:coach:save,sys:coach:update,sys:coach:delete,sys:coach:changeStatus,sys:coach:appointments',
+SELECT t.menu_id, '教练管理', 'modules/sys/ptCoach.html',
+       'sys:ptCoach:list,sys:ptCoach:info,sys:ptCoach:save,sys:ptCoach:update,sys:ptCoach:delete,sys:ptCoach:changeStatus,sys:ptCoach:appointments',
        1, 'fa fa-user', 1
 FROM (SELECT menu_id FROM sys_menu WHERE name='私教管理' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/coach.html');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/ptCoach.html');
 
 -- 3) 「教练等级管理」菜单 → 前端 views/modules/sys/coachLevel.vue；perms 平铺 6 个按钮
 INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
