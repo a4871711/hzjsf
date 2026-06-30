@@ -126,8 +126,8 @@
 
 	.vc-hero {
 		border-radius: 24rpx;
-		background: linear-gradient(135deg, #2b1d12 0%, #4a311d 100%);
-		color: #f6e7d6;
+		background: linear-gradient(135deg, #ff8a3d 0%, #E15B00 100%);
+		color: rgba(255, 255, 255, 0.9);
 		padding: 38rpx 36rpx;
 		box-sizing: border-box;
 		margin-bottom: 24rpx;
@@ -136,8 +136,8 @@
 			display: inline-block;
 			padding: 6rpx 20rpx;
 			border-radius: 22rpx;
-			background: rgba(225, 91, 0, 0.25);
-			color: #ffcaa0;
+			background: rgba(255, 255, 255, 0.25);
+			color: #ffffff;
 			font-size: 22rpx;
 		}
 
@@ -157,7 +157,7 @@
 			.now {
 				font-size: 60rpx;
 				font-weight: 900;
-				color: #ff8a3d;
+				color: #ffffff;
 				line-height: 1;
 
 				.sym {
@@ -169,7 +169,7 @@
 			.base {
 				margin-left: 16rpx;
 				font-size: 24rpx;
-				color: rgba(246, 231, 214, 0.6);
+				color: rgba(255, 255, 255, 0.6);
 				text-decoration: line-through;
 			}
 		}
@@ -183,9 +183,9 @@
 				margin: 0 14rpx 12rpx 0;
 				padding: 6rpx 18rpx;
 				border-radius: 20rpx;
-				background: rgba(255, 255, 255, 0.12);
+				background: rgba(255, 255, 255, 0.22);
 				font-size: 22rpx;
-				color: #f6e7d6;
+				color: #ffffff;
 			}
 		}
 
@@ -193,7 +193,7 @@
 			margin-top: 12rpx;
 			font-size: 22rpx;
 			line-height: 32rpx;
-			color: #ffc9a3;
+			color: #fff2cc;
 		}
 	}
 

@@ -1,23 +1,40 @@
 <template>
-	<scroll-view class="vip-benefit-card" scroll-x="true" :show-scrollbar="false">
+	<view class="vip-benefit-card">
 		<view class="bc-item" v-for="item in cardList" :key="item.vipCardId"
 			@click="goDetail(item)">
-			<view class="bc-top">
-				<view class="bc-name">{{ item.cardName || '--' }}</view>
-				<view class="bc-desc">{{ item.benefitDesc || '专属会员权益' }}</view>
+			<!-- 顶部:图标 + 卡名 + 限时特惠徽章 / 右侧标语 -->
+			<view class="bc-head">
+				<view class="bc-head-l">
+					<view class="bc-icon"><text class="vip-txt">VIP</text></view>
+					<text class="bc-name">{{ item.cardName || '--' }}</text>
+					<text class="bc-badge" v-if="isRaised(item)">限时特惠</text>
+				</view>
+				<text class="bc-slogan">享专属会员权益</text>
 			</view>
-			<view class="bc-price">
-				<text class="sym">¥</text>
-				<text class="num">{{ formatPrice(curPrice(item)) }}</text>
-				<text class="base" v-if="isRaised(item)">首发¥{{ formatPrice(item.price) }}</text>
-			</view>
-			<view class="bc-foot flex_s">
-				<text class="meta" v-if="item.showBuyCount == 1">已售{{ item.soldCount || 0 }}</text>
-				<text class="meta" v-else>有效期{{ item.validityDays || 365 }}天</text>
+
+			<!-- 价格行 + 立即抢购按钮 -->
+			<view class="bc-price-row">
+				<view class="bc-price">
+					<text class="sym">¥</text>
+					<text class="num">{{ formatPrice(curPrice(item)) }}</text>
+					<text class="early" v-if="isRaised(item)">早买更优惠</text>
+				</view>
 				<view class="bc-btn">立即抢购</view>
 			</view>
+
+			<!-- 副标题(权益描述) -->
+			<view class="bc-sub">{{ item.benefitDesc || '开通权益卡 · 享受专属优惠价格' }}</view>
+
+			<view class="bc-divider"></view>
+
+			<!-- 底部标签:用权益卡真实字段(有效期/已售/适用门店) -->
+			<view class="bc-tags">
+				<text class="bc-tag">有效期{{ item.validityDays || 365 }}天</text>
+				<text class="bc-tag" v-if="item.showBuyCount == 1">已售{{ item.soldCount || 0 }}份</text>
+				<text class="bc-tag" v-if="storeCount(item)">适用{{ storeCount(item) }}家门店</text>
+			</view>
 		</view>
-	</scroll-view>
+	</view>
 </template>
 
 <script>
@@ -34,9 +51,14 @@
 			curPrice(item) {
 				return item.currentPrice != null ? item.currentPrice : item.price;
 			},
-			// 当前价高于首发价 → 已触发动态涨价,展示首发价做对比
+			// 当前价高于首发价 → 已触发动态涨价(越晚买越贵)
 			isRaised(item) {
 				return Number(this.curPrice(item)) > Number(item.price);
+			},
+			// 适用门店数量(store_addr_ids 逗号分隔;列表接口未返回该字段时取 0,标签自动隐藏)
+			storeCount(item) {
+				if (!item.storeAddrIds) return 0;
+				return String(item.storeAddrIds).split(',').filter(Boolean).length;
 			},
 			formatPrice(v) {
 				const n = Number(v);
@@ -53,88 +75,156 @@
 
 <style lang="scss" scoped>
 	.vip-benefit-card {
-		white-space: nowrap;
 		width: 100%;
 
 		.bc-item {
-			display: inline-flex;
-			flex-direction: column;
-			justify-content: space-between;
-			vertical-align: top;
-			width: 320rpx;
-			height: 308rpx;
 			box-sizing: border-box;
-			padding: 26rpx 24rpx;
-			margin-right: 20rpx;
+			padding: 28rpx 30rpx;
+			margin-bottom: 24rpx;
 			border-radius: 20rpx;
-			background: linear-gradient(135deg, #fbe7d9 0%, #f6d3b6 100%);
+			background: #ffffff;
+			border: 3rpx solid #E15B00;
 
 			&:last-child {
-				margin-right: 0;
+				margin-bottom: 0;
 			}
 
-			.bc-top {
-				.bc-name {
-					font-size: 30rpx;
-					font-weight: 800;
-					color: #3a2a1c;
-					white-space: nowrap;
-					overflow: hidden;
-					text-overflow: ellipsis;
-				}
-
-				.bc-desc {
-					margin-top: 10rpx;
-					font-size: 22rpx;
-					color: #9a7b5f;
-					white-space: nowrap;
-					overflow: hidden;
-					text-overflow: ellipsis;
-				}
-			}
-
-			.bc-price {
+			// 顶部行
+			.bc-head {
 				display: flex;
-				align-items: baseline;
-				color: #E15B00;
+				align-items: center;
+				justify-content: space-between;
 
-				.sym {
-					font-size: 28rpx;
-					font-weight: 800;
+				.bc-head-l {
+					display: flex;
+					align-items: center;
+					flex: 1;
+					min-width: 0;
+
+					.bc-icon {
+						flex-shrink: 0;
+						width: 56rpx;
+						height: 56rpx;
+						margin-right: 16rpx;
+						border-radius: 50%;
+						background: linear-gradient(135deg, #ff8a3d 0%, #E15B00 100%);
+						display: flex;
+						align-items: center;
+						justify-content: center;
+
+						.vip-txt {
+							font-size: 22rpx;
+							font-weight: 800;
+							color: #ffffff;
+						}
+					}
+
+					.bc-name {
+						font-size: 34rpx;
+						font-weight: 800;
+						color: #1f1f1f;
+						white-space: nowrap;
+						overflow: hidden;
+						text-overflow: ellipsis;
+					}
+
+					.bc-badge {
+						flex-shrink: 0;
+						margin-left: 14rpx;
+						padding: 4rpx 14rpx;
+						border-radius: 16rpx;
+						background: #fdeee2;
+						color: #E15B00;
+						font-size: 20rpx;
+					}
 				}
 
-				.num {
-					font-size: 56rpx;
-					font-weight: 900;
-					line-height: 1;
-				}
-
-				.base {
+				.bc-slogan {
+					flex-shrink: 0;
 					margin-left: 12rpx;
 					font-size: 22rpx;
-					color: #b08968;
-					text-decoration: line-through;
+					color: #999999;
 				}
 			}
 
-			.bc-foot {
-				.meta {
-					font-size: 22rpx;
-					color: #8a6d52;
+			// 价格行
+			.bc-price-row {
+				margin-top: 22rpx;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+
+				.bc-price {
+					display: flex;
+					align-items: baseline;
+					min-width: 0;
+
+					.sym {
+						font-size: 28rpx;
+						font-weight: 800;
+						color: #E15B00;
+					}
+
+					.num {
+						font-size: 56rpx;
+						font-weight: 900;
+						color: #E15B00;
+						line-height: 1;
+					}
+
+					.early {
+						margin-left: 12rpx;
+						font-size: 20rpx;
+						color: #3aa53a;
+						white-space: nowrap;
+					}
 				}
 
 				.bc-btn {
-					min-width: 132rpx;
-					height: 48rpx;
-					line-height: 48rpx;
-					padding: 0 18rpx;
+					flex-shrink: 0;
+					height: 64rpx;
+					line-height: 64rpx;
+					padding: 0 36rpx;
 					box-sizing: border-box;
 					text-align: center;
+					border-radius: 32rpx;
 					background: #E15B00;
-					border-radius: 24rpx;
-					font-size: 24rpx;
-					font-weight: 700;
 					color: #ffffff;
+					font-size: 28rpx;
+					font-weight: 700;
+				}
+			}
+
+			// 副标题
+			.bc-sub {
+				margin-top: 10rpx;
+				font-size: 22rpx;
+				color: #999999;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			.bc-divider {
+				height: 1rpx;
+				background: #eeeeee;
+				margin: 24rpx 0;
+			}
+
+			// 底部标签
+			.bc-tags {
+				display: flex;
+				flex-wrap: wrap;
+				margin-bottom: -12rpx;
+
+				.bc-tag {
+					margin: 0 14rpx 12rpx 0;
+					padding: 6rpx 20rpx;
+					border-radius: 18rpx;
+					background: #fdeee2;
+					border: 1rpx solid #f5c8ab;
+					color: #E15B00;
+					font-size: 22rpx;
 				}
 			}
 		}
