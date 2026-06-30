@@ -89,3 +89,53 @@ export async function getVipCardDetail(params = {}) {
   }
   return Promise.reject(new Error(res.data.msg));
 }
+
+// VIP权益卡购买下单(需登录;后端重算动态价、建待支付权益,返回 data={orderNo, paySum})
+export async function buyVipCard(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/vipCard/buy', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 我的权益(需登录;分页,data 为 PageUtils,记录在 data.list)
+export async function getMyBenefits(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/vipCard/myBenefits', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 申请停卡(需登录;入参 cardOrderId)
+export async function applyCardPause(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/cardPause/apply', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 恢复停卡(需登录;入参 pauseId,按实际天数顺延有效期)
+export async function resumeCardPause(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/cardPause/resume', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 我的停卡记录(需登录;分页,data 为 PageUtils,记录在 data.list)
+export async function getCardPauseList(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/cardPause/list', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}

@@ -148,6 +148,18 @@
 				"style": {
 					"navigationBarTitleText": "权益卡详情"
 				}
+			},
+			{
+				"path": "my_benefits/my_benefits",
+				"style": {
+					"navigationBarTitleText": "我的权益"
+				}
+			},
+			{
+				"path": "card_pause/card_pause",
+				"style": {
+					"navigationBarTitleText": "停卡管理"
+				}
 			}
 		]
 	}]

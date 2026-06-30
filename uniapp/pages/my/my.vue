@@ -96,6 +96,18 @@
 						icon_img: '/static/image/my_icon01.png'
 					},
 					{
+						id: 6,
+						url: '/pagesA/my_benefits/my_benefits',
+						title: '我的权益',
+						icon_img: '/static/image/my_icon01.png'
+					},
+					{
+						id: 7,
+						url: '/pagesA/card_pause/card_pause',
+						title: '停卡管理',
+						icon_img: '/static/image/my_icon03.png'
+					},
+					{
 						id: 2,
 						url: '/pagesA/coupon/coupon',
 						title: '优惠券',

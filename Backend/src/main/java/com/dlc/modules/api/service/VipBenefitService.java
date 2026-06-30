@@ -14,9 +14,9 @@ public interface VipBenefitService {
 
     /**
      * 权益卡购买下单(仅微信):后端按当前 sold_count 重算价(不信前端),
-     * 建待支付权益占位(status=9),返回微信调起参数
+     * 建待支付权益占位(status=9),返回 {orderNo, paySum} 供前端调小程序统一支付(/wx/proPay)
      */
-    SortedMap<String, String> buy(UserInfoVo user, Long vipCardId) throws Exception;
+    Map<String, Object> buy(UserInfoVo user, Long vipCardId);
 
     /**
      * 微信支付成功回调激活:单事务内 幂等激活 + 记账(用途=6) + sold_count+1。

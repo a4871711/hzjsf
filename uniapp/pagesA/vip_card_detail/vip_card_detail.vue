@@ -47,8 +47,12 @@
 
 <script>
 	import {
-		getVipCardDetail
+		getVipCardDetail,
+		buyVipCard
 	} from '@/api/index'
+	import {
+		Wxpay
+	} from '@/api/my'
 
 	export default {
 		data() {
@@ -105,8 +109,51 @@
 				return Number.isInteger(n) ? String(n) : n.toFixed(2);
 			},
 			onBuy() {
-				// 购买接口(/api/vipCard/buy)尚未实现,先占位提示,不伪造下单
-				this.config.Toast('购买功能即将开放，敬请期待');
+				if (!this.vipCardId) {
+					this.config.Toast('缺少权益卡参数');
+					return;
+				}
+				const that = this;
+				// 1) 后端下单(重算动态价、建待支付权益),拿订单号 + 应付金额
+				buyVipCard({
+					vipCardId: this.vipCardId
+				}).then((res) => {
+					const orderNo = res.data.orderNo;
+					const paySum = res.data.paySum;
+					// 2) 复用小程序统一支付 /wx/proPay 取调起参数
+					Wxpay({
+						orderNo: orderNo,
+						paySum: paySum
+					}).then((r) => {
+						if (r.code == 1) {
+							// 3) 调起微信支付(成功后由 /wx/proPayNotify 回调激活权益)
+							uni.requestPayment({
+								appId: r.params.appId,
+								nonceStr: r.params.nonceStr,
+								package: r.params.package,
+								paySign: r.params.paySign,
+								signType: r.params.signType,
+								timeStamp: r.params.timeStamp,
+								success: () => {
+									that.config.Toast('购买成功');
+									setTimeout(() => {
+										uni.redirectTo({
+											url: '/pagesA/my_benefits/my_benefits'
+										});
+									}, 1000);
+								},
+								fail: () => {
+									that.config.Toast('支付已取消');
+								}
+							});
+						} else {
+							that.config.Toast(r.msg || '发起支付失败');
+						}
+					});
+				}).catch((e) => {
+					// 卡已下架/未登录等业务码
+					that.config.Toast((e && e.message) || '下单失败');
+				});
 			}
 		}
 	}

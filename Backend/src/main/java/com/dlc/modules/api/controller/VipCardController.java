@@ -69,17 +69,10 @@ public class VipCardController extends BaseController {
         if (vipCardId == null) {
             return R.reError("缺少参数 vipCardId");
         }
-        // 登录 + 封禁校验(未登录/被禁由 getUserVo 抛对应业务码)
+        // 登录 + 封禁校验(未登录/被禁由 getUserVo 抛对应业务码;卡已下架由 service 抛 ERROR_VIP_CARD_OFF_SHELF)
         UserInfoVo user = getUserVo(request);
-        try {
-            SortedMap<String, String> map = vipBenefitService.buy(user, vipCardId);
-            return R.reOk(map);
-        } catch (RRException e) {
-            // 业务码(如卡已下架 ERROR_VIP_CARD_OFF_SHELF)原样透传
-            throw e;
-        } catch (Exception e) {
-            throw new RRException("微信支付失败", e);
-        }
+        // 返回 {orderNo, paySum},前端据此调 /wx/proPay 调起小程序支付
+        return R.reOk(vipBenefitService.buy(user, vipCardId));
     }
 
     /**

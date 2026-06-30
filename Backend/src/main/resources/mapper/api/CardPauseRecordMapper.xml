@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.CardPauseRecordMapper">
+
+    <!-- card_pause_record 为新表,下划线列 AS 驼峰 -->
+    <sql id="Base_Column_List">
+        pause_id AS pauseId, user_id AS userId, card_order_id AS cardOrderId,
+        pause_month AS pauseMonth, pause_days AS pauseDays, start_time AS startTime,
+        end_time AS endTime, status, created_date AS createdDate
+    </sql>
+
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.CardPauseRecord"
+            useGeneratedKeys="true" keyProperty="pauseId">
+        INSERT INTO card_pause_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="cardOrderId != null">card_order_id,</if>
+            <if test="pauseMonth != null">pause_month,</if>
+            <if test="pauseDays != null">pause_days,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="status != null">status,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="cardOrderId != null">#{cardOrderId},</if>
+            <if test="pauseMonth != null">#{pauseMonth},</if>
+            <if test="pauseDays != null">#{pauseDays},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="status != null">#{status},</if>
+        </trim>
+    </insert>
+
+    <!-- card_order 为老表,列名本身即驼峰;行锁串行化并发停卡 -->
+    <select id="selectCardForUpdate" resultType="com.dlc.modules.api.entity.CardOrder" parameterType="long">
+        SELECT cardOrderId, userId, status, validityDate
+        FROM card_order
+        WHERE cardOrderId = #{cardOrderId}
+        FOR UPDATE
+    </select>
+
+    <select id="countByCardMonth" resultType="int">
+        SELECT COUNT(1) FROM card_pause_record
+        WHERE card_order_id = #{cardOrderId} AND pause_month = #{pauseMonth}
+    </select>
+
+    <select id="countByCardYear" resultType="int">
+        SELECT COUNT(1) FROM card_pause_record
+        WHERE card_order_id = #{cardOrderId} AND pause_month LIKE #{yearPrefix}
+    </select>
+
+    <select id="selectPausingById" resultType="com.dlc.modules.api.entity.CardPauseRecord">
+        SELECT <include refid="Base_Column_List"/>
+        FROM card_pause_record
+        WHERE pause_id = #{pauseId} AND user_id = #{userId} AND status = 0
+        LIMIT 1
+    </select>
+
+    <!-- 幂等恢复:仅停卡中(status=0)命中 -->
+    <update id="resume">
+        UPDATE card_pause_record
+        SET end_time = #{endTime}, pause_days = #{pauseDays}, status = 1
+        WHERE pause_id = #{pauseId} AND status = 0
+    </update>
+
+    <!-- 顺延会员卡有效期(card_order 列名驼峰) -->
+    <update id="extendCardValidity">
+        UPDATE card_order
+        SET validityDate = DATE_ADD(validityDate, INTERVAL #{days} DAY)
+        WHERE cardOrderId = #{cardOrderId}
+    </update>
+
+    <select id="selectMyList" resultType="com.dlc.modules.api.entity.CardPauseRecord" parameterType="map">
+        SELECT <include refid="Base_Column_List"/>
+        FROM card_pause_record
+        <where>
+            user_id = #{userId}
+            <if test="cardOrderId != null and cardOrderId != ''">
+                AND card_order_id = #{cardOrderId}
+            </if>
+        </where>
+        ORDER BY created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyList" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM card_pause_record
+        <where>
+            user_id = #{userId}
+            <if test="cardOrderId != null and cardOrderId != ''">
+                AND card_order_id = #{cardOrderId}
+            </if>
+        </where>
+    </select>
+</mapper>

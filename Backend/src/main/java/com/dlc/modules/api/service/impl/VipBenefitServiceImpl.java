@@ -19,9 +19,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 
 /**
  * VIP 权益卡购买/持有 Service 实现(移动端)
@@ -42,7 +42,7 @@ public class VipBenefitServiceImpl implements VipBenefitService {
     private UserInfoMapper userInfoMapper;
 
     @Override
-    public SortedMap<String, String> buy(UserInfoVo user, Long vipCardId) throws Exception {
+    public Map<String, Object> buy(UserInfoVo user, Long vipCardId) {
         Long userId = user.getUserId();
         // 复用第6步:查上架权益卡 + 后端实时算动态价;不存在/已下架抛 ERROR_VIP_CARD_OFF_SHELF
         VipBenefitCard card = vipCardService.queryVipCardDetail(vipCardId);
@@ -67,8 +67,11 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         vb.setTransferable(1);
         vipBenefitMapper.insertSelective(vb);
 
-        // 微信下单,notifyType 给 null(对齐现有 rechargePay 充值回调流程)
-        return payService.wxRechargePay(price, orderNo, null);
+        // 返回订单号 + 应付金额,前端据此调小程序统一支付(/wx/proPay)调起微信
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("orderNo", orderNo);
+        result.put("paySum", price);
+        return result;
     }
 
     @Override

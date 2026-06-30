@@ -52,6 +52,8 @@ public class WxPayController extends BaseController {
     @Autowired
     private WxPayService wxPayService;
     @Autowired
+    private VipBenefitService vipBenefitService;
+    @Autowired
     private RedisUtils redisUtils;
     @Autowired
     private CardOrderService cardOrderService;
@@ -444,13 +446,19 @@ public class WxPayController extends BaseController {
                 //获取微信订单号
                 String transaction_id = map.get("transaction_id");
                 
-                //更新健身卡订单
-                log.info("-------微信代扣更新健身卡订单=========" );
                 BigDecimal wallet = new BigDecimal(map.get("total_fee")).divide(new BigDecimal(100));
-                int res = cardOrderService.updateCardOrder(orderNo, wallet, transaction_id, ConfigConstant.WXPAY, 0);
-                if (res > 0) {
-                    log.info("=========添加自动续费收支明细==========");
-                    incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,ConfigConstant.WXPAY);
+                if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_CARD_BUY_TYPE)) {
+                    //VIP权益卡(后缀6):单事务记账+激活+sold_count自增,幂等(小程序支付走本回调)
+                    log.info("-------激活VIP权益卡(小程序回调)=========" );
+                    vipBenefitService.activateByOrderNo(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
+                } else {
+                    //更新健身卡订单
+                    log.info("-------微信代扣更新健身卡订单=========" );
+                    int res = cardOrderService.updateCardOrder(orderNo, wallet, transaction_id, ConfigConstant.WXPAY, 0);
+                    if (res > 0) {
+                        log.info("=========添加收支明细==========");
+                        incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,ConfigConstant.WXPAY);
+                    }
                 }
 
                 response.getWriter().print("SUCCESS");
