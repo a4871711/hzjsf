@@ -69,3 +69,23 @@ export async function getFitCardInfo(params = {}) {
   }
   return Promise.reject(new Error(res.data.msg));
 }
+
+// VIP权益卡商品列表(公开,不取身份;返回 data 为分页对象 PageUtils,卡在 data.list)
+export async function getVipCardList(params = {}) {
+  Request.isLogin = false; // 公开接口,无需登录
+  const res = await Request.post('/vipCard/list', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// VIP权益卡商品详情(公开;currentPrice 为后端按购买人数实时算出的动态价)
+export async function getVipCardDetail(params = {}) {
+  Request.isLogin = false; // 公开接口,无需登录
+  const res = await Request.post('/vipCard/detail', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}

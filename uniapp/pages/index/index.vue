@@ -61,6 +61,15 @@
 			<!-- 会员卡组件 -->
 			<vip-card :card-list="cardList" :storeId="myStore.storeId"></vip-card>
 		</view>
+
+		<!-- VIP权益卡(独立于会员卡的可购买权益卡商品) -->
+		<view class="vip-box" v-if="benefitCardList.length">
+			<view class="index-title flex_s">
+				<view>VIP权益卡</view>
+			</view>
+			<vip-benefit-card :card-list="benefitCardList"></vip-benefit-card>
+		</view>
+
 		<!-- 门店教练 -->
 		<view class="shop-jl">
 			<view class="index-title flex_s">
@@ -126,6 +135,7 @@
 <script>
 	import CoachScrollView from '@/components/coach-scroll-view.vue';
 	import VipCard from '@/components/vip-card.vue';
+	import VipBenefitCard from '@/components/vip-benefit-card.vue';
 
 	import {
 		getSwiper,
@@ -133,11 +143,13 @@
 		getfitCardList,
 		getCoachList,
 		getStoreCount,
+		getVipCardList,
 	} from '@/api/index'
 	export default {
 		components: {
 			CoachScrollView,
 			VipCard,
+			VipBenefitCard,
 		},
 		data() {
 			return {
@@ -149,6 +161,7 @@
 				imageList: [], //轮播
 				coachList: [], // 门店教练
 				cardList: [], // vip卡片列表
+				benefitCardList: [], // VIP权益卡列表
 				myStore: {}, //我的门店
 				latitude: '',
 				longitude: '',
@@ -201,6 +214,7 @@
 			// 获取当前位置
 			async init() {
 				this.getSwiper();
+				this.getVipBenefitCardList();
 				await this.common.getMyLocation(this).then((res) => {
 					this.$store.commit('latilongi', {
 						latitude: res.latitude,
@@ -223,6 +237,18 @@
 			// 跳转核销
 			toWriteOff(type) {
 				this.config.path('/pagesA/write_off/write_off?type=' + type);
+			},
+			// VIP权益卡列表(公开,取上架商品;后端按购买人数算动态价 currentPrice)
+			getVipBenefitCardList() {
+				getVipCardList({
+					page: 1,
+					limit: 6
+				}).then((res) => {
+					let page = res.data || {};
+					this.benefitCardList = page.list || [];
+				}).catch(() => {
+					this.benefitCardList = [];
+				});
 			},
 			// 首页轮播
 			getSwiper() {

@@ -142,6 +142,12 @@
 					"navigationBarBackgroundColor": "#141414",
 					"navigationBarTextStyle": "white"
 				}
+			},
+			{
+				"path": "vip_card_detail/vip_card_detail",
+				"style": {
+					"navigationBarTitleText": "权益卡详情"
+				}
 			}
 		]
 	}]
