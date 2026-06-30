@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.VipBenefitMapper">
+
+    <sql id="Base_Column_List">
+        vip_benefit_id AS vipBenefitId, user_id AS userId, origin_user_id AS originUserId,
+        vip_card_id AS vipCardId, source_order_no AS sourceOrderNo, store_id AS storeId,
+        store_addr_id AS storeAddrId, origin_price AS originPrice, start_time AS startTime,
+        expire_time AS expireTime, status, transfer_count AS transferCount,
+        transferable, created_date AS createdDate
+    </sql>
+
+    <!-- 下单建待支付权益占位 -->
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.VipBenefit">
+        INSERT INTO vip_benefit
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="originUserId != null">origin_user_id,</if>
+            <if test="vipCardId != null">vip_card_id,</if>
+            <if test="sourceOrderNo != null">source_order_no,</if>
+            <if test="storeId != null">store_id,</if>
+            <if test="storeAddrId != null">store_addr_id,</if>
+            <if test="originPrice != null">origin_price,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="expireTime != null">expire_time,</if>
+            <if test="status != null">status,</if>
+            <if test="transferCount != null">transfer_count,</if>
+            <if test="transferable != null">transferable,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="originUserId != null">#{originUserId},</if>
+            <if test="vipCardId != null">#{vipCardId},</if>
+            <if test="sourceOrderNo != null">#{sourceOrderNo},</if>
+            <if test="storeId != null">#{storeId},</if>
+            <if test="storeAddrId != null">#{storeAddrId},</if>
+            <if test="originPrice != null">#{originPrice},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="expireTime != null">#{expireTime},</if>
+            <if test="status != null">#{status},</if>
+            <if test="transferCount != null">#{transferCount},</if>
+            <if test="transferable != null">#{transferable},</if>
+        </trim>
+    </insert>
+
+    <!-- 按订单号反查权益实例(记账反查 userId) -->
+    <select id="selectByOrderNo" resultType="com.dlc.modules.api.entity.VipBenefit" parameterType="string">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit
+        WHERE source_order_no = #{orderNo}
+        LIMIT 1
+    </select>
+
+    <!-- 按订单号关联取来源权益卡的 vipCardId / validityDays(激活算到期用) -->
+    <select id="selectCardByOrderNo" resultType="com.dlc.modules.api.entity.VipBenefitCard" parameterType="string">
+        SELECT c.vip_card_id AS vipCardId, c.validity_days AS validityDays
+        FROM vip_benefit b
+        JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        WHERE b.source_order_no = #{orderNo}
+        LIMIT 1
+    </select>
+
+    <!-- 幂等激活:仅 status=9 待支付时才置正常,命中 0 行表示已激活/并发处理过 -->
+    <update id="activate">
+        UPDATE vip_benefit
+        SET status = 0, start_time = #{startTime}, expire_time = #{expireTime}
+        WHERE source_order_no = #{orderNo} AND status = 9
+    </update>
+
+    <!-- 真实购买人数自增(仅购买激活 +1) -->
+    <update id="incrSoldCount">
+        UPDATE vip_benefit_card
+        SET sold_count = sold_count + 1
+        WHERE vip_card_id = #{vipCardId}
+    </update>
+
+    <!-- 我的权益分页列表(默认按 status 过滤;过期与否由前端按 expireTime 实时判断) -->
+    <select id="selectMyBenefits" resultType="com.dlc.modules.api.entity.VipBenefit" parameterType="map">
+        SELECT
+            b.vip_benefit_id AS vipBenefitId, b.user_id AS userId, b.origin_user_id AS originUserId,
+            b.vip_card_id AS vipCardId, b.source_order_no AS sourceOrderNo, b.store_id AS storeId,
+            b.store_addr_id AS storeAddrId, b.origin_price AS originPrice, b.start_time AS startTime,
+            b.expire_time AS expireTime, b.status, b.transfer_count AS transferCount,
+            b.transferable, b.created_date AS createdDate, c.card_name AS cardName
+        FROM vip_benefit b
+        LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        <where>
+            b.user_id = #{userId}
+            <if test="status != null and status != ''">
+                AND b.status = #{status}
+            </if>
+        </where>
+        ORDER BY b.created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyBenefits" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM vip_benefit
+        <where>
+            user_id = #{userId}
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+</mapper>

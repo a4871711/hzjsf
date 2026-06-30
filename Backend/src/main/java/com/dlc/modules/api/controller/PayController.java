@@ -46,6 +46,8 @@ public class PayController extends BaseController{
     private TeamClassOrderService teamClassOrderService;
     @Autowired
     private GoodsOrderService goodsOrderService;
+    @Autowired
+    private VipBenefitService vipBenefitService;
 
     /**
      *  @Auther:YD
@@ -157,7 +159,10 @@ public class PayController extends BaseController{
                 //添加收支明细
                 int payType = ConfigConstant.WXPAY;
                 log.info("=========添加收支明细==========");
-                incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,payType);
+                //VIP权益卡(后缀6)的记账在 activateByOrderNo 内部单事务完成,此处跳过避免重复记账
+                if (!orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_CARD_BUY_TYPE)) {
+                    incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,payType);
+                }
                 if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_ORDER_TYPE)){
                     //更新健身卡订单
                     log.info("-------更新健身卡订单=========================================" );
@@ -174,6 +179,10 @@ public class PayController extends BaseController{
                     //更新商品订单
                     log.info("-------更新商品订单=========================================" );
                     goodsOrderService.updateByOrderNo(orderNo, wallet,transaction_id,payType);
+                }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_CARD_BUY_TYPE)){
+                    //激活VIP权益卡(单事务:记账+激活+sold_count+1,幂等)
+                    log.info("-------激活VIP权益卡=========================================" );
+                    vipBenefitService.activateByOrderNo(orderNo,wallet,transaction_id,payType);
                 }
                 log.info(">>微信回调成功");
                 response.getWriter().print("SUCCESS");

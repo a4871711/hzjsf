@@ -5,6 +5,7 @@ import com.dlc.modules.api.dao.*;
 import com.dlc.modules.api.entity.CardOrder;
 import com.dlc.modules.api.entity.IncomePayDetail;
 import com.dlc.modules.api.entity.UserInfo;
+import com.dlc.modules.api.entity.VipBenefit;
 import com.dlc.modules.api.service.CardOrderService;
 import com.dlc.modules.api.service.IncomePayDetailService;
 import com.dlc.modules.api.vo.UserInfoVo;
@@ -35,6 +36,8 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
     private GoodsOrderMapper goodsOrderMapper;
     @Autowired
     private UserInfoMapper userInfoMapper;
+    @Autowired
+    private VipBenefitMapper vipBenefitMapper;
     /**
      *  @Auther:YD
      *  @parameters:
@@ -77,6 +80,14 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
             //查询当前用户所属门店id
             Long storeId = userInfoMapper.queryStoreIdByUserId(ipd.getUserId());
             ipd.setStoreId(storeId);
+        }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_CARD_BUY_TYPE)){
+            //VIP权益卡购买订单:按订单号反查 vip_benefit 取 userId,再查所属门店
+            VipBenefit vipBenefit = vipBenefitMapper.selectByOrderNo(orderNo);
+            if (vipBenefit != null) {
+                ipd.setUserId(vipBenefit.getUserId());
+                Long storeId = userInfoMapper.queryStoreIdByUserId(vipBenefit.getUserId());
+                ipd.setStoreId(storeId);
+            }
         }
         //订单号
         ipd.setOrderNo(orderNo);
