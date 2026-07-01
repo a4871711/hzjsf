@@ -24,4 +24,11 @@ public interface PtCoachScheduleDao extends BaseDao<PtCoachScheduleEntity> {
 
     /** 校验门店是否属于该教练（pt_coach_store_rel） */
     int countCoachStore(@Param("coachId") Long coachId, @Param("storeId") Long storeId);
+
+    /**
+     * 商品上架校验用：统计「适用门店(storeIds) 内、状态正常、有启用排班」的教练数。
+     * coachIdsFilter 非空时限定在该教练集合内（对应商品指定教练场景）；为空表示不限教练。
+     * 供商品域 checkCanList 跨域只读复用。
+     */
+    int countBookableCoaches(@Param("storeIds") String storeIds, @Param("coachIdsFilter") String coachIdsFilter);
 }

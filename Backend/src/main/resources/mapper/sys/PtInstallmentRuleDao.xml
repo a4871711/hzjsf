@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtInstallmentRuleDao">
+
+    <select id="queryByProductId" resultType="com.dlc.modules.sys.entity.PtInstallmentRuleEntity">
+        select * from pt_installment_rule where product_id = #{value}
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtInstallmentRuleEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_installment_rule
+        (`product_id`, `is_enabled`, `down_payment_amount`, `installment_count`, `installment_interval_months`,
+         `overdue_pause_booking`, `status`, `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{productId}, #{isEnabled}, #{downPaymentAmount}, #{installmentCount}, #{installmentIntervalMonths},
+         #{overduePauseBooking}, #{status}, #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtInstallmentRuleEntity">
+        update pt_installment_rule
+        <set>
+            <if test="isEnabled != null">`is_enabled` = #{isEnabled},</if>
+            <if test="downPaymentAmount != null">`down_payment_amount` = #{downPaymentAmount},</if>
+            <if test="installmentCount != null">`installment_count` = #{installmentCount},</if>
+            <if test="installmentIntervalMonths != null">`installment_interval_months` = #{installmentIntervalMonths},</if>
+            <if test="overduePauseBooking != null">`overdue_pause_booking` = #{overduePauseBooking},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteByProductId">
+        delete from pt_installment_rule where product_id = #{value}
+    </delete>
+
+</mapper>

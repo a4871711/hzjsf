@@ -84,4 +84,15 @@
         select count(*) from pt_coach_store_rel where coach_id = #{coachId} and store_id = #{storeId}
     </select>
 
+    <select id="countBookableCoaches" resultType="int">
+        select count(distinct s.coach_id)
+        from pt_coach_schedule s
+        inner join pt_coach c on c.id = s.coach_id and c.status = 1 and c.deleted = 0
+        where s.is_enabled = 1
+          and s.store_id in (${storeIds})
+        <if test="coachIdsFilter != null and coachIdsFilter != ''">
+            AND s.coach_id in (${coachIdsFilter})
+        </if>
+    </select>
+
 </mapper>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtProductTypeDao">
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtProductTypeEntity">
+        select * from pt_product_type where id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtProductTypeEntity">
+        select * from pt_product_type
+        <where>
+            deleted = 0
+            <if test="typeName != null and typeName != ''">
+                AND type_name LIKE concat('%',#{typeName},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by sort_no desc, id desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from pt_product_type
+        <where>
+            deleted = 0
+            <if test="typeName != null and typeName != ''">
+                AND type_name LIKE concat('%',#{typeName},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtProductTypeEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_product_type
+        (`type_name`, `sort_no`, `status`, `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{typeName}, #{sortNo}, #{status}, #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtProductTypeEntity">
+        update pt_product_type
+        <set>
+            <if test="typeName != null">`type_name` = #{typeName},</if>
+            <if test="sortNo != null">`sort_no` = #{sortNo},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 逻辑删除 -->
+    <update id="deleteBatch">
+        update pt_product_type set deleted = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="countByName" resultType="int">
+        select count(*) from pt_product_type
+        where deleted = 0 and type_name = #{typeName}
+        <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
+    </select>
+
+    <select id="countByTypeIdInProduct" resultType="int">
+        select count(*) from pt_product where deleted = 0 and product_type_id = #{value}
+    </select>
+
+    <select id="queryOptions" resultType="com.dlc.modules.sys.entity.PtProductTypeEntity">
+        select id, type_name, sort_no
+        from pt_product_type
+        where deleted = 0 and status = 1
+        order by sort_no desc, id asc
+    </select>
+
+</mapper>

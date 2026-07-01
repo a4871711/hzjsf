@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.api.dao.PtProductApiDao">
+
+    <sql id="listCols">
+        p.id, p.product_no, p.product_name, p.product_subtitle, p.product_type_id,
+        (select type_name from pt_product_type where id = p.product_type_id) as typeName,
+        p.service_type, p.category_name, p.cover_url, p.product_intro, p.target_desc,
+        p.original_price, p.sale_price, p.member_price, p.new_user_price,
+        p.lesson_count, p.duration_minutes, p.validity_days,
+        p.refund_type, p.refund_rule, p.purchase_limit, p.sale_stock, p.sold_count,
+        p.booking_gap_minutes, p.booking_capacity, p.latest_booking_hours, p.latest_free_cancel_hours,
+        p.no_show_deduct, p.coach_confirm_required, p.sort_no, p.recommend_private, p.recommend_home,
+        (select is_enabled from pt_installment_rule where product_id = p.id) as installmentEnabled,
+        (select is_enabled from pt_product_group_benefit where product_id = p.id) as groupBenefitEnabled,
+        (select gift_count from pt_product_group_benefit where product_id = p.id) as groupBenefitGiftCount,
+        (select validity_days from pt_product_group_benefit where product_id = p.id) as groupBenefitValidityDays
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.api.entity.PtProduct">
+        select <include refid="listCols"/>, p.product_detail
+        from pt_product p
+        where p.id = #{value} and p.deleted = 0 and p.listing_status = 1
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.api.entity.PtProduct">
+        select <include refid="listCols"/>
+        from pt_product p
+        where p.deleted = 0 and p.listing_status = 1
+          and (p.unlisting_at is null or p.unlisting_at &gt; now())
+        <if test="productTypeId != null and productTypeId != ''">
+            AND p.product_type_id = #{productTypeId}
+        </if>
+        <if test="serviceType != null and serviceType != ''">
+            AND p.service_type = #{serviceType}
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
+        </if>
+        order by p.sort_no desc, p.id desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from pt_product p
+        where p.deleted = 0 and p.listing_status = 1
+          and (p.unlisting_at is null or p.unlisting_at &gt; now())
+        <if test="productTypeId != null and productTypeId != ''">
+            AND p.product_type_id = #{productTypeId}
+        </if>
+        <if test="serviceType != null and serviceType != ''">
+            AND p.service_type = #{serviceType}
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
+        </if>
+    </select>
+
+</mapper>
