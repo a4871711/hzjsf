@@ -22,4 +22,7 @@ public interface VipBenefitCardMapper {
 
     /** 按主键查单条上架权益卡,不存在/已下架返回 null */
     VipBenefitCard queryObject(Long vipCardId);
+
+    /** 按主键查权益卡(不带状态过滤),供转让校验判断是否已下架、取适用门店/费用规则 */
+    VipBenefitCard selectByIdIgnoreStatus(Long vipCardId);
 }

@@ -19,6 +19,10 @@
 					<text class="mb-card__label">已转让</text>
 					<text class="mb-card__val">{{ item.transferCount }} 次</text>
 				</view>
+				<!-- 仅正常且可转的权益展示转让费用试算入口 -->
+				<view class="mb-card__foot" v-if="item.canTransfer">
+					<view class="mb-card__btn" @click="quoteTransfer(item)">转让费用试算</view>
+				</view>
 			</view>
 		</view>
 
@@ -35,7 +39,8 @@
 
 <script>
 	import {
-		getMyBenefits
+		getMyBenefits,
+		quoteVipTransfer
 	} from '@/api/index'
 
 	export default {
@@ -47,7 +52,8 @@
 				total: 0,
 				loaded: false,
 				noMore: false,
-				loading: false
+				loading: false,
+				quoting: false
 			}
 		},
 		onLoad() {
@@ -105,7 +111,33 @@
 					expireTimeText: row.expireTime || '支付后生效',
 					originPriceText: this.formatPrice(row.originPrice),
 					statusLabel: this.statusText(row),
-					statusClassName: this.statusClass(row)
+					statusClassName: this.statusClass(row),
+					// 正常 + 可转 + 未过期 才允许试算/转让
+					canTransfer: row.status === 0 && row.transferable === 1 && !this.isExpired(row)
+				});
+			},
+			// 试算本次转让应缴服务费(只读,不落单)
+			quoteTransfer(item) {
+				if (this.quoting) {
+					return;
+				}
+				this.quoting = true;
+				quoteVipTransfer({
+					vipBenefitId: item.vipBenefitId
+				}).then((res) => {
+					this.quoting = false;
+					const d = res.data || {};
+					const fee = Number(d.serviceFee);
+					const feeText = (isNaN(fee) || fee <= 0) ? '免费' : ('¥' + this.formatPrice(d.serviceFee));
+					uni.showModal({
+						title: '转让费用试算',
+						content: '本次为第 ' + d.thisTransferNo + ' 次转让，应缴服务费：' + feeText,
+						showCancel: false,
+						confirmText: '我知道了'
+					});
+				}).catch((e) => {
+					this.quoting = false;
+					this.config.Toast((e && e.message) || '试算失败');
 				});
 			},
 			// 到期实时判断:status=0 且 expireTime < now 视为已过期
@@ -199,6 +231,22 @@
 
 	.mb-card__val {
 		color: #333;
+	}
+
+	.mb-card__foot {
+		display: flex;
+		justify-content: flex-end;
+		padding: 16rpx 0 12rpx;
+		border-top: 1rpx solid #F2F2F2;
+		margin-top: 8rpx;
+	}
+
+	.mb-card__btn {
+		padding: 12rpx 36rpx;
+		font-size: 26rpx;
+		color: #C8923B;
+		border: 1rpx solid #C8923B;
+		border-radius: 100rpx;
 	}
 
 	.mb-empty {

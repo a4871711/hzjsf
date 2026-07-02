@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.MemberBlacklistMapper">
+
+    <!-- 生效中(status=1)黑名单记录数,>0 即视为在黑名单 -->
+    <select id="countActiveByUserId" resultType="int" parameterType="long">
+        SELECT COUNT(1) FROM member_blacklist
+        WHERE user_id = #{userId} AND status = 1
+    </select>
+</mapper>

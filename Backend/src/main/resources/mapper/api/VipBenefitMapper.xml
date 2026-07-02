@@ -44,6 +44,14 @@
         </trim>
     </insert>
 
+    <!-- 按主键查权益实例(转让试算/前置校验用,不带状态过滤) -->
+    <select id="selectById" resultType="com.dlc.modules.api.entity.VipBenefit" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit
+        WHERE vip_benefit_id = #{vipBenefitId}
+        LIMIT 1
+    </select>
+
     <!-- 按订单号反查权益实例(记账反查 userId) -->
     <select id="selectByOrderNo" resultType="com.dlc.modules.api.entity.VipBenefit" parameterType="string">
         SELECT <include refid="Base_Column_List"/>
@@ -106,4 +114,5 @@
             </if>
         </where>
     </select>
+
 </mapper>

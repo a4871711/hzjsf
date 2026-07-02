@@ -47,4 +47,11 @@
         FROM vip_benefit_card
         WHERE vip_card_id = #{vipCardId} AND status = 1
     </select>
+
+    <!-- 不带状态过滤:转让校验需据 status 判断是否已下架,据 store_addr_ids 判适用门店,据 fee_rule_id 取费用规则 -->
+    <select id="selectByIdIgnoreStatus" resultType="com.dlc.modules.api.entity.VipBenefitCard" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit_card
+        WHERE vip_card_id = #{vipCardId}
+    </select>
 </mapper>

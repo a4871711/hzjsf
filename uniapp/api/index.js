@@ -110,6 +110,16 @@ export async function getMyBenefits(params = {}) {
   return Promise.reject(new Error(res.data.msg));
 }
 
+// 转让费用试算(需登录;入参 vipBenefitId,只读不落单。data={vipBenefitId,transferCount,thisTransferNo,serviceFee})
+export async function quoteVipTransfer(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/vipTransfer/quote', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
 // 申请停卡(需登录;入参 cardOrderId)
 export async function applyCardPause(params = {}) {
   Request.isLogin = true; // 需要登录

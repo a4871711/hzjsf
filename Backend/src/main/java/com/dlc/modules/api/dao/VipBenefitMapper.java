@@ -16,6 +16,9 @@ public interface VipBenefitMapper {
     /** 下单时建待支付权益占位(status=9) */
     int insertSelective(VipBenefit vipBenefit);
 
+    /** 按主键查权益实例(转让试算/校验用,不带状态过滤) */
+    VipBenefit selectById(@Param("vipBenefitId") Long vipBenefitId);
+
     /** 按购买订单号反查权益实例(记账反查 userId 用) */
     VipBenefit selectByOrderNo(@Param("orderNo") String orderNo);
 
