@@ -72,6 +72,7 @@ public enum CodeAndMsg {
     ERROR_PAUSE_STATE(-68,"停卡状态异常"),
     ERROR_VIP_FEE_RULE_NOT_EXIST(-69,"转让费用规则不存在或未配置"),
     ERROR_VIP_FEE_RULE_FORMAT(-70,"分档配置格式有误"),
+    ERROR_PAUSE_NOT_VIP_MEMBER(-71,"开通权益会员后才可停卡"),
     ;
 
     CodeAndMsg(Integer code, String msg) {

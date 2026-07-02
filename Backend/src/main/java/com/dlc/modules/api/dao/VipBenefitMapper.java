@@ -41,4 +41,7 @@ public interface VipBenefitMapper {
 
     /** 我的权益总数 */
     int countMyBenefits(Map<String, Object> params);
+
+    /** 该用户名下「正常且未过期」的有效权益卡数量(>0 即为权益会员) */
+    int countValidByUser(@Param("userId") Long userId);
 }

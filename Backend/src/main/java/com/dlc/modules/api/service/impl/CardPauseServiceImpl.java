@@ -5,6 +5,7 @@ import com.dlc.common.utils.CodeAndMsg;
 import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
 import com.dlc.modules.api.dao.CardPauseRecordMapper;
+import com.dlc.modules.api.dao.VipBenefitMapper;
 import com.dlc.modules.api.entity.CardOrder;
 import com.dlc.modules.api.entity.CardPauseRecord;
 import com.dlc.modules.api.service.CardPauseService;
@@ -25,6 +26,8 @@ public class CardPauseServiceImpl implements CardPauseService {
 
     @Autowired
     private CardPauseRecordMapper cardPauseRecordMapper;
+    @Autowired
+    private VipBenefitMapper vipBenefitMapper;
 
     /** 会员卡生效中状态(参考 CardOrderMapper「查当前有效卡」均用 status=4) */
     private static final int CARD_STATUS_ACTIVE = 4;
@@ -33,6 +36,10 @@ public class CardPauseServiceImpl implements CardPauseService {
 
     @Override
     public CardPauseRecord apply(Long userId, Long cardOrderId, Integer pauseDays) {
+        // 权益会员校验:仅持有有效 VIP 权益卡(正常且未过期)的会员可停卡
+        if (vipBenefitMapper.countValidByUser(userId) <= 0) {
+            throw new RRException(CodeAndMsg.ERROR_PAUSE_NOT_VIP_MEMBER);
+        }
         // 行锁被停的卡,串行化同卡并发停卡
         CardOrder card = cardPauseRecordMapper.selectCardForUpdate(cardOrderId);
         // 卡不存在 / 不属于本人 / 非生效中 / 已过期 → 不可停卡
