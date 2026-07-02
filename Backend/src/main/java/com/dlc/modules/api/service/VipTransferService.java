@@ -1,5 +1,6 @@
 package com.dlc.modules.api.service;
 
+import com.dlc.common.utils.PageUtils;
 import com.dlc.modules.api.entity.VipBenefit;
 import com.dlc.modules.api.entity.VipFeeRule;
 import com.dlc.modules.api.vo.UserInfoVo;
@@ -49,4 +50,30 @@ public interface VipTransferService {
      * @return {vipBenefitId, transferCount, thisTransferNo, serviceFee}
      */
     Map<String, Object> quote(Long userId, Long vipBenefitId);
+
+    /**
+     * 发起转让(POST /api/vipTransfer/apply,§5.6 + §7.3.1 + 附录C.1)。
+     * 单事务内:行锁权益 → checkTransferable 全量前置校验 → 在途占用查重(同权益仅一笔在途) →
+     * 按 transfer_count+1 算服务费 → 建转让单。
+     * 服务费>0 → status=10待付费,生成末位后缀7的服务费单号,返回 {orderNo,paySum} 供前端调 /wx/proPay;
+     * 服务费=0 → status=20直接待审核。
+     *
+     * @param fromUser 转让人(getUserVo,已校验封禁)
+     * @param vipBenefitId 待转让权益实例ID
+     * @param toUserId 受让人 userId
+     * @return {transferId, status, serviceFee[, orderNo, paySum]}
+     */
+    Map<String, Object> apply(UserInfoVo fromUser, Long vipBenefitId, Long toUserId);
+
+    /**
+     * 我的转让/受让记录(GET /api/vipTransfer/myList)。
+     * params:userId(必)、role(1我发起 2我接收 空=全部)、status(可选)、page/limit。
+     */
+    PageUtils myList(Map<String, Object> params);
+
+    /**
+     * 服务费支付成功回调(§7.3.3 + 附录B.3):单事务内 status=10→20待审核 + 记账(用途=7),幂等。
+     * @return 受影响行数(0=重复回调/状态已变,不重复记账)
+     */
+    int payFeeCallback(String feeOrderNo, BigDecimal money, String transactionNumber, Integer payType);
 }

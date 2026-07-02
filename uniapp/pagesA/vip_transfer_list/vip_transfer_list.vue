@@ -1,0 +1,267 @@
+<template>
+	<view class="tl-page">
+		<!-- 角色切换 -->
+		<view class="tl-tabs">
+			<view class="tl-tab" :class="{ 'is-on': role === '' }" @click="switchRole('')">全部</view>
+			<view class="tl-tab" :class="{ 'is-on': role === 1 }" @click="switchRole(1)">我发起的</view>
+			<view class="tl-tab" :class="{ 'is-on': role === 2 }" @click="switchRole(2)">我接收的</view>
+		</view>
+
+		<view v-if="list.length" class="tl-list">
+			<view class="tl-card" v-for="item in list" :key="item.viewKey">
+				<view class="tl-card__head">
+					<text class="tl-card__name">{{ item.cardNameText }}</text>
+					<text class="tl-card__tag" :class="item.statusClassName">{{ item.statusLabel }}</text>
+				</view>
+				<view class="tl-row">
+					<text class="tl-label">角色</text>
+					<text class="tl-val">{{ item.roleLabel }}</text>
+				</view>
+				<view class="tl-row">
+					<text class="tl-label">服务费</text>
+					<text class="tl-val">{{ item.feeText }}</text>
+				</view>
+				<view class="tl-row">
+					<text class="tl-label">发起时间</text>
+					<text class="tl-val">{{ item.createdDate || '-' }}</text>
+				</view>
+				<view class="tl-row" v-if="item.auditRemark">
+					<text class="tl-label">审核备注</text>
+					<text class="tl-val">{{ item.auditRemark }}</text>
+				</view>
+			</view>
+		</view>
+
+		<view v-else-if="loaded" class="tl-empty">
+			<text class="tl-empty__txt">暂无转让记录</text>
+		</view>
+
+		<view v-if="list.length" class="tl-more">{{ noMore ? '没有更多了' : '加载中...' }}</view>
+	</view>
+</template>
+
+<script>
+	import {
+		getMyTransferList
+	} from '@/api/index'
+
+	export default {
+		data() {
+			return {
+				list: [],
+				role: '',
+				page: 1,
+				limit: 10,
+				total: 0,
+				loaded: false,
+				noMore: false,
+				loading: false,
+				myUserId: null
+			}
+		},
+		onLoad() {
+			const info = uni.getStorageSync('userinfo') || {};
+			this.myUserId = info.userId != null ? Number(info.userId) : null;
+			this.loadList(true);
+		},
+		onPullDownRefresh() {
+			this.loadList(true, () => uni.stopPullDownRefresh());
+		},
+		onReachBottom() {
+			if (!this.noMore) {
+				this.loadList(false);
+			}
+		},
+		methods: {
+			switchRole(role) {
+				if (this.role === role) {
+					return;
+				}
+				this.role = role;
+				this.loadList(true);
+			},
+			loadList(reset, done) {
+				if (this.loading) {
+					done && done();
+					return;
+				}
+				if (reset) {
+					this.page = 1;
+					this.noMore = false;
+				}
+				this.loading = true;
+				const params = {
+					page: this.page,
+					limit: this.limit
+				};
+				if (this.role !== '') {
+					params.role = this.role;
+				}
+				getMyTransferList(params).then((res) => {
+					const data = res.data || {};
+					const rows = data.list || [];
+					const baseIndex = reset ? 0 : this.list.length;
+					const normalized = rows.map((item, index) => this.normalize(item, baseIndex + index));
+					this.total = data.totalCount || 0;
+					this.list = reset ? normalized : this.list.concat(normalized);
+					this.noMore = this.list.length >= this.total;
+					if (!this.noMore) {
+						this.page += 1;
+					}
+					this.loaded = true;
+					this.loading = false;
+					done && done();
+				}).catch((e) => {
+					this.loading = false;
+					this.loaded = true;
+					this.config.Toast((e && e.message) || '加载失败');
+					done && done();
+				});
+			},
+			normalize(item, index) {
+				const row = item || {};
+				const isFrom = this.myUserId != null && Number(row.fromUserId) === this.myUserId;
+				return Object.assign({}, row, {
+					viewKey: row.transferId ? String(row.transferId) : 'tf-' + index,
+					cardNameText: row.cardName || '权益卡',
+					roleLabel: isFrom ? '我转出' : '我受让',
+					feeText: this.feeText(row.serviceFee),
+					statusLabel: this.statusText(row.status),
+					statusClassName: this.statusClass(row.status)
+				});
+			},
+			feeText(v) {
+				const n = Number(v);
+				if (isNaN(n) || n <= 0) return '免费';
+				return '¥' + (Number.isInteger(n) ? String(n) : n.toFixed(2));
+			},
+			statusText(status) {
+				const map = {
+					10: '待付费',
+					20: '待审核',
+					31: '已驳回',
+					40: '待确认',
+					51: '已拒绝',
+					52: '已超时',
+					60: '已撤回',
+					70: '已生效'
+				};
+				return map[status] || '未知';
+			},
+			statusClass(status) {
+				if (status === 70) return 'is-done';
+				if (status === 10 || status === 20 || status === 40) return 'is-on';
+				return 'is-gray';
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	page {
+		background: #F4F4F4;
+	}
+
+	.tl-page {
+		min-height: 100vh;
+		background: #F4F4F4;
+		padding: 0 24rpx 20rpx;
+	}
+
+	.tl-tabs {
+		display: flex;
+		background: #FFFFFF;
+		border-radius: 16rpx;
+		margin: 20rpx 0;
+		padding: 8rpx;
+	}
+
+	.tl-tab {
+		flex: 1;
+		text-align: center;
+		padding: 16rpx 0;
+		font-size: 26rpx;
+		color: #666;
+		border-radius: 12rpx;
+	}
+
+	.tl-tab.is-on {
+		background: #FBF0DC;
+		color: #C8923B;
+		font-weight: 600;
+	}
+
+	.tl-card {
+		background: #FFFFFF;
+		border-radius: 16rpx;
+		padding: 28rpx 28rpx 12rpx;
+		margin-bottom: 20rpx;
+		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+	}
+
+	.tl-card__head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 18rpx;
+	}
+
+	.tl-card__name {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #222;
+	}
+
+	.tl-card__tag {
+		font-size: 22rpx;
+		padding: 4rpx 16rpx;
+		border-radius: 100rpx;
+	}
+
+	.tl-card__tag.is-on {
+		color: #E8541E;
+		background: #FDEDE4;
+	}
+
+	.tl-card__tag.is-done {
+		color: #2BA471;
+		background: #E6F4EC;
+	}
+
+	.tl-card__tag.is-gray {
+		color: #999;
+		background: #EEE;
+	}
+
+	.tl-row {
+		display: flex;
+		justify-content: space-between;
+		padding: 10rpx 0;
+		font-size: 26rpx;
+	}
+
+	.tl-label {
+		color: #999;
+	}
+
+	.tl-val {
+		color: #333;
+	}
+
+	.tl-empty {
+		padding-top: 200rpx;
+		text-align: center;
+	}
+
+	.tl-empty__txt {
+		color: #999;
+		font-size: 28rpx;
+	}
+
+	.tl-more {
+		text-align: center;
+		color: #BBB;
+		font-size: 24rpx;
+		padding: 20rpx 0 40rpx;
+	}
+</style>

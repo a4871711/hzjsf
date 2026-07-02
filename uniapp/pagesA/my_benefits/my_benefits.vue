@@ -1,5 +1,9 @@
 <template>
 	<view class="mb-page">
+		<!-- 顶部入口:我的转让记录 -->
+		<view class="mb-topbar">
+			<text class="mb-topbar__link" @click="goTransferList">我的转让记录 ›</text>
+		</view>
 		<!-- 列表 -->
 		<view v-if="list.length" class="mb-list">
 			<view class="mb-card" v-for="item in list" :key="item.viewKey">
@@ -19,9 +23,10 @@
 					<text class="mb-card__label">已转让</text>
 					<text class="mb-card__val">{{ item.transferCount }} 次</text>
 				</view>
-				<!-- 仅正常且可转的权益展示转让费用试算入口 -->
+				<!-- 仅正常且可转的权益展示试算/发起入口 -->
 				<view class="mb-card__foot" v-if="item.canTransfer">
-					<view class="mb-card__btn" @click="quoteTransfer(item)">转让费用试算</view>
+					<view class="mb-card__btn mb-card__btn--ghost" @click="quoteTransfer(item)">费用试算</view>
+					<view class="mb-card__btn mb-card__btn--primary" @click="goTransfer(item)">发起转让</view>
 				</view>
 			</view>
 		</view>
@@ -140,6 +145,19 @@
 					this.config.Toast((e && e.message) || '试算失败');
 				});
 			},
+			// 跳转发起转让页(带权益ID与卡名)
+			goTransfer(item) {
+				uni.navigateTo({
+					url: '/pagesA/vip_transfer_apply/vip_transfer_apply?vipBenefitId=' + item.vipBenefitId +
+						'&cardName=' + encodeURIComponent(item.cardNameText || '')
+				});
+			},
+			// 跳转我的转让记录
+			goTransferList() {
+				uni.navigateTo({
+					url: '/pagesA/vip_transfer_list/vip_transfer_list'
+				});
+			},
 			// 到期实时判断:status=0 且 expireTime < now 视为已过期
 			isExpired(item) {
 				if (!item.expireTime) return false;
@@ -233,6 +251,17 @@
 		color: #333;
 	}
 
+	.mb-topbar {
+		display: flex;
+		justify-content: flex-end;
+		padding: 4rpx 4rpx 16rpx;
+	}
+
+	.mb-topbar__link {
+		font-size: 26rpx;
+		color: #C8923B;
+	}
+
 	.mb-card__foot {
 		display: flex;
 		justify-content: flex-end;
@@ -244,9 +273,18 @@
 	.mb-card__btn {
 		padding: 12rpx 36rpx;
 		font-size: 26rpx;
+		border-radius: 100rpx;
+	}
+
+	.mb-card__btn--ghost {
 		color: #C8923B;
 		border: 1rpx solid #C8923B;
-		border-radius: 100rpx;
+		margin-right: 20rpx;
+	}
+
+	.mb-card__btn--primary {
+		color: #FFFFFF;
+		background: #E8541E;
 	}
 
 	.mb-empty {

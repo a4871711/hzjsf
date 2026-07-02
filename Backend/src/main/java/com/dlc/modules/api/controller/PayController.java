@@ -48,6 +48,8 @@ public class PayController extends BaseController{
     private GoodsOrderService goodsOrderService;
     @Autowired
     private VipBenefitService vipBenefitService;
+    @Autowired
+    private com.dlc.modules.api.service.VipTransferService vipTransferService;
 
     /**
      *  @Auther:YD
@@ -159,8 +161,10 @@ public class PayController extends BaseController{
                 //添加收支明细
                 int payType = ConfigConstant.WXPAY;
                 log.info("=========添加收支明细==========");
-                //VIP权益卡(后缀6)的记账在 activateByOrderNo 内部单事务完成,此处跳过避免重复记账
-                if (!orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_CARD_BUY_TYPE)) {
+                //VIP权益卡(后缀6)/转让服务费(后缀7)的记账在各自 service 内部单事务完成,此处跳过避免重复记账
+                String vipSuffix = orderNo.substring(orderNo.length()-1);
+                if (!vipSuffix.equals(ConfigConstant.VIP_CARD_BUY_TYPE)
+                        && !vipSuffix.equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)) {
                     incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,payType);
                 }
                 if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_ORDER_TYPE)){
@@ -183,6 +187,10 @@ public class PayController extends BaseController{
                     //激活VIP权益卡(单事务:记账+激活+sold_count+1,幂等)
                     log.info("-------激活VIP权益卡=========================================" );
                     vipBenefitService.activateByOrderNo(orderNo,wallet,transaction_id,payType);
+                }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)){
+                    //VIP转让服务费(单事务:记账+转让单10→20待审核,幂等)
+                    log.info("-------VIP转让服务费支付成功=========================================" );
+                    vipTransferService.payFeeCallback(orderNo,wallet,transaction_id,payType);
                 }
                 log.info(">>微信回调成功");
                 response.getWriter().print("SUCCESS");

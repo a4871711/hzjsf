@@ -52,6 +52,15 @@
         LIMIT 1
     </select>
 
+    <!-- 按主键行锁查权益实例(发起转让串行化) -->
+    <select id="selectByIdForUpdate" resultType="com.dlc.modules.api.entity.VipBenefit" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit
+        WHERE vip_benefit_id = #{vipBenefitId}
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
     <!-- 按订单号反查权益实例(记账反查 userId) -->
     <select id="selectByOrderNo" resultType="com.dlc.modules.api.entity.VipBenefit" parameterType="string">
         SELECT <include refid="Base_Column_List"/>

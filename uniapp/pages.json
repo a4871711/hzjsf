@@ -160,7 +160,19 @@
 				"style": {
 					"navigationBarTitleText": "停卡管理"
 				}
-			}
+			},
+				{
+					"path": "vip_transfer_apply/vip_transfer_apply",
+					"style": {
+						"navigationBarTitleText": "发起转让"
+					}
+				},
+				{
+					"path": "vip_transfer_list/vip_transfer_list",
+					"style": {
+						"navigationBarTitleText": "我的转让"
+					}
+				}
 		]
 	}]
 }

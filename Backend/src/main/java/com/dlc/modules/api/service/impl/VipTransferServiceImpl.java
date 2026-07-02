@@ -3,13 +3,22 @@ package com.dlc.modules.api.service.impl;
 import com.alibaba.fastjson.JSONArray;
 import com.dlc.common.exception.RRException;
 import com.dlc.common.utils.CodeAndMsg;
+import com.dlc.common.utils.ConfigConstant;
+import com.dlc.common.utils.OrderNoGenerator;
+import com.dlc.common.utils.PageUtils;
+import com.dlc.common.utils.Query;
 import com.dlc.modules.api.dao.MemberBlacklistMapper;
 import com.dlc.modules.api.dao.VipBenefitCardMapper;
 import com.dlc.modules.api.dao.VipBenefitMapper;
+import com.dlc.modules.api.dao.UserInfoMapper;
+import com.dlc.modules.api.dao.VipBenefitTransferMapper;
 import com.dlc.modules.api.dao.VipFeeRuleMapper;
 import com.dlc.modules.api.entity.VipBenefit;
 import com.dlc.modules.api.entity.VipBenefitCard;
+import com.dlc.modules.api.entity.VipBenefitTransfer;
 import com.dlc.modules.api.entity.VipFeeRule;
+import com.dlc.modules.api.service.IncomePayDetailService;
+import com.dlc.modules.api.service.UserInfoService;
 import com.dlc.modules.api.service.VipTransferService;
 import com.dlc.modules.api.vo.UserInfoVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +47,14 @@ public class VipTransferServiceImpl implements VipTransferService {
     private VipFeeRuleMapper vipFeeRuleMapper;
     @Autowired
     private MemberBlacklistMapper memberBlacklistMapper;
+    @Autowired
+    private VipBenefitTransferMapper vipBenefitTransferMapper;
+    @Autowired
+    private UserInfoService userInfoService;
+    @Autowired
+    private UserInfoMapper userInfoMapper;
+    @Autowired
+    private IncomePayDetailService incomePayDetailService;
 
     // ====================== 8.2 前置校验集 ======================
 
@@ -220,14 +237,8 @@ public class VipTransferServiceImpl implements VipTransferService {
         if (benefit.getUserId() == null || !benefit.getUserId().equals(userId)) {
             throw new RRException(CodeAndMsg.ERROR_VIP_BENEFIT_NOT_OWNER);
         }
-        // 取该权益来源权益卡的 fee_rule_id → 费用规则(未配规则=免费,见 D-4)
-        VipFeeRule feeRule = null;
-        VipBenefitCard card = vipBenefitCardMapper.selectByIdIgnoreStatus(benefit.getVipCardId());
-        if (card != null && card.getFeeRuleId() != null) {
-            feeRule = vipFeeRuleMapper.selectById(card.getFeeRuleId());
-        }
         int transferCount = benefit.getTransferCount() == null ? 0 : benefit.getTransferCount();
-        BigDecimal serviceFee = calcTransferFee(benefit, feeRule);
+        BigDecimal serviceFee = resolveFee(benefit);
 
         Map<String, Object> data = new LinkedHashMap<String, Object>();
         data.put("vipBenefitId", benefit.getVipBenefitId());
@@ -235,5 +246,101 @@ public class VipTransferServiceImpl implements VipTransferService {
         data.put("thisTransferNo", transferCount + 1);
         data.put("serviceFee", serviceFee);
         return data;
+    }
+
+    /** 载入权益来源卡的费用规则并按 transfer_count+1 算本次服务费(未配规则=免费,见 D-4) */
+    private BigDecimal resolveFee(VipBenefit benefit) {
+        VipFeeRule feeRule = null;
+        VipBenefitCard card = vipBenefitCardMapper.selectByIdIgnoreStatus(benefit.getVipCardId());
+        if (card != null && card.getFeeRuleId() != null) {
+            feeRule = vipFeeRuleMapper.selectById(card.getFeeRuleId());
+        }
+        return calcTransferFee(benefit, feeRule);
+    }
+
+    // ====================== 5.6 / 7.3.1 发起转让 ======================
+
+    @Override
+    public Map<String, Object> apply(UserInfoVo fromUser, Long vipBenefitId, Long toUserId) {
+        // 行锁权益,串行化同权益并发发起(附录C.1)
+        VipBenefit benefit = vipBenefitMapper.selectByIdForUpdate(vipBenefitId);
+        // 受让人(selectByUserId 走 SELECT *,带出 nowStoreId/auditStatus;不存在=null,由校验拦)
+        UserInfoVo toUser = (toUserId == null) ? null
+                : userInfoService.selectByUserId(String.valueOf(toUserId));
+        // 全量前置校验(命中抛附录A码;含权益归属/状态/有效期/双方封禁黑名单/适用门店/卡下架)
+        checkTransferable(benefit, fromUser, toUser);
+        // 在途唯一占用:同权益只允许一笔在途(10/20/40),否则并发两笔"收费不退"
+        if (vipBenefitTransferMapper.countInProgress(vipBenefitId) > 0) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_IN_PROGRESS);
+        }
+        // 后端重算服务费(按 transfer_count+1 命中分档),不信前端
+        BigDecimal fee = resolveFee(benefit);
+
+        VipBenefitTransfer t = new VipBenefitTransfer();
+        t.setVipBenefitId(vipBenefitId);
+        t.setFromUserId(fromUser.getUserId());
+        t.setToUserId(toUserId);
+        // 门店留痕(过户不改归属):双方统一取门店 store_id 口径,避免 from(store_id)/to(store_addr_id)混用
+        t.setFromStoreId(benefit.getStoreId());
+        t.setToStoreId(userInfoMapper.queryStoreIdByUserId(toUserId));
+        t.setServiceFee(fee);
+        t.setRefundStatus(0);
+
+        Map<String, Object> data = new LinkedHashMap<String, Object>();
+        if (fee.compareTo(BigDecimal.ZERO) > 0) {
+            // 服务费>0:待付费,生成末位后缀7的服务费单号(uk_fee_order 唯一)
+            String feeOrderNo = OrderNoGenerator.getOrderIdByTime() + ConfigConstant.VIP_TRANSFER_FEE_TYPE;
+            t.setServiceFeeOrderNo(feeOrderNo);
+            t.setStatus(10);
+            vipBenefitTransferMapper.insertSelective(t);
+            data.put("transferId", t.getTransferId());
+            data.put("status", 10);
+            data.put("serviceFee", fee);
+            // 前端据此调 /wx/proPay 拉起微信支付,成功后 proPayNotify(后缀7) 置待审核
+            data.put("orderNo", feeOrderNo);
+            data.put("paySum", fee);
+        } else {
+            // 免费(首档免费/未配规则):直接进待审核
+            t.setStatus(20);
+            vipBenefitTransferMapper.insertSelective(t);
+            data.put("transferId", t.getTransferId());
+            data.put("status", 20);
+            data.put("serviceFee", fee);
+        }
+        return data;
+    }
+
+    // ====================== 5.7 我的转让/受让记录 ======================
+
+    @Override
+    public PageUtils myList(Map<String, Object> params) {
+        Query query = new Query(params);
+        List<VipBenefitTransfer> list = vipBenefitTransferMapper.selectMyList(query);
+        int total = vipBenefitTransferMapper.countMyList(query);
+        return new PageUtils(list, total, query.getLimit(), query.getPage());
+    }
+
+    // ====================== 7.3.3 服务费支付回调 ======================
+
+    @Override
+    public int payFeeCallback(String feeOrderNo, BigDecimal money, String transactionNumber, Integer payType) {
+        VipBenefitTransfer transfer = vipBenefitTransferMapper.selectByFeeOrderNo(feeOrderNo);
+        // 不存在 / 非待付费(重复回调或状态已变) → 幂等返回,不记账
+        if (transfer == null || transfer.getStatus() == null || transfer.getStatus() != 10) {
+            return 0;
+        }
+        // 金额一致性:实付必须等于建单时后端重算的服务费(合法流程必然相等);少付/篡改回调不推进不记账
+        if (money == null || transfer.getServiceFee() == null
+                || money.compareTo(transfer.getServiceFee()) != 0) {
+            return 0;
+        }
+        // 幂等推进 10→20 待审核 + 留痕交易号;并发/重复回调命中0行直接返回,不重复记账
+        int rows = vipBenefitTransferMapper.feePaid(feeOrderNo, transactionNumber);
+        if (rows == 0) {
+            return 0;
+        }
+        // 同事务记账(用途按末位后缀自动=7,付费人=转让人)
+        incomePayDetailService.saveIncomePayDetail(feeOrderNo, transactionNumber, money, payType);
+        return rows;
     }
 }

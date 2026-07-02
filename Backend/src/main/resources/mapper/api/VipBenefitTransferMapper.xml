@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.api.dao.VipBenefitTransferMapper">
+
+    <sql id="Base_Column_List">
+        transfer_id AS transferId, vip_benefit_id AS vipBenefitId, from_user_id AS fromUserId,
+        to_user_id AS toUserId, from_store_id AS fromStoreId, to_store_id AS toStoreId,
+        service_fee AS serviceFee, service_fee_order_no AS serviceFeeOrderNo,
+        transaction_number AS transactionNumber, status, audit_user_id AS auditUserId,
+        audit_time AS auditTime, audit_remark AS auditRemark, confirm_deadline AS confirmDeadline,
+        refund_status AS refundStatus, created_date AS createdDate, effect_time AS effectTime
+    </sql>
+
+    <!-- 发起转让:建转让单 -->
+    <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.VipBenefitTransfer"
+            useGeneratedKeys="true" keyProperty="transferId">
+        INSERT INTO vip_benefit_transfer
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="vipBenefitId != null">vip_benefit_id,</if>
+            <if test="fromUserId != null">from_user_id,</if>
+            <if test="toUserId != null">to_user_id,</if>
+            <if test="fromStoreId != null">from_store_id,</if>
+            <if test="toStoreId != null">to_store_id,</if>
+            <if test="serviceFee != null">service_fee,</if>
+            <if test="serviceFeeOrderNo != null">service_fee_order_no,</if>
+            <if test="status != null">status,</if>
+            <if test="refundStatus != null">refund_status,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="vipBenefitId != null">#{vipBenefitId},</if>
+            <if test="fromUserId != null">#{fromUserId},</if>
+            <if test="toUserId != null">#{toUserId},</if>
+            <if test="fromStoreId != null">#{fromStoreId},</if>
+            <if test="toStoreId != null">#{toStoreId},</if>
+            <if test="serviceFee != null">#{serviceFee},</if>
+            <if test="serviceFeeOrderNo != null">#{serviceFeeOrderNo},</if>
+            <if test="status != null">#{status},</if>
+            <if test="refundStatus != null">#{refundStatus},</if>
+        </trim>
+    </insert>
+
+    <!-- 同一权益在途转让计数:20待审核/40待确认恒计入;10待付费仅计30分钟内的新单,
+         放弃支付的旧待付费单30分钟后不再占用,避免权益被永久锁死(超时清理任务见后续步骤) -->
+    <select id="countInProgress" resultType="int" parameterType="long">
+        SELECT COUNT(1) FROM vip_benefit_transfer
+        WHERE vip_benefit_id = #{vipBenefitId}
+          AND ( status IN (20, 40)
+                OR (status = 10 AND created_date > DATE_SUB(NOW(), INTERVAL 30 MINUTE)) )
+    </select>
+
+    <!-- 服务费支付成功:仅 status=10→20,幂等(重复回调命中0行) -->
+    <update id="feePaid">
+        UPDATE vip_benefit_transfer
+        SET status = 20, transaction_number = #{transactionNumber}
+        WHERE service_fee_order_no = #{feeOrderNo} AND status = 10
+    </update>
+
+    <!-- 按服务费订单号反查转让单(记账反查转让人) -->
+    <select id="selectByFeeOrderNo" resultType="com.dlc.modules.api.entity.VipBenefitTransfer" parameterType="string">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit_transfer
+        WHERE service_fee_order_no = #{orderNo}
+        LIMIT 1
+    </select>
+
+    <!-- 我的转让/受让记录(带卡名) -->
+    <select id="selectMyList" resultType="com.dlc.modules.api.entity.VipBenefitTransfer" parameterType="map">
+        SELECT
+            t.transfer_id AS transferId, t.vip_benefit_id AS vipBenefitId, t.from_user_id AS fromUserId,
+            t.to_user_id AS toUserId, t.from_store_id AS fromStoreId, t.to_store_id AS toStoreId,
+            t.service_fee AS serviceFee, t.service_fee_order_no AS serviceFeeOrderNo,
+            t.transaction_number AS transactionNumber, t.status, t.audit_user_id AS auditUserId,
+            t.audit_time AS auditTime, t.audit_remark AS auditRemark, t.confirm_deadline AS confirmDeadline,
+            t.refund_status AS refundStatus, t.created_date AS createdDate, t.effect_time AS effectTime,
+            c.card_name AS cardName
+        FROM vip_benefit_transfer t
+        LEFT JOIN vip_benefit b ON t.vip_benefit_id = b.vip_benefit_id
+        LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        <where>
+            <choose>
+                <when test="role != null and role == 1">AND t.from_user_id = #{userId}</when>
+                <when test="role != null and role == 2">AND t.to_user_id = #{userId}</when>
+                <otherwise>AND (t.from_user_id = #{userId} OR t.to_user_id = #{userId})</otherwise>
+            </choose>
+            <if test="status != null and status != ''">
+                AND t.status = #{status}
+            </if>
+        </where>
+        ORDER BY t.created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyList" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM vip_benefit_transfer t
+        <where>
+            <choose>
+                <when test="role != null and role == 1">AND t.from_user_id = #{userId}</when>
+                <when test="role != null and role == 2">AND t.to_user_id = #{userId}</when>
+                <otherwise>AND (t.from_user_id = #{userId} OR t.to_user_id = #{userId})</otherwise>
+            </choose>
+            <if test="status != null and status != ''">
+                AND t.status = #{status}
+            </if>
+        </where>
+    </select>
+</mapper>

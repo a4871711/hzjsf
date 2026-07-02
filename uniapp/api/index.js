@@ -120,6 +120,26 @@ export async function quoteVipTransfer(params = {}) {
   return Promise.reject(new Error(res.data.msg));
 }
 
+// 发起转让(需登录;入参 vipBenefitId,toUserId。data 含 {transferId,status,serviceFee[,orderNo,paySum]})
+export async function applyVipTransfer(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/vipTransfer/apply', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 我的转让/受让记录(需登录;role 1我发起 2我接收 空全部,status 可选,分页 data.list)
+export async function getMyTransferList(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/vipTransfer/myList', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
 // 申请停卡(需登录;入参 cardOrderId)
 export async function applyCardPause(params = {}) {
   Request.isLogin = true; // 需要登录

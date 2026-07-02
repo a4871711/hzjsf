@@ -19,6 +19,9 @@ public interface VipBenefitMapper {
     /** 按主键查权益实例(转让试算/校验用,不带状态过滤) */
     VipBenefit selectById(@Param("vipBenefitId") Long vipBenefitId);
 
+    /** 按主键行锁查权益实例(发起转让 apply 串行化,防并发链式转让/回调读到旧持有人) */
+    VipBenefit selectByIdForUpdate(@Param("vipBenefitId") Long vipBenefitId);
+
     /** 按购买订单号反查权益实例(记账反查 userId 用) */
     VipBenefit selectByOrderNo(@Param("orderNo") String orderNo);
 

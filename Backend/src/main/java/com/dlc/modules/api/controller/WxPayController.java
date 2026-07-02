@@ -54,6 +54,8 @@ public class WxPayController extends BaseController {
     @Autowired
     private VipBenefitService vipBenefitService;
     @Autowired
+    private com.dlc.modules.api.service.VipTransferService vipTransferService;
+    @Autowired
     private RedisUtils redisUtils;
     @Autowired
     private CardOrderService cardOrderService;
@@ -451,6 +453,10 @@ public class WxPayController extends BaseController {
                     //VIP权益卡(后缀6):单事务记账+激活+sold_count自增,幂等(小程序支付走本回调)
                     log.info("-------激活VIP权益卡(小程序回调)=========" );
                     vipBenefitService.activateByOrderNo(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
+                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)) {
+                    //VIP转让服务费(后缀7):单事务记账+转让单10→20待审核,幂等(小程序支付走本回调)
+                    log.info("-------VIP转让服务费支付成功(小程序回调)=========" );
+                    vipTransferService.payFeeCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
                 } else {
                     //更新健身卡订单
                     log.info("-------微信代扣更新健身卡订单=========" );

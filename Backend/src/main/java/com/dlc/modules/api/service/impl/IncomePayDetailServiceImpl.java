@@ -6,6 +6,7 @@ import com.dlc.modules.api.entity.CardOrder;
 import com.dlc.modules.api.entity.IncomePayDetail;
 import com.dlc.modules.api.entity.UserInfo;
 import com.dlc.modules.api.entity.VipBenefit;
+import com.dlc.modules.api.entity.VipBenefitTransfer;
 import com.dlc.modules.api.service.CardOrderService;
 import com.dlc.modules.api.service.IncomePayDetailService;
 import com.dlc.modules.api.vo.UserInfoVo;
@@ -38,6 +39,8 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
     private UserInfoMapper userInfoMapper;
     @Autowired
     private VipBenefitMapper vipBenefitMapper;
+    @Autowired
+    private VipBenefitTransferMapper vipBenefitTransferMapper;
     /**
      *  @Auther:YD
      *  @parameters:
@@ -86,6 +89,16 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
             if (vipBenefit != null) {
                 ipd.setUserId(vipBenefit.getUserId());
                 Long storeId = userInfoMapper.queryStoreIdByUserId(vipBenefit.getUserId());
+                ipd.setStoreId(storeId);
+            }
+        }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)){
+            //VIP转让服务费订单:按服务费订单号反查 vip_benefit_transfer,取转让人 userId/storeId(付费人=转让人)
+            VipBenefitTransfer transfer = vipBenefitTransferMapper.selectByFeeOrderNo(orderNo);
+            if (transfer != null) {
+                ipd.setUserId(transfer.getFromUserId());
+                Long storeId = transfer.getFromStoreId() != null
+                        ? transfer.getFromStoreId()
+                        : userInfoMapper.queryStoreIdByUserId(transfer.getFromUserId());
                 ipd.setStoreId(storeId);
             }
         }
