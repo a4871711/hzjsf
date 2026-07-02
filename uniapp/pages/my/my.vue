@@ -60,10 +60,6 @@
 			</view>
 		</view>
 
-		<view class="my_bg">
-			<image src="/static/image/my_logobg.png" alt="" class="img" />
-		</view>
-
 		<!-- 客服弹窗 -->
 		<tip :show="show" content="客服电话13622620350" title="联系客服" @handlconfirm="handlconfirm"
 			@cancellation="cancellation" confirm="拨打电话" cancel="取消" :showCancelButton="true"></tip>
@@ -322,14 +318,5 @@
 			}
 		}
 
-		.my_bg {
-			text-align: center;
-			margin-top: 84rpx;
-
-			.img {
-				width: 452rpx;
-				height: 115rpx;
-			}
-		}
 	}
 </style>
