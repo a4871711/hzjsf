@@ -401,6 +401,18 @@ public class VipTransferServiceImpl implements VipTransferService {
         if (vb == null || vb.getStatus() == null || vb.getStatus() != 0) {
             throw new RRException(CodeAndMsg.ERROR_VIP_BENEFIT_STATUS_ABNORMAL);
         }
+        // 复核有效期(与 checkTransferable 第4条 R-03 同款):审核通过(20→40)会写 confirm_deadline=now+N天,
+        // 受让人确认前(最长 N 天)权益可能自然到期。过期靠 expire_time 实时判断、无定时任务把过期权益 status
+        // 从0改走,故此刻 status 仍=0、changeOwner 的 status=0 条件仍命中1行,会把一张已过期权益过户给受让人。
+        // 在锁内、changeOwner 之前补 expire_time>now 校验拦住它(行锁只挡并发改数据、挡不住时间流逝,须在此判)。
+        Date now = new Date();
+        if (vb.getExpireTime() == null || !vb.getExpireTime().after(now)) {
+            // 抛异常回滚:本单停在40,到 confirm_deadline 由超时任务 timeoutOne 扫为52并退服务费(第12步),
+            // 与下方"被抢先过户"分支同口径,不在回滚事务里直接退费(避免退费与回滚事务边界不一致导致重复退款)。
+            log.error("VIP过户失败:权益已过期,transferId={}, vipBenefitId={}, expireTime={}",
+                    transferId, vb.getVipBenefitId(), vb.getExpireTime());
+            throw new RRException(CodeAndMsg.ERROR_VIP_BENEFIT_EXPIRED);
+        }
         // 1) 改归属:user_id 换受让人 + transfer_count+1 + transferable=1;
         //    store_id/store_addr_id 不动(附录D.3),expire_time 不动(继承剩余有效期,D-10)
         int rows1 = vipBenefitMapper.changeOwner(vb.getVipBenefitId(), t.getFromUserId(), t.getToUserId());
@@ -415,7 +427,7 @@ public class VipTransferServiceImpl implements VipTransferService {
             throw new RRException(CodeAndMsg.ERROR_VIP_BENEFIT_STATUS_ABNORMAL);
         }
         // 2) 幂等推进转让单状态机:仅 40->70(此刻已持有 transferId 行锁,理论上必然命中,双保险)
-        Date now = new Date();
+        //    生效时间复用上方过期校验时刻 now(同事务内,差异可忽略)
         int rows2 = vipBenefitTransferMapper.effect(transferId, now);
         if (rows2 == 0) {
             log.error("VIP过户异常:权益已改归属但转让单状态推进0行,transferId={}, vipBenefitId={}", transferId, vb.getVipBenefitId());
