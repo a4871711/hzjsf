@@ -8,9 +8,12 @@ import com.dlc.common.utils.R;
 import com.dlc.modules.api.dao.CouponMapper;
 import com.dlc.modules.api.dao.DeviceMapper;
 import com.dlc.modules.api.dao.FitCardMapper;
+import com.dlc.modules.api.dao.VipBenefitMapper;
 import com.dlc.modules.api.entity.Coupon;
 import com.dlc.modules.api.entity.Device;
 import com.dlc.modules.api.entity.FitCard;
+import com.dlc.modules.api.entity.VipBenefitCard;
+import com.dlc.modules.api.service.VipCardService;
 import com.dlc.modules.api.service.CardOrderService;
 import com.dlc.modules.api.service.FitCardService;
 import com.dlc.modules.api.service.IncomePayDetailService;
@@ -56,6 +59,10 @@ public class CardOredrController extends BaseController{
     private CouponMapper couponMapper;
     @Autowired
     private SysIncomePayDetailService sysIncomePayDetailService;
+    @Autowired
+    private VipBenefitMapper vipBenefitMapper;
+    @Autowired
+    private VipCardService vipCardService;
     
     /**
      * 列表
@@ -106,7 +113,21 @@ public class CardOredrController extends BaseController{
         	return R.error("卡套餐不存在");
         }
         boolean isNewUser = !sysIncomePayDetailService.hasValidCardPurchase(user.getUserId());
-        BigDecimal cardPrice = fitCard.resolveSalePrice(isNewUser);
+        //权益会员(名下有正常且未过期VIP权益卡)且该卡配了权益卡价格 → 按权益价结算
+        boolean isBenefitMember = vipBenefitMapper.countValidByUser(user.getUserId()) > 0;
+        //随单开通权益会员:非连续包月卡可加购一张VIP权益卡,本单卡价按权益价、总价加上权益卡实时价(后端重算,不信前端)
+        BigDecimal vipCardPrice = BigDecimal.ZERO;
+        if (params.get("buyVipCardId") != null && StringUtils.isNotBlank(String.valueOf(params.get("buyVipCardId")))
+                && (fitCard.getAutoPay() == null || fitCard.getAutoPay() == 0)) {
+            //卡不存在/已下架由 queryVipCardDetail 抛 ERROR_VIP_CARD_OFF_SHELF
+            VipBenefitCard vipCard = vipCardService.queryVipCardDetail(Long.valueOf(String.valueOf(params.get("buyVipCardId"))));
+            vipCardPrice = vipCard.getCurrentPrice();
+            params.put("vipCardPrice", vipCardPrice);
+            isBenefitMember = true; //本单同时开通权益会员,卡价按权益价
+        } else {
+            params.remove("buyVipCardId");
+        }
+        BigDecimal cardPrice = fitCard.resolveSalePrice(isNewUser, isBenefitMember).add(vipCardPrice);
         if(cardPrice.compareTo(paySum) == -1 || paySum.compareTo(new BigDecimal(-1)) == 0){ //实际卡价格小于传进来的价格
             params.put("paySum", cardPrice);
             paySum = cardPrice;
@@ -161,15 +182,15 @@ public class CardOredrController extends BaseController{
                 //续费
             	String[] s1 = CommonUtil.tryStrings(fitCard.getNextPriceTitle());
             	if (s1.length > 0 && device.getBuyCount() >= 1 && fitCard.getNextPrice() != null && fitCard.getNextPrice().compareTo(BigDecimal.ZERO) > 0) {//次月扣款金额
-            		cardPrice = fitCard.getNextPrice();
+            		cardPrice = fitCard.getNextPrice().add(vipCardPrice);
                 }
             	String[] s2 = CommonUtil.tryStrings(fitCard.getNextPriceTitle2());
                 if (device.getBuyCount() > s1.length && fitCard.getNextPrice2() != null && fitCard.getNextPrice2().compareTo(BigDecimal.ZERO) > 0) {//次月扣款金额
-                	cardPrice = fitCard.getNextPrice2();
+                	cardPrice = fitCard.getNextPrice2().add(vipCardPrice);
                 }
                 String[] s3 = CommonUtil.tryStrings(fitCard.getNextPriceTitle3());
                 if (device.getBuyCount() > s1.length + s2.length && fitCard.getNextPrice3() != null && fitCard.getNextPrice3().compareTo(BigDecimal.ZERO) > 0) {//次月扣款金额
-                	cardPrice = device.getNextPrice3();
+                	cardPrice = device.getNextPrice3().add(vipCardPrice);
                 }
                 params.put("paySum", cardPrice); 
             }else{

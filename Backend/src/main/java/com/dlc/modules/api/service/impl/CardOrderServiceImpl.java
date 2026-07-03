@@ -48,6 +48,8 @@ public class CardOrderServiceImpl implements CardOrderService {
     private StoreAddressMapper storeAddressMapper;
     @Autowired
     private StoreAddressService storeAddressService;
+    @Autowired
+    private VipBenefitMapper vipBenefitMapper;
 
     private Logger log = LoggerFactory.getLogger(getClass());
 
@@ -188,6 +190,22 @@ public class CardOrderServiceImpl implements CardOrderService {
         int result = cardOrderMapper.insertSelective(cardOrder);
         log.info("插入card_order订单信息是否成功:" + result);
         if(result > 0){
+            //随单开通权益会员:同事务建待支付权益占位(status=9),支付成功回调开卡后一并激活
+            if (params.get("buyVipCardId") != null) {
+                VipBenefit vb = new VipBenefit();
+                vb.setUserId(user.getUserId());
+                vb.setOriginUserId(user.getUserId());
+                vb.setVipCardId(Long.valueOf(String.valueOf(params.get("buyVipCardId"))));
+                vb.setSourceOrderNo(orderNo);
+                vb.setStoreId(userInfoMapper.queryStoreIdByUserId(user.getUserId()));
+                int nowStoreId = user.getNowStoreId();
+                vb.setStoreAddrId(nowStoreId > 0 ? (long) nowStoreId : null);
+                vb.setOriginPrice(new BigDecimal(String.valueOf(params.get("vipCardPrice"))));
+                vb.setStatus(9);
+                vb.setTransferCount(0);
+                vb.setTransferable(1);
+                vipBenefitMapper.insertSelective(vb);
+            }
             Map<String,Object> map = new HashMap<>();
             map.put("orderNo", orderNo);
             map.put("paySum", cardOrder.getRealPayment()+"");

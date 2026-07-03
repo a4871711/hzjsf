@@ -5,6 +5,7 @@ import com.dlc.common.utils.R;
 import com.dlc.modules.api.dao.CouponMapper;
 import com.dlc.modules.api.dao.DataMapMapper;
 import com.dlc.modules.api.dao.FitCardMapper;
+import com.dlc.modules.api.dao.VipBenefitMapper;
 import com.dlc.modules.api.entity.Coupon;
 import com.dlc.modules.api.entity.DataMap;
 import com.dlc.modules.api.entity.FitCard;
@@ -35,6 +36,8 @@ public class FitCardServiceImpl implements FitCardService {
     private CouponMapper couponMapper;
     @Autowired
     private SysIncomePayDetailService sysIncomePayDetailService;
+    @Autowired
+    private VipBenefitMapper vipBenefitMapper;
 
     /**
      *  @Auther:YD
@@ -48,10 +51,13 @@ public class FitCardServiceImpl implements FitCardService {
         if(userId != null && sysIncomePayDetailService.hasValidCardPurchase(userId)) {
             isNewUser = 0;
         }
+        //权益会员:名下有「正常且未过期」VIP权益卡;配置了权益卡价格(benefitPrice)的卡对其显示/按权益价售卖
+        int isBenefitMember = (userId != null && vipBenefitMapper.countValidByUser(userId) > 0) ? 1 : 0;
         if(list != null) {
             for(Map<String, Object> item : list) {
                 item.put("isNewUser", isNewUser);
-                item.put("salePrice", resolveListSalePrice(item, isNewUser == 1));
+                item.put("isBenefitMember", isBenefitMember);
+                item.put("salePrice", resolveListSalePrice(item, isNewUser == 1, isBenefitMember == 1));
             }
         }
         return list;
@@ -73,8 +79,14 @@ public class FitCardServiceImpl implements FitCardService {
         return map;
     }
 
-    /** 列表展示用应付价：新人 newUserPrice→cardPrice→costPrice；老用户 cardPrice→costPrice */
-    private Object resolveListSalePrice(Map<String, Object> item, boolean isNewUser) {
+    /** 列表展示用应付价：权益会员且卡配了权益卡价 → benefitPrice；新人 newUserPrice→cardPrice→costPrice；老用户 cardPrice→costPrice */
+    private Object resolveListSalePrice(Map<String, Object> item, boolean isNewUser, boolean isBenefitMember) {
+        if(isBenefitMember) {
+            Object benefitPrice = firstPositiveFromMap(item, "benefitPrice");
+            if(benefitPrice != null) {
+                return benefitPrice;
+            }
+        }
         if(isNewUser) {
             Object price = firstPositiveFromMap(item, "newUserPrice", "cardPrice", "costPrice");
             if(price != null) {

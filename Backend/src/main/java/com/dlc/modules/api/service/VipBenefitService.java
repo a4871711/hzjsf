@@ -26,4 +26,10 @@ public interface VipBenefitService {
 
     /** 我的权益分页列表(默认查 status=0 正常) */
     PageUtils myBenefits(Map<String, Object> params);
+
+    /**
+     * 随购卡单加购的权益卡激活:按订单号查权益占位(普通订单无占位,幂等跳过),
+     * 幂等激活(status 9→0)并 sold_count+1;整单金额已按购卡记账,此处不重复记流水
+     */
+    int activateAttached(String orderNo);
 }
