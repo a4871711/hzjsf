@@ -57,3 +57,12 @@ SELECT t.menu_id, '会员黑名单', 'modules/sys/memberBlacklist.html',
        1, 'fa fa-ban', 4
 FROM (SELECT menu_id FROM sys_menu WHERE name='VIP权益' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/memberBlacklist.html');
+
+-- 7) 「权益卡购买记录」菜单(type=1,挂「VIP权益」目录下)→ views/modules/sys/vipCardOrder.vue
+--    后台只读,仅 list 一个按钮权限;数据源 vip_benefit(一行=一张被买下的权益卡实例)
+INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
+SELECT t.menu_id, '权益卡购买记录', 'modules/sys/vipCardOrder.html',
+       'sys:vipCardOrder:list',
+       1, 'fa fa-shopping-cart', 5
+FROM (SELECT menu_id FROM sys_menu WHERE name='VIP权益' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/vipCardOrder.html');

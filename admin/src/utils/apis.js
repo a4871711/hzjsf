@@ -787,4 +787,15 @@ export default {
 			}, false, 'json')
 		});
 	},
+
+	//权益卡购买记录-列表(后台只读)
+	vipCardOrder_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipCardOrder/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
 }
