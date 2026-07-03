@@ -8,24 +8,30 @@ import com.dlc.common.utils.OrderNoGenerator;
 import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
 import com.dlc.modules.api.dao.MemberBlacklistMapper;
+import com.dlc.modules.api.dao.SystemMsgDao;
 import com.dlc.modules.api.dao.VipBenefitCardMapper;
 import com.dlc.modules.api.dao.VipBenefitMapper;
 import com.dlc.modules.api.dao.UserInfoMapper;
 import com.dlc.modules.api.dao.VipBenefitTransferMapper;
 import com.dlc.modules.api.dao.VipFeeRuleMapper;
+import com.dlc.modules.api.entity.SystemMsgEntity;
 import com.dlc.modules.api.entity.VipBenefit;
 import com.dlc.modules.api.entity.VipBenefitCard;
 import com.dlc.modules.api.entity.VipBenefitTransfer;
 import com.dlc.modules.api.entity.VipFeeRule;
 import com.dlc.modules.api.service.IncomePayDetailService;
+import com.dlc.modules.api.service.PayService;
 import com.dlc.modules.api.service.UserInfoService;
 import com.dlc.modules.api.service.VipTransferService;
 import com.dlc.modules.api.vo.UserInfoVo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +44,8 @@ import java.util.Map;
  */
 @Service("vipTransferService")
 public class VipTransferServiceImpl implements VipTransferService {
+
+    private static final Logger log = LoggerFactory.getLogger(VipTransferServiceImpl.class);
 
     @Autowired
     private VipBenefitMapper vipBenefitMapper;
@@ -55,6 +63,10 @@ public class VipTransferServiceImpl implements VipTransferService {
     private UserInfoMapper userInfoMapper;
     @Autowired
     private IncomePayDetailService incomePayDetailService;
+    @Autowired
+    private SystemMsgDao systemMsgDao;
+    @Autowired
+    private PayService payService;
 
     // ====================== 8.2 前置校验集 ======================
 
@@ -342,5 +354,266 @@ public class VipTransferServiceImpl implements VipTransferService {
         // 同事务记账(用途按末位后缀自动=7,付费人=转让人)
         incomePayDetailService.saveIncomePayDetail(feeOrderNo, transactionNumber, money, payType);
         return rows;
+    }
+
+    // ====================== 7.3.5 受让人确认(过户入口) ======================
+
+    @Override
+    public Map<String, Object> confirm(UserInfoVo toUser, Long transferId) {
+        VipBenefitTransfer t = vipBenefitTransferMapper.selectById(transferId);
+        if (t == null) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_NOT_EXIST);
+        }
+        // 仅受让人本人、仅"40待受让人确认"可确认;不是本单受让人或状态不对一律按"状态不允许该操作"处理
+        if (toUser == null || toUser.getUserId() == null || !toUser.getUserId().equals(t.getToUserId())
+                || t.getStatus() == null || t.getStatus() != 40) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+        }
+        // 已超确认截止时间:是否置52已超时由定时任务(第12步)统一处理,这里只拦截、不越权改状态
+        if (t.getConfirmDeadline() != null && t.getConfirmDeadline().before(new Date())) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+        }
+        transferEffect(transferId);
+        // 重读最终态:transferEffect 因并发(超时/撤回抢先把单改成52/60)在加锁后 no-op 返回时本单并未过户;
+        // 仅当最终态=70(本次或并发确认幂等完成)才算成功,否则回报"状态已变",避免向受让人误报"确认成功却没拿到权益"
+        VipBenefitTransfer effected = vipBenefitTransferMapper.selectById(transferId);
+        if (effected == null || effected.getStatus() == null || effected.getStatus() != 70) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+        }
+        Map<String, Object> data = new LinkedHashMap<String, Object>();
+        data.put("transferId", transferId);
+        data.put("status", effected.getStatus());
+        data.put("effectTime", effected.getEffectTime());
+        return data;
+    }
+
+    // ====================== 7.4 过户单事务 ======================
+
+    @Override
+    public void transferEffect(Long transferId) {
+        // 锁转让单:非"40待受让人确认"直接幂等返回(已生效/已终止/不存在),此判断同时挡掉本单的重复确认重入
+        VipBenefitTransfer t = vipBenefitTransferMapper.selectByIdForUpdate(transferId);
+        if (t == null || t.getStatus() == null || t.getStatus() != 40) {
+            return;
+        }
+        // 锁权益行,防并发双改;仍需为"0正常"才可过户
+        VipBenefit vb = vipBenefitMapper.selectByIdForUpdate(t.getVipBenefitId());
+        if (vb == null || vb.getStatus() == null || vb.getStatus() != 0) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_BENEFIT_STATUS_ABNORMAL);
+        }
+        // 1) 改归属:user_id 换受让人 + transfer_count+1 + transferable=1;
+        //    store_id/store_addr_id 不动(附录D.3),expire_time 不动(继承剩余有效期,D-10)
+        int rows1 = vipBenefitMapper.changeOwner(vb.getVipBenefitId(), t.getFromUserId(), t.getToUserId());
+        if (rows1 == 0) {
+            // 方法开头已用"本单status!=40直接return"挡掉自身重入,能走到这里说明本单确为首次执行,
+            // 命中0行只可能是该权益被其他转让单抢先过户(附录C.3"否则"分支)。不静默返回:抛异常回滚,
+            // 本单转让停在40可重试,避免受让人误以为"确认成功"却没拿到权益。
+            // 兜底闭环:此单卡在40后,到 confirm_deadline 由超时任务 timeoutOne 扫为52并退服务费(第12步),
+            // 无需在此回滚事务里直接退费(避免退费与回滚的事务边界不一致导致重复退款)。
+            log.error("VIP过户失败:权益已被其他转让单抢先,transferId={}, vipBenefitId={}, fromUserId={}, toUserId={}",
+                    transferId, vb.getVipBenefitId(), t.getFromUserId(), t.getToUserId());
+            throw new RRException(CodeAndMsg.ERROR_VIP_BENEFIT_STATUS_ABNORMAL);
+        }
+        // 2) 幂等推进转让单状态机:仅 40->70(此刻已持有 transferId 行锁,理论上必然命中,双保险)
+        Date now = new Date();
+        int rows2 = vipBenefitTransferMapper.effect(transferId, now);
+        if (rows2 == 0) {
+            log.error("VIP过户异常:权益已改归属但转让单状态推进0行,transferId={}, vipBenefitId={}", transferId, vb.getVipBenefitId());
+            return;
+        }
+        // 3) 服务费已在 payFeeCallback 记账一次(附录B.6),过户不重复插入流水,仅补 anotherId(天然幂等)
+        if (t.getServiceFeeOrderNo() != null) {
+            incomePayDetailService.updateAnotherId(t.getServiceFeeOrderNo(), t.getToUserId());
+        }
+        // 4) 推送双方:站内信(system_msg)。会员端以微信小程序为主,收不到友盟APP推送(UMengPush 仅App构建可达),
+        //    且发推送需 deviceToken/机型信息;故转让各节点统一走站内信覆盖全端,不接 UMengPush。
+        pushSystemMsg(t.getFromUserId(), "您的权益转让已完成,权益已成功转出");
+        pushSystemMsg(t.getToUserId(), "您已成功接收权益转让,权益已到账");
+    }
+
+    // ====================== 7.3.7 转让人撤回 ======================
+
+    @Override
+    public Map<String, Object> withdraw(Long fromUserId, Long transferId) {
+        VipBenefitTransfer t = vipBenefitTransferMapper.selectByIdForUpdate(transferId);
+        if (t == null) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_NOT_EXIST);
+        }
+        // 仅转让人本人可撤回
+        if (fromUserId == null || !fromUserId.equals(t.getFromUserId())) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+        }
+        Integer st = t.getStatus();
+        if (st != null && st == 20) {
+            // 待审核阶段撤回:20→60 且全额退服务费(附录D.1)
+            int rows = vipBenefitTransferMapper.withdraw20(transferId);
+            if (rows == 0) {
+                throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+            }
+            doRefund(t);
+        } else if (st != null && st == 40) {
+            // 审核通过后撤回:40→60 不退费(附录D.1 / D-3)
+            int rows = vipBenefitTransferMapper.withdraw40(transferId);
+            if (rows == 0) {
+                throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+            }
+        } else {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+        }
+        pushSystemMsg(t.getToUserId(), "对方已撤回一笔权益转让");
+        Map<String, Object> data = new LinkedHashMap<String, Object>();
+        data.put("transferId", transferId);
+        data.put("status", 60);
+        return data;
+    }
+
+    // ====================== 7.3.6 受让人拒绝 ======================
+
+    @Override
+    public Map<String, Object> reject(Long toUserId, Long transferId) {
+        VipBenefitTransfer t = vipBenefitTransferMapper.selectByIdForUpdate(transferId);
+        if (t == null) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_NOT_EXIST);
+        }
+        // 仅受让人本人、仅 status=40 可拒绝(带 to_user_id + status 的条件 UPDATE 兜住并发与越权)
+        int rows = vipBenefitTransferMapper.toReject(transferId, toUserId);
+        if (rows == 0) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+        }
+        // 全额退服务费,不动权益归属
+        doRefund(t);
+        pushSystemMsg(t.getFromUserId(), "受让人已拒绝接收,服务费将原路退回");
+        Map<String, Object> data = new LinkedHashMap<String, Object>();
+        data.put("transferId", transferId);
+        data.put("status", 51);
+        return data;
+    }
+
+    // ====================== 7.6 受让人确认超时(定时任务逐笔) ======================
+
+    @Override
+    public List<VipBenefitTransfer> listConfirmTimeout() {
+        return vipBenefitTransferMapper.selectTimeout(new Date());
+    }
+
+    @Override
+    public void timeoutOne(Long transferId) {
+        VipBenefitTransfer t = vipBenefitTransferMapper.selectByIdForUpdate(transferId);
+        // 已被确认/撤回/拒绝 → 幂等跳过
+        if (t == null || t.getStatus() == null || t.getStatus() != 40) {
+            return;
+        }
+        // 未真正超时(扫描后被顺延/时钟误差)→ 不处理
+        if (t.getConfirmDeadline() == null || !t.getConfirmDeadline().before(new Date())) {
+            return;
+        }
+        int rows = vipBenefitTransferMapper.timeout(transferId);
+        if (rows == 0) {
+            return;
+        }
+        doRefund(t);
+        pushSystemMsg(t.getFromUserId(), "受让人超时未确认,转让已关闭,服务费将原路退回");
+        pushSystemMsg(t.getToUserId(), "您有一笔待确认的权益转让已超时关闭");
+    }
+
+    // ====================== 7.3.4 后台审核(sys 复用,逻辑落在 api 单事务) ======================
+
+    @Override
+    public void audit(Long transferId, Long auditUserId, Integer pass, String remark) {
+        VipBenefitTransfer t = vipBenefitTransferMapper.selectByIdForUpdate(transferId);
+        // 仅处理"20待审核"单
+        if (t == null || t.getStatus() == null || t.getStatus() != 20) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+        }
+        Date now = new Date();
+        if (pass != null && pass == 1) {
+            // 复核:以审核当下数据重跑前置校验集(其间权益可能过期/双方被拉黑封禁/卡下架/受让人门店变动)
+            VipBenefit benefit = vipBenefitMapper.selectById(t.getVipBenefitId());
+            UserInfoVo fromUser = userInfoService.selectByUserId(String.valueOf(t.getFromUserId()));
+            UserInfoVo toUser = userInfoService.selectByUserId(String.valueOf(t.getToUserId()));
+            String recheckFail = null;
+            try {
+                checkTransferable(benefit, fromUser, toUser);
+            } catch (RRException e) {
+                recheckFail = e.getMsg();
+            }
+            if (recheckFail != null) {
+                // 复核失败统一走驳回+退费,remark 标"系统复核:xxx"(附录E)
+                doAuditReject(t, auditUserId, now, "系统复核:" + recheckFail);
+                return;
+            }
+            // 通过:20→40,写 confirm_deadline = now + N天
+            Date deadline = new Date(now.getTime()
+                    + (long) ConfigConstant.VIP_TRANSFER_CONFIRM_DAYS * 24 * 60 * 60 * 1000);
+            int rows = vipBenefitTransferMapper.auditPass(transferId, auditUserId, now, remark, deadline);
+            if (rows == 0) {
+                throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+            }
+            pushSystemMsg(t.getToUserId(),
+                    "您有一份权益待确认接收,请在" + ConfigConstant.VIP_TRANSFER_CONFIRM_DAYS + "天内确认");
+        } else {
+            // 人工驳回:20→31 + 退费
+            doAuditReject(t, auditUserId, now, remark);
+        }
+    }
+
+    /** 驳回收敛:20→31 + 全额退服务费 + 推送转让人(人工驳回 / 系统复核失败共用) */
+    private void doAuditReject(VipBenefitTransfer t, Long auditUserId, Date now, String remark) {
+        int rows = vipBenefitTransferMapper.auditReject(t.getTransferId(), auditUserId, now, remark);
+        if (rows == 0) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_STATUS);
+        }
+        doRefund(t);
+        pushSystemMsg(t.getFromUserId(),
+                "您的权益转让申请被驳回,服务费将原路退回" + (remark == null ? "" : ("。原因:" + remark)));
+    }
+
+    // ====================== 7.5 退费封装(驳回/拒绝/超时/20撤回共用) ======================
+
+    /**
+     * 全额退服务费:仅在收过费(serviceFee>0 且有支付单)且未退过时执行。
+     * 幂等:refund_status 已=1 直接返回;wxRefund 以 out_refund_no=orderNo 天然幂等,微信不会重复退。
+     * wxRefund 失败(返回 null)抛 RRException 回滚,连带调用方的状态推进一并回滚、可重试。
+     */
+    private void doRefund(VipBenefitTransfer t) {
+        if (t.getRefundStatus() != null && t.getRefundStatus() == 1) {
+            return; // 已退,幂等
+        }
+        if (t.getServiceFee() == null || t.getServiceFee().compareTo(BigDecimal.ZERO) <= 0
+                || t.getServiceFeeOrderNo() == null) {
+            return; // 免费单 / 未产生支付单,无需退费
+        }
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("orderNo", t.getServiceFeeOrderNo());   // = 微信 out_trade_no/out_refund_no
+        params.put("realPayment", t.getServiceFee());       // BigDecimal 元,wxRefund 内部 *100 转分
+        String res;
+        try {
+            res = payService.wxRefund(params);
+        } catch (Exception e) {
+            log.error("VIP转让退款调用异常 transferId={}, orderNo={}", t.getTransferId(), t.getServiceFeeOrderNo(), e);
+            throw new RRException(CodeAndMsg.ERROR_VIP_REFUND_FAIL);
+        }
+        if (res == null) {
+            // 退款受理失败:抛异常回滚本次操作(状态不推进),保留可重试,避免"已改状态却没退钱"
+            throw new RRException(CodeAndMsg.ERROR_VIP_REFUND_FAIL);
+        }
+        // 幂等置已退;命中0行=并发已退,不重复记退款流水
+        int rows = vipBenefitTransferMapper.markRefunded(t.getTransferId());
+        if (rows == 0) {
+            return;
+        }
+        // 退款负向流水(payType=9退款,记在转让人名下,对方=受让人)
+        incomePayDetailService.saveTransferRefund(
+                t.getServiceFeeOrderNo(), t.getServiceFee(), t.getFromUserId(), t.getToUserId());
+    }
+
+    /** 站内信通知(system_msg),msgType=0 正常消息 */
+    private void pushSystemMsg(Long userId, String record) {
+        SystemMsgEntity msg = new SystemMsgEntity();
+        msg.setUserId(userId);
+        msg.setRecord(record);
+        msg.setMsgType(0);
+        msg.setSendTime(new Date());
+        systemMsgDao.save(msg);
     }
 }

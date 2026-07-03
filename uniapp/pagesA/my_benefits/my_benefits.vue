@@ -113,7 +113,7 @@
 				return Object.assign({}, row, {
 					viewKey: row.vipBenefitId ? String(row.vipBenefitId) : 'benefit-' + index,
 					cardNameText: row.cardName || '权益卡',
-					expireTimeText: row.expireTime || '支付后生效',
+					expireTimeText: this.formatDate(row.expireTime) || '支付后生效',
 					originPriceText: this.formatPrice(row.originPrice),
 					statusLabel: this.statusText(row),
 					statusClassName: this.statusClass(row),
@@ -160,8 +160,24 @@
 			},
 			// 到期实时判断:status=0 且 expireTime < now 视为已过期
 			isExpired(item) {
-				if (!item.expireTime) return false;
-				return new Date(item.expireTime.replace(/-/g, '/')).getTime() < Date.now();
+				const t = this.toTime(item.expireTime);
+				if (!t) return false;
+				return t < Date.now();
+			},
+			// 后端 FastJSON 把 Date 序列化成毫秒时间戳数字,这里兼容 数字/字符串 两种形态
+			toTime(v) {
+				if (!v) return 0;
+				if (typeof v === 'number') return v;
+				const t = new Date(String(v).replace(/-/g, '/')).getTime();
+				return isNaN(t) ? 0 : t;
+			},
+			// 时间戳/日期字符串 → 'YYYY-MM-DD' 展示
+			formatDate(v) {
+				const t = this.toTime(v);
+				if (!t) return '';
+				const d = new Date(t);
+				const p = (n) => (n < 10 ? '0' + n : '' + n);
+				return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
 			},
 			statusText(item) {
 				if (item.status === 9) return '待支付';

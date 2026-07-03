@@ -20,11 +20,11 @@
 | 8 | 停卡 card_pause（apply/list + 限次 + 顺延） | 独立小项 | 1,2 | ✅ 已完成 |
 | 9 | 转让前置校验 + 费用分档计算 | 转让主流程 | 1,2,7 | ☐ |
 | 10 | 转让发起/试算/撤回/确认/拒绝 + 状态机 | 转让主流程 | 9 | ☐ |
-| 11 | 转让费用回调 + 过户单事务 | 转让主流程 | 10 | ☐ |
-| 12 | 退费 doRefund + 受让超时定时任务 | 转让主流程 | 11 | ☐ |
-| 13 | 后台转让审核 list/audit | 转让主流程 | 11,12 | ☐ |
-| 14 | 会员黑名单 + 接入校验 | 收尾 | 9 | ☐ |
-| 15 | admin 前端 5 页面 + apis.js + 菜单 | 收尾 | 5,13,14 | ☐ |
+| 11 | 转让费用回调 + 过户单事务 | 转让主流程 | 10 | ✅ 已完成(payFeeCallback 随第10步一并交付;新增 confirm + transferEffect;附录C.3"被他单抢先"兜底分支的转失败态+退费依赖第12步 doRefund,暂只记错误日志,见下方说明) |
+| 12 | 退费 doRefund + 受让超时定时任务 | 转让主流程 | 11 | ✅ 已完成(doRefund/withdraw/reject/VipTransferTimeoutTask;退款流水改用 payType=9 见下方说明;顺带补齐第10步遗漏的 withdraw/reject 端点) |
+| 13 | 后台转让审核 list/audit | 转让主流程 | 11,12 | ✅ 已完成(SysVipTransferController list+audit;audit 下沉到 api VipTransferServiceImpl.audit 单事务复用 checkTransferable/doRefund/推送) |
+| 14 | 会员黑名单 + 接入校验 | 收尾 | 9 | ✅ 已完成(sys侧 MemberBlacklistEntity/Dao/xml/Service/Controller 拉黑·解除;checkTransferable 黑名单接入 + api 只读 dao 第9步已就位) |
+| 15 | admin 前端 5 页面 + apis.js + 菜单 | 收尾 | 5,13,14 | ✅ 已完成(新增 vipTransfer/cardPause/memberBlacklist 三页;vipCard/vipFeeRule 第4·5步已建;apis.js 加6方法;sys_menu_vip.sql+开发库加3菜单;补 sys 停卡只读接口 SysCardPause*;修 SysVipTransferDao.xml 补发起时间区间过滤) |
 
 > 文件路径约定：后端根 `Backend/src/main/java/com/dlc/`，Mapper XML 在 `Backend/src/main/resources/mapper/{api,sys}/`；前端根 `admin/src/`。**改 `mapper/api/*.xml` 需重启 Tomcat，改 `mapper/sys/*.xml` 热刷新。**
 

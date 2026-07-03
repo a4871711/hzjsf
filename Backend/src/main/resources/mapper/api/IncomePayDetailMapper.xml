@@ -244,4 +244,11 @@
       checkedTime = #{checkedTime,jdbcType=TIMESTAMP}
       where orderNo = #{orderNo,jdbcType=VARCHAR}
  </update>
+
+  <!--VIP转让过户生效:补记对方(受让人)userId,天然幂等(附录B.2/B.6)-->
+  <update id="updateAnotherId">
+      update income_pay_detail
+      set anotherId = #{anotherId,jdbcType=BIGINT}
+      where orderNo = #{orderNo,jdbcType=VARCHAR}
+  </update>
 </mapper>

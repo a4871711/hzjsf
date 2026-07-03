@@ -96,6 +96,8 @@ public class ConfigConstant {
     public static final String VIP_CARD_BUY_TYPE = "6";
     /**VIP转让费用订单后缀(income_pay_detail.payType自动=7)*/
     public static final String VIP_TRANSFER_FEE_TYPE = "7";
+    /**VIP转让受让人确认时限(天):后台审核通过后受让人需在此天数内确认,超时由定时任务关单退费*/
+    public static final int VIP_TRANSFER_CONFIRM_DAYS = 3;
 
     /**用户缓存前缀*/
     public static final String USER = "hzjsf_user_";

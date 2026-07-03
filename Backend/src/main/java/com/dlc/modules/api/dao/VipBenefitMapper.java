@@ -36,6 +36,15 @@ public interface VipBenefitMapper {
     /** 真实购买人数自增(仅购买激活时 +1,转让不动) */
     int incrSoldCount(@Param("vipCardId") Long vipCardId);
 
+    /**
+     * 过户改归属(第11步 transferEffect 用):user_id 换受让人 + transfer_count+1 + transferable=1;
+     * store_id/store_addr_id 不动(附录D.3,归属门店保持原样)、expire_time 不动(继承剩余有效期,D-10)。
+     * WHERE 带 fromUserId+status=0 双重幂等/并发保护,命中0行由调用方区分"已被本单处理"与"被他单抢先"(附录C.3)。
+     */
+    int changeOwner(@Param("vipBenefitId") Long vipBenefitId,
+                     @Param("fromUserId") Long fromUserId,
+                     @Param("toUserId") Long toUserId);
+
     /** 我的权益分页列表(按 userId + status,带卡名) */
     List<VipBenefit> selectMyBenefits(Map<String, Object> params);
 

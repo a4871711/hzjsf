@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysCardPauseDao">
+
+    <!-- 停卡记录公共筛选:手机号/状态/起止日期 -->
+    <sql id="Filter">
+        <where>
+            <if test="phone != null and phone != ''">
+                AND u.phone LIKE concat('%', #{phone}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND t.status = #{status}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND t.created_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND t.created_date &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryList" resultType="java.util.Map" parameterType="map">
+        SELECT
+            t.pause_id          AS pauseId,
+            t.user_id           AS userId,
+            u.nickname          AS nickname,
+            u.phone             AS phone,
+            t.card_order_id     AS cardOrderId,
+            fc.cardName         AS cardName,
+            t.start_time        AS startTime,
+            t.end_time          AS endTime,
+            t.pause_days        AS pauseDays,
+            t.status            AS status,
+            t.created_date      AS createdDate,
+            (SELECT COUNT(1) FROM card_pause_record p2
+                WHERE p2.card_order_id = t.card_order_id
+                  AND YEAR(p2.created_date) = YEAR(t.created_date)) AS yearCount
+        FROM card_pause_record t
+        LEFT JOIN user_info u ON t.user_id = u.userId
+        LEFT JOIN card_order co ON t.card_order_id = co.cardOrderId
+        LEFT JOIN fit_card fc ON co.cardId = fc.fitCardId
+        <include refid="Filter"/>
+        ORDER BY t.created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM card_pause_record t
+        LEFT JOIN user_info u ON t.user_id = u.userId
+        <include refid="Filter"/>
+    </select>
+</mapper>

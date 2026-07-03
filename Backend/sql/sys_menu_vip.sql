@@ -31,5 +31,29 @@ SELECT t.menu_id, '权益卡管理', 'modules/sys/vipCard.html',
 FROM (SELECT menu_id FROM sys_menu WHERE name='VIP权益' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/vipCard.html');
 
--- 后续 VIP 子菜单(转让审核 / 停卡记录 / 会员黑名单)待各自后端+前端完成后,
--- 仿第 2)/3) 条追加,parent_id 同样取「VIP权益」目录的 menu_id。
+-- 4) 「转让审核」菜单(type=1,挂「VIP权益」目录下)→ views/modules/sys/vipTransfer.vue
+--    perms 平铺该页 2 个按钮权限(list 列表 / audit 审核)
+INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
+SELECT t.menu_id, '转让审核', 'modules/sys/vipTransfer.html',
+       'sys:vipTransfer:list,sys:vipTransfer:audit',
+       1, 'fa fa-exchange', 2
+FROM (SELECT menu_id FROM sys_menu WHERE name='VIP权益' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/vipTransfer.html');
+
+-- 5) 「停卡记录」菜单(type=1,挂「VIP权益」目录下)→ views/modules/sys/cardPause.vue
+--    后台只读,仅 list 一个按钮权限
+INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
+SELECT t.menu_id, '停卡记录', 'modules/sys/cardPause.html',
+       'sys:cardPause:list',
+       1, 'fa fa-pause-circle', 3
+FROM (SELECT menu_id FROM sys_menu WHERE name='VIP权益' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/cardPause.html');
+
+-- 6) 「会员黑名单」菜单(type=1,挂「VIP权益」目录下)→ views/modules/sys/memberBlacklist.vue
+--    perms 平铺该页 3 个按钮权限(list 列表 / save 拉黑 / remove 解除)
+INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
+SELECT t.menu_id, '会员黑名单', 'modules/sys/memberBlacklist.html',
+       'sys:memberBlacklist:list,sys:memberBlacklist:save,sys:memberBlacklist:remove',
+       1, 'fa fa-ban', 4
+FROM (SELECT menu_id FROM sys_menu WHERE name='VIP权益' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/memberBlacklist.html');
