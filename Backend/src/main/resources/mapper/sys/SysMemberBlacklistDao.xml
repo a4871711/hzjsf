@@ -24,7 +24,7 @@
             b.reason        AS reason,
             b.operator      AS operator,
             b.status        AS status,
-            b.created_date  AS createdDate
+            DATE_FORMAT(b.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate
         FROM member_blacklist b
         LEFT JOIN user_info u ON b.user_id = u.userId
         <include refid="Filter"/>

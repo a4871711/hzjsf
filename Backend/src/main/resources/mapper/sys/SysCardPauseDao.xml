@@ -29,11 +29,11 @@
             u.phone             AS phone,
             t.card_order_id     AS cardOrderId,
             fc.cardName         AS cardName,
-            t.start_time        AS startTime,
-            t.end_time          AS endTime,
+            DATE_FORMAT(t.start_time, '%Y-%m-%d %H:%i:%s') AS startTime,
+            DATE_FORMAT(t.end_time, '%Y-%m-%d %H:%i:%s') AS endTime,
             t.pause_days        AS pauseDays,
             t.status            AS status,
-            t.created_date      AS createdDate,
+            DATE_FORMAT(t.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate,
             (SELECT COUNT(1) FROM card_pause_record p2
                 WHERE p2.card_order_id = t.card_order_id
                   AND YEAR(p2.created_date) = YEAR(t.created_date)) AS yearCount

@@ -40,10 +40,10 @@
             b.source_order_no   AS sourceOrderNo,
             b.origin_price      AS originPrice,
             b.transfer_count    AS transferCount,
-            b.start_time        AS startTime,
-            b.expire_time       AS expireTime,
+            DATE_FORMAT(b.start_time, '%Y-%m-%d %H:%i:%s') AS startTime,
+            DATE_FORMAT(b.expire_time, '%Y-%m-%d %H:%i:%s') AS expireTime,
             b.status            AS status,
-            b.created_date      AS createdDate
+            DATE_FORMAT(b.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate
         FROM vip_benefit b
         LEFT JOIN user_info ou ON b.origin_user_id = ou.userId
         LEFT JOIN user_info hu ON b.user_id = hu.userId
