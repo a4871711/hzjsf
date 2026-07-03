@@ -149,7 +149,7 @@
 			goTransfer(item) {
 				uni.navigateTo({
 					url: '/pagesA/vip_transfer_apply/vip_transfer_apply?vipBenefitId=' + item.vipBenefitId +
-						'&cardName=' + encodeURIComponent(item.cardNameText || '')
+						'&cardName=' + (item.cardNameText || '')
 				});
 			},
 			// 跳转我的转让记录
