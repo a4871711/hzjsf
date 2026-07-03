@@ -64,6 +64,88 @@
         LIMIT 1
     </select>
 
+    <!-- 按主键查转让单(不带锁) -->
+    <select id="selectById" resultType="com.dlc.modules.api.entity.VipBenefitTransfer" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit_transfer
+        WHERE transfer_id = #{transferId}
+        LIMIT 1
+    </select>
+
+    <!-- 按主键行锁查转让单(过户单事务串行化用) -->
+    <select id="selectByIdForUpdate" resultType="com.dlc.modules.api.entity.VipBenefitTransfer" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit_transfer
+        WHERE transfer_id = #{transferId}
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- 过户生效:仅 40->70,幂等 -->
+    <update id="effect">
+        UPDATE vip_benefit_transfer
+        SET status = 70, effect_time = #{effectTime}
+        WHERE transfer_id = #{transferId} AND status = 40
+    </update>
+
+    <!-- 第12步:撤回(待审核)20->60,退费 -->
+    <update id="withdraw20">
+        UPDATE vip_benefit_transfer
+        SET status = 60
+        WHERE transfer_id = #{transferId} AND status = 20
+    </update>
+
+    <!-- 第12步:撤回(待确认)40->60,不退费 -->
+    <update id="withdraw40">
+        UPDATE vip_benefit_transfer
+        SET status = 60
+        WHERE transfer_id = #{transferId} AND status = 40
+    </update>
+
+    <!-- 第12步:受让人拒绝 40->51,退费(带受让人校验) -->
+    <update id="toReject">
+        UPDATE vip_benefit_transfer
+        SET status = 51
+        WHERE transfer_id = #{transferId} AND to_user_id = #{toUserId} AND status = 40
+    </update>
+
+    <!-- 第12步:受让人确认超时 40->52,退费 -->
+    <update id="timeout">
+        UPDATE vip_benefit_transfer
+        SET status = 52
+        WHERE transfer_id = #{transferId} AND status = 40
+    </update>
+
+    <!-- 第12步:幂等置已退费 -->
+    <update id="markRefunded">
+        UPDATE vip_benefit_transfer
+        SET refund_status = 1
+        WHERE transfer_id = #{transferId} AND refund_status = 0
+    </update>
+
+    <!-- 第12步:扫描待确认超时单(逐笔处理) -->
+    <select id="selectTimeout" resultType="com.dlc.modules.api.entity.VipBenefitTransfer">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit_transfer
+        WHERE status = 40 AND confirm_deadline IS NOT NULL AND confirm_deadline &lt; #{now}
+    </select>
+
+    <!-- 第13步:审核通过 20->40,写审核留痕 + 确认截止时间 -->
+    <update id="auditPass">
+        UPDATE vip_benefit_transfer
+        SET status = 40, audit_user_id = #{auditUserId}, audit_time = #{auditTime},
+            audit_remark = #{auditRemark}, confirm_deadline = #{confirmDeadline}
+        WHERE transfer_id = #{transferId} AND status = 20
+    </update>
+
+    <!-- 第13步:审核驳回 20->31,写审核留痕 -->
+    <update id="auditReject">
+        UPDATE vip_benefit_transfer
+        SET status = 31, audit_user_id = #{auditUserId}, audit_time = #{auditTime},
+            audit_remark = #{auditRemark}
+        WHERE transfer_id = #{transferId} AND status = 20
+    </update>
+
     <!-- 我的转让/受让记录(带卡名) -->
     <select id="selectMyList" resultType="com.dlc.modules.api.entity.VipBenefitTransfer" parameterType="map">
         SELECT

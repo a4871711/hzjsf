@@ -5,7 +5,10 @@
 			<view class="login-box2" v-if="isVip && isLogin">
 				<view class="hdimg flex">
 					<image :src="userInfo.headImgUrl || '/static/image/my_img.png'" alt="" class="img" />
-					<text class="font_size_32">{{userInfo.nickname}}</text>
+					<view class="flex_col">
+						<text class="font_size_32">{{userInfo.nickname}}</text>
+						<text class="font_size_22 clr_h user-id" @click="copyUserId">会员ID：{{userInfo.userId}}</text>
+					</view>
 				</view>
 
 				<view class="flex-box flex_s">
@@ -37,7 +40,11 @@
 				<view class="hdimg flex_1">
 					<image :src="userInfo.headImgUrl" v-if="isLogin && userInfo.headImgUrl" alt="" class="img" />
 					<image src="/static/image/my_img.png" alt="" class="img" v-else />
-					<text class="font_size_32">{{isLogin ? userInfo.nickname:'未登录'}}</text>
+					<view class="flex_col" v-if="isLogin">
+						<text class="font_size_32">{{userInfo.nickname}}</text>
+						<text class="font_size_22 clr_h user-id" @click="copyUserId">会员ID：{{userInfo.userId}}</text>
+					</view>
+					<text class="font_size_32" v-else>未登录</text>
 				</view>
 
 				<view class="btn-01 flex_1" v-if="isLogin"
@@ -166,6 +173,16 @@
 			cancellation() {
 				this.show = false
 			},
+			// 复制会员ID(转让权益卡等场景需要告知对方自己的会员ID)
+			copyUserId() {
+				if (!this.userInfo || !this.userInfo.userId) return;
+				uni.setClipboardData({
+					data: String(this.userInfo.userId),
+					success: () => {
+						this.config.Toast('会员ID已复制');
+					}
+				});
+			},
 			handlconfirm() {
 				this.show = false
 				uni.makePhoneCall({
@@ -271,6 +288,12 @@
 				text {
 					color: #333;
 					font-weight: bold;
+				}
+
+				.user-id {
+					color: #999999;
+					font-weight: normal;
+					margin-top: 8rpx;
 				}
 			}
 

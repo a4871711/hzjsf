@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtProductDao">
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtProductEntity">
+        select p.*, (select type_name from pt_product_type where id = p.product_type_id) as typeName
+        from pt_product p where p.id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtProductEntity">
+        select p.*, (select type_name from pt_product_type where id = p.product_type_id) as typeName
+        from pt_product p
+        <where>
+            p.deleted = 0
+            <if test="productName != null and productName != ''">
+                AND p.product_name LIKE concat('%',#{productName},'%')
+            </if>
+            <if test="productTypeId != null and productTypeId != ''">
+                AND p.product_type_id = #{productTypeId}
+            </if>
+            <if test="serviceType != null and serviceType != ''">
+                AND p.service_type = #{serviceType}
+            </if>
+            <if test="listingStatus != null and listingStatus != ''">
+                AND p.listing_status = #{listingStatus}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                AND p.created_at &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND p.created_at &lt;= #{endTime}
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
+            </if>
+            <if test="coachId != null and coachId != ''">
+                AND p.id IN (select product_id from pt_product_coach_rel where coach_id = #{coachId})
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND p.id IN (select product_id from pt_product_store_rel where store_id in (${storeIds}))
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by p.sort_no desc, p.id desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from pt_product p
+        <where>
+            p.deleted = 0
+            <if test="productName != null and productName != ''">
+                AND p.product_name LIKE concat('%',#{productName},'%')
+            </if>
+            <if test="productTypeId != null and productTypeId != ''">
+                AND p.product_type_id = #{productTypeId}
+            </if>
+            <if test="serviceType != null and serviceType != ''">
+                AND p.service_type = #{serviceType}
+            </if>
+            <if test="listingStatus != null and listingStatus != ''">
+                AND p.listing_status = #{listingStatus}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                AND p.created_at &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND p.created_at &lt;= #{endTime}
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
+            </if>
+            <if test="coachId != null and coachId != ''">
+                AND p.id IN (select product_id from pt_product_coach_rel where coach_id = #{coachId})
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND p.id IN (select product_id from pt_product_store_rel where store_id in (${storeIds}))
+            </if>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtProductEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_product
+        (`product_no`, `product_name`, `product_subtitle`, `product_type_id`, `service_type`,
+         `category_name`, `cover_url`, `product_intro`, `product_detail`, `target_desc`,
+         `original_price`, `sale_price`, `member_price`, `new_user_price`,
+         `lesson_count`, `duration_minutes`, `validity_days`,
+         `refund_type`, `refund_rule`, `visible_groups`, `purchase_limit`, `sale_stock`, `sold_count`,
+         `booking_gap_minutes`, `booking_capacity`, `latest_booking_hours`, `latest_free_cancel_hours`,
+         `no_show_deduct`, `coach_confirm_required`,
+         `listing_status`, `listing_at`, `unlisting_at`, `sort_no`,
+         `recommend_private`, `recommend_home`,
+         `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{productNo}, #{productName}, #{productSubtitle}, #{productTypeId}, #{serviceType},
+         #{categoryName}, #{coverUrl}, #{productIntro}, #{productDetail}, #{targetDesc},
+         #{originalPrice}, #{salePrice}, #{memberPrice}, #{newUserPrice},
+         #{lessonCount}, #{durationMinutes}, #{validityDays},
+         #{refundType}, #{refundRule}, #{visibleGroups}, #{purchaseLimit}, #{saleStock}, #{soldCount},
+         #{bookingGapMinutes}, #{bookingCapacity}, #{latestBookingHours}, #{latestFreeCancelHours},
+         #{noShowDeduct}, #{coachConfirmRequired},
+         #{listingStatus}, #{listingAt}, #{unlistingAt}, #{sortNo},
+         #{recommendPrivate}, #{recommendHome},
+         #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtProductEntity">
+        update pt_product
+        <set>
+            <if test="productName != null">`product_name` = #{productName},</if>
+            <if test="productSubtitle != null">`product_subtitle` = #{productSubtitle},</if>
+            <if test="productTypeId != null">`product_type_id` = #{productTypeId},</if>
+            <if test="serviceType != null">`service_type` = #{serviceType},</if>
+            <if test="categoryName != null">`category_name` = #{categoryName},</if>
+            <if test="coverUrl != null">`cover_url` = #{coverUrl},</if>
+            <if test="productIntro != null">`product_intro` = #{productIntro},</if>
+            <if test="productDetail != null">`product_detail` = #{productDetail},</if>
+            <if test="targetDesc != null">`target_desc` = #{targetDesc},</if>
+            <if test="originalPrice != null">`original_price` = #{originalPrice},</if>
+            <if test="salePrice != null">`sale_price` = #{salePrice},</if>
+            <if test="memberPrice != null">`member_price` = #{memberPrice},</if>
+            <if test="newUserPrice != null">`new_user_price` = #{newUserPrice},</if>
+            <if test="lessonCount != null">`lesson_count` = #{lessonCount},</if>
+            <if test="durationMinutes != null">`duration_minutes` = #{durationMinutes},</if>
+            <if test="validityDays != null">`validity_days` = #{validityDays},</if>
+            <if test="refundType != null">`refund_type` = #{refundType},</if>
+            <if test="refundRule != null">`refund_rule` = #{refundRule},</if>
+            <if test="visibleGroups != null">`visible_groups` = #{visibleGroups},</if>
+            <if test="purchaseLimit != null">`purchase_limit` = #{purchaseLimit},</if>
+            <if test="saleStock != null">`sale_stock` = #{saleStock},</if>
+            <if test="bookingGapMinutes != null">`booking_gap_minutes` = #{bookingGapMinutes},</if>
+            <if test="bookingCapacity != null">`booking_capacity` = #{bookingCapacity},</if>
+            <if test="latestBookingHours != null">`latest_booking_hours` = #{latestBookingHours},</if>
+            <if test="latestFreeCancelHours != null">`latest_free_cancel_hours` = #{latestFreeCancelHours},</if>
+            <if test="noShowDeduct != null">`no_show_deduct` = #{noShowDeduct},</if>
+            <if test="coachConfirmRequired != null">`coach_confirm_required` = #{coachConfirmRequired},</if>
+            <if test="listingStatus != null">`listing_status` = #{listingStatus},</if>
+            <if test="listingAt != null">`listing_at` = #{listingAt},</if>
+            <if test="unlistingAt != null">`unlisting_at` = #{unlistingAt},</if>
+            <if test="sortNo != null">`sort_no` = #{sortNo},</if>
+            <if test="recommendPrivate != null">`recommend_private` = #{recommendPrivate},</if>
+            <if test="recommendHome != null">`recommend_home` = #{recommendHome},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 逻辑删除 -->
+    <update id="deleteBatch">
+        update pt_product set deleted = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="countByNoPrefix" resultType="int">
+        select count(*) from pt_product where product_no like concat(#{prefix},'%')
+    </select>
+
+</mapper>

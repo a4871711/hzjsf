@@ -204,9 +204,15 @@
     <bean id="deleteFaceRecordTask" class="com.dlc.modules.api.schedule.DeleteFaceRecordTask"></bean>
     <bean id="updateClassStatusTask" class="com.dlc.modules.api.schedule.UpdateClassStatusTask"></bean>
     <bean id="papAutoPayTask" class="com.dlc.modules.api.schedule.AutoPayTask"></bean>
+    <bean id="vipTransferTimeoutTask" class="com.dlc.modules.api.schedule.VipTransferTimeoutTask"></bean>
     <task:scheduled-tasks>
         <!--每隔1小时执行一次更新卡、商城、私教课、团体课订单状态-->
         <task:scheduled ref="updateOrderStatusTask" method="updateOrderStatus" cron="0 0 0/1 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每小时执行一次VIP权益转让受让人确认超时扫描(40→52+退费+推送)-->
+        <task:scheduled ref="vipTransferTimeoutTask" method="confirmTimeoutScan" cron="0 0 0/1 * * ?"/>
     </task:scheduled-tasks>
 
     <task:scheduled-tasks>

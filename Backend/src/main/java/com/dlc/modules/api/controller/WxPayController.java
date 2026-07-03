@@ -464,6 +464,8 @@ public class WxPayController extends BaseController {
                     if (res > 0) {
                         log.info("=========添加收支明细==========");
                         incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,ConfigConstant.WXPAY);
+                        //随单加购权益会员:有占位则幂等激活(未加购命中0行跳过,不重复记账)
+                        vipBenefitService.activateAttached(orderNo);
                     }
                 }
 

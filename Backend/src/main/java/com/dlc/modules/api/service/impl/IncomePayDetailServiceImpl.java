@@ -124,4 +124,31 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
         int result = incomePayDetailMapper.insertSelective(ipd);
         return result;
     }
+
+    @Override
+    public int updateAnotherId(String orderNo, Long anotherId) {
+        return incomePayDetailMapper.updateAnotherId(orderNo, anotherId);
+    }
+
+    @Override
+    public int saveTransferRefund(String orderNo, BigDecimal money, Long userId, Long anotherId) {
+        IncomePayDetail ipd = new IncomePayDetail();
+        ipd.setOrderNo(orderNo);
+        // 用途=9退款(与商城退款一致;前台 moneyType CASE 把 9 记'+',退款回款计收入)
+        ipd.setPayType(9);
+        // 退款金额存正数,正负号由前台展示层决定
+        ipd.setMoney(money);
+        // 本功能只接微信,收支方式=微信
+        ipd.setTradeType(ConfigConstant.WXPAY);
+        ipd.setUserId(userId);
+        ipd.setStoreId(userInfoMapper.queryStoreIdByUserId(userId));
+        // 对方=受让人(留痕)
+        ipd.setAnotherId(anotherId);
+        ipd.setTradeStatus(3);
+        Date now = new Date();
+        ipd.setTradeDate(now);
+        ipd.setTransactionTime(now);
+        ipd.setCreatedDate(now);
+        return incomePayDetailMapper.insertSelective(ipd);
+    }
 }

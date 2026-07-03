@@ -23,7 +23,7 @@
 				</view>
 				<view class="tl-row">
 					<text class="tl-label">发起时间</text>
-					<text class="tl-val">{{ item.createdDate || '-' }}</text>
+					<text class="tl-val">{{ item.createdDateText || '-' }}</text>
 				</view>
 				<view class="tl-row" v-if="item.auditRemark">
 					<text class="tl-label">审核备注</text>
@@ -126,6 +126,7 @@
 					cardNameText: row.cardName || '权益卡',
 					roleLabel: isFrom ? '我转出' : '我受让',
 					feeText: this.feeText(row.serviceFee),
+					createdDateText: this.formatDateTime(row.createdDate),
 					statusLabel: this.statusText(row.status),
 					statusClassName: this.statusClass(row.status)
 				});
@@ -134,6 +135,16 @@
 				const n = Number(v);
 				if (isNaN(n) || n <= 0) return '免费';
 				return '¥' + (Number.isInteger(n) ? String(n) : n.toFixed(2));
+			},
+			// 后端 FastJSON 把 Date 序列化成毫秒时间戳数字,兼容 数字/字符串 → 'YYYY-MM-DD HH:mm'
+			formatDateTime(v) {
+				if (!v) return '';
+				const t = typeof v === 'number' ? v : new Date(String(v).replace(/-/g, '/')).getTime();
+				if (!t || isNaN(t)) return '';
+				const d = new Date(t);
+				const p = (n) => (n < 10 ? '0' + n : '' + n);
+				return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+					' ' + p(d.getHours()) + ':' + p(d.getMinutes());
 			},
 			statusText(status) {
 				const map = {

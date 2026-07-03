@@ -2,10 +2,12 @@ package com.dlc.modules.api.service;
 
 import com.dlc.common.utils.PageUtils;
 import com.dlc.modules.api.entity.VipBenefit;
+import com.dlc.modules.api.entity.VipBenefitTransfer;
 import com.dlc.modules.api.entity.VipFeeRule;
 import com.dlc.modules.api.vo.UserInfoVo;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -76,4 +78,70 @@ public interface VipTransferService {
      * @return 受影响行数(0=重复回调/状态已变,不重复记账)
      */
     int payFeeCallback(String feeOrderNo, BigDecimal money, String transactionNumber, Integer payType);
+
+    /**
+     * 受让人确认接收(过户入口,POST /api/vipTransfer/confirm,§7.3.5)。
+     * 仅受让人本人、仅 status=40 且 now&lt;=confirm_deadline 可确认(不付费);
+     * 校验通过后调用 {@link #transferEffect} 完成过户,返回过户后的最新状态。
+     *
+     * @param toUser     受让人(getUserVo,已校验封禁)
+     * @param transferId 转让单ID
+     * @return {transferId, status, effectTime}
+     */
+    Map<String, Object> confirm(UserInfoVo toUser, Long transferId);
+
+    /**
+     * 过户单事务(§7.4 + 附录B.6/C.3):由 {@link #confirm} 调用,同一方法即同一事务。
+     * 行锁转让单(非40态直接幂等返回)→行锁权益(校验仍为0正常)→changeOwner(user_id 换受让人、
+     * transfer_count+1、transferable=1;store_id/store_addr_id 不动即附录D.3、expire_time 不动即D-10继承)→
+     * 转让单 status 40→70 + effect_time→服务费单补记 anotherId(不重复入账,附录B.6)→推送双方(站内信)。
+     * changeOwner 命中0行且本单仍是首次执行(说明权益被其他转让单抢先过户,附录C.3"否则"分支)时,
+     * 抛异常回滚,本单转让保持40可重试,不让受让人得到"确认成功"却未获得权益的假象。
+     *
+     * @param transferId 转让单ID
+     */
+    void transferEffect(Long transferId);
+
+    /**
+     * 转让人撤回(POST /api/vipTransfer/withdraw,§5.8 + §7.3.7 + 附录D.1)。
+     * 单事务、行锁转让单:20待审核→60且全额退服务费;40待受让人确认→60但不退费;其余状态报错。
+     * @param fromUserId 转让人(getUserId)
+     * @param transferId 转让单ID
+     * @return {transferId, status:60}
+     */
+    Map<String, Object> withdraw(Long fromUserId, Long transferId);
+
+    /**
+     * 受让人拒绝(POST /api/vipTransfer/reject,§5.10 + §7.3.6)。
+     * 单事务:仅本人、仅 status=40 可拒绝,40→51 并全额退服务费,不动权益归属。
+     * @param toUserId   受让人(getUserId)
+     * @param transferId 转让单ID
+     * @return {transferId, status:51}
+     */
+    Map<String, Object> reject(Long toUserId, Long transferId);
+
+    /**
+     * 扫描待受让人确认超时单(§7.6,供定时任务逐笔处理):status=40 且 confirm_deadline < now。
+     * 只读查询,不改状态;实际关单退费由 {@link #timeoutOne} 逐笔单事务完成。
+     */
+    List<VipBenefitTransfer> listConfirmTimeout();
+
+    /**
+     * 逐笔处理一个超时单(§7.6,单事务):40→52 已超时 + 全额退服务费 + 推送双方。
+     * 幂等:命中0行(已被确认/撤回)直接返回,不退费。单笔失败由调用方(定时任务)捕获、不影响其余。
+     * @param transferId 转让单ID
+     */
+    void timeoutOne(Long transferId);
+
+    /**
+     * 后台审核(§7.3.4 + §6.3 + 附录E,由 sys SysVipTransferController 调用,单事务落在本 api service)。
+     * 仅处理 status=20 待审核单。pass=1 通过:审核当下重跑 checkTransferable 复核,
+     * 复核过→20→40 写 confirm_deadline 并推送受让人;复核不过→按驳回处理(20→31+退费),remark 标"系统复核:xxx"。
+     * pass!=1 人工驳回:20→31 + 全额退服务费 + 推送转让人。任一失败(状态已变/退款失败)抛 RRException 回滚。
+     * @param transferId  转让单ID
+     * @param auditUserId 审核管理员ID(ShiroUtils.getUserId())
+     * @param pass        1=通过 其余=驳回
+     * @param remark      审核备注/驳回原因
+     */
+    void audit(Long transferId, Long auditUserId, Integer pass, String remark);
 }

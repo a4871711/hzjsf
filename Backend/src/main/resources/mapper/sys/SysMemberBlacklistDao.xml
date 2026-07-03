@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysMemberBlacklistDao">
+
+    <!-- 黑名单公共筛选:手机号/状态 -->
+    <sql id="Filter">
+        <where>
+            <if test="phone != null and phone != ''">
+                AND u.phone LIKE concat('%', #{phone}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND b.status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryList" resultType="java.util.Map" parameterType="map">
+        SELECT
+            b.id            AS id,
+            b.user_id       AS userId,
+            u.nickname      AS nickname,
+            u.phone         AS phone,
+            b.reason        AS reason,
+            b.operator      AS operator,
+            b.status        AS status,
+            DATE_FORMAT(b.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate
+        FROM member_blacklist b
+        LEFT JOIN user_info u ON b.user_id = u.userId
+        <include refid="Filter"/>
+        ORDER BY b.created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM member_blacklist b
+        LEFT JOIN user_info u ON b.user_id = u.userId
+        <include refid="Filter"/>
+    </select>
+
+    <select id="findUserIdByPhone" resultType="long">
+        SELECT userId FROM user_info WHERE phone = #{phone} LIMIT 1
+    </select>
+
+    <select id="countActiveByUserId" resultType="int">
+        SELECT COUNT(1) FROM member_blacklist WHERE user_id = #{userId} AND status = 1
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.MemberBlacklistEntity">
+        INSERT INTO member_blacklist(user_id, reason, operator, status, created_date)
+        VALUES(#{userId}, #{reason}, #{operator}, #{status}, #{createdDate})
+    </insert>
+
+    <!-- 解除:按该记录所属会员清掉其全部生效记录。并发/双击可能给同一 user_id 插入多条 status=1,
+         若仅按 id 清一条会残留另一条导致"已解除却仍被拦截";嵌套子查询规避 MySQL 不能同表 update+子查询 -->
+    <update id="release">
+        UPDATE member_blacklist SET status = 0
+        WHERE status = 1
+          AND user_id = (SELECT t.user_id FROM (SELECT user_id FROM member_blacklist WHERE id = #{id}) t)
+    </update>
+</mapper>

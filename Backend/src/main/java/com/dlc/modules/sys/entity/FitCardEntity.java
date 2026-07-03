@@ -38,6 +38,10 @@ public class FitCardEntity implements Serializable {
 	 */
 	private Double costPrice;
 	/**
+	 * 权益卡价格（权益会员专享价，NULL/0=不启用）
+	 */
+	private Double benefitPrice;
+	/**
 	 * 次月起单价
 	 */
 	private Double nextPrice;
@@ -300,5 +304,13 @@ public class FitCardEntity implements Serializable {
 
 	public void setShowStoreAddrIds(String showStoreAddrIds) {
 		this.showStoreAddrIds = showStoreAddrIds;
+	}
+
+	public Double getBenefitPrice() {
+		return benefitPrice;
+	}
+
+	public void setBenefitPrice(Double benefitPrice) {
+		this.benefitPrice = benefitPrice;
 	}
 }

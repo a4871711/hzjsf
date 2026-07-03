@@ -5,7 +5,7 @@
 			<!-- <view class="item-title">{{item.autoPay != 0 ?'连续包':''}}{{item.ctName}}</view> -->
 			<view class="item-title">{{item.cardName||'--'}}</view>
 			<view class="price">
-				<text class="text">¥</text>{{item.isNewUser==1?(item.newUserPrice || item.cardPrice):item.cardPrice }}
+				<text class="text">¥</text>{{calcPrice(item)}}
 			</view>
 			<view class="btn flex_1">立即抢购</view>
 		</view>
@@ -29,6 +29,15 @@
 			return {
 
 			};
+		},
+		methods: {
+			// 应付价：权益会员且卡配了权益卡价 → benefitPrice；新人 → 新人价；否则单价
+			calcPrice(item) {
+				if (item.isBenefitMember == 1 && Number(item.benefitPrice) > 0) {
+					return item.benefitPrice;
+				}
+				return item.isNewUser == 1 ? (item.newUserPrice || item.cardPrice) : item.cardPrice;
+			},
 		}
 	}
 </script>

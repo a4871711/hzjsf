@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysVipCardOrderDao">
+
+    <!-- 购买记录公共筛选:手机号(购买人/持有人任一)/状态/起止日期/门店数据权限 -->
+    <sql id="Filter">
+        <where>
+            <if test="phone != null and phone != ''">
+                AND (ou.phone LIKE concat('%', #{phone}, '%') OR hu.phone LIKE concat('%', #{phone}, '%'))
+            </if>
+            <if test="status != null and status != ''">
+                AND b.status = #{status}
+            </if>
+            <!-- 购买时间区间:按 created_date 过滤;止日含当天(<次日零点),避免只到 00:00:00 漏当天记录 -->
+            <if test="startDate != null and startDate != ''">
+                AND b.created_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND b.created_date &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+            </if>
+            <!-- 门店数据权限:storeIds 为逗号分隔串,空则不过滤(超级管理员看全部);按购买/归属门店过滤 -->
+            <if test="storeIds != null and storeIds != ''">
+                AND b.store_id IN (${storeIds})
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryList" resultType="java.util.Map" parameterType="map">
+        SELECT
+            b.vip_benefit_id    AS vipBenefitId,
+            b.origin_user_id    AS originUserId,
+            ou.nickname         AS originNickname,
+            ou.phone            AS originPhone,
+            b.user_id           AS userId,
+            hu.nickname         AS holderNickname,
+            hu.phone            AS holderPhone,
+            b.vip_card_id       AS vipCardId,
+            c.card_name         AS cardName,
+            b.source_order_no   AS sourceOrderNo,
+            b.origin_price      AS originPrice,
+            b.transfer_count    AS transferCount,
+            DATE_FORMAT(b.start_time, '%Y-%m-%d %H:%i:%s') AS startTime,
+            DATE_FORMAT(b.expire_time, '%Y-%m-%d %H:%i:%s') AS expireTime,
+            b.status            AS status,
+            DATE_FORMAT(b.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate
+        FROM vip_benefit b
+        LEFT JOIN user_info ou ON b.origin_user_id = ou.userId
+        LEFT JOIN user_info hu ON b.user_id = hu.userId
+        LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        <include refid="Filter"/>
+        ORDER BY b.created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM vip_benefit b
+        LEFT JOIN user_info ou ON b.origin_user_id = ou.userId
+        LEFT JOIN user_info hu ON b.user_id = hu.userId
+        <include refid="Filter"/>
+    </select>
+</mapper>

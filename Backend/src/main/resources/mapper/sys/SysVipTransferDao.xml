@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysVipTransferDao">
+
+    <!-- 审核工作台公共筛选:状态/转让人/受让人/手机号/门店数据权限 -->
+    <sql id="Filter">
+        <where>
+            <if test="status != null and status != ''">
+                AND t.status = #{status}
+            </if>
+            <if test="fromUserId != null and fromUserId != ''">
+                AND t.from_user_id = #{fromUserId}
+            </if>
+            <if test="toUserId != null and toUserId != ''">
+                AND t.to_user_id = #{toUserId}
+            </if>
+            <if test="phone != null and phone != ''">
+                AND (fu.phone LIKE concat('%', #{phone}, '%') OR tu.phone LIKE concat('%', #{phone}, '%'))
+            </if>
+            <!-- 发起时间区间:按 created_date 过滤;止日含当天(<次日零点),避免只到 00:00:00 漏当天记录 -->
+            <if test="fromDate != null and fromDate != ''">
+                AND t.created_date &gt;= #{fromDate}
+            </if>
+            <if test="toDate != null and toDate != ''">
+                AND t.created_date &lt; DATE_ADD(#{toDate}, INTERVAL 1 DAY)
+            </if>
+            <!-- 门店数据权限:storeIds 为逗号分隔串,空则不过滤(超级管理员看全部);按发起门店过滤 -->
+            <if test="storeIds != null and storeIds != ''">
+                AND t.from_store_id IN (${storeIds})
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryList" resultType="java.util.Map" parameterType="map">
+        SELECT
+            t.transfer_id       AS transferId,
+            t.vip_benefit_id    AS vipBenefitId,
+            c.card_name         AS cardName,
+            t.from_user_id      AS fromUserId,
+            fu.nickname         AS fromNickname,
+            fu.phone            AS fromPhone,
+            t.to_user_id        AS toUserId,
+            tu.nickname         AS toNickname,
+            tu.phone            AS toPhone,
+            t.service_fee       AS serviceFee,
+            b.transfer_count    AS transferCount,
+            t.status            AS status,
+            t.refund_status     AS refundStatus,
+            t.audit_remark      AS auditRemark,
+            DATE_FORMAT(t.confirm_deadline, '%Y-%m-%d %H:%i:%s') AS confirmDeadline,
+            DATE_FORMAT(t.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate,
+            DATE_FORMAT(t.effect_time, '%Y-%m-%d %H:%i:%s') AS effectTime
+        FROM vip_benefit_transfer t
+        LEFT JOIN vip_benefit b ON t.vip_benefit_id = b.vip_benefit_id
+        LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        LEFT JOIN user_info fu ON t.from_user_id = fu.userId
+        LEFT JOIN user_info tu ON t.to_user_id = tu.userId
+        <include refid="Filter"/>
+        ORDER BY t.created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM vip_benefit_transfer t
+        LEFT JOIN user_info fu ON t.from_user_id = fu.userId
+        LEFT JOIN user_info tu ON t.to_user_id = tu.userId
+        <include refid="Filter"/>
+    </select>
+</mapper>

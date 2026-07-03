@@ -92,6 +92,13 @@
         WHERE vip_card_id = #{vipCardId}
     </update>
 
+    <!-- 过户改归属:store_id/store_addr_id 不动(附录D.3)、expire_time 不动(继承,D-10) -->
+    <update id="changeOwner">
+        UPDATE vip_benefit
+        SET user_id = #{toUserId}, transfer_count = transfer_count + 1, transferable = 1
+        WHERE vip_benefit_id = #{vipBenefitId} AND user_id = #{fromUserId} AND status = 0
+    </update>
+
     <!-- 我的权益分页列表(默认按 status 过滤;过期与否由前端按 expireTime 实时判断) -->
     <select id="selectMyBenefits" resultType="com.dlc.modules.api.entity.VipBenefit" parameterType="map">
         SELECT

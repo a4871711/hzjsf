@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtCoachScheduleDao">
+
+    <sql id="cols">
+        sc.id, sc.coach_id, sc.store_id, sc.weekday,
+        DATE_FORMAT(sc.start_time,'%H:%i') as startTime,
+        DATE_FORMAT(sc.end_time,'%H:%i') as endTime,
+        sc.is_enabled, sc.created_by, sc.created_at, sc.updated_by, sc.updated_at,
+        (select storeName from store where storeId = sc.store_id) as storeName
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtCoachScheduleEntity">
+        select <include refid="cols"/> from pt_coach_schedule sc where sc.id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachScheduleEntity">
+        select <include refid="cols"/>
+        from pt_coach_schedule sc
+        <where>
+            <if test="coachId != null and coachId != ''">AND sc.coach_id = #{coachId}</if>
+            <if test="storeId != null and storeId != ''">AND sc.store_id = #{storeId}</if>
+            <if test="weekday != null and weekday != ''">AND sc.weekday = #{weekday}</if>
+            <if test="isEnabled != null and isEnabled != ''">AND sc.is_enabled = #{isEnabled}</if>
+            <if test="storeIds != null and storeIds != ''">AND sc.store_id in (${storeIds})</if>
+        </where>
+        order by sc.coach_id asc, sc.weekday asc, sc.start_time asc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from pt_coach_schedule sc
+        <where>
+            <if test="coachId != null and coachId != ''">AND sc.coach_id = #{coachId}</if>
+            <if test="storeId != null and storeId != ''">AND sc.store_id = #{storeId}</if>
+            <if test="weekday != null and weekday != ''">AND sc.weekday = #{weekday}</if>
+            <if test="isEnabled != null and isEnabled != ''">AND sc.is_enabled = #{isEnabled}</if>
+            <if test="storeIds != null and storeIds != ''">AND sc.store_id in (${storeIds})</if>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachScheduleEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_coach_schedule
+        (`coach_id`, `store_id`, `weekday`, `start_time`, `end_time`, `is_enabled`,
+         `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{coachId}, #{storeId}, #{weekday}, #{startTime}, #{endTime}, #{isEnabled},
+         #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtCoachScheduleEntity">
+        update pt_coach_schedule
+        <set>
+            <if test="storeId != null">`store_id` = #{storeId},</if>
+            <if test="weekday != null">`weekday` = #{weekday},</if>
+            <if test="startTime != null">`start_time` = #{startTime},</if>
+            <if test="endTime != null">`end_time` = #{endTime},</if>
+            <if test="isEnabled != null">`is_enabled` = #{isEnabled},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBatch">
+        delete from pt_coach_schedule where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 半开区间重叠：start_time &lt; endTime AND end_time &gt; startTime，仅启用段占位 -->
+    <select id="countOverlap" resultType="int">
+        select count(*) from pt_coach_schedule
+        where coach_id = #{coachId} and store_id = #{storeId} and weekday = #{weekday}
+          and is_enabled = 1
+          and start_time &lt; #{endTime} and end_time &gt; #{startTime}
+        <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
+    </select>
+
+    <select id="countCoachStore" resultType="int">
+        select count(*) from pt_coach_store_rel where coach_id = #{coachId} and store_id = #{storeId}
+    </select>
+
+    <select id="countBookableCoaches" resultType="int">
+        select count(distinct s.coach_id)
+        from pt_coach_schedule s
+        inner join pt_coach c on c.id = s.coach_id and c.status = 1 and c.deleted = 0
+        where s.is_enabled = 1
+          and s.store_id in (${storeIds})
+        <if test="coachIdsFilter != null and coachIdsFilter != ''">
+            AND s.coach_id in (${coachIdsFilter})
+        </if>
+    </select>
+
+</mapper>

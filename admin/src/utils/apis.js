@@ -721,4 +721,81 @@ export default {
 			data: JSON.stringify(data)
 		});
 	},
+
+	//VIP转让审核-列表
+	vipTransfer_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipTransfer/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
+	//VIP转让审核-审核(pass=1通过 0驳回)
+	vipTransfer_audit(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipTransfer/audit'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+
+	//停卡记录-列表(后台只读)
+	cardPause_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/cardPause/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
+
+	//会员黑名单-列表
+	memberBlacklist_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/memberBlacklist/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
+	//会员黑名单-拉黑(phone+reason)
+	memberBlacklist_save(data) {
+		return $http({
+			url: $http.adornUrl('/sys/memberBlacklist/save'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//会员黑名单-解除({id})
+	memberBlacklist_remove(data) {
+		return $http({
+			url: $http.adornUrl('/sys/memberBlacklist/remove'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+
+	//权益卡购买记录-列表(后台只读)
+	vipCardOrder_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipCardOrder/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
 }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtProductGroupBenefitRelDao">
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtProductGroupBenefitRelEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_product_group_benefit_rel (`benefit_id`, `group_product_id`, `created_at`)
+        values (#{benefitId}, #{groupProductId}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByBenefitId">
+        delete from pt_product_group_benefit_rel where benefit_id = #{value}
+    </delete>
+
+    <select id="queryGroupProductIds" resultType="java.lang.Long">
+        select group_product_id from pt_product_group_benefit_rel where benefit_id = #{value}
+    </select>
+
+</mapper>
