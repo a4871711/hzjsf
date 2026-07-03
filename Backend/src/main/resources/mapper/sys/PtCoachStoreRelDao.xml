@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtCoachStoreRelDao">
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachStoreRelEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_coach_store_rel (`coach_id`, `store_id`, `created_at`)
+        values (#{coachId}, #{storeId}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByCoachId">
+        delete from pt_coach_store_rel where coach_id = #{value}
+    </delete>
+
+    <select id="queryStoreIds" resultType="java.lang.Long">
+        select store_id from pt_coach_store_rel where coach_id = #{value}
+    </select>
+
+    <select id="queryStoreNames" resultType="java.lang.String">
+        select group_concat(s.storeName)
+        from pt_coach_store_rel r
+        left join store s on s.storeId = r.store_id
+        where r.coach_id = #{value}
+    </select>
+
+</mapper>

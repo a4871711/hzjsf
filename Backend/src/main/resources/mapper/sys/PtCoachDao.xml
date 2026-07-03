@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtCoachDao">
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtCoachEntity">
+        select * from pt_coach where id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachEntity">
+        select c.*,
+            (select group_concat(s.storeName)
+               from pt_coach_store_rel r left join store s on s.storeId = r.store_id
+              where r.coach_id = c.id) as storeNames
+        from pt_coach c
+        <where>
+            c.deleted = 0
+            <if test="coachName != null and coachName != ''">
+                AND c.coach_name LIKE concat('%',#{coachName},'%')
+            </if>
+            <if test="mobile != null and mobile != ''">
+                AND c.mobile LIKE concat('%',#{mobile},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND c.status = #{status}
+            </if>
+            <if test="coachLevel != null and coachLevel != ''">
+                AND c.coach_level = #{coachLevel}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                AND c.created_at &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND c.created_at &lt;= #{endTime}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND c.id IN (select coach_id from pt_coach_store_rel where store_id in (${storeIds}))
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by c.sort_no desc, c.id desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from pt_coach c
+        <where>
+            c.deleted = 0
+            <if test="coachName != null and coachName != ''">
+                AND c.coach_name LIKE concat('%',#{coachName},'%')
+            </if>
+            <if test="mobile != null and mobile != ''">
+                AND c.mobile LIKE concat('%',#{mobile},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND c.status = #{status}
+            </if>
+            <if test="coachLevel != null and coachLevel != ''">
+                AND c.coach_level = #{coachLevel}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                AND c.created_at &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND c.created_at &lt;= #{endTime}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND c.id IN (select coach_id from pt_coach_store_rel where store_id in (${storeIds}))
+            </if>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_coach
+        (`coach_no`, `coach_name`, `mobile`, `gender`, `avatar_url`, `coach_level`, `intro`,
+         `certificate_urls`, `status`, `disable_reason`, `sort_no`,
+         `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{coachNo}, #{coachName}, #{mobile}, #{gender}, #{avatarUrl}, #{coachLevel}, #{intro},
+         #{certificateUrls}, #{status}, #{disableReason}, #{sortNo},
+         #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtCoachEntity">
+        update pt_coach
+        <set>
+            <if test="coachName != null">`coach_name` = #{coachName},</if>
+            <if test="mobile != null">`mobile` = #{mobile},</if>
+            <if test="gender != null">`gender` = #{gender},</if>
+            <if test="avatarUrl != null">`avatar_url` = #{avatarUrl},</if>
+            <if test="coachLevel != null">`coach_level` = #{coachLevel},</if>
+            <if test="intro != null">`intro` = #{intro},</if>
+            <if test="certificateUrls != null">`certificate_urls` = #{certificateUrls},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="disableReason != null">`disable_reason` = #{disableReason},</if>
+            <if test="sortNo != null">`sort_no` = #{sortNo},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 逻辑删除 -->
+    <update id="deleteBatch">
+        update pt_coach set deleted = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="countByMobile" resultType="int">
+        select count(*) from pt_coach
+        where deleted = 0 and mobile = #{mobile}
+        <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
+    </select>
+
+    <select id="countByLevelName" resultType="int">
+        select count(*) from pt_coach where deleted = 0 and coach_level = #{levelName}
+    </select>
+
+    <select id="countByNoPrefix" resultType="int">
+        select count(*) from pt_coach where coach_no like concat(#{prefix},'%')
+    </select>
+
+    <update id="updateLevelNameRef">
+        update pt_coach set coach_level = #{newName}
+        where deleted = 0 and coach_level = #{oldName}
+    </update>
+
+</mapper>

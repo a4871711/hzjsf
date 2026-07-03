@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.api.dao.CoachApiDao">
+
+    <!--
+        需求 8.3：商品适用门店 ∩ 教练所属门店 ∩ 教练正常状态 ∩ 教练有排班 ∩ 商品指定教练范围(为空则不限)。
+        用 pt_coach_schedule 与 pt_coach_store_rel 联合确保"教练在该重叠门店确有启用排班"，而不仅是门店归属。
+    -->
+    <select id="queryBookableCoaches" resultType="com.dlc.modules.api.entity.PtCoachOption">
+        select distinct c.id, c.coach_name as coachName, c.avatar_url as avatarUrl,
+               c.coach_level as coachLevel, c.intro, c.sort_no as sortNo
+        from pt_coach c
+        inner join pt_coach_store_rel csr on csr.coach_id = c.id
+        inner join pt_coach_schedule sch on sch.coach_id = c.id and sch.store_id = csr.store_id and sch.is_enabled = 1
+        where c.status = 1 and c.deleted = 0
+          and csr.store_id in (select store_id from pt_product_store_rel where product_id = #{productId})
+          and (
+                not exists (select 1 from pt_product_coach_rel where product_id = #{productId})
+                or c.id in (select coach_id from pt_product_coach_rel where product_id = #{productId})
+              )
+        order by c.sort_no desc, c.id asc
+    </select>
+
+    <select id="queryEnabledSchedule" resultType="com.dlc.modules.api.vo.PtScheduleWindowVo">
+        select DATE_FORMAT(start_time,'%H:%i') as startTime, DATE_FORMAT(end_time,'%H:%i') as endTime
+        from pt_coach_schedule
+        where coach_id = #{coachId} and store_id = #{storeId} and weekday = #{weekday} and is_enabled = 1
+        order by start_time asc
+    </select>
+
+    <select id="queryProductStoreIds" resultType="java.lang.Long">
+        select store_id from pt_product_store_rel where product_id = #{value}
+    </select>
+
+    <select id="queryCoachStoreIds" resultType="java.lang.Long">
+        select store_id from pt_coach_store_rel where coach_id = #{value}
+    </select>
+
+</mapper>

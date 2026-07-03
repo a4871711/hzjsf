@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtProductGroupBenefitDao">
+
+    <select id="queryByProductId" resultType="com.dlc.modules.sys.entity.PtProductGroupBenefitEntity">
+        select * from pt_product_group_benefit where product_id = #{value}
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtProductGroupBenefitEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_product_group_benefit
+        (`product_id`, `is_enabled`, `gift_count`, `validity_days`, `scope_type`, `status`,
+         `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{productId}, #{isEnabled}, #{giftCount}, #{validityDays}, #{scopeType}, #{status},
+         #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtProductGroupBenefitEntity">
+        update pt_product_group_benefit
+        <set>
+            <if test="isEnabled != null">`is_enabled` = #{isEnabled},</if>
+            <if test="giftCount != null">`gift_count` = #{giftCount},</if>
+            <if test="validityDays != null">`validity_days` = #{validityDays},</if>
+            <if test="scopeType != null">`scope_type` = #{scopeType},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteByProductId">
+        delete from pt_product_group_benefit where product_id = #{value}
+    </delete>
+
+    <select id="queryTeamClassOptions" resultType="com.dlc.modules.sys.entity.TeamClassEntity">
+        select teamClassId, teamClassName from team_class order by teamClassId desc
+    </select>
+
+</mapper>

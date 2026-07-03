@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtMemberGroupBenefitDao">
+
+    <sql id="cols">
+        b.*,
+        (select nickname from user_info where userId = b.member_id) as memberName,
+        (select phone from user_info where userId = b.member_id) as memberMobile,
+        (select product_name from pt_product where id = b.source_product_id) as sourceProductName
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtMemberGroupBenefitEntity">
+        select <include refid="cols"/> from pt_member_group_benefit b where b.id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtMemberGroupBenefitEntity">
+        select <include refid="cols"/>
+        from pt_member_group_benefit b
+        <where>
+            <if test="memberId != null and memberId != ''">AND b.member_id = #{memberId}</if>
+            <if test="sourceProductId != null and sourceProductId != ''">AND b.source_product_id = #{sourceProductId}</if>
+            <if test="status != null and status != ''">AND b.status = #{status}</if>
+        </where>
+        order by b.id desc
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from pt_member_group_benefit b
+        <where>
+            <if test="memberId != null and memberId != ''">AND b.member_id = #{memberId}</if>
+            <if test="sourceProductId != null and sourceProductId != ''">AND b.source_product_id = #{sourceProductId}</if>
+            <if test="status != null and status != ''">AND b.status = #{status}</if>
+        </where>
+    </select>
+
+</mapper>

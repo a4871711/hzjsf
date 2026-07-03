@@ -99,6 +99,16 @@ public class ConfigConstant {
     /**VIP转让受让人确认时限(天):后台审核通过后受让人需在此天数内确认,超时由定时任务关单退费*/
     public static final int VIP_TRANSFER_CONFIRM_DAYS = 3;
 
+    /* ============ 私教管理后台订单号末位后缀(全局仲裁,避开上面 2~7;新增任何支付链路前必回查本段) ============ */
+    /**私教商品购买订单后缀(一次性/储值/分期首付主单;严禁复用"4"旧私教课,回调会错分)*/
+    public static final String PT_PRIVATE_ORDER_TYPE = "b";
+    /**会员储值充值订单后缀*/
+    public static final String WALLET_RECHARGE_TYPE = "8";
+    /**私教分期首付付款单后缀*/
+    public static final String INSTALLMENT_DOWN_TYPE = "9";
+    /**私教分期后续期付款单后缀*/
+    public static final String INSTALLMENT_BILL_TYPE = "a";
+
     /**用户缓存前缀*/
     public static final String USER = "hzjsf_user_";
     /**用户缓存前缀*/

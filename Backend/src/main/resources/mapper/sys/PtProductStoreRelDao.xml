@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtProductStoreRelDao">
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtProductStoreRelEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into pt_product_store_rel (`product_id`, `store_id`, `created_at`)
+        values (#{productId}, #{storeId}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByProductId">
+        delete from pt_product_store_rel where product_id = #{value}
+    </delete>
+
+    <select id="queryStoreIds" resultType="java.lang.Long">
+        select store_id from pt_product_store_rel where product_id = #{value}
+    </select>
+
+</mapper>
