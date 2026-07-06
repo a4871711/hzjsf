@@ -20,10 +20,11 @@
 
 		<view class="methods">
 			<view class="title">抖音/美团验券使用方法 </view>
-			<view class="steup">步骤一: 输入抖音券码或扫码完成验券</view>
-			<view class="steup">步骤二: 验券成功后会获得对应的优惠券</view>
-			<view class="steup">步骤三: 优惠券可在购卡/续费时进行抵扣</view>
-			<view class="steup">步骤四: 优惠券可在我的->优惠券中查看</view>
+			<view class="steup">步骤一: 输入券码或者扫码完成验券</view>
+			<view class="steup">步骤二: 验券成功后获得对应优惠券</view>
+			<view class="steup">步骤三: 回到购卡界面，点击对应卡种</view>
+			<view class="steup">步骤四: 点击优惠券管理，勾选优惠券</view>
+			<view class="steup">步骤五: 支付0.01，成功支付即可扫码入场</view>
 		</view>
 		<u-picker :show="show" @confirm='confirm' @cancel="close" @close="close" close-on-click-overlay
 			keyName="storeName" :columns="columns"></u-picker>
