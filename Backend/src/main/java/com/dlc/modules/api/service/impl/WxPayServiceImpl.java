@@ -79,9 +79,7 @@ public class WxPayServiceImpl implements WxPayService {
     //订单退款
     private static final String PAPORDERFUND_URL = "https://api.mch.weixin.qq.com/secapi/pay/refund";
     //小程序支付回调
-    //【本地联调临时改】走 ngrok 穿透到本地 8080(注意本地有 /renren-security 上下文,线上没有);上线前必须改回下面这行!
-    //private static final String NOTIFY_PROPAY_URL = "http://shilijsf.shilisports.com/api/wx/proPayNotify";
-    private static final String NOTIFY_PROPAY_URL = "https://fuliginously-hoofed-lakeshia.ngrok-free.dev/renren-security/api/wx/proPayNotify";
+    private static final String NOTIFY_PROPAY_URL = "http://shilijsf.shilisports.com/api/wx/proPayNotify";
     //协议模板id
     private static final String PLAN_ID_209 = "190490";
     //协议模板id
