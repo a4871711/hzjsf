@@ -2,6 +2,7 @@ package com.dlc.modules.api.service.impl;
 
 import com.dlc.common.exception.RRException;
 import com.dlc.modules.api.dao.CoachApiDao;
+import com.dlc.modules.api.dao.PtPrivateAppointmentDao;
 import com.dlc.modules.api.dao.PtProductApiDao;
 import com.dlc.modules.api.entity.PtCoachOption;
 import com.dlc.modules.api.entity.PtProduct;
@@ -33,6 +34,8 @@ public class CoachApiServiceImpl implements CoachApiService {
     private CoachApiDao coachApiDao;
     @Autowired
     private PtProductApiDao ptProductApiDao;
+    @Autowired
+    private PtPrivateAppointmentDao ptPrivateAppointmentDao;
 
     @Override
     public List<PtCoachOption> listByProduct(Long productId) {
@@ -80,7 +83,9 @@ public class CoachApiServiceImpl implements CoachApiService {
 
         int duration = product.getDurationMinutes() == null ? 60 : product.getDurationMinutes();
         int gap = product.getBookingGapMinutes() == null ? 0 : product.getBookingGapMinutes();
-        int capacity = product.getBookingCapacity() == null ? 1 : product.getBookingCapacity();
+        // 容量口径(第14步统一):一对一恒1,一对多取 booking_capacity
+        int capacity = Integer.valueOf(1).equals(product.getServiceType()) ? 1
+                : (product.getBookingCapacity() == null ? 1 : product.getBookingCapacity());
         int latestBookingHours = product.getLatestBookingHours() == null ? 2 : product.getLatestBookingHours();
         LocalDateTime cutoff = LocalDateTime.now().plusHours(latestBookingHours);
 
@@ -93,14 +98,21 @@ public class CoachApiServiceImpl implements CoachApiService {
                 LocalTime slotEnd = cursor.plusMinutes(duration);
                 LocalDateTime slotStartDateTime = LocalDateTime.of(targetDate, slotStart);
                 if (!slotStartDateTime.isBefore(cutoff)) {
-                    PtAvailableSlotVo vo = new PtAvailableSlotVo();
-                    vo.setDate(date);
-                    vo.setStartTime(slotStart.format(TIME_FMT));
-                    vo.setEndTime(slotEnd.format(TIME_FMT));
-                    vo.setCapacity(capacity);
-                    // 交易域 pt_private_appointment 未建成前，无已占用记录，余量恒等于容量（第14步接入后统一口径）
-                    vo.setRemaining(capacity);
-                    slots.add(vo);
+                    // 【统一余量口径,第14步接入】与预约下单护栏共用 countOccupied 同一条 COUNT SQL,
+                    // 已占用=状态 IN (1已预约,3已完成,4爽约),排除已取消;仅返回余量>0 的时段(5.1.B)
+                    int used = ptPrivateAppointmentDao.countOccupied(coachId, date,
+                            slotStart.format(TIME_FMT), slotEnd.format(TIME_FMT));
+                    int remaining = capacity - used;
+                    if (remaining > 0) {
+                        PtAvailableSlotVo vo = new PtAvailableSlotVo();
+                        vo.setStoreId(storeId);
+                        vo.setDate(date);
+                        vo.setStartTime(slotStart.format(TIME_FMT));
+                        vo.setEndTime(slotEnd.format(TIME_FMT));
+                        vo.setCapacity(capacity);
+                        vo.setRemaining(remaining);
+                        slots.add(vo);
+                    }
                 }
                 cursor = slotEnd.plusMinutes(gap);
             }

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 私教订单券明细(pt_private_order_coupon_rel) + 会员券占用 CAS(mk_member_coupon)。
+     api 目录 XML 改动须重启 Tomcat。
+     use_status 状态机:0未使用 →(下单占用)3使用中 →(第13步回调)1已使用 / (第16步超时取消)0未使用。
+     「3使用中」为任务裁定的占用态,DDL 枚举注释暂只有 0/1/2。 -->
+<mapper namespace="com.dlc.modules.api.dao.PtPrivateOrderCouponRelDao">
+
+    <!-- created_at 由 DDL 默认值维护;order_id 唯一键约束一单一券 -->
+    <insert id="save" parameterType="com.dlc.modules.api.entity.PtPrivateOrderCouponRelEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_private_order_coupon_rel
+            (order_id, coupon_id, member_coupon_id, coupon_name, coupon_type, discount_amount)
+        VALUES
+            (#{orderId}, #{couponId}, #{memberCouponId}, #{couponName}, #{couponType}, #{discountAmount})
+    </insert>
+
+    <select id="selectByOrderId" resultType="com.dlc.modules.api.entity.PtPrivateOrderCouponRelEntity">
+        SELECT id, order_id, coupon_id, member_coupon_id, coupon_name, coupon_type, discount_amount, created_at
+        FROM pt_private_order_coupon_rel
+        WHERE order_id = #{orderId}
+        LIMIT 1
+    </select>
+
+    <!-- 试算校验用:券属本人/未使用/未过期在 SQL 内收口,查不到=券不可用(ERROR_COUPON_INVALID);
+         resultType 为 Map,列名显式起驼峰别名,不外带日期列(规避 connector8 LocalDateTime 类型差异) -->
+    <select id="selectMemberCoupon" resultType="java.util.HashMap">
+        SELECT id, coupon_id AS couponId,
+               coupon_name AS couponName, coupon_type AS couponType
+        FROM mk_member_coupon
+        WHERE id = #{memberCouponId} AND member_id = #{memberId}
+          AND use_status = 0 AND expire_time &gt; NOW()
+        LIMIT 1
+    </select>
+
+    <!-- 占用 CAS:同一张券并发下两单时仅一单命中(0未使用→3使用中);
+         used_time 留给回调置1已使用时写入,此处只记占用订单 -->
+    <update id="occupyMemberCoupon">
+        UPDATE mk_member_coupon
+        SET use_status = 3,
+            used_order_id = #{orderId}
+        WHERE id = #{memberCouponId} AND member_id = #{memberId}
+          AND use_status = 0 AND expire_time &gt; NOW()
+    </update>
+
+    <!-- 券核销(第13步回调):仅当仍处「3使用中」且占用单=本单时置1已使用+used_time;
+         0行由调用方记日志,不阻断收款主流程 -->
+    <update id="useMemberCoupon">
+        UPDATE mk_member_coupon
+        SET use_status = 1,
+            used_time = NOW()
+        WHERE id = #{memberCouponId} AND use_status = 3 AND used_order_id = #{orderId}
+    </update>
+
+    <!-- 释放占用(第16步超时取消):与 occupyMemberCoupon 配对,3使用中→0未使用+清 used_order_id;
+         WHERE 卡「占用单=本单」,并发下券已被回调核销(=1)时 0 行,不误放 -->
+    <update id="releaseMemberCoupon">
+        UPDATE mk_member_coupon
+        SET use_status = 0,
+            used_order_id = NULL
+        WHERE id = #{memberCouponId} AND use_status = 3 AND used_order_id = #{orderId}
+    </update>
+
+</mapper>

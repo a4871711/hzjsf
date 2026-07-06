@@ -1,6 +1,8 @@
 package com.dlc.modules.sys.service.impl;
 
 import com.dlc.common.exception.RRException;
+import com.dlc.modules.api.dao.PtPrivateAppointmentDao;
+import com.dlc.modules.api.entity.PtPrivateAppointmentEntity;
 import com.dlc.modules.sys.dao.PtCoachDao;
 import com.dlc.modules.sys.dao.PtCoachStoreRelDao;
 import com.dlc.modules.sys.entity.PtCoachEntity;
@@ -28,6 +30,9 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
     private PtCoachDao ptCoachDao;
     @Autowired
     private PtCoachStoreRelDao ptCoachStoreRelDao;
+    /** 跨模块注入 api dao(现有惯例,同 SysStoreServiceImpl 等):预约引用护栏 */
+    @Autowired
+    private PtPrivateAppointmentDao ptPrivateAppointmentDao;
 
     @Override
     public PtCoachEntity queryObject(Long id) {
@@ -115,12 +120,26 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
 
     @Override
     public void deleteBatch(Long[] ids) {
-        // TODO 第14/15步回填：存在 pt_private_order / pt_private_appointment / pt_member_private_benefit
-        //      引用的教练不可删除（交易/预约域表此时尚未建，先放行）。
+        // 第14步回填：教练名下存在未来未取消预约(pt_private_appointment status=1 且未开课)不可删除；
+        // 历史预约(已完成/已取消/爽约)不拦——教练为软删,记录仍可回溯。
+        // (pt_private_order / pt_member_private_benefit 不含 coach_id,教练删除只受预约引用约束)
+        for (Long id : ids) {
+            if (ptPrivateAppointmentDao.countFutureByCoach(id) > 0) {
+                PtCoachEntity coach = ptCoachDao.queryObject(id);
+                String name = coach != null ? coach.getCoachName() : String.valueOf(id);
+                throw new RRException("教练[" + name + "]存在未完成的预约，不可删除");
+            }
+        }
         for (Long id : ids) {
             ptCoachStoreRelDao.deleteByCoachId(id);
         }
         ptCoachDao.deleteBatch(ids);
+    }
+
+    @Override
+    public List<PtPrivateAppointmentEntity> queryRecentAppointments(Long coachId) {
+        // 只读抽屉,取最近50条足够回看;完整分页在第15步预约记录页
+        return ptPrivateAppointmentDao.queryRecentByCoach(coachId, 50);
     }
 
     @Override

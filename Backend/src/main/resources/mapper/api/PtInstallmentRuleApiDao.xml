@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 私教商品分期规则只读(pt_installment_rule,第20步资金域【只读】)。api 目录 XML 改动须重启 Tomcat。
+     建表/CRUD 归商品域;本文件只出 SELECT。 -->
+<mapper namespace="com.dlc.modules.api.dao.PtInstallmentRuleApiDao">
+
+    <select id="selectByProductId" resultType="com.dlc.modules.api.entity.PtInstallmentRuleEntity">
+        SELECT
+            id, product_id, is_enabled, down_payment_amount, installment_count,
+            installment_interval_months, overdue_pause_booking, status, created_at, updated_at
+        FROM pt_installment_rule
+        WHERE product_id = #{productId}
+        LIMIT 1
+    </select>
+
+</mapper>

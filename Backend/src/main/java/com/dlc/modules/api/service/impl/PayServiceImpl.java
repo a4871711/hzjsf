@@ -240,16 +240,26 @@ public class PayServiceImpl implements PayService {
         try {
             BigDecimal reMoney = (BigDecimal) params.get("realPayment");
             Integer money = reMoney.multiply(new BigDecimal(100)).intValue();
+            // 第15步私教退款扩展(可选参数,不传保持原行为):
+            // totalFee=原单实收(部分退款时 total_fee 须为原单金额而非退款额);
+            // refundNo=退款单号(支持一单多次部分退款,微信同 out_refund_no 只退一笔);
+            // refundDesc=退款原因(透传后台备注)
+            BigDecimal totalMoney = params.get("totalFee") != null ? (BigDecimal) params.get("totalFee") : reMoney;
+            Integer total = totalMoney.multiply(new BigDecimal(100)).intValue();
+            String outRefundNo = params.get("refundNo") != null
+                    ? (String) params.get("refundNo") : (String) params.get("orderNo");
+            String refundDesc = params.get("refundDesc") != null
+                    ? (String) params.get("refundDesc") : "订单退款";
             MyConfig config = new MyConfig();
             SortedMap<String, String> packageParams = new TreeMap<String, String>();
             packageParams.put("appid",config.getAppID());
             packageParams.put("mch_id",config.getMchID());
             packageParams.put("nonce_str", WxPayUtils.getRandomStringByLength(19));
             packageParams.put("out_trade_no", (String) params.get("orderNo"));
-            packageParams.put("out_refund_no", (String) params.get("orderNo"));
-            packageParams.put("total_fee",  money +"");
+            packageParams.put("out_refund_no", outRefundNo);
+            packageParams.put("total_fee",  total +"");
             packageParams.put("refund_fee", money +"");
-            packageParams.put("refund_desc", "订单退款");
+            packageParams.put("refund_desc", refundDesc);
             //packageParams.put("notify_url", ConfigConstant.REFOUND_WXNOTIFY_URL);
             String sign = createSign("UTF-8", packageParams);
             packageParams.put("sign", sign);

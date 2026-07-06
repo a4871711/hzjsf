@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 私教预约记录后台查询(第15步,只读;finish/cancel/coachBook 走 api 侧三态机)。
+     sys 目录 XML 热刷新,改完免重启。
+     预约表无快照列:会员联 user_info、教练联 pt_coach、商品联 pt_product、门店联 store、权益编号联权益表;
+     appointment_date/start_time/end_time 为 DATE/TIME 列,与 api 侧同口径 DATE_FORMAT 输出;
+     预约来源:created_by=member_id 判自约,否则为教练代约(管理员ID)。 -->
+<mapper namespace="com.dlc.modules.sys.dao.SysPrivateAppointmentDao">
+
+    <!-- 公共筛选(不含 appointmentStatus,供列表与统计卡共用;统计卡按状态 CASE 分桶) -->
+    <sql id="CommonFilter">
+        <if test="memberKeyword != null and memberKeyword != ''">
+            AND (u.nickname LIKE concat('%', #{memberKeyword}, '%')
+                 OR u.phone LIKE concat('%', #{memberKeyword}, '%'))
+        </if>
+        <if test="coachName != null and coachName != ''">
+            AND c.coach_name LIKE concat('%', #{coachName}, '%')
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND a.store_id = #{storeId}
+        </if>
+        <!-- 上课日期区间(appointment_date 为 DATE 列,闭区间即可含当天) -->
+        <if test="startDate != null and startDate != ''">
+            AND a.appointment_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND a.appointment_date &lt;= #{endDate}
+        </if>
+        <!-- 门店数据权限:storeIds 为逗号分隔串,空则不过滤(超级管理员看全部) -->
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+    </sql>
+
+    <sql id="Joins">
+        FROM pt_private_appointment a
+        LEFT JOIN user_info u ON u.userId = a.member_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id
+        LEFT JOIN pt_product p ON p.id = a.product_id
+        LEFT JOIN store s ON s.storeId = a.store_id
+        LEFT JOIN pt_member_private_benefit b ON b.id = a.benefit_id
+    </sql>
+
+    <sql id="Columns">
+        a.id,
+        a.appointment_no      AS appointmentNo,
+        a.order_id            AS orderId,
+        a.benefit_id          AS benefitId,
+        b.benefit_no          AS benefitNo,
+        a.member_id           AS memberId,
+        u.nickname            AS memberName,
+        u.phone               AS memberMobile,
+        a.product_id          AS productId,
+        p.product_name        AS productName,
+        a.coach_id            AS coachId,
+        c.coach_name          AS coachName,
+        a.store_id            AS storeId,
+        s.storeName           AS storeName,
+        DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointmentDate,
+        DATE_FORMAT(a.start_time, '%H:%i')          AS startTime,
+        DATE_FORMAT(a.end_time, '%H:%i')            AS endTime,
+        a.lesson_count        AS lessonCount,
+        a.appointment_status  AS appointmentStatus,
+        a.cancel_reason       AS cancelReason,
+        a.created_by          AS createdBy,
+        (CASE WHEN a.created_by = a.member_id THEN 0 ELSE 1 END) AS proxyBook,
+        DATE_FORMAT(a.cancel_at, '%Y-%m-%d %H:%i:%s')  AS cancelAt,
+        DATE_FORMAT(a.finish_at, '%Y-%m-%d %H:%i:%s')  AS finishAt,
+        DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+    </sql>
+
+    <select id="queryList" resultType="java.util.LinkedHashMap" parameterType="map">
+        SELECT <include refid="Columns"/>
+        <include refid="Joins"/>
+        <where>
+            a.deleted = 0
+            <if test="appointmentStatus != null and appointmentStatus != ''">
+                AND a.appointment_status = #{appointmentStatus}
+            </if>
+            <include refid="CommonFilter"/>
+        </where>
+        ORDER BY a.appointment_date DESC, a.start_time DESC, a.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        <include refid="Joins"/>
+        <where>
+            a.deleted = 0
+            <if test="appointmentStatus != null and appointmentStatus != ''">
+                AND a.appointment_status = #{appointmentStatus}
+            </if>
+            <include refid="CommonFilter"/>
+        </where>
+    </select>
+
+    <!-- 顶部统计卡:待上课(1)/已完成(3)/已取消(2)/爽约(4),一条聚合 SQL 出全部指标 -->
+    <select id="queryStat" resultType="java.util.LinkedHashMap" parameterType="map">
+        SELECT
+            COUNT(CASE WHEN a.appointment_status = 1 THEN 1 END) AS bookedCount,
+            COUNT(CASE WHEN a.appointment_status = 3 THEN 1 END) AS finishedCount,
+            COUNT(CASE WHEN a.appointment_status = 2 THEN 1 END) AS cancelledCount,
+            COUNT(CASE WHEN a.appointment_status = 4 THEN 1 END) AS noShowCount
+        <include refid="Joins"/>
+        <where>
+            a.deleted = 0
+            <include refid="CommonFilter"/>
+        </where>
+    </select>
+
+    <!-- 详情:storeIds 过滤在 SQL 内收口,越权/不存在返回 null(controller 按 404 处理) -->
+    <select id="queryDetail" resultType="java.util.LinkedHashMap">
+        SELECT <include refid="Columns"/>
+        <include refid="Joins"/>
+        WHERE a.id = #{id} AND a.deleted = 0
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+        LIMIT 1
+    </select>
+
+    <!-- finish/cancel 前越权判存:0=不存在或不在管辖门店 → 404 -->
+    <select id="countInScope" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_private_appointment a
+        WHERE a.id = #{id} AND a.deleted = 0
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+    </select>
+
+    <!-- coachBook 前越权判存:教练须挂在管辖门店(pt_coach_store_rel);storeIds 空=超管放行 -->
+    <select id="countCoachInScope" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_coach c
+        WHERE c.id = #{coachId} AND c.deleted = 0
+        <if test="storeIds != null and storeIds != ''">
+            AND EXISTS (SELECT 1 FROM pt_coach_store_rel r
+                        WHERE r.coach_id = c.id AND r.store_id IN (${storeIds}))
+        </if>
+    </select>
+
+</mapper>

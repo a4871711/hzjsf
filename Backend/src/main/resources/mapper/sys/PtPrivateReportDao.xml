@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 私教收入报表(第23步 §19)。sys 目录 XML 热刷新,改完免重启。纯只读聚合,无写。
+     口径(§5.4,逐行对齐详细实现文档):
+       1) 收入确认基准=已完成预约(appointment_status=3),按 finish_at 落统计日;beginDate/endDate 必填,门店隔离 storeIds。
+       2) 单次收入 = 净实收(o.paid_amount-o.refund_amount) / 订单总课时(o.lesson_count) * 本次完成课时(a.lesson_count)。
+          【先算后汇总】: 逐 appointment 行算 unitIncome 再 SUM,严禁"先 SUM 金额/课时再除"(多订单口径会串味)。
+       3) 单次成本 = 命中课时费 lesson_fee * 本次完成课时;命中优先 (coach,product) 后 (coach,0),status=1 且已生效;
+          缺配 lesson_fee 视为 0 且该行进 abnormalList 异常分流。用标量子查询 LIMIT 1 保证每行仅 1 个成本值(避免 JOIN 多规则放大 SUM)。
+       4) o.lesson_count>0 强约束防除零(=0 进异常列表,不进正式汇总)。
+       5) 毛利=收入-成本;毛利率=毛利/收入*100,收入=0 显示 0。金额一律 ROUND(...,2)。
+     跨店结算规则本期不落账:报表不按 pt_cross_store_settlement_rule 拆分门店归属(§17.1/§17.3)。
+     门店表为既有 `store`(列 storeId/storeName),非 sys_store。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtPrivateReportDao">
+
+    <!-- 单行净实收折算(先算): 净实收/订单总课时*本次完成课时 -->
+    <sql id="RowIncome">
+        ( (o.paid_amount - o.refund_amount) / o.lesson_count * a.lesson_count )
+    </sql>
+
+    <!-- 单行成本: 命中课时费(缺配0)*本次完成课时。
+         标量子查询按优先级排序取 1 条: 先课程精确(product_id=a.product_id 排前),再门店精确(store_id=a.store_id 排前),
+         product_id/store_id 命中范围为 {精确, 0不限};effective_time<=now 或 NULL。 -->
+    <sql id="RowCost">
+        ( IFNULL((
+            SELECT fr.lesson_fee
+            FROM pt_coach_fee_rule fr
+            WHERE fr.coach_id = a.coach_id
+              AND fr.rule_type = 1
+              AND fr.status = 1
+              AND fr.product_id IN (a.product_id, 0)
+              AND fr.store_id IN (a.store_id, 0)
+              AND (fr.effective_time IS NULL OR fr.effective_time &lt;= NOW())
+            ORDER BY (fr.product_id = a.product_id) DESC, (fr.store_id = a.store_id) DESC
+            LIMIT 1
+          ), 0) * a.lesson_count )
+    </sql>
+
+    <!-- 公共筛选: 已完成核销 + 统计区间(finish_at 落当天,止日含当天) + 门店隔离 + 教练/课程模糊 + 防除零 -->
+    <sql id="BaseFilter">
+        a.appointment_status = 3
+        AND a.deleted = 0
+        AND o.deleted = 0
+        AND o.lesson_count &gt; 0
+        AND a.finish_at &gt;= #{beginDate}
+        AND a.finish_at &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+        <if test="coachName != null and coachName != ''">
+            AND c.coach_name LIKE concat('%', #{coachName}, '%')
+        </if>
+        <if test="productName != null and productName != ''">
+            AND o.product_name LIKE concat('%', #{productName}, '%')
+        </if>
+    </sql>
+
+    <!-- ========== 1) 汇总卡片 ========== -->
+    <select id="summary" resultType="com.dlc.modules.sys.vo.PrivateReportSummaryVo">
+        SELECT
+            IFNULL(SUM(a.lesson_count), 0)                              AS totalLessons,
+            ROUND(IFNULL(SUM(<include refid="RowIncome"/>), 0), 2)      AS income,
+            ROUND(IFNULL(SUM(<include refid="RowCost"/>), 0), 2)        AS cost,
+            ROUND(IFNULL(SUM(<include refid="RowIncome"/>), 0)
+                  - IFNULL(SUM(<include refid="RowCost"/>), 0), 2)      AS grossProfit,
+            CASE WHEN IFNULL(SUM(<include refid="RowIncome"/>), 0) = 0 THEN 0
+                 ELSE ROUND( (IFNULL(SUM(<include refid="RowIncome"/>), 0)
+                              - IFNULL(SUM(<include refid="RowCost"/>), 0))
+                           / SUM(<include refid="RowIncome"/>) * 100, 2)
+            END                                                        AS grossRate
+        FROM pt_private_appointment a
+        JOIN pt_private_order o ON o.id = a.order_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+        <where>
+            <include refid="BaseFilter"/>
+        </where>
+    </select>
+
+    <!-- ========== 2) 门店分组报表 ========== -->
+    <select id="storeReport" resultType="com.dlc.modules.sys.vo.PrivateReportRowVo">
+        SELECT
+            s.storeName                                                AS groupName,
+            IFNULL(SUM(a.lesson_count), 0)                             AS finishLessons,
+            ROUND(IFNULL(SUM(<include refid="RowIncome"/>), 0), 2)     AS income,
+            ROUND(IFNULL(SUM(<include refid="RowCost"/>), 0), 2)       AS cost,
+            ROUND(IFNULL(SUM(<include refid="RowIncome"/>), 0)
+                  - IFNULL(SUM(<include refid="RowCost"/>), 0), 2)     AS grossProfit,
+            CASE WHEN IFNULL(SUM(<include refid="RowIncome"/>), 0) = 0 THEN 0
+                 ELSE ROUND( (IFNULL(SUM(<include refid="RowIncome"/>), 0)
+                              - IFNULL(SUM(<include refid="RowCost"/>), 0))
+                           / SUM(<include refid="RowIncome"/>) * 100, 2)
+            END                                                        AS grossRate
+        FROM pt_private_appointment a
+        JOIN pt_private_order o ON o.id = a.order_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+        LEFT JOIN store s ON s.storeId = a.store_id
+        <where>
+            <include refid="BaseFilter"/>
+        </where>
+        GROUP BY a.store_id, s.storeName
+        ORDER BY income DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="storeReportTotal" resultType="int">
+        SELECT COUNT(1) FROM (
+            SELECT a.store_id
+            FROM pt_private_appointment a
+            JOIN pt_private_order o ON o.id = a.order_id
+            LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+            <where>
+                <include refid="BaseFilter"/>
+            </where>
+            GROUP BY a.store_id
+        ) t
+    </select>
+
+    <!-- ========== 3) 教练分组报表 ========== -->
+    <select id="coachReport" resultType="com.dlc.modules.sys.vo.PrivateReportRowVo">
+        SELECT
+            c.coach_name                                               AS groupName,
+            MAX(s.storeName)                                           AS coachStoreName,
+            IFNULL(SUM(a.lesson_count), 0)                             AS finishLessons,
+            ROUND(IFNULL(SUM(<include refid="RowIncome"/>), 0), 2)     AS income,
+            ROUND(IFNULL(SUM(<include refid="RowCost"/>), 0), 2)       AS cost,
+            ROUND(IFNULL(SUM(<include refid="RowIncome"/>), 0)
+                  - IFNULL(SUM(<include refid="RowCost"/>), 0), 2)     AS grossProfit,
+            CASE WHEN IFNULL(SUM(<include refid="RowIncome"/>), 0) = 0 THEN 0
+                 ELSE ROUND( (IFNULL(SUM(<include refid="RowIncome"/>), 0)
+                              - IFNULL(SUM(<include refid="RowCost"/>), 0))
+                           / SUM(<include refid="RowIncome"/>) * 100, 2)
+            END                                                        AS grossRate
+        FROM pt_private_appointment a
+        JOIN pt_private_order o ON o.id = a.order_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+        LEFT JOIN store s ON s.storeId = a.store_id
+        <where>
+            <include refid="BaseFilter"/>
+        </where>
+        GROUP BY a.coach_id, c.coach_name
+        ORDER BY income DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="coachReportTotal" resultType="int">
+        SELECT COUNT(1) FROM (
+            SELECT a.coach_id
+            FROM pt_private_appointment a
+            JOIN pt_private_order o ON o.id = a.order_id
+            LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+            <where>
+                <include refid="BaseFilter"/>
+            </where>
+            GROUP BY a.coach_id
+        ) t
+    </select>
+
+    <!-- ========== 4) 课程分组报表 ========== -->
+    <select id="courseReport" resultType="com.dlc.modules.sys.vo.PrivateReportRowVo">
+        SELECT
+            o.product_name                                             AS groupName,
+            IFNULL(SUM(a.lesson_count), 0)                             AS finishLessons,
+            ROUND(IFNULL(SUM(<include refid="RowIncome"/>), 0), 2)     AS income,
+            ROUND(IFNULL(SUM(<include refid="RowCost"/>), 0), 2)       AS cost,
+            ROUND(IFNULL(SUM(<include refid="RowIncome"/>), 0)
+                  - IFNULL(SUM(<include refid="RowCost"/>), 0), 2)     AS grossProfit,
+            CASE WHEN IFNULL(SUM(<include refid="RowIncome"/>), 0) = 0 THEN 0
+                 ELSE ROUND( (IFNULL(SUM(<include refid="RowIncome"/>), 0)
+                              - IFNULL(SUM(<include refid="RowCost"/>), 0))
+                           / SUM(<include refid="RowIncome"/>) * 100, 2)
+            END                                                        AS grossRate
+        FROM pt_private_appointment a
+        JOIN pt_private_order o ON o.id = a.order_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+        <where>
+            <include refid="BaseFilter"/>
+        </where>
+        GROUP BY a.product_id, o.product_name
+        ORDER BY income DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="courseReportTotal" resultType="int">
+        SELECT COUNT(1) FROM (
+            SELECT a.product_id, o.product_name
+            FROM pt_private_appointment a
+            JOIN pt_private_order o ON o.id = a.order_id
+            LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+            <where>
+                <include refid="BaseFilter"/>
+            </where>
+            GROUP BY a.product_id, o.product_name
+        ) t
+    </select>
+
+    <!-- ========== 5) 明细报表(一行=一次已完成核销) ========== -->
+    <select id="detailReport" resultType="com.dlc.modules.sys.vo.PrivateReportDetailVo">
+        SELECT
+            DATE_FORMAT(a.finish_at, '%Y-%m-%d')       AS finishDate,
+            s.storeName                                AS storeName,
+            c.coach_name                               AS coachName,
+            o.product_name                             AS productName,
+            IFNULL(o.member_name, o.member_mobile)     AS memberInfo,
+            o.order_no                                 AS orderNo,
+            o.lesson_count                             AS totalLessons,
+            a.lesson_count                             AS finishLessons,
+            ROUND(<include refid="RowIncome"/>, 2)     AS unitIncome,
+            ROUND(<include refid="RowCost"/>, 2)       AS unitCost,
+            ROUND(<include refid="RowIncome"/> - <include refid="RowCost"/>, 2)  AS unitGross
+        FROM pt_private_appointment a
+        JOIN pt_private_order o ON o.id = a.order_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+        LEFT JOIN store s ON s.storeId = a.store_id
+        <where>
+            <include refid="BaseFilter"/>
+        </where>
+        ORDER BY a.finish_at DESC, a.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="detailReportTotal" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_private_appointment a
+        JOIN pt_private_order o ON o.id = a.order_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+        <where>
+            <include refid="BaseFilter"/>
+        </where>
+    </select>
+
+    <!-- ========== 6) 异常数据列表(缺门店/缺教练/未配课时费/课时非法),不进正式汇总 ==========
+         此处不复用 BaseFilter(其含 lesson_count>0 与 store/coach 有效约束会把异常行滤掉),
+         异常判定用 LEFT JOIN 判 NULL + lesson_count<=0。门店隔离仍生效。 -->
+    <sql id="AbnormalFilter">
+        a.appointment_status = 3
+        AND a.deleted = 0
+        AND o.deleted = 0
+        AND a.finish_at &gt;= #{beginDate}
+        AND a.finish_at &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+        <if test="coachName != null and coachName != ''">
+            AND c.coach_name LIKE concat('%', #{coachName}, '%')
+        </if>
+        <if test="productName != null and productName != ''">
+            AND o.product_name LIKE concat('%', #{productName}, '%')
+        </if>
+        AND ( s.storeId IS NULL
+              OR c.id IS NULL
+              OR fr.id IS NULL
+              OR o.lesson_count &lt;= 0 )
+    </sql>
+
+    <!-- 命中课时费的规则 id 判定(用于"未配课时费"标记),同 RowCost 优先级取 1 条 -->
+    <sql id="AbnormalFeeJoin">
+        LEFT JOIN pt_coach_fee_rule fr ON fr.id = (
+            SELECT fx.id
+            FROM pt_coach_fee_rule fx
+            WHERE fx.coach_id = a.coach_id
+              AND fx.rule_type = 1
+              AND fx.status = 1
+              AND fx.product_id IN (a.product_id, 0)
+              AND fx.store_id IN (a.store_id, 0)
+              AND (fx.effective_time IS NULL OR fx.effective_time &lt;= NOW())
+            ORDER BY (fx.product_id = a.product_id) DESC, (fx.store_id = a.store_id) DESC
+            LIMIT 1
+        )
+    </sql>
+
+    <select id="abnormalList" resultType="java.util.LinkedHashMap">
+        SELECT
+            DATE_FORMAT(a.finish_at, '%Y-%m-%d')  AS finishDate,
+            o.order_no                            AS orderNo,
+            o.product_name                        AS productName,
+            a.store_id                            AS storeId,
+            a.coach_id                            AS coachId,
+            CASE
+                WHEN s.storeId IS NULL       THEN '完成记录缺少门店'
+                WHEN c.id IS NULL            THEN '完成记录缺少教练'
+                WHEN o.lesson_count &lt;= 0    THEN '订单总课时非法(无法折算收入)'
+                WHEN fr.id IS NULL           THEN '教练课时费未配置(成本按0)'
+            END                                   AS abnormalReason
+        FROM pt_private_appointment a
+        JOIN pt_private_order o ON o.id = a.order_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+        LEFT JOIN store s ON s.storeId = a.store_id
+        <include refid="AbnormalFeeJoin"/>
+        <where>
+            <include refid="AbnormalFilter"/>
+        </where>
+        ORDER BY a.finish_at DESC, a.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="abnormalListTotal" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_private_appointment a
+        JOIN pt_private_order o ON o.id = a.order_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id AND c.deleted = 0
+        LEFT JOIN store s ON s.storeId = a.store_id
+        <include refid="AbnormalFeeJoin"/>
+        <where>
+            <include refid="AbnormalFilter"/>
+        </where>
+    </select>
+
+</mapper>

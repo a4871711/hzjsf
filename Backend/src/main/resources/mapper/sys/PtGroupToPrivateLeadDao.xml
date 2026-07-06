@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 团课转私教转化名单(pt_group_to_private_lead，第22步)。sys 目录 XML 热刷新，改完免重启。
+     本表带 store_id(可空)：门店隔离用 store_id IN (${storeIds})，空=超管看全部。
+     发券状态机：markCouponSent 仅当 experience_coupon_status=0 且 follow_status!=2 时命中(防重发/已转化不发)。
+     联表：会员昵称/手机联 user_info、门店名联 store、跟进人名联 sys_user。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtGroupToPrivateLeadDao">
+
+    <sql id="Columns">
+        l.id,
+        l.member_id                AS memberId,
+        l.store_id                 AS storeId,
+        l.rule_id                  AS ruleId,
+        l.attendance_count         AS attendanceCount,
+        l.purchase_count           AS purchaseCount,
+        l.intention_reason         AS intentionReason,
+        l.experience_coupon_status AS experienceCouponStatus,
+        l.follow_status            AS followStatus,
+        l.follow_by                AS followBy,
+        DATE_FORMAT(l.last_follow_time, '%Y-%m-%d %H:%i:%s') AS lastFollowTime,
+        DATE_FORMAT(l.created_at, '%Y-%m-%d %H:%i:%s')       AS createdAt,
+        DATE_FORMAT(l.updated_at, '%Y-%m-%d %H:%i:%s')       AS updatedAt,
+        (SELECT nickname FROM user_info WHERE userId = l.member_id) AS memberName,
+        (SELECT phone FROM user_info WHERE userId = l.member_id)    AS memberMobile,
+        (SELECT storeName FROM store WHERE storeId = l.store_id)    AS storeName,
+        (SELECT username FROM sys_user WHERE user_id = l.follow_by) AS followByName
+    </sql>
+
+    <sql id="Filter">
+        <if test="storeId != null and storeId != ''">
+            AND l.store_id = #{storeId}
+        </if>
+        <if test="storeIds != null and storeIds != ''">
+            AND l.store_id IN (${storeIds})
+        </if>
+        <if test="memberKeyword != null and memberKeyword != ''">
+            AND l.member_id IN (SELECT userId FROM user_info
+                WHERE nickname LIKE concat('%', #{memberKeyword}, '%')
+                   OR phone LIKE concat('%', #{memberKeyword}, '%'))
+        </if>
+        <if test="followStatus != null and followStatus != ''">
+            AND l.follow_status = #{followStatus}
+        </if>
+    </sql>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtGroupToPrivateLeadEntity" parameterType="map">
+        SELECT <include refid="Columns"/>
+        FROM pt_group_to_private_lead l
+        <where>
+            <include refid="Filter"/>
+        </where>
+        ORDER BY l.updated_at DESC, l.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM pt_group_to_private_lead l
+        <where>
+            <include refid="Filter"/>
+        </where>
+    </select>
+
+    <!-- 详情：门店隔离收口，越权/不存在返回 null -->
+    <select id="queryDetail" resultType="com.dlc.modules.sys.entity.PtGroupToPrivateLeadEntity">
+        SELECT <include refid="Columns"/>
+        FROM pt_group_to_private_lead l
+        WHERE l.id = #{id}
+        <if test="storeIds != null and storeIds != ''">
+            AND l.store_id IN (${storeIds})
+        </if>
+        LIMIT 1
+    </select>
+
+    <!-- 判存：0=不存在或不在管辖门店 → 404 -->
+    <select id="countInScope" resultType="int">
+        SELECT COUNT(1) FROM pt_group_to_private_lead l
+        WHERE l.id = #{id}
+        <if test="storeIds != null and storeIds != ''">
+            AND l.store_id IN (${storeIds})
+        </if>
+    </select>
+
+    <!-- 发券状态机：0未发放→1已发放；已转化(follow_status=2)不发券、已发放不重发(命中0行=幂等拦住) -->
+    <update id="markCouponSent">
+        UPDATE pt_group_to_private_lead
+        SET experience_coupon_status = 1
+        WHERE id = #{leadId}
+          AND experience_coupon_status = 0
+          AND follow_status != 2
+    </update>
+
+    <!-- 跟进：回写 follow_status/follow_by/last_follow_time -->
+    <update id="updateFollow">
+        UPDATE pt_group_to_private_lead
+        SET follow_status = #{followStatus},
+            follow_by = #{followBy},
+            last_follow_time = NOW()
+        WHERE id = #{leadId}
+    </update>
+
+    <!-- 标记已转化：2已转化 + last_follow_time=now(幂等) -->
+    <update id="markConverted">
+        UPDATE pt_group_to_private_lead
+        SET follow_status = 2, last_follow_time = NOW()
+        WHERE id = #{leadId}
+    </update>
+
+</mapper>

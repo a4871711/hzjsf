@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 异常预警记录(pt_exception_warning_record，第22步)。sys 目录 XML 热刷新，改完免重启。
+     本期只读展示(§18.4 无处理态流转)。本表 store_id 可空：门店隔离用 store_id IN (${storeIds})，空=超管看全部。
+     联表：会员昵称/手机联 user_info、教练名联 pt_coach、门店名联 store。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtExceptionWarningRecordDao">
+
+    <sql id="Columns">
+        w.id,
+        w.rule_id       AS ruleId,
+        w.warning_type  AS warningType,
+        w.member_id     AS memberId,
+        w.coach_id      AS coachId,
+        w.store_id      AS storeId,
+        DATE_FORMAT(w.period_start, '%Y-%m-%d') AS periodStart,
+        DATE_FORMAT(w.period_end, '%Y-%m-%d')   AS periodEnd,
+        w.trigger_value AS triggerValue,
+        w.trigger_desc  AS triggerDesc,
+        DATE_FORMAT(w.warning_time, '%Y-%m-%d %H:%i:%s') AS warningTime,
+        (SELECT nickname FROM user_info WHERE userId = w.member_id) AS memberName,
+        (SELECT phone FROM user_info WHERE userId = w.member_id)    AS memberMobile,
+        (SELECT coach_name FROM pt_coach WHERE id = w.coach_id)     AS coachName,
+        (SELECT storeName FROM store WHERE storeId = w.store_id)    AS storeName
+    </sql>
+
+    <sql id="Filter">
+        <if test="warningType != null and warningType != ''">
+            AND w.warning_type = #{warningType}
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND w.store_id = #{storeId}
+        </if>
+        <if test="storeIds != null and storeIds != ''">
+            AND w.store_id IN (${storeIds})
+        </if>
+        <if test="memberKeyword != null and memberKeyword != ''">
+            AND w.member_id IN (SELECT userId FROM user_info
+                WHERE nickname LIKE concat('%', #{memberKeyword}, '%')
+                   OR phone LIKE concat('%', #{memberKeyword}, '%'))
+        </if>
+        <if test="coachName != null and coachName != ''">
+            AND w.coach_id IN (SELECT id FROM pt_coach
+                WHERE coach_name LIKE concat('%', #{coachName}, '%'))
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND w.warning_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND w.warning_time &lt;= #{endTime}
+        </if>
+    </sql>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtExceptionWarningRecordEntity" parameterType="map">
+        SELECT <include refid="Columns"/>
+        FROM pt_exception_warning_record w
+        <where>
+            <include refid="Filter"/>
+        </where>
+        ORDER BY w.warning_time DESC, w.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM pt_exception_warning_record w
+        <where>
+            <include refid="Filter"/>
+        </where>
+    </select>
+
+    <!-- 顶部统计卡片：今日新增 / 频繁取消(type1) / 课时消耗异常(type2) / 启用规则数；门店隔离随 storeIds -->
+    <select id="queryStat" resultType="java.util.HashMap" parameterType="map">
+        SELECT
+            (SELECT COUNT(1) FROM pt_exception_warning_record w
+             WHERE DATE(w.warning_time) = CURDATE()
+             <if test="storeIds != null and storeIds != ''">AND w.store_id IN (${storeIds})</if>
+            ) AS todayNew,
+            (SELECT COUNT(1) FROM pt_exception_warning_record w
+             WHERE w.warning_type = 1
+             <if test="storeIds != null and storeIds != ''">AND w.store_id IN (${storeIds})</if>
+            ) AS frequentCancel,
+            (SELECT COUNT(1) FROM pt_exception_warning_record w
+             WHERE w.warning_type = 2
+             <if test="storeIds != null and storeIds != ''">AND w.store_id IN (${storeIds})</if>
+            ) AS lessonAbnormal,
+            (SELECT COUNT(1) FROM pt_exception_warning_rule WHERE status = 1) AS enabledRuleCount
+    </select>
+
+</mapper>

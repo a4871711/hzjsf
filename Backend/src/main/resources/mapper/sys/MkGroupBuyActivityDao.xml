@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 拼团活动(mk_group_buy_activity)。状态 1上架/0下架;activity_stock 可 NULL(不限量);
+     sold_count 后台只读——update 语句不含该列,累加走 api 侧回调 CAS(PtPrivateOrderDao.increaseGroupBuySoldCount)。 -->
+<mapper namespace="com.dlc.modules.sys.dao.MkGroupBuyActivityDao">
+
+    <sql id="cols">
+        a.id, a.activity_name, a.product_id, a.group_buy_price, a.group_member_count,
+        a.activity_stock, a.sold_count, a.purchase_limit,
+        DATE_FORMAT(a.start_time, '%Y-%m-%d %H:%i:%s') as startTime,
+        DATE_FORMAT(a.end_time, '%Y-%m-%d %H:%i:%s') as endTime,
+        a.mt_group_buy_id, a.dy_group_buy_id, a.status,
+        a.created_by, a.created_at, a.updated_by, a.updated_at, a.deleted,
+        (select product_name from pt_product where id = a.product_id) as productName
+    </sql>
+
+    <sql id="filter">
+        <where>
+            a.deleted = 0
+            <if test="activityName != null and activityName != ''">
+                AND a.activity_name LIKE concat('%',#{activityName},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND a.status = #{status}
+            </if>
+            <if test="productId != null and productId != ''">
+                AND a.product_id = #{productId}
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.MkGroupBuyActivityEntity">
+        select <include refid="cols"/> from mk_group_buy_activity a where a.id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.MkGroupBuyActivityEntity">
+        select <include refid="cols"/>
+        from mk_group_buy_activity a
+        <include refid="filter"/>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by a.id desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from mk_group_buy_activity a
+        <include refid="filter"/>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.MkGroupBuyActivityEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into mk_group_buy_activity
+        (`activity_name`, `product_id`, `group_buy_price`, `group_member_count`,
+         `activity_stock`, `sold_count`, `purchase_limit`, `start_time`, `end_time`,
+         `mt_group_buy_id`, `dy_group_buy_id`, `status`,
+         `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{activityName}, #{productId}, #{groupBuyPrice}, #{groupMemberCount},
+         #{activityStock}, #{soldCount}, #{purchaseLimit}, #{startTime}, #{endTime},
+         #{mtGroupBuyId}, #{dyGroupBuyId}, #{status},
+         #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <!-- sold_count 后台只读,本语句不写该列;可空列(库存/限购/外部关联)无条件写入,支持清空 -->
+    <update id="update" parameterType="com.dlc.modules.sys.entity.MkGroupBuyActivityEntity">
+        update mk_group_buy_activity
+        <set>
+            <if test="activityName != null">`activity_name` = #{activityName},</if>
+            <if test="productId != null">`product_id` = #{productId},</if>
+            <if test="groupBuyPrice != null">`group_buy_price` = #{groupBuyPrice},</if>
+            <if test="groupMemberCount != null">`group_member_count` = #{groupMemberCount},</if>
+            `activity_stock` = #{activityStock},
+            `purchase_limit` = #{purchaseLimit},
+            <if test="startTime != null and startTime != ''">`start_time` = #{startTime},</if>
+            <if test="endTime != null and endTime != ''">`end_time` = #{endTime},</if>
+            `mt_group_buy_id` = #{mtGroupBuyId},
+            `dy_group_buy_id` = #{dyGroupBuyId},
+            <if test="status != null">`status` = #{status},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 上下架切换独立语句:不走全量 update,避免误清空可空列 -->
+    <update id="changeStatus" parameterType="map">
+        update mk_group_buy_activity
+        set `status` = #{status}, `updated_by` = #{updatedBy}, `updated_at` = now()
+        where id = #{id} and deleted = 0
+    </update>
+
+    <!-- 逻辑删除(进行中活动 service 层已校验禁删) -->
+    <update id="deleteBatch">
+        update mk_group_buy_activity set deleted = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 教练评价回复后台（pt_coach_comment_reply，第21步）。sys 目录 XML 热刷新，改完免重启。
+     reply 单事务：本 XML 插回复行 + PtCoachCommentDao.updateReplyStatus 置主表 reply_status=1。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtCoachCommentReplyDao">
+
+    <!-- reply_time/created_at/updated_at 由 DDL 默认值维护 -->
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachCommentReplyEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_coach_comment_reply
+            (comment_id, reply_content, reply_by)
+        VALUES
+            (#{commentId}, #{replyContent}, #{replyBy})
+    </insert>
+
+    <select id="listByCommentId" resultType="com.dlc.modules.sys.entity.PtCoachCommentReplyEntity">
+        SELECT id,
+               comment_id     AS commentId,
+               reply_content  AS replyContent,
+               reply_by       AS replyBy,
+               DATE_FORMAT(reply_time, '%Y-%m-%d %H:%i:%s') AS replyTime
+        FROM pt_coach_comment_reply
+        WHERE comment_id = #{commentId}
+        ORDER BY reply_time ASC, id ASC
+    </select>
+
+</mapper>

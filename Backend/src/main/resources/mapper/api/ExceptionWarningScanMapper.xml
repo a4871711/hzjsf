@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 异常预警扫描(api 侧，第22步·运营域，依据 §5.2)。api 目录 XML 改动须重启 Tomcat。
+     去重命门：uk_exc_warn_dedup(rule_id,member_id,warning_type,period_start,period_end) + ON DUPLICATE KEY UPDATE，
+     同周期重复扫描不产生重复记录。周期区间 [periodStart, periodEnd]，按 cancel_at/finish_at 落 < periodEnd+1天。 -->
+<mapper namespace="com.dlc.modules.api.dao.ExceptionWarningScanDao">
+
+    <select id="selectEnabledRules" resultType="java.util.HashMap">
+        SELECT id, rule_name           AS ruleName,
+               warning_type            AS warningType,
+               period_days             AS periodDays,
+               trigger_threshold       AS triggerThreshold,
+               applicable_store_ids    AS applicableStoreIds
+        FROM pt_exception_warning_rule
+        WHERE status = 1
+    </select>
+
+    <!-- 频繁取消预约：appointment_status=2 已取消，按 cancel_at 落周期 -->
+    <select id="countFrequentCancel" resultType="java.util.HashMap">
+        SELECT a.member_id      AS memberId,
+               a.store_id       AS storeId,
+               MAX(a.coach_id)  AS coachId,
+               COUNT(*)         AS cnt
+        FROM pt_private_appointment a
+        WHERE a.appointment_status = 2
+          AND a.deleted = 0
+          AND a.cancel_at &gt;= #{periodStart}
+          AND a.cancel_at &lt; DATE_ADD(#{periodEnd}, INTERVAL 1 DAY)
+        <if test="storeIds != null and storeIds.size() > 0">
+            AND a.store_id IN
+            <foreach collection="storeIds" item="sid" open="(" separator="," close=")">
+                #{sid}
+            </foreach>
+        </if>
+        GROUP BY a.member_id, a.store_id
+        HAVING COUNT(*) &gt;= #{threshold}
+    </select>
+
+    <!-- 课时消耗异常：appointment_status=3 已完成，按 finish_at 落周期 -->
+    <select id="countLessonAbnormal" resultType="java.util.HashMap">
+        SELECT a.member_id      AS memberId,
+               a.store_id       AS storeId,
+               MAX(a.coach_id)  AS coachId,
+               COUNT(*)         AS cnt
+        FROM pt_private_appointment a
+        WHERE a.appointment_status = 3
+          AND a.deleted = 0
+          AND a.finish_at &gt;= #{periodStart}
+          AND a.finish_at &lt; DATE_ADD(#{periodEnd}, INTERVAL 1 DAY)
+        <if test="storeIds != null and storeIds.size() > 0">
+            AND a.store_id IN
+            <foreach collection="storeIds" item="sid" open="(" separator="," close=")">
+                #{sid}
+            </foreach>
+        </if>
+        GROUP BY a.member_id, a.store_id
+        HAVING COUNT(*) &gt;= #{threshold}
+    </select>
+
+    <!-- 幂等落记录：撞 uk_exc_warn_dedup 则更新触发值/说明/预警时间(不重复插) -->
+    <insert id="upsertRecord" parameterType="map">
+        INSERT INTO pt_exception_warning_record
+            (rule_id, warning_type, member_id, coach_id, store_id,
+             period_start, period_end, trigger_value, trigger_desc, warning_time)
+        VALUES
+            (#{ruleId}, #{warningType}, #{memberId}, #{coachId}, #{storeId},
+             #{periodStart}, #{periodEnd}, #{triggerValue}, #{triggerDesc}, NOW())
+        ON DUPLICATE KEY UPDATE
+            trigger_value = VALUES(trigger_value),
+            trigger_desc  = VALUES(trigger_desc),
+            coach_id      = VALUES(coach_id),
+            warning_time  = NOW()
+    </insert>
+
+</mapper>

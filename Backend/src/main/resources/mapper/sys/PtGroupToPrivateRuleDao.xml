@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 团课转私教识别规则(pt_group_to_private_rule，第22步)。sys 目录 XML 热刷新，改完免重启。
+     出勤维度(days+threshold) / 购课维度至少配一组。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtGroupToPrivateRuleDao">
+
+    <sql id="Columns">
+        r.id,
+        r.rule_name            AS ruleName,
+        r.attendance_days      AS attendanceDays,
+        r.attendance_threshold AS attendanceThreshold,
+        r.purchase_days        AS purchaseDays,
+        r.purchase_threshold   AS purchaseThreshold,
+        r.status               AS status,
+        r.remark               AS remark,
+        r.created_by           AS createdBy,
+        r.updated_by           AS updatedBy,
+        DATE_FORMAT(r.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(r.updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <sql id="Filter">
+        <if test="status != null and status != ''">
+            AND r.status = #{status}
+        </if>
+        <if test="ruleName != null and ruleName != ''">
+            AND r.rule_name LIKE concat('%', #{ruleName}, '%')
+        </if>
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtGroupToPrivateRuleEntity">
+        SELECT <include refid="Columns"/>
+        FROM pt_group_to_private_rule r
+        WHERE r.id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtGroupToPrivateRuleEntity" parameterType="map">
+        SELECT <include refid="Columns"/>
+        FROM pt_group_to_private_rule r
+        <where>
+            <include refid="Filter"/>
+        </where>
+        ORDER BY r.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM pt_group_to_private_rule r
+        <where>
+            <include refid="Filter"/>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtGroupToPrivateRuleEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_group_to_private_rule
+            (rule_name, attendance_days, attendance_threshold,
+             purchase_days, purchase_threshold, status, remark, created_by, updated_by)
+        VALUES
+            (#{ruleName}, #{attendanceDays}, #{attendanceThreshold},
+             #{purchaseDays}, #{purchaseThreshold}, #{status}, #{remark}, #{createdBy}, #{updatedBy})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtGroupToPrivateRuleEntity">
+        UPDATE pt_group_to_private_rule
+        <set>
+            <if test="ruleName != null">rule_name = #{ruleName},</if>
+            attendance_days = #{attendanceDays},
+            attendance_threshold = #{attendanceThreshold},
+            purchase_days = #{purchaseDays},
+            purchase_threshold = #{purchaseThreshold},
+            <if test="status != null">status = #{status},</if>
+            remark = #{remark},
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteBatch">
+        DELETE FROM pt_group_to_private_rule WHERE id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 会员私教权益后台查询(第15步,纯只读)。sys 目录 XML 热刷新,改完免重启。
+     权益表无会员/商品快照列:会员名/手机联 user_info、商品名联 pt_product(当前名,商品改名后按新名展示)、
+     来源订单号联 pt_private_order;时间列一律 DATE_FORMAT 格式化(惯例见 8c2b238)。 -->
+<mapper namespace="com.dlc.modules.sys.dao.SysMemberBenefitDao">
+
+    <!-- 公共筛选(不含 status,供列表与统计卡共用;统计卡按状态 CASE 分桶不吃 status 过滤) -->
+    <sql id="CommonFilter">
+        <if test="memberKeyword != null and memberKeyword != ''">
+            AND (u.nickname LIKE concat('%', #{memberKeyword}, '%')
+                 OR u.phone LIKE concat('%', #{memberKeyword}, '%'))
+        </if>
+        <if test="productKeyword != null and productKeyword != ''">
+            AND p.product_name LIKE concat('%', #{productKeyword}, '%')
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND b.store_id = #{storeId}
+        </if>
+        <!-- 生效时间区间;止日含当天(&lt;次日零点) -->
+        <if test="startTime != null and startTime != ''">
+            AND b.created_at &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND b.created_at &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)
+        </if>
+        <!-- 门店数据权限:storeIds 为逗号分隔串,空则不过滤(超级管理员看全部) -->
+        <if test="storeIds != null and storeIds != ''">
+            AND b.store_id IN (${storeIds})
+        </if>
+    </sql>
+
+    <sql id="Joins">
+        FROM pt_member_private_benefit b
+        LEFT JOIN pt_private_order o ON o.id = b.order_id
+        LEFT JOIN user_info u ON u.userId = b.member_id
+        LEFT JOIN pt_product p ON p.id = b.product_id
+        LEFT JOIN store s ON s.storeId = b.store_id
+    </sql>
+
+    <sql id="Columns">
+        b.id,
+        b.benefit_no          AS benefitNo,
+        b.order_id            AS orderId,
+        o.order_no            AS orderNo,
+        b.member_id           AS memberId,
+        u.nickname            AS memberName,
+        u.phone               AS memberMobile,
+        b.product_id          AS productId,
+        p.product_name        AS productName,
+        b.store_id            AS storeId,
+        s.storeName           AS storeName,
+        b.total_lessons       AS totalLessons,
+        b.used_lessons        AS usedLessons,
+        b.frozen_lessons      AS frozenLessons,
+        b.remaining_lessons   AS remainingLessons,
+        b.status              AS status,
+        DATE_FORMAT(b.effective_at, '%Y-%m-%d %H:%i:%s') AS effectiveAt,
+        DATE_FORMAT(b.expire_at, '%Y-%m-%d %H:%i:%s')    AS expireAt,
+        DATE_FORMAT(b.created_at, '%Y-%m-%d %H:%i:%s')   AS createdAt
+    </sql>
+
+    <select id="queryList" resultType="java.util.LinkedHashMap" parameterType="map">
+        SELECT <include refid="Columns"/>
+        <include refid="Joins"/>
+        <where>
+            1 = 1
+            <if test="status != null and status != ''">
+                AND b.status = #{status}
+            </if>
+            <include refid="CommonFilter"/>
+        </where>
+        ORDER BY b.created_at DESC, b.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        <include refid="Joins"/>
+        <where>
+            1 = 1
+            <if test="status != null and status != ''">
+                AND b.status = #{status}
+            </if>
+            <include refid="CommonFilter"/>
+        </where>
+    </select>
+
+    <!-- 顶部统计卡:各状态数量 + 剩余/冻结课时合计,一条聚合 SQL 出全部指标;
+         沿用除 status 外的筛选(状态由 CASE 分桶) -->
+    <select id="queryStat" resultType="java.util.LinkedHashMap" parameterType="map">
+        SELECT
+            COUNT(CASE WHEN b.status = 1 THEN 1 END)          AS activeCount,
+            COUNT(CASE WHEN b.status = 2 THEN 1 END)          AS usedUpCount,
+            COUNT(CASE WHEN b.status = 3 THEN 1 END)          AS expiredCount,
+            COUNT(CASE WHEN b.status = 4 THEN 1 END)          AS refundedCount,
+            IFNULL(SUM(CASE WHEN b.status = 1 THEN b.remaining_lessons ELSE 0 END), 0) AS totalRemainingLessons,
+            IFNULL(SUM(CASE WHEN b.status = 1 THEN b.frozen_lessons ELSE 0 END), 0)    AS totalFrozenLessons
+        <include refid="Joins"/>
+        <where>
+            1 = 1
+            <include refid="CommonFilter"/>
+        </where>
+    </select>
+
+    <!-- 详情:storeIds 过滤在 SQL 内收口,越权/不存在返回 null(controller 按 404 处理) -->
+    <select id="queryDetail" resultType="java.util.LinkedHashMap">
+        SELECT <include refid="Columns"/>
+        <include refid="Joins"/>
+        WHERE b.id = #{id}
+        <if test="storeIds != null and storeIds != ''">
+            AND b.store_id IN (${storeIds})
+        </if>
+        LIMIT 1
+    </select>
+
+</mapper>

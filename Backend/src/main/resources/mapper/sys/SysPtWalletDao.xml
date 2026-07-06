@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 后台 · 会员储值账户/流水只读查询(第19步资金域,/sys/wallet)。sys 目录 XML 可热刷新,免重启。
+     列表返回 Map:列名统一 AS 成驼峰键(Map key 取列标签,不吃全局下划线转驼峰);
+     门店隔离经 user_info.now_store_id(账户/流水表无 store_id),storeIds 为逗号串,空=超管看全部。 -->
+<mapper namespace="com.dlc.modules.sys.dao.SysPtWalletDao">
+
+    <!-- 账户列表筛选:会员昵称/手机模糊(keyword)、状态、更新时间区间、门店隔离(经会员 now_store_id) -->
+    <sql id="accountFilter">
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND w.member_id IN (
+                    select userId from user_info
+                    where nickname LIKE concat('%',#{keyword},'%')
+                       or phone LIKE concat('%',#{keyword},'%')
+                )
+            </if>
+            <if test="status != null and status != ''">
+                AND w.status = #{status}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND w.updated_at &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND w.updated_at &lt;= #{endTime}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND w.member_id IN (select userId from user_info where now_store_id IN (${storeIds}))
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryList" resultType="map" parameterType="map">
+        SELECT
+            w.id                     AS id,
+            w.member_id              AS memberId,
+            w.balance_amount         AS balanceAmount,
+            w.total_recharge_amount  AS totalRechargeAmount,
+            w.total_consume_amount   AS totalConsumeAmount,
+            w.status                 AS status,
+            DATE_FORMAT(w.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+            DATE_FORMAT(w.updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt,
+            (select nickname from user_info where userId = w.member_id) AS memberName,
+            (select phone    from user_info where userId = w.member_id) AS memberMobile
+        FROM pt_member_wallet w
+        <include refid="accountFilter"/>
+        ORDER BY w.updated_at DESC, w.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM pt_member_wallet w
+        <include refid="accountFilter"/>
+    </select>
+
+    <!-- 统计卡:同筛选条件汇总(无数据时 COALESCE 兜 0) -->
+    <select id="queryStat" resultType="map" parameterType="map">
+        SELECT
+            COALESCE(SUM(w.balance_amount), 0)        AS totalBalance,
+            COALESCE(SUM(w.total_recharge_amount), 0) AS totalRecharge,
+            COALESCE(SUM(w.total_consume_amount), 0)  AS totalConsume
+        FROM pt_member_wallet w
+        <include refid="accountFilter"/>
+    </select>
+
+    <select id="queryObject" resultType="map">
+        SELECT
+            w.id                     AS id,
+            w.member_id              AS memberId,
+            w.balance_amount         AS balanceAmount,
+            w.total_recharge_amount  AS totalRechargeAmount,
+            w.total_consume_amount   AS totalConsumeAmount,
+            w.status                 AS status,
+            DATE_FORMAT(w.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+            DATE_FORMAT(w.updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt,
+            (select nickname from user_info where userId = w.member_id) AS memberName,
+            (select phone    from user_info where userId = w.member_id) AS memberMobile
+        FROM pt_member_wallet w
+        WHERE w.id = #{id}
+    </select>
+
+    <!-- 流水列表筛选:会员/账户/类型/时间区间/门店隔离(经会员 now_store_id) -->
+    <sql id="flowFilter">
+        <where>
+            <if test="memberId != null and memberId != ''">
+                AND f.member_id = #{memberId}
+            </if>
+            <if test="walletId != null and walletId != ''">
+                AND f.wallet_id = #{walletId}
+            </if>
+            <if test="flowType != null and flowType != ''">
+                AND f.flow_type = #{flowType}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND f.created_at &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND f.created_at &lt;= #{endTime}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND f.member_id IN (select userId from user_info where now_store_id IN (${storeIds}))
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryFlowList" resultType="map" parameterType="map">
+        SELECT
+            f.id             AS id,
+            f.wallet_id      AS walletId,
+            f.member_id      AS memberId,
+            f.flow_type      AS flowType,
+            f.change_amount  AS changeAmount,
+            f.before_balance AS beforeBalance,
+            f.after_balance  AS afterBalance,
+            f.biz_type       AS bizType,
+            f.biz_id         AS bizId,
+            f.remark         AS remark,
+            f.created_by     AS createdBy,
+            f.out_order_no   AS outOrderNo,
+            DATE_FORMAT(f.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+            (select nickname from user_info where userId = f.member_id) AS memberName,
+            (select phone    from user_info where userId = f.member_id) AS memberMobile
+        FROM pt_member_wallet_flow f
+        <include refid="flowFilter"/>
+        ORDER BY f.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryFlowTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM pt_member_wallet_flow f
+        <include refid="flowFilter"/>
+    </select>
+
+</mapper>

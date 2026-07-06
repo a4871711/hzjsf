@@ -50,6 +50,12 @@ public class PayController extends BaseController{
     private VipBenefitService vipBenefitService;
     @Autowired
     private com.dlc.modules.api.service.VipTransferService vipTransferService;
+    @Autowired
+    private PrivateOrderService privateOrderService;
+    @Autowired
+    private PtMemberWalletService ptMemberWalletService;
+    @Autowired
+    private PtInstallmentService ptInstallmentService;
 
     /**
      *  @Auther:YD
@@ -161,10 +167,15 @@ public class PayController extends BaseController{
                 //添加收支明细
                 int payType = ConfigConstant.WXPAY;
                 log.info("=========添加收支明细==========");
-                //VIP权益卡(后缀6)/转让服务费(后缀7)的记账在各自 service 内部单事务完成,此处跳过避免重复记账
+                //VIP权益卡(后缀6)/转让服务费(后缀7)/私教商品(后缀b)/储值充值(后缀8)/分期首付(后缀9)/分期后续(后缀a)
+                //的记账在各自 service 内部单事务完成,此处跳过避免重复记账(后缀a非数字,若不跳过 Integer.valueOf 会抛异常)
                 String vipSuffix = orderNo.substring(orderNo.length()-1);
                 if (!vipSuffix.equals(ConfigConstant.VIP_CARD_BUY_TYPE)
-                        && !vipSuffix.equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)) {
+                        && !vipSuffix.equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)
+                        && !vipSuffix.equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)
+                        && !vipSuffix.equals(ConfigConstant.WALLET_RECHARGE_TYPE)
+                        && !vipSuffix.equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)
+                        && !vipSuffix.equals(ConfigConstant.INSTALLMENT_BILL_TYPE)) {
                     incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,payType);
                 }
                 if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_ORDER_TYPE)){
@@ -191,6 +202,22 @@ public class PayController extends BaseController{
                     //VIP转让服务费(单事务:记账+转让单10→20待审核,幂等)
                     log.info("-------VIP转让服务费支付成功=========================================" );
                     vipTransferService.payFeeCallback(orderNo,wallet,transaction_id,payType);
+                }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)){
+                    //私教商品购买(单事务:记账+扣库存+券核销+结清+建权益,幂等三道闸)
+                    log.info("-------更新私教商品购买订单=========================================" );
+                    privateOrderService.updatePrivateOrder(orderNo,wallet,transaction_id,payType);
+                }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)){
+                    //储值充值(后缀8):单事务记账+行锁加余额+写充值流水,两道幂等闸(先查流水+out_order_no唯一键)
+                    log.info("-------储值充值到账=========================================" );
+                    ptMemberWalletService.walletRechargeCallback(orderNo,wallet,transaction_id,payType);
+                }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)){
+                    //分期首付独立单(后缀9,防御性):单事务记账+首付账单入账+计划推进+订单转部分支付+激活权益,幂等
+                    log.info("-------分期首付到账=========================================" );
+                    ptInstallmentService.installmentDownCallback(orderNo,wallet,transaction_id,payType);
+                }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_BILL_TYPE)){
+                    //分期后续期(后缀a):单事务记账+账单入账(pay_order_no行锁+status条件)+计划推进/结清,幂等
+                    log.info("-------分期后续期到账=========================================" );
+                    ptInstallmentService.installmentBillCallback(orderNo,wallet,transaction_id,payType);
                 }
                 log.info(">>微信回调成功");
                 response.getWriter().print("SUCCESS");
@@ -241,8 +268,14 @@ public class PayController extends BaseController{
                     BigDecimal wallet = new BigDecimal(params.get("total_amount"));
                     //支付类型
                     int payType = ConfigConstant.ZFBPAY;
-                    //添加收支明细
-                    incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,payType);
+                    //添加收支明细(私教商品后缀b/储值充值后缀8/分期首付后缀9/分期后续后缀a的记账在各自 service 单事务内完成,
+                    //此处跳过避免重复记账;后缀a非数字,若不跳过 Integer.valueOf 会抛异常)
+                    if (!orderNo.substring(orderNo.length()-1).equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)
+                            && !orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)
+                            && !orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)
+                            && !orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_BILL_TYPE)) {
+                        incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,payType);
+                    }
                     if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_ORDER_TYPE)){
                         //更新健身卡订单
                         log.info(">>开始支付回调更新健身卡订单=============================================");
@@ -259,6 +292,22 @@ public class PayController extends BaseController{
                         //更新商品订单
                         log.info(">>开始支付宝回调更新商品订单=============================================");
                         goodsOrderService.updateByOrderNo(orderNo, wallet,transaction_id,payType);
+                    }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)){
+                        //私教商品购买(单事务:记账+扣库存+券核销+结清+建权益,幂等三道闸)
+                        log.info(">>开始支付宝回调更新私教商品购买订单=============================================");
+                        privateOrderService.updatePrivateOrder(orderNo,wallet,transaction_id,payType);
+                    }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)){
+                        //储值充值(后缀8):单事务记账+行锁加余额+写充值流水,两道幂等闸(充值当前走微信,支付宝分支为对齐三链留置)
+                        log.info(">>开始支付宝回调储值充值到账=============================================");
+                        ptMemberWalletService.walletRechargeCallback(orderNo,wallet,transaction_id,payType);
+                    }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)){
+                        //分期首付独立单(后缀9,防御性):单事务记账+首付账单入账+计划推进+订单转部分支付+激活权益,幂等
+                        log.info(">>开始支付宝回调分期首付到账=============================================");
+                        ptInstallmentService.installmentDownCallback(orderNo,wallet,transaction_id,payType);
+                    }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_BILL_TYPE)){
+                        //分期后续期(后缀a):单事务记账+账单入账(pay_order_no行锁+status条件)+计划推进/结清,幂等
+                        log.info(">>开始支付宝回调分期后续期到账=============================================");
+                        ptInstallmentService.installmentBillCallback(orderNo,wallet,transaction_id,payType);
                     }
                     log.info("加入返回值-response->>支付宝回调成功");
                 }

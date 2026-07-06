@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 私教订单(pt_private_order)。api 目录 XML 改动须重启 Tomcat。
+     下单只建待支付单(order_status=0,pay_status=0),不收钱不扣库存;
+     sold_count 累计与状态推进在支付回调(第13步)。 -->
+<mapper namespace="com.dlc.modules.api.dao.PtPrivateOrderDao">
+
+    <sql id="Base_Column_List">
+        id, order_no, member_id, member_name, member_mobile,
+        product_id, product_name, product_type_id, product_type_name, service_type, store_id,
+        lesson_count, duration_minutes, validity_days,
+        original_amount, payable_amount, paid_amount, refund_amount, discount_amount,
+        marketing_type, marketing_activity_id, marketing_activity_name,
+        coupon_id, member_coupon_id, coupon_name, coupon_discount_amount,
+        pay_method, pay_status, order_status,
+        paid_at, settled_at, cancel_at, refund_at,
+        created_by, created_at, updated_by, updated_at, deleted
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_order
+        WHERE id = #{value} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByOrderNo" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_order
+        WHERE order_no = #{orderNo} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 建待支付单;created_at/updated_at/deleted 由 DDL 默认值维护 -->
+    <insert id="save" parameterType="com.dlc.modules.api.entity.PtPrivateOrderEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_private_order
+            (order_no, member_id, member_name, member_mobile,
+             product_id, product_name, product_type_id, product_type_name, service_type, store_id,
+             lesson_count, duration_minutes, validity_days,
+             original_amount, payable_amount, paid_amount, refund_amount, discount_amount,
+             marketing_type, marketing_activity_id, marketing_activity_name,
+             coupon_id, member_coupon_id, coupon_name, coupon_discount_amount,
+             pay_method, pay_status, order_status, created_by)
+        VALUES
+            (#{orderNo}, #{memberId}, #{memberName}, #{memberMobile},
+             #{productId}, #{productName}, #{productTypeId}, #{productTypeName}, #{serviceType}, #{storeId},
+             #{lessonCount}, #{durationMinutes}, #{validityDays},
+             #{originalAmount}, #{payableAmount}, #{paidAmount}, #{refundAmount}, #{discountAmount},
+             #{marketingType}, #{marketingActivityId}, #{marketingActivityName},
+             #{couponId}, #{memberCouponId}, #{couponName}, #{couponDiscountAmount},
+             #{payMethod}, #{payStatus}, #{orderStatus}, #{createdBy})
+    </insert>
+
+    <!-- 限购口径:已支付+待支付(0待支付/1首付已付/2已结清),已取消/已退款不占限购额度 -->
+    <select id="countMemberProductOrders" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_order
+        WHERE member_id = #{memberId} AND product_id = #{productId}
+          AND order_status IN (0, 1, 2) AND deleted = 0
+    </select>
+
+    <select id="countMemberActivityOrders" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_order
+        WHERE member_id = #{memberId}
+          AND marketing_type = #{marketingType} AND marketing_activity_id = #{activityId}
+          AND order_status IN (0, 1, 2) AND deleted = 0
+    </select>
+
+    <select id="countProductStore" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_product_store_rel
+        WHERE product_id = #{productId} AND store_id = #{storeId}
+    </select>
+
+    <!-- 下单校验用商品行:上架中 + 未到下架时间;查不到即不可购买(ERROR_PRODUCT_OFF) -->
+    <select id="selectProductForOrder" resultType="com.dlc.modules.api.entity.PtProduct">
+        SELECT p.id, p.product_name, p.product_type_id,
+               (SELECT type_name FROM pt_product_type WHERE id = p.product_type_id) AS typeName,
+               p.service_type, p.original_price, p.sale_price, p.member_price, p.new_user_price,
+               p.lesson_count, p.duration_minutes, p.validity_days,
+               p.purchase_limit, p.sale_stock, p.sold_count
+        FROM pt_product p
+        WHERE p.id = #{productId} AND p.deleted = 0 AND p.listing_status = 1
+          AND (p.unlisting_at IS NULL OR p.unlisting_at &gt; NOW())
+    </select>
+
+    <!-- 活动实时判有效:status=1 且 now 在时间窗内(总则0.10:不建活动过期任务);查不到=活动不可用 -->
+    <select id="selectGroupBuyActivity" resultType="java.util.HashMap">
+        SELECT id, activity_name AS activityName, product_id AS productId,
+               group_buy_price AS activityPrice, activity_stock AS activityStock,
+               sold_count AS soldCount, purchase_limit AS purchaseLimit
+        FROM mk_group_buy_activity
+        WHERE id = #{activityId} AND deleted = 0 AND status = 1
+          AND start_time &lt;= NOW() AND end_time &gt;= NOW()
+    </select>
+
+    <select id="selectFlashSaleActivity" resultType="java.util.HashMap">
+        SELECT id, activity_name AS activityName, product_id AS productId,
+               flash_sale_price AS activityPrice, activity_stock AS activityStock,
+               sold_count AS soldCount, purchase_limit AS purchaseLimit
+        FROM mk_flash_sale_activity
+        WHERE id = #{activityId} AND deleted = 0 AND status = 1
+          AND start_time &lt;= NOW() AND end_time &gt;= NOW()
+    </select>
+
+    <!-- ==================== 第13步 支付成功回调(updatePrivateOrder) ==================== -->
+
+    <!-- 行锁串行化并发/重复回调;幂等闸1(order_status=0 前置判断)在 service 层锁内执行 -->
+    <select id="selectByOrderNoForUpdate" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_order
+        WHERE order_no = #{orderNo} AND deleted = 0
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- 一次性支付结清:0待支付→2已结清;WHERE order_status=0 与闸1双保险(调用方持有行锁,0行=逻辑异常须回滚) -->
+    <update id="settleOrder">
+        UPDATE pt_private_order
+        SET pay_status = 2,
+            order_status = 2,
+            paid_amount = #{paidAmount},
+            paid_at = NOW(),
+            settled_at = NOW()
+        WHERE id = #{id} AND order_status = 0
+    </update>
+
+    <!-- 幂等闸3:扣库存累计已售,sale_stock 为 NULL 不限量;影响0行=售罄(终态护栏,调用方回滚) -->
+    <update id="increaseProductSoldCount">
+        UPDATE pt_product
+        SET sold_count = sold_count + 1
+        WHERE id = #{productId}
+          AND (sale_stock IS NULL OR sold_count &lt; sale_stock)
+    </update>
+
+    <!-- 活动单 CAS 扣活动已售:拼团 activity_stock 可为 NULL(不限量) -->
+    <update id="increaseGroupBuySoldCount">
+        UPDATE mk_group_buy_activity
+        SET sold_count = sold_count + 1
+        WHERE id = #{activityId}
+          AND (activity_stock IS NULL OR sold_count &lt; activity_stock)
+    </update>
+
+    <!-- 秒杀 activity_stock 必填 -->
+    <update id="increaseFlashSaleSoldCount">
+        UPDATE mk_flash_sale_activity
+        SET sold_count = sold_count + 1
+        WHERE id = #{activityId}
+          AND sold_count &lt; activity_stock
+    </update>
+
+    <!-- 附赠团课权益规则:is_enabled=1 且规则启用才发放;scope_type 留在规则表,核销侧按 source_product_id 回查 -->
+    <select id="selectGroupBenefitRule" resultType="java.util.HashMap">
+        SELECT gift_count AS giftCount, validity_days AS validityDays, scope_type AS scopeType
+        FROM pt_product_group_benefit
+        WHERE product_id = #{productId} AND is_enabled = 1 AND status = 1
+        LIMIT 1
+    </select>
+
+    <!-- 一单只发一次:按来源订单判存(闸1外再兜一道) -->
+    <select id="countMemberGroupBenefitByOrder" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_member_group_benefit
+        WHERE source_order_id = #{orderId}
+    </select>
+
+    <insert id="insertMemberGroupBenefit">
+        INSERT INTO pt_member_group_benefit
+            (member_id, source_order_id, source_product_id,
+             gift_count, used_count, remaining_count,
+             effective_time, expire_time, status)
+        VALUES
+            (#{memberId}, #{orderId}, #{productId},
+             #{giftCount}, 0, #{giftCount},
+             NOW(), DATE_ADD(NOW(), INTERVAL #{validityDays} DAY), 1)
+    </insert>
+
+    <select id="selectMemberGroupBenefitIdByOrder" resultType="long">
+        SELECT id
+        FROM pt_member_group_benefit
+        WHERE source_order_id = #{orderId}
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <!-- 发放流水:flow_type=1发放,biz_type=1私教订单 -->
+    <insert id="insertMemberGroupBenefitFlow">
+        INSERT INTO pt_member_group_benefit_flow
+            (benefit_id, member_id, flow_type, change_count, before_count, after_count, biz_type, biz_id)
+        VALUES
+            (#{benefitId}, #{memberId}, 1, #{giftCount}, 0, #{giftCount}, 1, #{orderId})
+    </insert>
+
+    <select id="queryMyOrders" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_order
+        WHERE member_id = #{userId} AND deleted = 0
+        <if test="orderStatus != null and orderStatus != ''">
+            AND order_status = #{orderStatus}
+        </if>
+        ORDER BY id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyOrders" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_order
+        WHERE member_id = #{userId} AND deleted = 0
+        <if test="orderStatus != null and orderStatus != ''">
+            AND order_status = #{orderStatus}
+        </if>
+    </select>
+
+    <!-- 第14步回填第9步护栏:商品被订单引用(全状态,账务凭证须回溯)则不可删除 -->
+    <select id="countByProduct" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_order
+        WHERE product_id = #{productId} AND deleted = 0
+    </select>
+
+    <!-- ==================== 第15步 后台退款冲减(refund) ==================== -->
+
+    <!-- 行锁串行化并发退款:金额上限校验在 service 层锁内执行,重复提交第二次超上限被拒 -->
+    <select id="selectByIdForUpdate" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_order
+        WHERE id = #{id} AND deleted = 0
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- ==================== 第16步 定时任务:超时未付自动取消 ==================== -->
+
+    <!-- 超时待支付单:借 idx_pt_private_order_status 走 order_status=0 小结果集再过滤时间 -->
+    <select id="queryTimeoutUnpaid" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_order
+        WHERE order_status = 0 AND deleted = 0
+          AND created_at &lt; DATE_SUB(NOW(), INTERVAL #{minutes} MINUTE)
+    </select>
+
+    <!-- 超时取消幂等闸:WHERE order_status=0,与支付回调 settleOrder(同样卡 order_status=0)互斥,
+         并发下二者只有一个命中;0行=订单已被支付/取消,调用方跳过且不释放券 -->
+    <update id="cancelTimeoutOrder">
+        UPDATE pt_private_order
+        SET order_status = 3,
+            cancel_at = NOW()
+        WHERE id = #{id} AND order_status = 0 AND deleted = 0
+    </update>
+
+    <!-- 退款落账 CAS:order_status IN (1,2) 且累计退款额未被并发改过才命中;
+         全额退传 orderStatus=4/payStatus=3,部分退传 null 保持原状态 -->
+    <update id="updateRefund">
+        UPDATE pt_private_order
+        SET refund_amount = #{newRefundAmount},
+            refund_at = NOW(),
+            <if test="orderStatus != null">order_status = #{orderStatus},</if>
+            <if test="payStatus != null">pay_status = #{payStatus},</if>
+            updated_by = #{operatorId},
+            updated_at = NOW()
+        WHERE id = #{id} AND deleted = 0
+          AND order_status IN (1, 2)
+          AND refund_amount = #{oldRefundAmount}
+    </update>
+
+    <!-- 第20步 分期首付已付:0待支付→1首付已付/pay_status=1部分支付;WHERE order_status=0 幂等 -->
+    <update id="markInstallmentPartPaid">
+        UPDATE pt_private_order
+        SET pay_status = 1,
+            order_status = 1,
+            paid_amount = #{paidAmount},
+            paid_at = NOW()
+        WHERE id = #{id} AND order_status = 0
+    </update>
+
+    <!-- 第20步 分期全部付清:1首付已付→2已结清/pay_status=2已支付;WHERE order_status=1 幂等 -->
+    <update id="markInstallmentSettled">
+        UPDATE pt_private_order
+        SET pay_status = 2,
+            order_status = 2,
+            paid_amount = #{paidAmount},
+            settled_at = NOW()
+        WHERE id = #{id} AND order_status = 1
+    </update>
+
+</mapper>

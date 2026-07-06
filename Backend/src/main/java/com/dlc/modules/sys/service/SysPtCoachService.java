@@ -1,5 +1,6 @@
 package com.dlc.modules.sys.service;
 
+import com.dlc.modules.api.entity.PtPrivateAppointmentEntity;
 import com.dlc.modules.sys.entity.PtCoachEntity;
 
 import java.util.List;
@@ -25,4 +26,7 @@ public interface SysPtCoachService {
     void deleteBatch(Long[] ids);
 
     void changeStatus(Long id, Integer status, String disableReason);
+
+    /** 教练详情只读抽屉:该教练最近预约(第14步接入 pt_private_appointment 回填) */
+    List<PtPrivateAppointmentEntity> queryRecentAppointments(Long coachId);
 }

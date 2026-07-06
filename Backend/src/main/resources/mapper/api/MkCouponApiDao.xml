@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 优惠券模板(mk_coupon)api 侧只读(第18步领券/抵扣算法用)。api 目录 XML 改后须重启 Tomcat。
+     状态枚举 1上架/0下架(新枚举,勿照抄旧 sys_coupon 的 2=下架)。
+     门店适用口径:券「未配任何门店」=不限门店(全部门店可用);配了门店则须购买门店命中 rel。
+     这是与 sys 侧后台配置(storeIds 可空=不限)对齐的口径,并规避「零门店券处处不可用」。 -->
+<mapper namespace="com.dlc.modules.api.dao.MkCouponApiDao">
+
+    <sql id="cols">
+        id, coupon_name AS couponName, coupon_type AS couponType,
+        discount_amount AS discountAmount, discount_rate AS discountRate,
+        max_discount_amount AS maxDiscountAmount, use_threshold_amount AS useThresholdAmount,
+        valid_days AS validDays, scope_type AS scopeType,
+        is_new_user_coupon AS isNewUserCoupon, status
+    </sql>
+
+    <!-- 券模板:仅取模板字段(不带 created_at 等日期列,规避 connector8 LocalDateTime 差异) -->
+    <select id="selectById" resultType="com.dlc.modules.api.entity.MkCouponEntity">
+        SELECT <include refid="cols"/>
+        FROM mk_coupon
+        WHERE id = #{couponId} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 可领券列表:上架 + 未删。门店:券无门店配置(不限)或购买门店命中 rel。
+         非新人(newUser=false)排除新人券,避免展示领不了/用不了的券 -->
+    <select id="selectCanReceiveList" resultType="com.dlc.modules.api.entity.MkCouponEntity">
+        SELECT <include refid="cols"/>
+        FROM mk_coupon c
+        WHERE c.deleted = 0 AND c.status = 1
+        <if test="newUser == false">
+            AND c.is_new_user_coupon = 0
+        </if>
+        <if test="storeId != null">
+            AND (
+                NOT EXISTS (SELECT 1 FROM mk_coupon_store_rel r WHERE r.coupon_id = c.id)
+                OR EXISTS (SELECT 1 FROM mk_coupon_store_rel r
+                           WHERE r.coupon_id = c.id AND r.store_id = #{storeId})
+            )
+        </if>
+        ORDER BY c.id DESC
+    </select>
+
+    <!-- 门店适用:无门店配置(不限)记 1,或该门店在 rel 记 1;两分支取 max 保证「不限」也放行 -->
+    <select id="countStoreApplicable" resultType="int">
+        SELECT (
+            (SELECT CASE WHEN COUNT(*) = 0 THEN 1 ELSE 0 END
+               FROM mk_coupon_store_rel WHERE coupon_id = #{couponId})
+            +
+            (SELECT COUNT(*) FROM mk_coupon_store_rel
+              WHERE coupon_id = #{couponId} AND store_id = #{storeId})
+        )
+    </select>
+
+    <!-- 指定商品适用(scope_type=2 时判):命中 product_rel 返回>0 -->
+    <select id="countProductApplicable" resultType="int">
+        SELECT COUNT(*)
+        FROM mk_coupon_product_rel
+        WHERE coupon_id = #{couponId} AND product_id = #{productId}
+    </select>
+
+</mapper>

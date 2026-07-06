@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 私教预约(pt_private_appointment)。api 目录 XML 改动须重启 Tomcat。
+     【统一余量口径】countOccupied 是列表余量(5.1.B)与下单护栏(5.2)唯一的已占用 COUNT:
+     coach_id + appointment_date + 时段重叠 + appointment_status IN (1,3,4),排除2已取消。
+     路线A: lockCoachDay 行锁/间隙锁串行化;路线B: slot_key + uk_pt_appt_slot 仅一对一兜底。 -->
+<mapper namespace="com.dlc.modules.api.dao.PtPrivateAppointmentDao">
+
+    <sql id="Base_Column_List">
+        id, appointment_no, order_id, benefit_id, member_id, product_id, coach_id, store_id,
+        DATE_FORMAT(appointment_date, '%Y-%m-%d') AS appointmentDate,
+        DATE_FORMAT(start_time, '%H:%i') AS startTime,
+        DATE_FORMAT(end_time, '%H:%i') AS endTime,
+        slot_key, lesson_count, appointment_status, cancel_reason, cancel_at, finish_at,
+        created_by, created_at, updated_by, updated_at, deleted
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_appointment
+        WHERE id = #{value} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByNo" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_appointment
+        WHERE appointment_no = #{appointmentNo} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 占位插入;created_at/updated_at/deleted 由 DDL 默认值维护。
+         slot_key 仅一对一写(coachId:date:startTime),撞 uk_pt_appt_slot 由 service 捕获转 ERROR_SLOT_TAKEN -->
+    <insert id="save" parameterType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_private_appointment
+            (appointment_no, order_id, benefit_id, member_id, product_id, coach_id, store_id,
+             appointment_date, start_time, end_time, slot_key, lesson_count, appointment_status,
+             created_by, updated_by)
+        VALUES
+            (#{appointmentNo}, #{orderId}, #{benefitId}, #{memberId}, #{productId}, #{coachId}, #{storeId},
+             #{appointmentDate}, #{startTime}, #{endTime}, #{slotKey}, #{lessonCount}, #{appointmentStatus},
+             #{createdBy}, #{updatedBy})
+    </insert>
+
+    <!-- 路线A:锁同教练同日预约行;当日无记录时靠 idx_..._coach_time 间隙锁阻塞并发插入 -->
+    <select id="lockCoachDay" resultType="java.lang.Long">
+        SELECT id
+        FROM pt_private_appointment
+        WHERE coach_id = #{coachId} AND appointment_date = #{appointmentDate}
+        FOR UPDATE
+    </select>
+
+    <!-- 【统一余量口径】时段重叠判定 start_time &lt; end AND end_time &gt; start;已取消(2)不占容量 -->
+    <select id="countOccupied" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_appointment
+        WHERE coach_id = #{coachId}
+          AND appointment_date = #{appointmentDate}
+          AND start_time &lt; #{endTime}
+          AND end_time &gt; #{startTime}
+          AND appointment_status IN (1, 3, 4)
+          AND deleted = 0
+    </select>
+
+    <!-- 同会员同日重叠时段进行中预约(拦重复约,跨教练也不允许分身) -->
+    <select id="countMemberOverlap" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_appointment
+        WHERE member_id = #{memberId}
+          AND appointment_date = #{appointmentDate}
+          AND start_time &lt; #{endTime}
+          AND end_time &gt; #{startTime}
+          AND appointment_status = 1
+          AND deleted = 0
+    </select>
+
+    <!-- 取消:置2 + 清 slot_key 释放一对一占位(NULL 不参与唯一约束,允许同点重约);status=1 幂等闸 -->
+    <update id="cancelAppointment">
+        UPDATE pt_private_appointment
+        SET appointment_status = 2, cancel_at = NOW(), cancel_reason = #{cancelReason}, slot_key = NULL
+        WHERE id = #{id} AND appointment_status = 1
+    </update>
+
+    <!-- 完成核销:置3 + finish_at;slot_key 保留(时段已实际消耗,仍占容量口径) -->
+    <update id="finishAppointment">
+        UPDATE pt_private_appointment
+        SET appointment_status = 3, finish_at = NOW(), updated_by = #{operatorId}
+        WHERE id = #{id} AND appointment_status = 1
+    </update>
+
+    <select id="queryMyList" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT a.id, a.appointment_no, a.order_id, a.benefit_id, a.member_id, a.product_id,
+               a.coach_id, a.store_id,
+               DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointmentDate,
+               DATE_FORMAT(a.start_time, '%H:%i') AS startTime,
+               DATE_FORMAT(a.end_time, '%H:%i') AS endTime,
+               a.lesson_count, a.appointment_status, a.cancel_reason, a.cancel_at, a.finish_at,
+               a.created_at,
+               p.product_name AS productName,
+               c.coach_name AS coachName,
+               s.storeName AS storeName
+        FROM pt_private_appointment a
+        LEFT JOIN pt_product p ON p.id = a.product_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id
+        LEFT JOIN store s ON s.storeId = a.store_id
+        WHERE a.member_id = #{userId} AND a.deleted = 0
+        <if test="status != null and status != ''">
+            AND a.appointment_status = #{status}
+        </if>
+        ORDER BY a.appointment_date DESC, a.start_time DESC, a.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyList" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_appointment a
+        WHERE a.member_id = #{userId} AND a.deleted = 0
+        <if test="status != null and status != ''">
+            AND a.appointment_status = #{status}
+        </if>
+    </select>
+
+    <!-- 后台教练详情只读抽屉:该教练最近预约(含会员/商品/门店名) -->
+    <select id="queryRecentByCoach" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT a.id, a.appointment_no, a.benefit_id, a.member_id, a.product_id, a.coach_id, a.store_id,
+               DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointmentDate,
+               DATE_FORMAT(a.start_time, '%H:%i') AS startTime,
+               DATE_FORMAT(a.end_time, '%H:%i') AS endTime,
+               a.lesson_count, a.appointment_status, a.cancel_reason, a.cancel_at, a.finish_at, a.created_at,
+               u.nickname AS memberName,
+               u.phone AS memberMobile,
+               p.product_name AS productName,
+               s.storeName AS storeName
+        FROM pt_private_appointment a
+        LEFT JOIN user_info u ON u.userId = a.member_id
+        LEFT JOIN pt_product p ON p.id = a.product_id
+        LEFT JOIN store s ON s.storeId = a.store_id
+        WHERE a.coach_id = #{coachId} AND a.deleted = 0
+        ORDER BY a.appointment_date DESC, a.start_time DESC, a.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 教练该星期可用排班窗口:与 CoachApiDao.queryBookableCoaches 交集口径一致(互指注释,改一处须同改) -->
+    <select id="querySchedules" resultType="com.dlc.modules.api.vo.PtScheduleWindowVo">
+        SELECT sch.store_id AS storeId,
+               DATE_FORMAT(sch.start_time, '%H:%i') AS startTime,
+               DATE_FORMAT(sch.end_time, '%H:%i') AS endTime
+        FROM pt_coach_schedule sch
+        INNER JOIN pt_coach c ON c.id = sch.coach_id AND c.status = 1 AND c.deleted = 0
+        INNER JOIN pt_coach_store_rel csr ON csr.coach_id = sch.coach_id AND csr.store_id = sch.store_id
+        WHERE sch.coach_id = #{coachId}
+          AND sch.weekday = #{weekday}
+          AND sch.is_enabled = 1
+          AND sch.store_id IN (SELECT store_id FROM pt_product_store_rel WHERE product_id = #{productId})
+          AND (
+                NOT EXISTS (SELECT 1 FROM pt_product_coach_rel WHERE product_id = #{productId})
+                OR sch.coach_id IN (SELECT coach_id FROM pt_product_coach_rel WHERE product_id = #{productId})
+              )
+        <if test="storeId != null">
+            AND sch.store_id = #{storeId}
+        </if>
+        ORDER BY sch.store_id ASC, sch.start_time ASC
+    </select>
+
+    <!-- 预约规则商品行:不过滤 listing_status(下架不影响已购权益的预约/取消规则) -->
+    <select id="selectProductRule" resultType="com.dlc.modules.api.entity.PtProduct">
+        SELECT p.id, p.product_name AS productName, p.service_type AS serviceType,
+               p.duration_minutes AS durationMinutes, p.booking_gap_minutes AS bookingGapMinutes,
+               p.booking_capacity AS bookingCapacity, p.latest_booking_hours AS latestBookingHours,
+               p.latest_free_cancel_hours AS latestFreeCancelHours, p.no_show_deduct AS noShowDeduct
+        FROM pt_product p
+        WHERE p.id = #{productId} AND p.deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 代约取可用权益:先到期先用(长期 NULL 最后用) -->
+    <select id="selectUsableBenefit" resultType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity">
+        SELECT id, benefit_no, order_id, member_id, product_id, store_id,
+               total_lessons, used_lessons, frozen_lessons, remaining_lessons,
+               effective_at, expire_at, status, created_at, updated_at
+        FROM pt_member_private_benefit
+        WHERE member_id = #{memberId} AND product_id = #{productId}
+          AND status = 1
+          AND (expire_at IS NULL OR expire_at &gt; NOW())
+          AND remaining_lessons &gt;= 1
+        ORDER BY (expire_at IS NULL) ASC, expire_at ASC, id ASC
+        LIMIT 1
+    </select>
+
+    <!-- 第5步护栏回填:教练名下未来(未开课)未取消预约;>0 不可删除教练 -->
+    <select id="countFutureByCoach" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_appointment
+        WHERE coach_id = #{coachId}
+          AND appointment_status = 1
+          AND deleted = 0
+          AND TIMESTAMP(appointment_date, start_time) &gt; NOW()
+    </select>
+
+    <!-- ==================== 第16步 定时任务:爽约扫描 ==================== -->
+
+    <!-- 爽约到期:已预约且结束时间已过 hours 小时(留人工核销窗口),逐条交由 service 按 no_show_deduct 处理 -->
+    <select id="queryNoShowDue" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_appointment
+        WHERE appointment_status = 1
+          AND deleted = 0
+          AND TIMESTAMP(appointment_date, end_time) &lt; DATE_SUB(NOW(), INTERVAL #{hours} HOUR)
+    </select>
+
+    <!-- 置爽约幂等闸:WHERE status=1,与人工完成(1→3)/取消(1→2)互斥,并发只有一个命中;
+         finish_at 记爽约判定时间(收入报表只按 status=3 取 finish_at,不受影响);
+         slot_key 不清:时段已实际占用,与 countOccupied IN(1,3,4) 口径一致 -->
+    <update id="markNoShow">
+        UPDATE pt_private_appointment
+        SET appointment_status = 4, finish_at = NOW()
+        WHERE id = #{id} AND appointment_status = 1
+    </update>
+
+    <!-- 第7步护栏回填:落在排班段内(同教练+门店+星期,时段被窗口包含)的未来未取消预约;
+         weekday 口径 1周一...7周日 = MySQL WEEKDAY()+1 -->
+    <select id="countFutureBySchedule" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_appointment
+        WHERE coach_id = #{coachId}
+          AND store_id = #{storeId}
+          AND appointment_status = 1
+          AND deleted = 0
+          AND WEEKDAY(appointment_date) + 1 = #{weekday}
+          AND start_time &gt;= #{startTime}
+          AND end_time &lt;= #{endTime}
+          AND TIMESTAMP(appointment_date, start_time) &gt; NOW()
+    </select>
+
+</mapper>

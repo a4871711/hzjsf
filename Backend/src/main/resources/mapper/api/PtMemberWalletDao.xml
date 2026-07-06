@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 会员储值账户(pt_member_wallet,第19步资金域)。api 目录 XML 改动须重启 Tomcat。
+     余额红线:变动一律走 changeBalance(FOR UPDATE 锁行 → after=before+change → updateBalance → 插流水),
+     本文件不提供任何无锁的余额直改语句。 -->
+<mapper namespace="com.dlc.modules.api.dao.PtMemberWalletDao">
+
+    <sql id="Base_Column_List">
+        id, member_id, balance_amount, total_recharge_amount, total_consume_amount,
+        status, created_at, updated_at
+    </sql>
+
+    <select id="selectByMemberId" resultType="com.dlc.modules.api.entity.PtMemberWalletEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_member_wallet
+        WHERE member_id = #{memberId}
+        LIMIT 1
+    </select>
+
+    <!-- 资金变动入口统一先锁账户行,串行化同一会员的并发充值/扣款/退款 -->
+    <select id="selectByMemberIdForUpdate" resultType="com.dlc.modules.api.entity.PtMemberWalletEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_member_wallet
+        WHERE member_id = #{memberId}
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- 首充建账户:uk_pt_member_wallet_member_id 兜底,并发首充只建一行(重复插入幂等,不报错);
+         余额/累计/状态列走 DDL 默认值(0.00/0.00/0.00/1正常) -->
+    <insert id="insertOnDuplicate">
+        INSERT INTO pt_member_wallet (member_id)
+        VALUES (#{memberId})
+        ON DUPLICATE KEY UPDATE id = id
+    </insert>
+
+    <!-- 行锁内写余额:balance 直接置为调用方基于 before 算出的 after(与流水快照同源);
+         累计充值/消费按增量累加(非充值/消费流水传 0) -->
+    <update id="updateBalance">
+        UPDATE pt_member_wallet
+        SET balance_amount = #{afterBalance},
+            total_recharge_amount = total_recharge_amount + #{rechargeInc},
+            total_consume_amount = total_consume_amount + #{consumeInc}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 冻结:带状态条件 CAS,命中0行=已冻结/不存在 -->
+    <update id="freeze">
+        UPDATE pt_member_wallet
+        SET status = 2
+        WHERE id = #{id} AND status = 1
+    </update>
+
+    <!-- 解冻:带状态条件 CAS,命中0行=未冻结/不存在 -->
+    <update id="unfreeze">
+        UPDATE pt_member_wallet
+        SET status = 1
+        WHERE id = #{id} AND status = 2
+    </update>
+
+</mapper>

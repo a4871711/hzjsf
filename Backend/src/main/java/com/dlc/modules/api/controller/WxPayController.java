@@ -56,6 +56,12 @@ public class WxPayController extends BaseController {
     @Autowired
     private com.dlc.modules.api.service.VipTransferService vipTransferService;
     @Autowired
+    private PrivateOrderService privateOrderService;
+    @Autowired
+    private PtMemberWalletService ptMemberWalletService;
+    @Autowired
+    private PtInstallmentService ptInstallmentService;
+    @Autowired
     private RedisUtils redisUtils;
     @Autowired
     private CardOrderService cardOrderService;
@@ -457,6 +463,27 @@ public class WxPayController extends BaseController {
                     //VIP转让服务费(后缀7):单事务记账+转让单10→20待审核,幂等(小程序支付走本回调)
                     log.info("-------VIP转让服务费支付成功(小程序回调)=========" );
                     vipTransferService.payFeeCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
+                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)) {
+                    //私教商品购买(后缀b):单事务记账+扣库存+券核销+结清+建权益,幂等三道闸
+                    //(第12步 create 用 doPay 下单,NOTIFY_PROPAY_URL 指向本回调,此分支为主链路;
+                    // 必须先于兜底 else,否则私教单会错进 updateCardOrder 旧卡逻辑)
+                    log.info("-------更新私教商品购买订单(小程序回调)=========" );
+                    privateOrderService.updatePrivateOrder(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
+                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)) {
+                    //储值充值(后缀8):单事务记账+行锁加余额+写充值流水,两道幂等闸(先查流水+out_order_no唯一键)
+                    //必须先于兜底 else,否则充值单会错进 updateCardOrder 旧卡逻辑
+                    log.info("-------储值充值到账(小程序回调)=========" );
+                    ptMemberWalletService.walletRechargeCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
+                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)) {
+                    //分期首付独立单(后缀9,防御性):单事务记账+首付账单入账+计划推进+订单转部分支付+激活权益,幂等
+                    //必须先于兜底 else,否则会错进 updateCardOrder 旧卡逻辑
+                    log.info("-------分期首付到账(小程序回调)=========" );
+                    ptInstallmentService.installmentDownCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
+                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_BILL_TYPE)) {
+                    //分期后续期(后缀a):单事务记账+账单入账(pay_order_no行锁+status条件)+计划推进/结清,幂等
+                    //必须先于兜底 else,否则会错进 updateCardOrder 旧卡逻辑
+                    log.info("-------分期后续期到账(小程序回调)=========" );
+                    ptInstallmentService.installmentBillCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
                 } else {
                     //更新健身卡订单
                     log.info("-------微信代扣更新健身卡订单=========" );

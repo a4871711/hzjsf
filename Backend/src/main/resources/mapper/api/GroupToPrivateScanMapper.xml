@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 团课转私教扫描(api 侧，第22步·运营域，依据 §5.3)。api 目录 XML 改动须重启 Tomcat。
+     去重命门：uk_pt_group_to_private_lead_member_id + ON DUPLICATE KEY UPDATE，
+     UPDATE 只刷统计与原因/规则，绝不动 follow_status / experience_coupon_status(保人工态)。
+     团课数据只读引用现有系统：出勤 stu_teamclass_ship.classStatus=1 已完成、购课 team_class_order.payTime 非空 已支付；
+     团课表未接入/无数据则名单为空，属正常。 -->
+<mapper namespace="com.dlc.modules.api.dao.GroupToPrivateScanDao">
+
+    <select id="selectEnabledRules" resultType="java.util.HashMap">
+        SELECT id, rule_name            AS ruleName,
+               attendance_days          AS attendanceDays,
+               attendance_threshold     AS attendanceThreshold,
+               purchase_days            AS purchaseDays,
+               purchase_threshold       AS purchaseThreshold
+        FROM pt_group_to_private_rule
+        WHERE status = 1
+    </select>
+
+    <!-- 出勤维度：近 days 天团课出勤已完成(classStatus=1)次数达阈值；storeId 取该会员任一记录门店 -->
+    <select id="countAttendance" resultType="java.util.HashMap">
+        SELECT s.studentId       AS memberId,
+               MAX(s.storeId)    AS storeId,
+               COUNT(*)          AS cnt
+        FROM stu_teamclass_ship s
+        WHERE s.classStatus = 1
+          AND s.createdDate &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY s.studentId
+        HAVING COUNT(*) &gt;= #{threshold}
+    </select>
+
+    <!-- 购课维度：近 days 天团课购课已支付(payTime 非空)次数达阈值 -->
+    <select id="countPurchase" resultType="java.util.HashMap">
+        SELECT o.userId          AS memberId,
+               MAX(o.storeId)    AS storeId,
+               COUNT(*)          AS cnt
+        FROM team_class_order o
+        WHERE o.payTime IS NOT NULL
+          AND o.payTime &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY o.userId
+        HAVING COUNT(*) &gt;= #{threshold}
+    </select>
+
+    <!-- 幂等落名单：UPDATE 只刷统计/原因/规则，不动人工 follow_status / experience_coupon_status -->
+    <insert id="upsertLead" parameterType="map">
+        INSERT INTO pt_group_to_private_lead
+            (member_id, store_id, rule_id, attendance_count, purchase_count,
+             intention_reason, experience_coupon_status, follow_status)
+        VALUES
+            (#{memberId}, #{storeId}, #{ruleId}, #{attendanceCount}, #{purchaseCount},
+             #{intentionReason}, 0, 0)
+        ON DUPLICATE KEY UPDATE
+            store_id         = VALUES(store_id),
+            rule_id          = VALUES(rule_id),
+            attendance_count = VALUES(attendance_count),
+            purchase_count   = VALUES(purchase_count),
+            intention_reason = VALUES(intention_reason)
+    </insert>
+
+    <!-- ===== 自动转化 ===== -->
+
+    <select id="selectUnconvertedLeadId" resultType="java.lang.Long" parameterType="long">
+        SELECT id FROM pt_group_to_private_lead
+        WHERE member_id = #{value} AND follow_status &lt; 2
+        LIMIT 1
+    </select>
+
+    <update id="autoMarkConverted" parameterType="long">
+        UPDATE pt_group_to_private_lead
+        SET follow_status = 2, last_follow_time = NOW()
+        WHERE id = #{value} AND follow_status &lt; 2
+    </update>
+
+    <insert id="insertAutoFollow">
+        INSERT INTO pt_group_to_private_follow
+            (lead_id, member_id, follow_status, follow_remark, operator_id)
+        VALUES
+            (#{leadId}, #{memberId}, 2, '购买私教商品自动转化', NULL)
+    </insert>
+
+</mapper>

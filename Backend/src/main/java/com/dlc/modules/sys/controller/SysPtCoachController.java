@@ -77,12 +77,11 @@ public class SysPtCoachController extends AbstractController {
     }
 
     /**
-     * 教练预约只读抽屉。
-     * TODO 第14步：接入 pt_private_appointment 后返回该教练的预约列表，当前先返回空。
+     * 教练预约只读抽屉(第14步回填):该教练最近预约,含会员/商品/门店名。
      */
     @RequestMapping("/appointments/{id}")
     @RequiresPermissions("sys:ptCoach:appointments")
     public R appointments(@PathVariable("id") Long id) {
-        return R.ok().put("list", new java.util.ArrayList<>());
+        return R.ok().put("list", sysPtCoachService.queryRecentAppointments(id));
     }
 }

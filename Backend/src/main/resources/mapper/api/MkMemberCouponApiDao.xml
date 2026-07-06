@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 会员领券记录(mk_member_coupon)api 侧(第18步领券/我的券/可用券/过期任务)。改后须重启 Tomcat。
+     占用/核销/释放 CAS 走 PtPrivateOrderCouponRelDao(第12/13/16步),本 XML 不重复实现,四状态口径统一。
+     use_status:0未使用 1已使用 2已过期 3使用中(下单占用态)。
+     时间列用 DATE_FORMAT 转 String(规避 connector8 LocalDateTime 类型差异,与 sys 侧同约定)。 -->
+<mapper namespace="com.dlc.modules.api.dao.MkMemberCouponApiDao">
+
+    <!-- 会员券行 + 联券模板(myList/usableForOrder/单张查询共用):
+         实时过期标签——use_status=0 且已过期则展示为 2,与过期任务落库口径一致 -->
+    <sql id="memberCols">
+        m.id, m.member_id AS memberId, m.coupon_id AS couponId,
+        m.coupon_name AS couponName, m.coupon_type AS couponType,
+        DATE_FORMAT(m.receive_time, '%Y-%m-%d %H:%i:%s') AS receiveTime,
+        DATE_FORMAT(m.expire_time, '%Y-%m-%d %H:%i:%s') AS expireTime,
+        CASE WHEN m.use_status = 0 AND m.expire_time &lt;= NOW() THEN 2 ELSE m.use_status END AS useStatus,
+        m.used_order_id AS usedOrderId,
+        DATE_FORMAT(m.used_time, '%Y-%m-%d %H:%i:%s') AS usedTime,
+        c.discount_amount AS discountAmount, c.discount_rate AS discountRate,
+        c.max_discount_amount AS maxDiscountAmount, c.use_threshold_amount AS useThresholdAmount
+    </sql>
+
+    <!-- 领券:快照券名/类型;expire_time=now+valid_days 落库即算;use_status=0(与 sys 后台发券同口径) -->
+    <insert id="receive">
+        INSERT INTO mk_member_coupon
+            (member_id, coupon_id, coupon_name, coupon_type, receive_time, expire_time, use_status)
+        VALUES
+            (#{memberId}, #{couponId}, #{couponName}, #{couponType},
+             NOW(), DATE_ADD(NOW(), INTERVAL #{validDays} DAY), 0)
+    </insert>
+
+    <!-- 我的券:按 use_status 过滤。传入的 useStatus=2 时既要已置2的、也要「0且已过期」的实时归入 -->
+    <select id="myList" resultType="com.dlc.modules.api.entity.MkMemberCouponEntity">
+        SELECT <include refid="memberCols"/>
+        FROM mk_member_coupon m
+        LEFT JOIN mk_coupon c ON c.id = m.coupon_id
+        WHERE m.member_id = #{memberId}
+        <if test="useStatus != null">
+            <choose>
+                <when test="useStatus == 2">
+                    AND (m.use_status = 2 OR (m.use_status = 0 AND m.expire_time &lt;= NOW()))
+                </when>
+                <when test="useStatus == 0">
+                    AND m.use_status = 0 AND m.expire_time &gt; NOW()
+                </when>
+                <otherwise>
+                    AND m.use_status = #{useStatus}
+                </otherwise>
+            </choose>
+        </if>
+        ORDER BY m.id DESC
+    </select>
+
+    <!-- 可用券候选:未使用 + 未过期(门槛/门店/商品/新人由 service 逐张判并预算抵扣) -->
+    <select id="selectUsableCandidates" resultType="com.dlc.modules.api.entity.MkMemberCouponEntity">
+        SELECT <include refid="memberCols"/>
+        FROM mk_member_coupon m
+        LEFT JOIN mk_coupon c ON c.id = m.coupon_id
+        WHERE m.member_id = #{memberId}
+          AND m.use_status = 0 AND m.expire_time &gt; NOW()
+        ORDER BY m.id DESC
+    </select>
+
+    <!-- 单张会员券(联模板):领券幂等/取模板信息用;不限 use_status,查不到返回 null -->
+    <select id="selectByIdWithCoupon" resultType="com.dlc.modules.api.entity.MkMemberCouponEntity">
+        SELECT <include refid="memberCols"/>
+        FROM mk_member_coupon m
+        LEFT JOIN mk_coupon c ON c.id = m.coupon_id
+        WHERE m.id = #{memberCouponId} AND m.member_id = #{memberId}
+        LIMIT 1
+    </select>
+
+    <!-- 券过期任务(§7):未使用且已过期 → 置 2。单条批量 UPDATE,原子幂等 -->
+    <update id="expireBatch">
+        UPDATE mk_member_coupon
+        SET use_status = 2
+        WHERE use_status = 0 AND expire_time &lt; NOW()
+    </update>
+
+</mapper>

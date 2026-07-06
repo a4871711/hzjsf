@@ -132,3 +132,13 @@ CREATE TABLE `pt_private_appointment` (
   KEY `idx_pt_private_appointment_status` (`appointment_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='私教预约记录表';
 
+
+-- =====================================================================
+-- 第13步补充:私教商品购买在 income_pay_detail 的支付用途展示名
+-- 后缀"b"非数字,代码固定映射 payType=14(ConfigConstant.PT_PRIVATE_PAY_TYPE);
+-- constant 表 cId=1 现占 ckey 1~12(代码另占13自动续费),14未占用
+-- =====================================================================
+INSERT INTO `constant` (`cId`, `ckey`, `constant`)
+SELECT 1, '14', '私教商品购买'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `constant` WHERE `cId` = 1 AND `ckey` = '14');

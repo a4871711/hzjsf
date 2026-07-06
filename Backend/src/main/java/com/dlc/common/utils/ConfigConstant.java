@@ -108,6 +108,9 @@ public class ConfigConstant {
     public static final String INSTALLMENT_DOWN_TYPE = "9";
     /**私教分期后续期付款单后缀*/
     public static final String INSTALLMENT_BILL_TYPE = "a";
+    /**私教商品购买在income_pay_detail的支付用途(payType):后缀"b"非数字无法沿用Integer.valueOf自动映射,
+     * 固定取14(constant表cId=1现占1~12,代码另占13自动续费,14未占用;展示名需在constant表配ckey=14)*/
+    public static final int PT_PRIVATE_PAY_TYPE = 14;
 
     /**用户缓存前缀*/
     public static final String USER = "hzjsf_user_";

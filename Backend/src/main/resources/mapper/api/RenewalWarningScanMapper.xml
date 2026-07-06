@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 续费预警扫描(api 侧，第22步·运营域)。api 目录 XML 改动须重启 Tomcat。
+     去重命门：benefit_id + closed_at IS NULL 应用层查重(idx_renewal_warn_benefit_open 支撑)，
+     命中已存在则 updateOpenRecord 刷 last_warning_at，否则 insertRecord。逐条提交不放大事务。 -->
+<mapper namespace="com.dlc.modules.api.dao.RenewalWarningScanDao">
+
+    <select id="selectEnabledRules" resultType="java.util.HashMap">
+        SELECT id, rule_name          AS ruleName,
+               lesson_warning_enabled AS lessonWarningEnabled,
+               lesson_threshold       AS lessonThreshold,
+               days_warning_enabled   AS daysWarningEnabled,
+               days_threshold         AS daysThreshold
+        FROM pt_renewal_warning_rule
+        WHERE status = 1
+    </select>
+
+    <select id="selectRuleStoreIds" resultType="java.lang.Long" parameterType="long">
+        SELECT store_id FROM pt_renewal_warning_rule_store_rel WHERE rule_id = #{value}
+    </select>
+
+    <!-- 生效中权益(status=1)，按门店过滤(storeIds 为空则不过滤=全部门店) -->
+    <select id="selectActiveBenefits" resultType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity">
+        SELECT id, benefit_no, order_id, member_id, product_id, store_id,
+               total_lessons, used_lessons, frozen_lessons, remaining_lessons,
+               effective_at, expire_at, status, created_at, updated_at
+        FROM pt_member_private_benefit
+        WHERE status = 1
+        <if test="storeIds != null and storeIds.size() > 0">
+            AND store_id IN
+            <foreach collection="storeIds" item="sid" open="(" separator="," close=")">
+                #{sid}
+            </foreach>
+        </if>
+    </select>
+
+    <!-- 该权益最近一次预约的教练ID(可空) -->
+    <select id="selectLatestCoachId" resultType="java.lang.Long" parameterType="long">
+        SELECT coach_id FROM pt_private_appointment
+        WHERE benefit_id = #{value} AND deleted = 0
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <!-- 该权益是否已有未关闭预警记录 -->
+    <select id="selectOpenRecordId" resultType="java.lang.Long" parameterType="long">
+        SELECT id FROM pt_renewal_warning_record
+        WHERE benefit_id = #{value} AND closed_at IS NULL
+        LIMIT 1
+    </select>
+
+    <update id="updateOpenRecord" parameterType="map">
+        UPDATE pt_renewal_warning_record
+        SET remaining_lessons = #{remainingLessons},
+            remaining_days    = #{remainingDays},
+            warning_type      = #{warningType},
+            coach_id          = #{coachId},
+            last_warning_at   = NOW()
+        WHERE id = #{recordId}
+    </update>
+
+    <insert id="insertRecord" parameterType="map">
+        INSERT INTO pt_renewal_warning_record
+            (rule_id, member_id, benefit_id, coach_id, store_id, product_id,
+             remaining_lessons, remaining_days, warning_type, follow_status,
+             first_warning_at, last_warning_at)
+        VALUES
+            (#{ruleId}, #{memberId}, #{benefitId}, #{coachId}, #{storeId}, #{productId},
+             #{remainingLessons}, #{remainingDays}, #{warningType}, 0,
+             NOW(), NOW())
+    </insert>
+
+    <!-- 权益已非生效中(status!=1)的未关闭预警一律 close(兜底) -->
+    <update id="autoCloseByBenefit" parameterType="long">
+        UPDATE pt_renewal_warning_record w
+        SET w.closed_at = NOW()
+        WHERE w.benefit_id = #{value}
+          AND w.closed_at IS NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM pt_member_private_benefit b
+              WHERE b.id = w.benefit_id AND b.status = 1)
+    </update>
+
+</mapper>

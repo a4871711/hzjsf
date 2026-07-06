@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 续费预警记录(pt_renewal_warning_record，第22步)。sys 目录 XML 热刷新，改完免重启。
+     本表带 store_id：门店隔离直接 record.store_id IN (${storeIds})，空=超管看全部。
+     联表：会员昵称/手机联 user_info、教练名联 pt_coach、门店名联 store、商品名联 pt_product。
+     跟进/标记状态门店隔离在 SQL 内收口，越权 id 不生效(影响0行)。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtRenewalWarningRecordDao">
+
+    <sql id="Columns">
+        w.id,
+        w.rule_id            AS ruleId,
+        w.member_id          AS memberId,
+        w.benefit_id         AS benefitId,
+        w.coach_id           AS coachId,
+        w.store_id           AS storeId,
+        w.product_id         AS productId,
+        w.remaining_lessons  AS remainingLessons,
+        w.remaining_days     AS remainingDays,
+        w.warning_type       AS warningType,
+        w.follow_status      AS followStatus,
+        w.follow_remark      AS followRemark,
+        DATE_FORMAT(w.first_warning_at, '%Y-%m-%d %H:%i:%s') AS firstWarningAt,
+        DATE_FORMAT(w.last_warning_at, '%Y-%m-%d %H:%i:%s')  AS lastWarningAt,
+        DATE_FORMAT(w.closed_at, '%Y-%m-%d %H:%i:%s')        AS closedAt,
+        (SELECT nickname FROM user_info WHERE userId = w.member_id) AS memberName,
+        (SELECT phone FROM user_info WHERE userId = w.member_id)    AS memberMobile,
+        (SELECT coach_name FROM pt_coach WHERE id = w.coach_id)     AS coachName,
+        (SELECT storeName FROM store WHERE storeId = w.store_id)    AS storeName,
+        (SELECT product_name FROM pt_product WHERE id = w.product_id) AS productName
+    </sql>
+
+    <sql id="Filter">
+        <if test="storeId != null and storeId != ''">
+            AND w.store_id = #{storeId}
+        </if>
+        <if test="storeIds != null and storeIds != ''">
+            AND w.store_id IN (${storeIds})
+        </if>
+        <if test="memberKeyword != null and memberKeyword != ''">
+            AND w.member_id IN (SELECT userId FROM user_info
+                WHERE nickname LIKE concat('%', #{memberKeyword}, '%')
+                   OR phone LIKE concat('%', #{memberKeyword}, '%'))
+        </if>
+        <if test="coachName != null and coachName != ''">
+            AND w.coach_id IN (SELECT id FROM pt_coach
+                WHERE coach_name LIKE concat('%', #{coachName}, '%'))
+        </if>
+        <if test="followStatus != null and followStatus != ''">
+            AND w.follow_status = #{followStatus}
+        </if>
+    </sql>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtRenewalWarningRecordEntity" parameterType="map">
+        SELECT <include refid="Columns"/>
+        FROM pt_renewal_warning_record w
+        <where>
+            <include refid="Filter"/>
+        </where>
+        ORDER BY w.last_warning_at DESC, w.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM pt_renewal_warning_record w
+        <where>
+            <include refid="Filter"/>
+        </where>
+    </select>
+
+    <!-- 跟进：置已跟进 + 记备注；门店隔离收口(超管 storeIds 空=不过滤) -->
+    <update id="follow">
+        UPDATE pt_renewal_warning_record
+        SET follow_status = 1, follow_remark = #{followRemark}
+        WHERE id = #{recordId} AND closed_at IS NULL
+        <if test="storeIds != null and storeIds != ''">
+            AND store_id IN (${storeIds})
+        </if>
+    </update>
+
+    <!-- 标记状态：2已续费/3已忽略，写 closed_at=now 关闭记录(扫描不再更新它)；门店隔离收口 -->
+    <update id="markStatus">
+        UPDATE pt_renewal_warning_record
+        SET follow_status = #{followStatus}, closed_at = NOW()
+        WHERE id = #{recordId} AND closed_at IS NULL
+        <if test="storeIds != null and storeIds != ''">
+            AND store_id IN (${storeIds})
+        </if>
+    </update>
+
+</mapper>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 私教购买记录后台查询(第15步)。sys 目录 XML 热刷新,改完免重启。
+     会员名/手机/商品名取订单快照列(下单时冻结,不回查当前数据);门店名联 store;
+     课时四态/到期时间联权益(一单一权益);时间列一律 DATE_FORMAT 格式化(惯例见 8c2b238)。 -->
+<mapper namespace="com.dlc.modules.sys.dao.SysPrivateOrderDao">
+
+    <!-- 公共筛选:订单号/会员关键字(快照姓名或手机)/门店/营销类型/订单状态/购买时间区间/门店数据权限 -->
+    <sql id="Filter">
+        <where>
+            o.deleted = 0
+            <if test="orderNo != null and orderNo != ''">
+                AND o.order_no LIKE concat('%', #{orderNo}, '%')
+            </if>
+            <if test="memberKeyword != null and memberKeyword != ''">
+                AND (o.member_name LIKE concat('%', #{memberKeyword}, '%')
+                     OR o.member_mobile LIKE concat('%', #{memberKeyword}, '%'))
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND o.store_id = #{storeId}
+            </if>
+            <if test="marketingType != null and marketingType != ''">
+                AND o.marketing_type = #{marketingType}
+            </if>
+            <if test="orderStatus != null and orderStatus != ''">
+                AND o.order_status = #{orderStatus}
+            </if>
+            <!-- 止日含当天(&lt;次日零点),避免只到 00:00:00 漏当天记录 -->
+            <if test="startTime != null and startTime != ''">
+                AND o.created_at &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND o.created_at &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)
+            </if>
+            <!-- 门店数据权限:storeIds 为逗号分隔串,空则不过滤(超级管理员看全部) -->
+            <if test="storeIds != null and storeIds != ''">
+                AND o.store_id IN (${storeIds})
+            </if>
+        </where>
+    </sql>
+
+    <sql id="Columns">
+        o.id,
+        o.order_no              AS orderNo,
+        o.member_id             AS memberId,
+        o.member_name           AS memberName,
+        o.member_mobile         AS memberMobile,
+        o.product_id            AS productId,
+        o.product_name          AS productName,
+        o.product_type_name     AS productTypeName,
+        o.service_type          AS serviceType,
+        o.store_id              AS storeId,
+        s.storeName             AS storeName,
+        o.lesson_count          AS lessonCount,
+        o.duration_minutes      AS durationMinutes,
+        o.validity_days         AS validityDays,
+        o.original_amount       AS originalAmount,
+        o.payable_amount        AS payableAmount,
+        o.paid_amount           AS paidAmount,
+        o.refund_amount         AS refundAmount,
+        o.discount_amount       AS discountAmount,
+        o.marketing_type        AS marketingType,
+        o.marketing_activity_name AS marketingActivityName,
+        o.coupon_name           AS couponName,
+        o.coupon_discount_amount AS couponDiscountAmount,
+        o.pay_method            AS payMethod,
+        o.pay_status            AS payStatus,
+        o.order_status          AS orderStatus,
+        b.id                    AS benefitId,
+        b.benefit_no            AS benefitNo,
+        b.total_lessons         AS totalLessons,
+        b.used_lessons          AS usedLessons,
+        b.frozen_lessons        AS frozenLessons,
+        b.remaining_lessons     AS remainingLessons,
+        b.status                AS benefitStatus,
+        DATE_FORMAT(b.expire_at, '%Y-%m-%d %H:%i:%s')   AS expireAt,
+        DATE_FORMAT(o.paid_at, '%Y-%m-%d %H:%i:%s')     AS paidAt,
+        DATE_FORMAT(o.settled_at, '%Y-%m-%d %H:%i:%s')  AS settledAt,
+        DATE_FORMAT(o.cancel_at, '%Y-%m-%d %H:%i:%s')   AS cancelAt,
+        DATE_FORMAT(o.refund_at, '%Y-%m-%d %H:%i:%s')   AS refundAt,
+        DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i:%s')  AS createdAt
+    </sql>
+
+    <select id="queryList" resultType="java.util.LinkedHashMap" parameterType="map">
+        SELECT <include refid="Columns"/>
+        FROM pt_private_order o
+        LEFT JOIN store s ON s.storeId = o.store_id
+        LEFT JOIN pt_member_private_benefit b ON b.order_id = o.id
+        <include refid="Filter"/>
+        ORDER BY o.created_at DESC, o.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM pt_private_order o
+        <include refid="Filter"/>
+    </select>
+
+    <!-- 详情:storeIds 过滤在 SQL 内收口,越权/不存在返回 null(controller 按 404 处理) -->
+    <select id="queryDetail" resultType="java.util.LinkedHashMap">
+        SELECT <include refid="Columns"/>
+        FROM pt_private_order o
+        LEFT JOIN store s ON s.storeId = o.store_id
+        LEFT JOIN pt_member_private_benefit b ON b.order_id = o.id
+        WHERE o.id = #{id} AND o.deleted = 0
+        <if test="storeIds != null and storeIds != ''">
+            AND o.store_id IN (${storeIds})
+        </if>
+        LIMIT 1
+    </select>
+
+    <!-- 券明细(一单一券);无券返回 null -->
+    <select id="queryCouponRel" resultType="java.util.LinkedHashMap">
+        SELECT id,
+               order_id         AS orderId,
+               coupon_id        AS couponId,
+               member_coupon_id AS memberCouponId,
+               coupon_name      AS couponName,
+               coupon_type      AS couponType,
+               discount_amount  AS discountAmount,
+               DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+        FROM pt_private_order_coupon_rel
+        WHERE order_id = #{orderId}
+        LIMIT 1
+    </select>
+
+    <!-- 退款前越权判存:0=不存在或不在管辖门店 → 404 -->
+    <select id="countInScope" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_private_order o
+        WHERE o.id = #{id} AND o.deleted = 0
+        <if test="storeIds != null and storeIds != ''">
+            AND o.store_id IN (${storeIds})
+        </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 私教订单分期计划(pt_order_installment_plan,第20步资金域)。api 目录 XML 改动须重启 Tomcat。
+     建计划 uk_order_id 幂等;计划推进一律行锁 selectByIdForUpdate → updateProgress(带条件),与账单入账同事务。 -->
+<mapper namespace="com.dlc.modules.api.dao.PtOrderInstallmentPlanDao">
+
+    <sql id="Base_Column_List">
+        id, order_id, member_id, product_id, total_amount, down_payment_amount,
+        paid_amount, unpaid_amount, installment_count, current_period, status,
+        activated_at, created_at, updated_at
+    </sql>
+
+    <!-- 建计划:uk_order_id 撞键=并发/重复下单,ON DUPLICATE 不重复建(order_id=order_id 空更新),回填自增 id -->
+    <insert id="insertOnDuplicate" parameterType="com.dlc.modules.api.entity.PtOrderInstallmentPlanEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_order_installment_plan
+            (order_id, member_id, product_id, total_amount, down_payment_amount,
+             paid_amount, unpaid_amount, installment_count, current_period, status, activated_at)
+        VALUES
+            (#{orderId}, #{memberId}, #{productId}, #{totalAmount}, #{downPaymentAmount},
+             #{paidAmount}, #{unpaidAmount}, #{installmentCount}, #{currentPeriod}, #{status}, #{activatedAt})
+        ON DUPLICATE KEY UPDATE order_id = order_id
+    </insert>
+
+    <select id="selectByOrderId" resultType="com.dlc.modules.api.entity.PtOrderInstallmentPlanEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_order_installment_plan
+        WHERE order_id = #{orderId}
+        LIMIT 1
+    </select>
+
+    <select id="selectByIdForUpdate" resultType="com.dlc.modules.api.entity.PtOrderInstallmentPlanEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_order_installment_plan
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <!-- 计划推进:调用方持行锁基于快照算好后写入;activatedAt 为空则不覆盖(首付回调才落激活时间) -->
+    <update id="updateProgress">
+        UPDATE pt_order_installment_plan
+        SET paid_amount = #{paidAmount},
+            unpaid_amount = #{unpaidAmount},
+            current_period = #{currentPeriod},
+            status = #{status},
+            <if test="activatedAt != null">activated_at = #{activatedAt},</if>
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 逾期扫描第2步:把含 status=2 逾期账单的 进行中(1)计划 → 3已逾期(批量幂等) -->
+    <update id="markOverdueByBill">
+        UPDATE pt_order_installment_plan p
+        SET p.status = 3, p.updated_at = NOW()
+        WHERE p.status = 1
+          AND EXISTS (
+              SELECT 1 FROM pt_order_installment_bill b
+              WHERE b.plan_id = p.id AND b.status = 2
+          )
+    </update>
+
+    <select id="queryMyPlans" resultType="com.dlc.modules.api.entity.PtOrderInstallmentPlanEntity" parameterType="map">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_order_installment_plan
+        WHERE member_id = #{memberId}
+        ORDER BY id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyPlans" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM pt_order_installment_plan
+        WHERE member_id = #{memberId}
+    </select>
+
+</mapper>

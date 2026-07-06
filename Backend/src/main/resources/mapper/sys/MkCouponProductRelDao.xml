@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 优惠券指定商品关联(mk_coupon_product_rel):仅 scope_type=2 时有记录,编辑全删全插 -->
+<mapper namespace="com.dlc.modules.sys.dao.MkCouponProductRelDao">
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.MkCouponProductRelEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into mk_coupon_product_rel (`coupon_id`, `product_id`, `created_at`)
+        values (#{couponId}, #{productId}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByCouponId">
+        delete from mk_coupon_product_rel where coupon_id = #{value}
+    </delete>
+
+    <select id="queryProductIds" resultType="java.lang.Long">
+        select product_id from mk_coupon_product_rel where coupon_id = #{value}
+    </select>
+
+</mapper>

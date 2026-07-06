@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 会员储值流水(pt_member_wallet_flow,第19步资金域)。api 目录 XML 改动须重启 Tomcat。
+     只增不改:本文件无 UPDATE/DELETE;uk_pt_member_wallet_flow_out_order_no 唯一键做回调幂等兜底。 -->
+<mapper namespace="com.dlc.modules.api.dao.PtMemberWalletFlowDao">
+
+    <sql id="Base_Column_List">
+        id, wallet_id, member_id, flow_type, change_amount, before_balance, after_balance,
+        biz_type, biz_id, remark, created_by, created_at, out_order_no
+    </sql>
+
+    <!-- 写流水(不可变):before/after 为行锁内快照,恒等式 after=before+change 由 Service 保证;
+         out_order_no 撞唯一键(并发重复回调)抛异常由调用方事务整体回滚 -->
+    <insert id="save" parameterType="com.dlc.modules.api.entity.PtMemberWalletFlowEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_member_wallet_flow
+            (wallet_id, member_id, flow_type, change_amount, before_balance, after_balance,
+             biz_type, biz_id, remark, created_by, out_order_no)
+        VALUES
+            (#{walletId}, #{memberId}, #{flowType}, #{changeAmount}, #{beforeBalance}, #{afterBalance},
+             #{bizType}, #{bizId}, #{remark}, #{createdBy}, #{outOrderNo})
+    </insert>
+
+    <!-- 幂等闸1(先查):充值回调/记账反查按外部单号定位流水 -->
+    <select id="selectByOutOrderNo" resultType="com.dlc.modules.api.entity.PtMemberWalletFlowEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_member_wallet_flow
+        WHERE out_order_no = #{outOrderNo}
+        LIMIT 1
+    </select>
+
+    <!-- 会员端我的流水(倒序);flowType 可选过滤 -->
+    <select id="queryMyFlows" resultType="com.dlc.modules.api.entity.PtMemberWalletFlowEntity" parameterType="map">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_member_wallet_flow
+        WHERE member_id = #{memberId}
+        <if test="flowType != null and flowType != ''">
+            AND flow_type = #{flowType}
+        </if>
+        ORDER BY id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyFlows" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM pt_member_wallet_flow
+        WHERE member_id = #{memberId}
+        <if test="flowType != null and flowType != ''">
+            AND flow_type = #{flowType}
+        </if>
+    </select>
+
+</mapper>

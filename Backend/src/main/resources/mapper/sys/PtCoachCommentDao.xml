@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 教练评价后台（pt_coach_comment，第21步）。sys 目录 XML 热刷新，改完免重启。
+     ⚠️ 本表无 store_id：门店隔离/门店筛选必须 JOIN pt_private_appointment a 取 a.store_id，
+        storeIds 为逗号分隔串，空=超管看全部（不过滤）。所有列表/统计/详情/判存 SQL 强制带此 JOIN。
+     联表：会员昵称/手机取评价快照列（member_nickname/member_mobile，避免会员改名失真，无需再联 user_info）；
+        教练名联 pt_coach，门店名联 store。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtCoachCommentDao">
+
+    <sql id="Joins">
+        FROM pt_coach_comment c
+        JOIN pt_private_appointment a ON a.id = c.appointment_id
+        LEFT JOIN pt_coach co ON co.id = c.coach_id
+        LEFT JOIN store s ON s.storeId = a.store_id
+    </sql>
+
+    <sql id="Columns">
+        c.id,
+        c.appointment_id     AS appointmentId,
+        c.coach_id           AS coachId,
+        co.coach_name        AS coachName,
+        c.member_id          AS memberId,
+        c.member_nickname    AS memberNickname,
+        c.member_mobile      AS memberMobile,
+        CONCAT(IFNULL(c.member_nickname, ''),
+               CASE WHEN c.member_mobile IS NULL OR c.member_mobile = '' THEN ''
+                    ELSE CONCAT(' ', c.member_mobile) END) AS memberInfo,
+        c.score              AS score,
+        c.comment_content    AS commentContent,
+        c.reply_status       AS replyStatus,
+        c.handle_status      AS handleStatus,
+        c.handle_remark      AS handleRemark,
+        a.store_id           AS storeId,
+        s.storeName          AS storeName,
+        DATE_FORMAT(c.comment_time, '%Y-%m-%d %H:%i:%s') AS commentTime
+    </sql>
+
+    <!-- 公共筛选：教练名 / 会员昵称或手机 / 评分 / 回复状态 / 处理状态 / 评价时间区间 / 门店 -->
+    <sql id="CommonFilter">
+        <if test="coachName != null and coachName != ''">
+            AND co.coach_name LIKE concat('%', #{coachName}, '%')
+        </if>
+        <if test="memberKeyword != null and memberKeyword != ''">
+            AND (c.member_nickname LIKE concat('%', #{memberKeyword}, '%')
+                 OR c.member_mobile LIKE concat('%', #{memberKeyword}, '%'))
+        </if>
+        <if test="score != null and score != ''">
+            AND c.score = #{score}
+        </if>
+        <if test="replyStatus != null and replyStatus != ''">
+            AND c.reply_status = #{replyStatus}
+        </if>
+        <if test="handleStatus != null and handleStatus != ''">
+            AND c.handle_status = #{handleStatus}
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND c.comment_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND c.comment_time &lt;= #{endTime}
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND a.store_id = #{storeId}
+        </if>
+        <!-- 门店数据权限：storeIds 为逗号分隔串，空则不过滤（超级管理员看全部） -->
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+    </sql>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachCommentEntity" parameterType="map">
+        SELECT <include refid="Columns"/>
+        <include refid="Joins"/>
+        <where>
+            c.deleted = 0
+            <include refid="CommonFilter"/>
+        </where>
+        ORDER BY c.comment_time DESC, c.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        <include refid="Joins"/>
+        <where>
+            c.deleted = 0
+            <include refid="CommonFilter"/>
+        </where>
+    </select>
+
+    <!-- 详情：storeIds 过滤在 SQL 内收口，越权/不存在返回 null（controller 按 404 处理） -->
+    <select id="queryDetail" resultType="com.dlc.modules.sys.entity.PtCoachCommentEntity">
+        SELECT <include refid="Columns"/>
+        <include refid="Joins"/>
+        WHERE c.id = #{id} AND c.deleted = 0
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+        LIMIT 1
+    </select>
+
+    <!-- update/handle/delete 前越权判存：0=不存在或不在管辖门店 → 404 -->
+    <select id="countInScope" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_coach_comment c
+        JOIN pt_private_appointment a ON a.id = c.appointment_id
+        WHERE c.id = #{id} AND c.deleted = 0
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+    </select>
+
+    <!-- 后台手动补录：撞 uk_pt_coach_comment_appointment_id 由 service 捕获转 ERROR_COMMENT_EXISTS。
+         reply_status/handle_status/deleted/created_at/updated_at 由 DDL 默认值维护；comment_time 显式落 now -->
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachCommentEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_coach_comment
+            (appointment_id, coach_id, member_id, member_nickname, member_mobile,
+             score, comment_content, comment_time)
+        VALUES
+            (#{appointmentId}, #{coachId}, #{memberId}, #{memberNickname}, #{memberMobile},
+             #{score}, #{commentContent}, NOW())
+    </insert>
+
+    <!-- 仅改 handle_status/handle_remark/comment_content（差评处理）；不可改 appointment_id -->
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtCoachCommentEntity">
+        UPDATE pt_coach_comment
+        <set>
+            <if test="handleStatus != null">handle_status = #{handleStatus},</if>
+            <if test="handleRemark != null">handle_remark = #{handleRemark},</if>
+            <if test="commentContent != null">comment_content = #{commentContent},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 软删 deleted=1；门店隔离：JOIN 预约表限定 store_id 在管辖范围内（超管空=不过滤） -->
+    <update id="deleteBatch">
+        UPDATE pt_coach_comment c
+        JOIN pt_private_appointment a ON a.id = c.appointment_id
+        SET c.deleted = 1
+        WHERE c.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        <if test="storeIds != null and storeIds != ''">
+            AND a.store_id IN (${storeIds})
+        </if>
+    </update>
+
+    <!-- reply 单事务：置回复状态为已回复 -->
+    <update id="updateReplyStatus">
+        UPDATE pt_coach_comment SET reply_status = 1 WHERE id = #{id}
+    </update>
+
+    <!-- handle：标记已跟进/已忽略 + 处理备注 -->
+    <update id="updateHandle">
+        UPDATE pt_coach_comment
+        SET handle_status = #{handleStatus}, handle_remark = #{handleRemark}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

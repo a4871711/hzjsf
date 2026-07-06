@@ -28,4 +28,17 @@ public interface IncomePayDetailService {
      * @param anotherId  对方(受让人 toUserId),留痕用
      */
     int saveTransferRefund(String orderNo, BigDecimal money, Long userId, Long anotherId);
+
+    /**
+     * 私教订单退款流水(第15步后台退款冲减时写)。
+     * 记账口径对齐 saveTransferRefund:payType=9(退款,前台 moneyType CASE 记'+')、money 存正数、tradeStatus=3。
+     * storeId 取订单购买门店快照(不回查会员当前门店,与购买流水后缀 b 分支同锚点)。
+     *
+     * @param orderNo   私教订单号(末位后缀 b)
+     * @param money     本次退款金额(正数,元)
+     * @param memberId  收退款会员ID
+     * @param storeId   购买门店ID(订单快照)
+     * @param tradeType 收支方式(ConfigConstant.WXPAY 等,按原支付渠道)
+     */
+    int savePtOrderRefund(String orderNo, BigDecimal money, Long memberId, Long storeId, Integer tradeType);
 }

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 优惠券主表(mk_coupon)。状态枚举 1上架/0下架(新枚举,勿照抄旧 sys_coupon 的 2=下架)。
+     sys 目录 XML 热刷新,改后免重启。 -->
+<mapper namespace="com.dlc.modules.sys.dao.MkCouponDao">
+
+    <sql id="cols">
+        c.*,
+        (select group_concat(s.storeName)
+           from mk_coupon_store_rel r left join store s on s.storeId = r.store_id
+          where r.coupon_id = c.id) as storeNames,
+        (select count(*) from mk_coupon_product_rel p where p.coupon_id = c.id) as productCount
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.MkCouponEntity">
+        select <include refid="cols"/> from mk_coupon c where c.id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.MkCouponEntity">
+        select <include refid="cols"/>
+        from mk_coupon c
+        <where>
+            c.deleted = 0
+            <if test="couponName != null and couponName != ''">
+                AND c.coupon_name LIKE concat('%',#{couponName},'%')
+            </if>
+            <if test="couponType != null and couponType != ''">
+                AND c.coupon_type = #{couponType}
+            </if>
+            <if test="status != null and status != ''">
+                AND c.status = #{status}
+            </if>
+            <if test="isNewUserCoupon != null and isNewUserCoupon != ''">
+                AND c.is_new_user_coupon = #{isNewUserCoupon}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${sidx} ${order}
+            </when>
+            <otherwise>
+                order by c.id desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int">
+        select count(*) from mk_coupon c
+        <where>
+            c.deleted = 0
+            <if test="couponName != null and couponName != ''">
+                AND c.coupon_name LIKE concat('%',#{couponName},'%')
+            </if>
+            <if test="couponType != null and couponType != ''">
+                AND c.coupon_type = #{couponType}
+            </if>
+            <if test="status != null and status != ''">
+                AND c.status = #{status}
+            </if>
+            <if test="isNewUserCoupon != null and isNewUserCoupon != ''">
+                AND c.is_new_user_coupon = #{isNewUserCoupon}
+            </if>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.MkCouponEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into mk_coupon
+        (`coupon_name`, `coupon_type`, `mt_group_buy_id`, `dy_group_buy_id`,
+         `discount_amount`, `discount_rate`, `max_discount_amount`, `use_threshold_amount`,
+         `valid_days`, `scope_type`, `is_new_user_coupon`, `status`,
+         `created_by`, `created_at`, `updated_by`, `updated_at`)
+        values
+        (#{couponName}, #{couponType}, #{mtGroupBuyId}, #{dyGroupBuyId},
+         #{discountAmount}, #{discountRate}, #{maxDiscountAmount}, #{useThresholdAmount},
+         #{validDays}, #{scopeType}, #{isNewUserCoupon}, #{status},
+         #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <!-- 满减/折扣二选一互斥:优惠字段无条件写入(service 已按券类型把另一类字段置 NULL),
+         保证券类型切换时旧值被清掉,不能用 if 判空跳过 -->
+    <update id="update" parameterType="com.dlc.modules.sys.entity.MkCouponEntity">
+        update mk_coupon
+        <set>
+            <if test="couponName != null">`coupon_name` = #{couponName},</if>
+            <if test="couponType != null">`coupon_type` = #{couponType},</if>
+            `mt_group_buy_id` = #{mtGroupBuyId},
+            `dy_group_buy_id` = #{dyGroupBuyId},
+            `discount_amount` = #{discountAmount},
+            `discount_rate` = #{discountRate},
+            `max_discount_amount` = #{maxDiscountAmount},
+            `use_threshold_amount` = #{useThresholdAmount},
+            <if test="validDays != null">`valid_days` = #{validDays},</if>
+            <if test="scopeType != null">`scope_type` = #{scopeType},</if>
+            <if test="isNewUserCoupon != null">`is_new_user_coupon` = #{isNewUserCoupon},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 上下架切换独立语句:不走全量 update,避免误清空可空优惠字段 -->
+    <update id="changeStatus" parameterType="map">
+        update mk_coupon
+        set `status` = #{status}, `updated_by` = #{updatedBy}, `updated_at` = now()
+        where id = #{id} and deleted = 0
+    </update>
+
+    <!-- 逻辑删除(已领券的建议下架不删,service 层已校验拒删有领取记录的券) -->
+    <update id="deleteBatch">
+        update mk_coupon set deleted = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 团课转私教跟进记录(pt_group_to_private_follow，第22步)。lead 1:N follow。sys 目录 XML 热刷新。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtGroupToPrivateFollowDao">
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtGroupToPrivateFollowEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_group_to_private_follow
+            (lead_id, member_id, follow_status, follow_remark, operator_id)
+        VALUES
+            (#{leadId}, #{memberId}, #{followStatus}, #{followRemark}, #{operatorId})
+    </insert>
+
+    <select id="listByLeadId" resultType="com.dlc.modules.sys.entity.PtGroupToPrivateFollowEntity">
+        SELECT
+            f.id,
+            f.lead_id        AS leadId,
+            f.member_id      AS memberId,
+            f.follow_status  AS followStatus,
+            f.follow_remark  AS followRemark,
+            f.operator_id    AS operatorId,
+            DATE_FORMAT(f.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+            (SELECT username FROM sys_user WHERE user_id = f.operator_id) AS operatorName
+        FROM pt_group_to_private_follow f
+        WHERE f.lead_id = #{value}
+        ORDER BY f.id DESC
+    </select>
+
+</mapper>

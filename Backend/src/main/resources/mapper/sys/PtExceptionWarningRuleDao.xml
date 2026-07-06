@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 异常预警规则(pt_exception_warning_rule，第22步)。sys 目录 XML 热刷新，改完免重启。
+     applicable_store_ids 为 JSON 串(NULL=全部门店)，storeNames 由 service 解析 JSON 后回填(不在 SQL 内联)。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtExceptionWarningRuleDao">
+
+    <sql id="Columns">
+        r.id,
+        r.rule_name            AS ruleName,
+        r.warning_type         AS warningType,
+        r.period_days          AS periodDays,
+        r.trigger_threshold    AS triggerThreshold,
+        r.applicable_store_ids AS applicableStoreIds,
+        r.status               AS status,
+        r.remark               AS remark,
+        r.created_by           AS createdBy,
+        r.updated_by           AS updatedBy,
+        DATE_FORMAT(r.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(r.updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <sql id="Filter">
+        <if test="warningType != null and warningType != ''">
+            AND r.warning_type = #{warningType}
+        </if>
+        <if test="status != null and status != ''">
+            AND r.status = #{status}
+        </if>
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtExceptionWarningRuleEntity">
+        SELECT <include refid="Columns"/>
+        FROM pt_exception_warning_rule r
+        WHERE r.id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtExceptionWarningRuleEntity" parameterType="map">
+        SELECT <include refid="Columns"/>
+        FROM pt_exception_warning_rule r
+        <where>
+            <include refid="Filter"/>
+        </where>
+        ORDER BY r.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM pt_exception_warning_rule r
+        <where>
+            <include refid="Filter"/>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtExceptionWarningRuleEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_exception_warning_rule
+            (rule_name, warning_type, period_days, trigger_threshold,
+             applicable_store_ids, status, remark, created_by, updated_by)
+        VALUES
+            (#{ruleName}, #{warningType}, #{periodDays}, #{triggerThreshold},
+             #{applicableStoreIds}, #{status}, #{remark}, #{createdBy}, #{updatedBy})
+    </insert>
+
+    <!-- applicable_store_ids 允许更新为 NULL(全部门店)，故不加 if 空判 -->
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtExceptionWarningRuleEntity">
+        UPDATE pt_exception_warning_rule
+        <set>
+            <if test="ruleName != null">rule_name = #{ruleName},</if>
+            <if test="warningType != null">warning_type = #{warningType},</if>
+            <if test="periodDays != null">period_days = #{periodDays},</if>
+            <if test="triggerThreshold != null">trigger_threshold = #{triggerThreshold},</if>
+            applicable_store_ids = #{applicableStoreIds},
+            <if test="status != null">status = #{status},</if>
+            remark = #{remark},
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteBatch">
+        DELETE FROM pt_exception_warning_rule WHERE id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

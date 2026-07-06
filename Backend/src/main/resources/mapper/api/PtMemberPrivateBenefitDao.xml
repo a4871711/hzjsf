@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 会员私教权益课时账本(pt_member_private_benefit)。api 目录 XML 改动须重启 Tomcat。
+     恒等式 total_lessons = used_lessons + frozen_lessons + remaining_lessons,每条 UPDATE 同步维护相关列。 -->
+<mapper namespace="com.dlc.modules.api.dao.PtMemberPrivateBenefitDao">
+
+    <sql id="Base_Column_List">
+        id, benefit_no, order_id, member_id, product_id, store_id,
+        total_lessons, used_lessons, frozen_lessons, remaining_lessons,
+        effective_at, expire_at, status, created_at, updated_at
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_member_private_benefit
+        WHERE id = #{value}
+        LIMIT 1
+    </select>
+
+    <!-- 按主键行锁(课时变更入口统一先锁行,串行化并发) -->
+    <select id="selectForUpdate" resultType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_member_private_benefit
+        WHERE id = #{id}
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- 一单一权益,activate 按 order_id 查重(幂等) -->
+    <select id="selectByOrderId" resultType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_member_private_benefit
+        WHERE order_id = #{orderId}
+        ORDER BY id ASC
+        LIMIT 1
+    </select>
+
+    <!-- 支付回调建权益;created_at/updated_at 由 DDL 默认值维护 -->
+    <insert id="save" parameterType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_member_private_benefit
+            (benefit_no, order_id, member_id, product_id, store_id,
+             total_lessons, used_lessons, frozen_lessons, remaining_lessons,
+             effective_at, expire_at, status)
+        VALUES
+            (#{benefitNo}, #{orderId}, #{memberId}, #{productId}, #{storeId},
+             #{totalLessons}, #{usedLessons}, #{frozenLessons}, #{remainingLessons},
+             #{effectiveAt}, #{expireAt}, #{status})
+    </insert>
+
+    <!-- 预约冻结:条件命中0行=状态非生效中或剩余不足(并发已被抢) -->
+    <update id="freezeLessons">
+        UPDATE pt_member_private_benefit
+        SET frozen_lessons = frozen_lessons + #{n},
+            remaining_lessons = remaining_lessons - #{n}
+        WHERE id = #{id} AND status = 1 AND remaining_lessons &gt;= #{n}
+    </update>
+
+    <!-- 完成核销:不带 status 条件(已过期权益上的存量预约仍可核销) -->
+    <update id="finishLessons">
+        UPDATE pt_member_private_benefit
+        SET frozen_lessons = frozen_lessons - #{n},
+            used_lessons = used_lessons + #{n}
+        WHERE id = #{id} AND frozen_lessons &gt;= #{n}
+    </update>
+
+    <!-- 取消预约解冻:冻结回剩余 -->
+    <update id="cancelLessons">
+        UPDATE pt_member_private_benefit
+        SET frozen_lessons = frozen_lessons - #{n},
+            remaining_lessons = remaining_lessons + #{n}
+        WHERE id = #{id} AND frozen_lessons &gt;= #{n}
+    </update>
+
+    <!-- 退款冲减:total 与 remaining 同减保恒等式;不可冲到剩余为负、不可动 frozen -->
+    <update id="refundDeductLessons">
+        UPDATE pt_member_private_benefit
+        SET total_lessons = total_lessons - #{n},
+            remaining_lessons = remaining_lessons - #{n}
+        WHERE id = #{id} AND remaining_lessons &gt;= #{n}
+    </update>
+
+    <!-- 核销收口:仅生效中且无剩余无冻结才置已用完(已过期权益保持3) -->
+    <update id="markUsedUp">
+        UPDATE pt_member_private_benefit
+        SET status = 2
+        WHERE id = #{id} AND status = 1
+          AND remaining_lessons = 0 AND frozen_lessons = 0
+    </update>
+
+    <!-- 退款收口:无剩余无冻结即关账置已退款 -->
+    <update id="markRefunded">
+        UPDATE pt_member_private_benefit
+        SET status = 4
+        WHERE id = #{id} AND status &lt;&gt; 4
+          AND remaining_lessons = 0 AND frozen_lessons = 0
+    </update>
+
+    <!-- 第16步定时任务批量过期:1生效中→3已过期;frozen_lessons=0 跳过有进行中预约的
+         (其冻结课时待预约 finish/cancel 解冻后由下轮任务收口);borrow idx_..._status/expire_at -->
+    <update id="expireBatch">
+        UPDATE pt_member_private_benefit
+        SET status = 3
+        WHERE status = 1
+          AND expire_at IS NOT NULL
+          AND expire_at &lt; NOW()
+          AND frozen_lessons = 0
+    </update>
+
+    <!-- 第14步回填第9步护栏:商品被权益引用(全状态)则不可删除 -->
+    <select id="countByProduct" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_member_private_benefit
+        WHERE product_id = #{productId}
+    </select>
+
+</mapper>

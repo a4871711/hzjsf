@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 后台 · 私教分期计划/账单只读查询(第20步资金域,/sys/installment)。sys 目录 XML 可热刷新,免重启。
+     列表返回 Map:列名统一 AS 成驼峰键;门店隔离经订单 pt_private_order.store_id(计划挂订单),
+     storeIds 为逗号串,空=超管看全部。催缴仅触达,本文件不出写语句。 -->
+<mapper namespace="com.dlc.modules.sys.dao.SysInstallmentDao">
+
+    <!-- 计划列表筛选:分期单号(planNo=计划id 或 关联订单号)、会员昵称/手机模糊(keyword)、状态、创建时间区间、门店隔离(经订单 store_id) -->
+    <sql id="planFilter">
+        <where>
+            <if test="planNo != null and planNo != ''">
+                AND (CAST(p.id AS CHAR) = #{planNo} OR o.order_no LIKE concat('%',#{planNo},'%'))
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND p.member_id IN (
+                    select userId from user_info
+                    where nickname LIKE concat('%',#{keyword},'%')
+                       or phone LIKE concat('%',#{keyword},'%')
+                )
+            </if>
+            <if test="status != null and status != ''">
+                AND p.status = #{status}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND p.created_at &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND p.created_at &lt;= #{endTime}
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND o.store_id IN (${storeIds})
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryList" resultType="map" parameterType="map">
+        SELECT
+            p.id                  AS id,
+            p.order_id            AS orderId,
+            o.order_no            AS orderNo,
+            p.member_id           AS memberId,
+            p.product_id          AS productId,
+            o.product_name        AS productName,
+            o.store_id            AS storeId,
+            p.total_amount        AS totalAmount,
+            p.down_payment_amount AS downPaymentAmount,
+            p.paid_amount         AS paidAmount,
+            p.unpaid_amount       AS unpaidAmount,
+            p.installment_count   AS installmentCount,
+            p.current_period      AS currentPeriod,
+            p.status              AS status,
+            DATE_FORMAT(p.activated_at, '%Y-%m-%d %H:%i:%s') AS activatedAt,
+            DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s')   AS createdAt,
+            (select nickname from user_info where userId = p.member_id) AS memberName,
+            (select phone    from user_info where userId = p.member_id) AS memberMobile
+        FROM pt_order_installment_plan p
+        LEFT JOIN pt_private_order o ON o.id = p.order_id
+        <include refid="planFilter"/>
+        ORDER BY p.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM pt_order_installment_plan p
+        LEFT JOIN pt_private_order o ON o.id = p.order_id
+        <include refid="planFilter"/>
+    </select>
+
+    <select id="queryObject" resultType="map">
+        SELECT
+            p.id                  AS id,
+            p.order_id            AS orderId,
+            o.order_no            AS orderNo,
+            p.member_id           AS memberId,
+            p.product_id          AS productId,
+            o.product_name        AS productName,
+            o.store_id            AS storeId,
+            p.total_amount        AS totalAmount,
+            p.down_payment_amount AS downPaymentAmount,
+            p.paid_amount         AS paidAmount,
+            p.unpaid_amount       AS unpaidAmount,
+            p.installment_count   AS installmentCount,
+            p.current_period      AS currentPeriod,
+            p.status              AS status,
+            DATE_FORMAT(p.activated_at, '%Y-%m-%d %H:%i:%s') AS activatedAt,
+            DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s')   AS createdAt,
+            (select nickname from user_info where userId = p.member_id) AS memberName,
+            (select phone    from user_info where userId = p.member_id) AS memberMobile
+        FROM pt_order_installment_plan p
+        LEFT JOIN pt_private_order o ON o.id = p.order_id
+        WHERE p.id = #{id}
+    </select>
+
+    <!-- 账单期明细(详情抽屉用),按期数升序 -->
+    <select id="queryBills" resultType="map">
+        SELECT
+            b.id           AS id,
+            b.plan_id      AS planId,
+            b.period_no    AS periodNo,
+            b.due_amount   AS dueAmount,
+            b.paid_amount  AS paidAmount,
+            DATE_FORMAT(b.due_date, '%Y-%m-%d')            AS dueDate,
+            DATE_FORMAT(b.paid_time, '%Y-%m-%d %H:%i:%s')  AS paidTime,
+            b.status       AS status,
+            b.pay_order_no AS payOrderNo
+        FROM pt_order_installment_bill b
+        WHERE b.plan_id = #{planId}
+        ORDER BY b.period_no ASC
+    </select>
+
+    <!-- 催缴前置:逾期账单数 + 逾期金额合计(应付-实付) -->
+    <select id="queryOverdueSummary" resultType="map">
+        SELECT
+            COUNT(1)                                     AS overdueCount,
+            COALESCE(SUM(b.due_amount - b.paid_amount), 0) AS overdueAmount
+        FROM pt_order_installment_bill b
+        WHERE b.plan_id = #{planId} AND b.status = 2
+    </select>
+
+</mapper>

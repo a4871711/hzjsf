@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 教练评价（移动端，pt_coach_comment，第21步·运营域）。
+     ⚠️ api 目录 XML 改动必须重启 Tomcat（MybatisMapperRefresh 只热刷 mapper/sys/*.xml）。
+     submit：一预约一评价，撞 uk_pt_coach_comment_appointment_id 由 service 转 ERROR_COMMENT_EXISTS；
+        reply_status/handle_status/deleted 由 DDL 默认值维护，comment_time 显式落 now。
+     myList：member_id 过滤，联教练/门店名 + 后台最新一条回复（相关子查询取 reply_time 最大）。 -->
+<mapper namespace="com.dlc.modules.api.dao.CoachCommentApiDao">
+
+    <select id="countByAppointment" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_coach_comment
+        WHERE appointment_id = #{appointmentId} AND deleted = 0
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.api.entity.PtCoachCommentEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_coach_comment
+            (appointment_id, coach_id, member_id, member_nickname, member_mobile,
+             score, comment_content, comment_time)
+        VALUES
+            (#{appointmentId}, #{coachId}, #{memberId}, #{memberNickname}, #{memberMobile},
+             #{score}, #{commentContent}, NOW())
+    </insert>
+
+    <select id="queryMyList" resultType="com.dlc.modules.api.entity.PtCoachCommentEntity">
+        SELECT c.id,
+               c.appointment_id   AS appointmentId,
+               c.coach_id         AS coachId,
+               co.coach_name      AS coachName,
+               c.score            AS score,
+               c.comment_content  AS commentContent,
+               c.reply_status     AS replyStatus,
+               c.handle_status    AS handleStatus,
+               DATE_FORMAT(c.comment_time, '%Y-%m-%d %H:%i:%s') AS commentTime,
+               s.storeName        AS storeName,
+               DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointmentDate,
+               DATE_FORMAT(a.start_time, '%H:%i')          AS startTime,
+               DATE_FORMAT(a.end_time, '%H:%i')            AS endTime,
+               r.reply_content    AS replyContent,
+               DATE_FORMAT(r.reply_time, '%Y-%m-%d %H:%i:%s') AS replyTime
+        FROM pt_coach_comment c
+        LEFT JOIN pt_private_appointment a ON a.id = c.appointment_id
+        LEFT JOIN pt_coach co ON co.id = c.coach_id
+        LEFT JOIN store s ON s.storeId = a.store_id
+        LEFT JOIN pt_coach_comment_reply r ON r.id = (
+            SELECT r2.id FROM pt_coach_comment_reply r2
+            WHERE r2.comment_id = c.id
+            ORDER BY r2.reply_time DESC, r2.id DESC LIMIT 1
+        )
+        WHERE c.member_id = #{userId} AND c.deleted = 0
+        ORDER BY c.comment_time DESC, c.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyList" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_coach_comment c
+        WHERE c.member_id = #{userId} AND c.deleted = 0
+    </select>
+
+</mapper>

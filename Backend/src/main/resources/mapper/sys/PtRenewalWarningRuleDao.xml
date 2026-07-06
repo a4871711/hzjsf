@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 续费预警规则(pt_renewal_warning_rule，第22步·运营域)。sys 目录 XML 热刷新，改完免重启。
+     提醒对象固定为教练；剩余课时/剩余天数预警至少启用一个。
+     适用门店 storeNames 从 _store_rel 聚合(空=全部门店)。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtRenewalWarningRuleDao">
+
+    <sql id="Columns">
+        r.id,
+        r.rule_name              AS ruleName,
+        r.lesson_warning_enabled AS lessonWarningEnabled,
+        r.lesson_threshold       AS lessonThreshold,
+        r.days_warning_enabled   AS daysWarningEnabled,
+        r.days_threshold         AS daysThreshold,
+        r.status                 AS status,
+        r.created_by             AS createdBy,
+        r.updated_by             AS updatedBy,
+        DATE_FORMAT(r.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(r.updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt,
+        (SELECT GROUP_CONCAT(s.storeName)
+           FROM pt_renewal_warning_rule_store_rel rel
+           LEFT JOIN store s ON s.storeId = rel.store_id
+          WHERE rel.rule_id = r.id) AS storeNames
+    </sql>
+
+    <sql id="Filter">
+        <if test="ruleName != null and ruleName != ''">
+            AND r.rule_name LIKE concat('%', #{ruleName}, '%')
+        </if>
+        <if test="status != null and status != ''">
+            AND r.status = #{status}
+        </if>
+    </sql>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtRenewalWarningRuleEntity">
+        SELECT <include refid="Columns"/>
+        FROM pt_renewal_warning_rule r
+        WHERE r.id = #{value}
+    </select>
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.PtRenewalWarningRuleEntity" parameterType="map">
+        SELECT <include refid="Columns"/>
+        FROM pt_renewal_warning_rule r
+        <where>
+            <include refid="Filter"/>
+        </where>
+        ORDER BY r.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM pt_renewal_warning_rule r
+        <where>
+            <include refid="Filter"/>
+        </where>
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtRenewalWarningRuleEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_renewal_warning_rule
+            (rule_name, lesson_warning_enabled, lesson_threshold,
+             days_warning_enabled, days_threshold, status, created_by, updated_by)
+        VALUES
+            (#{ruleName}, #{lessonWarningEnabled}, #{lessonThreshold},
+             #{daysWarningEnabled}, #{daysThreshold}, #{status}, #{createdBy}, #{updatedBy})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtRenewalWarningRuleEntity">
+        UPDATE pt_renewal_warning_rule
+        <set>
+            <if test="ruleName != null">rule_name = #{ruleName},</if>
+            <if test="lessonWarningEnabled != null">lesson_warning_enabled = #{lessonWarningEnabled},</if>
+            lesson_threshold = #{lessonThreshold},
+            <if test="daysWarningEnabled != null">days_warning_enabled = #{daysWarningEnabled},</if>
+            days_threshold = #{daysThreshold},
+            <if test="status != null">status = #{status},</if>
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteBatch">
+        DELETE FROM pt_renewal_warning_rule WHERE id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

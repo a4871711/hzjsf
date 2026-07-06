@@ -1,6 +1,7 @@
 package com.dlc.modules.sys.service.impl;
 
 import com.dlc.common.exception.RRException;
+import com.dlc.modules.api.dao.PtPrivateAppointmentDao;
 import com.dlc.modules.sys.dao.PtCoachScheduleDao;
 import com.dlc.modules.sys.entity.PtCoachScheduleEntity;
 import com.dlc.modules.sys.service.SysCoachScheduleService;
@@ -24,6 +25,9 @@ public class SysCoachScheduleServiceImpl implements SysCoachScheduleService {
 
     @Autowired
     private PtCoachScheduleDao ptCoachScheduleDao;
+    /** 跨模块注入 api dao(现有惯例):排班段被未来预约占用的护栏 */
+    @Autowired
+    private PtPrivateAppointmentDao ptPrivateAppointmentDao;
 
     @Override
     public PtCoachScheduleEntity queryObject(Long id) {
@@ -86,8 +90,11 @@ public class SysCoachScheduleServiceImpl implements SysCoachScheduleService {
         if (old == null) {
             throw new RRException("排班不存在");
         }
-        // TODO 第14步回填：该排班段被未来预约占用时，禁止修改关键时间(星期/起止/门店)，仅允许改启用状态。
-        //      pt_private_appointment 未建前先放行关键时间修改。
+        // 第14步回填：该排班段被未来预约占用时，禁止修改关键时间(星期/起止/门店)，仅允许改启用状态。
+        // 占用判定按旧排班段口径(既有预约都是在旧窗口内切片约成的)。
+        if (isKeyFieldChanged(entity, old) && countFutureOccupied(old) > 0) {
+            throw new RRException("该排班段已被未来预约占用，不可修改星期/时间/门店，仅可调整启用状态");
+        }
         Long coachId = old.getCoachId();
         Long storeId = entity.getStoreId() != null ? entity.getStoreId() : old.getStoreId();
         Integer weekday = entity.getWeekday() != null ? entity.getWeekday() : old.getWeekday();
@@ -106,8 +113,38 @@ public class SysCoachScheduleServiceImpl implements SysCoachScheduleService {
 
     @Override
     public void deleteBatch(Long[] ids) {
-        // TODO 第14步回填：被未来预约占用的排班段不可删除（pt_private_appointment 未建前先放行）。
+        // 第14步回填：被未来预约(status=1 且未开课)占用的排班段不可删除。
+        for (Long id : ids) {
+            PtCoachScheduleEntity sch = ptCoachScheduleDao.queryObject(id);
+            if (sch != null && countFutureOccupied(sch) > 0) {
+                throw new RRException("排班段[" + weekCn(sch.getWeekday()) + " " + sch.getStartTime()
+                        + "-" + sch.getEndTime() + "]已被未来预约占用，不可删除");
+            }
+        }
         ptCoachScheduleDao.deleteBatch(ids);
+    }
+
+    /** 关键字段(门店/星期/起止时间)是否有实际变更;仅提交且与旧值不同才算改 */
+    private boolean isKeyFieldChanged(PtCoachScheduleEntity entity, PtCoachScheduleEntity old) {
+        if (entity.getStoreId() != null && !entity.getStoreId().equals(old.getStoreId())) {
+            return true;
+        }
+        if (entity.getWeekday() != null && !entity.getWeekday().equals(old.getWeekday())) {
+            return true;
+        }
+        if (entity.getStartTime() != null && !entity.getStartTime().equals(old.getStartTime())) {
+            return true;
+        }
+        if (entity.getEndTime() != null && !entity.getEndTime().equals(old.getEndTime())) {
+            return true;
+        }
+        return false;
+    }
+
+    /** 落在该排班段内的未来未取消预约数(口径见 PtPrivateAppointmentDao.countFutureBySchedule) */
+    private int countFutureOccupied(PtCoachScheduleEntity sch) {
+        return ptPrivateAppointmentDao.countFutureBySchedule(sch.getCoachId(), sch.getStoreId(),
+                sch.getWeekday(), sch.getStartTime(), sch.getEndTime());
     }
 
     @Override

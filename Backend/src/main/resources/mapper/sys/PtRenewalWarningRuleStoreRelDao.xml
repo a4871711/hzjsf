@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 续费预警规则适用门店关联(pt_renewal_warning_rule_store_rel，第22步)。编辑全删全插；无记录=全部门店。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtRenewalWarningRuleStoreRelDao">
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtRenewalWarningRuleStoreRelEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_renewal_warning_rule_store_rel (rule_id, store_id, created_at)
+        VALUES (#{ruleId}, #{storeId}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByRuleId">
+        DELETE FROM pt_renewal_warning_rule_store_rel WHERE rule_id = #{value}
+    </delete>
+
+    <select id="queryStoreIds" resultType="java.lang.Long">
+        SELECT store_id FROM pt_renewal_warning_rule_store_rel WHERE rule_id = #{value}
+    </select>
+
+</mapper>

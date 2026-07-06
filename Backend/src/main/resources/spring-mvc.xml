@@ -205,8 +205,15 @@
     <bean id="updateClassStatusTask" class="com.dlc.modules.api.schedule.UpdateClassStatusTask"></bean>
     <bean id="papAutoPayTask" class="com.dlc.modules.api.schedule.AutoPayTask"></bean>
     <bean id="vipTransferTimeoutTask" class="com.dlc.modules.api.schedule.VipTransferTimeoutTask"></bean>
+    <bean id="ptBenefitExpireTask" class="com.dlc.modules.api.schedule.PtBenefitExpireTask"></bean>
+    <bean id="ptAppointmentNoShowTask" class="com.dlc.modules.api.schedule.PtAppointmentNoShowTask"></bean>
+    <bean id="marketingCouponExpireTask" class="com.dlc.modules.api.schedule.MarketingCouponExpireTask"></bean>
+    <bean id="installmentOverdueTask" class="com.dlc.modules.api.schedule.InstallmentOverdueTask"></bean>
+    <bean id="renewalWarningScanTask" class="com.dlc.modules.api.schedule.RenewalWarningScanTask"></bean>
+    <bean id="exceptionWarningScanTask" class="com.dlc.modules.api.schedule.ExceptionWarningScanTask"></bean>
+    <bean id="groupToPrivateScanTask" class="com.dlc.modules.api.schedule.GroupToPrivateScanTask"></bean>
     <task:scheduled-tasks>
-        <!--每隔1小时执行一次更新卡、商城、私教课、团体课订单状态-->
+        <!--每隔1小时执行一次更新卡、商城、私教课、团体课订单状态(第16步扩展:含私教购买单超时取消+释放优惠券)-->
         <task:scheduled ref="updateOrderStatusTask" method="updateOrderStatus" cron="0 0 0/1 * * ?"/>
     </task:scheduled-tasks>
 
@@ -228,6 +235,41 @@
     <task:scheduled-tasks>
         <!--每天早上8点执行一次自动续费代扣申请发起，24小时后会执行扣款-->
         <task:scheduled ref="papAutoPayTask" method="papAutoPay" cron="0 0 8 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天1点10分执行一次私教权益到期扫描(第16步:status=1且expire_at已过且frozen=0置3已过期);错峰避开0/1/2/8整点既有任务-->
+        <task:scheduled ref="ptBenefitExpireTask" method="expireBenefit" cron="0 10 1 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天1点20分执行一次私教预约爽约扫描(第16步:已预约且结束超24小时未核销置4爽约,按no_show_deduct扣课/退回);错峰避开0/1/2/8整点既有任务-->
+        <task:scheduled ref="ptAppointmentNoShowTask" method="scanNoShow" cron="0 20 1 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天1点30分执行一次营销券过期扫描(第18步:mk_member_coupon use_status=0未使用且expire_time已过置2已过期);错峰避开1:10权益到期/1:20爽约及0/1/2/8整点既有任务-->
+        <task:scheduled ref="marketingCouponExpireTask" method="expireCoupon" cron="0 30 1 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天1点40分执行一次私教分期逾期扫描(第20步:pt_order_installment_bill待支付且due_date<今天置2已逾期,含逾期账单的进行中计划置3已逾期);错峰避开1:10权益到期/1:20爽约/1:30券过期及0/1/2/8整点既有任务-->
+        <task:scheduled ref="installmentOverdueTask" method="scanOverdue" cron="0 40 1 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天1点50分执行一次私教续费预警扫描(第22步:扫pt_member_private_benefit命中规则阈值,benefit_id+closed_at IS NULL去重生成/刷新预警记录);错峰避开1:10/1:20/1:30/1:40及0/1/2/8整点既有任务-->
+        <task:scheduled ref="renewalWarningScanTask" method="scan" cron="0 50 1 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天3点10分执行一次私教异常预警扫描(第22步:频繁取消/课时消耗异常按周期聚合达阈值,uk_exc_warn_dedup+ON DUPLICATE去重);错峰避开凌晨1点段及0/1/2/8整点既有任务-->
+        <task:scheduled ref="exceptionWarningScanTask" method="scan" cron="0 10 3 * * ?"/>
+    </task:scheduled-tasks>
+
+    <task:scheduled-tasks>
+        <!--每天3点20分执行一次团课转私教高意向名单扫描(第22步:团课出勤/购课达阈值,uk_member_id+ON DUPLICATE去重不覆盖人工态);错峰避开3:10异常预警及0/1/2/8整点既有任务-->
+        <task:scheduled ref="groupToPrivateScanTask" method="scan" cron="0 20 3 * * ?"/>
     </task:scheduled-tasks>
 
     <!-- 注册RequestMappingHandlerMapping 和RequestMappingHandlerAdapter 两个bean。-->

@@ -1,6 +1,8 @@
 package com.dlc.modules.sys.service.impl;
 
 import com.dlc.common.exception.RRException;
+import com.dlc.modules.api.dao.PtMemberPrivateBenefitDao;
+import com.dlc.modules.api.dao.PtPrivateOrderDao;
 import com.dlc.modules.sys.dao.*;
 import com.dlc.modules.sys.entity.*;
 import com.dlc.modules.sys.service.SysPtProductService;
@@ -43,6 +45,11 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     private PtCoachDao ptCoachDao;
     @Autowired
     private PtCoachScheduleDao ptCoachScheduleDao;
+    /** 跨模块注入 api dao(现有惯例):交易/权益引用护栏。预约必有订单,订单/权益两道计数已隐含覆盖预约引用 */
+    @Autowired
+    private PtPrivateOrderDao ptPrivateOrderDao;
+    @Autowired
+    private PtMemberPrivateBenefitDao ptMemberPrivateBenefitDao;
 
     @Override
     public PtProductEntity queryObject(Long id) {
@@ -118,7 +125,14 @@ public class SysPtProductServiceImpl implements SysPtProductService {
 
     @Override
     public void deleteBatch(Long[] ids) {
-        // TODO 第12/13步回填：存在 pt_private_order 引用的商品不可删除（交易域表此时尚未建，先放行）。
+        // 第14步回填：存在交易引用(pt_private_order / pt_member_private_benefit)的商品不可删除——
+        // 订单与权益是会员资产/账务凭证,商品行须保留供快照回溯(下架用 offCard,不要删)。
+        for (Long id : ids) {
+            if (ptPrivateOrderDao.countByProduct(id) > 0
+                    || ptMemberPrivateBenefitDao.countByProduct(id) > 0) {
+                throw new RRException("商品[" + id + "]已产生购买订单或会员权益，不可删除，请改用下架");
+            }
+        }
         for (Long id : ids) {
             ptProductStoreRelDao.deleteByProductId(id);
             ptProductCoachRelDao.deleteByProductId(id);

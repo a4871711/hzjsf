@@ -36,6 +36,10 @@ public class OrderTaskServiceImpl implements OrderTaskService{
     private CoachAppointmentMapper coachAppointmentMapper;
     @Autowired
     private CouponMapper couponMapper;
+    @Autowired
+    private PtPrivateOrderDao ptPrivateOrderDao;
+    @Autowired
+    private PtPrivateOrderCouponRelDao ptPrivateOrderCouponRelDao;
     @Override
     public void selectAllCardOrderByStatus() {
         Long updateTime = ((new Date().getTime()) - 30l * 60l * 1000l);
@@ -113,6 +117,34 @@ public class OrderTaskServiceImpl implements OrderTaskService{
                 coupon.setCouponStatus(2);
                 couponMapper.updateByPrimaryKeySelective(coupon);
                 log.info("============已设置成过期=========");
+            }
+        }
+    }
+
+    /**
+     * 第16步私教单分支(与既有分支分开成方法,由 UpdateOrderStatusTask 单独 try/catch 调用,
+     * 走本 impl 的事务切面,失败不影响既有卡/商城/私教课/团课分支)。
+     * 幂等:cancelTimeoutOrder 卡 WHERE order_status=0,与支付回调 settleOrder 互斥,
+     * 命中才释放券(releaseMemberCoupon 卡 use_status=3 AND used_order_id=本单,双CAS不误放)。
+     */
+    @Override
+    public void cancelTimeoutPrivateOrders() {
+        // 私教购买单 '订单状态:0待支付 1首付已付 2已结清 3已取消 4已退款',超30分钟未付取消
+        List<PtPrivateOrderEntity> list = ptPrivateOrderDao.queryTimeoutUnpaid(30);
+        for (PtPrivateOrderEntity order : list) {
+            if (ptPrivateOrderDao.cancelTimeoutOrder(order.getId()) == 0) {
+                // 0行=扫描后已被支付/取消,券占用归属已变,跳过
+                continue;
+            }
+            log.info("====私教订单超时取消,订单号:" + order.getOrderNo() + "=========");
+            if (order.getMemberCouponId() != null) {
+                int released = ptPrivateOrderCouponRelDao.releaseMemberCoupon(
+                        order.getMemberCouponId(), order.getId());
+                if (released == 0) {
+                    // 券已被核销/释放(状态漂移),记日志人工核对,不阻断其余订单
+                    log.warn("私教订单超时取消但优惠券释放0行,orderNo=" + order.getOrderNo()
+                            + ",memberCouponId=" + order.getMemberCouponId());
+                }
             }
         }
     }

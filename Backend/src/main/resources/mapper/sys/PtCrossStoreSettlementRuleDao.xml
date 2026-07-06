@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 跨店结算规则(第23步)。sys 目录 XML 热刷新,改完免重启。
+     全系统单套规则:queryCurrent 取 id 最小一条;controller/service 走 get/save upsert 语义。
+     本期仅配置不落账,收入报表不按本规则拆分(§17.1/§17.3)。 -->
+<mapper namespace="com.dlc.modules.sys.dao.PtCrossStoreSettlementRuleDao">
+
+    <select id="queryCurrent" resultType="com.dlc.modules.sys.entity.PtCrossStoreSettlementRuleEntity">
+        SELECT
+            id,
+            rule_name           AS ruleName,
+            cross_store_enabled AS crossStoreEnabled,
+            income_owner_type   AS incomeOwnerType,
+            buy_store_ratio     AS buyStoreRatio,
+            lesson_store_ratio  AS lessonStoreRatio,
+            coach_fee_owner_type AS coachFeeOwnerType,
+            status,
+            remark,
+            created_by          AS createdBy,
+            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+            updated_by          AS updatedBy,
+            DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+        FROM pt_cross_store_settlement_rule
+        ORDER BY id ASC
+        LIMIT 1
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCrossStoreSettlementRuleEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_cross_store_settlement_rule
+        (`rule_name`, `cross_store_enabled`, `income_owner_type`, `buy_store_ratio`,
+         `lesson_store_ratio`, `coach_fee_owner_type`, `status`, `remark`,
+         `created_by`, `created_at`, `updated_by`, `updated_at`)
+        VALUES
+        (#{ruleName}, #{crossStoreEnabled}, #{incomeOwnerType}, #{buyStoreRatio},
+         #{lessonStoreRatio}, #{coachFeeOwnerType}, #{status}, #{remark},
+         #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.PtCrossStoreSettlementRuleEntity">
+        UPDATE pt_cross_store_settlement_rule
+        <set>
+            <if test="ruleName != null">`rule_name` = #{ruleName},</if>
+            <if test="crossStoreEnabled != null">`cross_store_enabled` = #{crossStoreEnabled},</if>
+            <if test="incomeOwnerType != null">`income_owner_type` = #{incomeOwnerType},</if>
+            <if test="buyStoreRatio != null">`buy_store_ratio` = #{buyStoreRatio},</if>
+            <if test="lessonStoreRatio != null">`lesson_store_ratio` = #{lessonStoreRatio},</if>
+            <if test="coachFeeOwnerType != null">`coach_fee_owner_type` = #{coachFeeOwnerType},</if>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="remark != null">`remark` = #{remark},</if>
+            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
+            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>
