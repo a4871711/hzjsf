@@ -546,11 +546,14 @@
     where autoPay > 0
     AND status in (0,1)
     AND date_format(validityDate, '%Y-%m-%d') <![CDATA[<=]]> date_format(date_add(now(),INTERVAL 1 DAY), '%Y-%m-%d')
-    <!-- AND proxyId NOT IN (
+    <!-- 防重复扣费闸门(2026-07-06恢复):近2天内已创建过自动续费单(不论status,含已取消)的用户不再选中,
+         避免回调丢失致validityDate未推进而次日重复发起代扣。 -->
+    AND proxyId NOT IN (
       SELECT userId
       FROM card_order
-      WHERE autoPay > 0 AND createdDate > date_format(date_add(now(),INTERVAL -2 DAY), '%Y-%m-%d')
-    ) -->
+      WHERE autoPay > 0 AND userId IS NOT NULL
+        AND createdDate > date_format(date_add(now(),INTERVAL -2 DAY), '%Y-%m-%d')
+    )
     AND proxyId IN (
       SELECT userId
       FROM user_info
