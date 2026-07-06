@@ -168,11 +168,13 @@ public class CardOredrController extends BaseController{
         	if(isValidity) {
         		params.put("oldValidityDate", device.getValidityDate());
         		SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd 08:00:00");
+        		//续费:在原有效期基础上顺延validity天,原有效期已含"当天"语义,这里不能再减1
         		String validityDate = df.format(device.getValidityDate().getTime() + fitCard.getValidity() * 24l * 60l * 60l * 1000l);
         		params.put("validityDate", validityDate);
         	}else{
         		SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd 08:00:00");
-            	String validityDate = df.format((new Date()).getTime() + fitCard.getValidity() * 24l * 60l * 60l * 1000l);
+        		//新周期从"今天"起算,今天算第1天,故减1天,避免比配置天数多算1天(过期判定按日期、含当天有效)
+            	String validityDate = df.format((new Date()).getTime() + Math.max(0, fitCard.getValidity() - 1) * 24l * 60l * 60l * 1000l);
             	params.put("validityDate", validityDate); 
         	}
 
@@ -211,7 +213,8 @@ public class CardOredrController extends BaseController{
             map = cardOrderService.createFitCardOrder(user,params,1);
         }else {
         	SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd 08:00:00");
-        	String validityDate = df.format((new Date()).getTime() + fitCard.getValidity() * 24l * 60l * 60l * 1000l);
+        	//新周期从"今天"起算,今天算第1天,故减1天,避免比配置天数多算1天(过期判定按日期、含当天有效)
+        	String validityDate = df.format((new Date()).getTime() + Math.max(0, fitCard.getValidity() - 1) * 24l * 60l * 60l * 1000l);
         	params.put("validityDate", validityDate);     
             params.put("buyCount", 1);   	
             
