@@ -31,6 +31,8 @@ public class VipBenefit implements Serializable {
     private Date startTime;
     /** 到期时间(支付成功激活才赋值) */
     private Date expireTime;
+    /** 下单时会员卡剩余整天数快照,激活据此顺延生效/到期(无有效期为0) */
+    private Integer deferDays;
     /** 9待支付 0正常 1已转出失效 2已冻结 3已过期 */
     private Integer status;
     /** 已被转让次数 */
@@ -121,6 +123,14 @@ public class VipBenefit implements Serializable {
 
     public void setExpireTime(Date expireTime) {
         this.expireTime = expireTime;
+    }
+
+    public Integer getDeferDays() {
+        return deferDays;
+    }
+
+    public void setDeferDays(Integer deferDays) {
+        this.deferDays = deferDays;
     }
 
     public Integer getStatus() {

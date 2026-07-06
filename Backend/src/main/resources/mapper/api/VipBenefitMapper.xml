@@ -7,9 +7,9 @@
         vip_benefit_id AS vipBenefitId, user_id AS userId, origin_user_id AS originUserId,
         vip_card_id AS vipCardId, source_order_no AS sourceOrderNo, store_id AS storeId,
         store_addr_id AS storeAddrId, origin_price AS originPrice, start_time AS startTime,
-        expire_time AS expireTime, status, transfer_count AS transferCount,
+        expire_time AS expireTime, defer_days AS deferDays, status, transfer_count AS transferCount,
         transferable, created_date AS createdDate
-    </sql>
+</sql>
 
     <!-- 下单建待支付权益占位 -->
     <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.VipBenefit">
@@ -24,6 +24,7 @@
             <if test="originPrice != null">origin_price,</if>
             <if test="startTime != null">start_time,</if>
             <if test="expireTime != null">expire_time,</if>
+            <if test="deferDays != null">defer_days,</if>
             <if test="status != null">status,</if>
             <if test="transferCount != null">transfer_count,</if>
             <if test="transferable != null">transferable,</if>
@@ -38,6 +39,7 @@
             <if test="originPrice != null">#{originPrice},</if>
             <if test="startTime != null">#{startTime},</if>
             <if test="expireTime != null">#{expireTime},</if>
+            <if test="deferDays != null">#{deferDays},</if>
             <if test="status != null">#{status},</if>
             <if test="transferCount != null">#{transferCount},</if>
             <if test="transferable != null">#{transferable},</if>

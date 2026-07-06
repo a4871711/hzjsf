@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +57,32 @@ public class CardOrderServiceImpl implements CardOrderService {
     /** 通卡：fit_card.storeAddrIds 为空，全部门店可用 */
     private boolean isUniversalCard(FitCard fitCard) {
         return fitCard == null || StringUtils.isBlank(fitCard.getStoreAddrIds());
+    }
+
+    /**
+     * 会员卡剩余整天数(加购权益卡下单时快照用):无有效会员卡/已过期 → 0;
+     * 否则按日期(各截断到当天0点)算 会员卡到期日 - 今天 的正天数。
+     */
+    private int memberRemainDays(Long userId) {
+        Device dev = deviceMapper.selectUserValidity(userId);
+        if (dev == null || dev.getValidityDate() == null) {
+            return 0;
+        }
+        long todayMs = truncateToDay(new Date());
+        long expireMs = truncateToDay(dev.getValidityDate());
+        long diffDays = (expireMs - todayMs) / (24L * 60 * 60 * 1000);
+        return diffDays > 0 ? (int) diffDays : 0;
+    }
+
+    /** 截断到当天 0 点的毫秒值(忽略时分秒) */
+    private long truncateToDay(Date date) {
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        return c.getTimeInMillis();
     }
 
     private String resolveStoreAddrIds(FitCard fitCard) {
@@ -201,6 +228,9 @@ public class CardOrderServiceImpl implements CardOrderService {
                 int nowStoreId = user.getNowStoreId();
                 vb.setStoreAddrId(nowStoreId > 0 ? (long) nowStoreId : null);
                 vb.setOriginPrice(new BigDecimal(String.valueOf(params.get("vipCardPrice"))));
+                // 下单即快照会员卡剩余整天数(此刻本单会员卡尚未续期,故为「本单会员卡之前」的剩余天数);
+                // 激活时据此顺延生效/到期,无有效期为0=加购立即生效
+                vb.setDeferDays(memberRemainDays(user.getUserId()));
                 vb.setStatus(9);
                 vb.setTransferCount(0);
                 vb.setTransferable(1);

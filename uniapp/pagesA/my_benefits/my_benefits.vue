@@ -12,6 +12,10 @@
 					<text class="mb-card__tag" :class="item.statusClassName">{{ item.statusLabel }}</text>
 				</view>
 				<view class="mb-card__row">
+					<text class="mb-card__label">生效日期</text>
+					<text class="mb-card__val">{{ item.startTimeText }}</text>
+				</view>
+				<view class="mb-card__row">
 					<text class="mb-card__label">有效期至</text>
 					<text class="mb-card__val">{{ item.expireTimeText }}</text>
 				</view>
@@ -113,6 +117,7 @@
 				return Object.assign({}, row, {
 					viewKey: row.vipBenefitId ? String(row.vipBenefitId) : 'benefit-' + index,
 					cardNameText: row.cardName || '权益卡',
+					startTimeText: this.formatDate(row.startTime) || '支付后生效',
 					expireTimeText: this.formatDate(row.expireTime) || '支付后生效',
 					originPriceText: this.formatPrice(row.originPrice),
 					statusLabel: this.statusText(row),

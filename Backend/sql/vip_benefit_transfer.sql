@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS vip_benefit (
   origin_price   DECIMAL(10,2) DEFAULT NULL COMMENT '购买时售价(留痕,不参与转让费用计算)',
   start_time     DATETIME      DEFAULT NULL COMMENT '生效',
   expire_time    DATETIME      DEFAULT NULL COMMENT '到期',
+  defer_days     INT           NOT NULL DEFAULT 0 COMMENT '下单时会员卡剩余整天数快照,激活据此顺延生效/到期',
   status         TINYINT       NOT NULL DEFAULT 9 COMMENT '9待支付 0正常 1已转出失效 2已冻结 3已过期',
   transfer_count INT           NOT NULL DEFAULT 0 COMMENT '已被转让次数',
   transferable   TINYINT       NOT NULL DEFAULT 1 COMMENT '是否可转 1是0否',

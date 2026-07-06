@@ -4,8 +4,10 @@ import com.dlc.common.utils.ConfigConstant;
 import com.dlc.common.utils.OrderNoGenerator;
 import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
+import com.dlc.modules.api.dao.DeviceMapper;
 import com.dlc.modules.api.dao.UserInfoMapper;
 import com.dlc.modules.api.dao.VipBenefitMapper;
+import com.dlc.modules.api.entity.Device;
 import com.dlc.modules.api.entity.VipBenefit;
 import com.dlc.modules.api.entity.VipBenefitCard;
 import com.dlc.modules.api.service.IncomePayDetailService;
@@ -40,6 +42,8 @@ public class VipBenefitServiceImpl implements VipBenefitService {
     private IncomePayDetailService incomePayDetailService;
     @Autowired
     private UserInfoMapper userInfoMapper;
+    @Autowired
+    private DeviceMapper deviceMapper;
 
     @Override
     public Map<String, Object> buy(UserInfoVo user, Long vipCardId) {
@@ -62,6 +66,8 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         int nowStoreId = user.getNowStoreId();
         vb.setStoreAddrId(nowStoreId > 0 ? (long) nowStoreId : null);
         vb.setOriginPrice(price);
+        // 下单即快照会员卡剩余整天数(此刻会员卡未被本单续期),激活据此顺延生效/到期;无有效期为0=立即生效
+        vb.setDeferDays(remainDaysOfMembership(userId));
         vb.setStatus(9);
         vb.setTransferCount(0);
         vb.setTransferable(1);
@@ -84,10 +90,13 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         }
         Date now = new Date();
         int days = card.getValidityDays() == null ? 0 : card.getValidityDays();
-        Date expire = addDays(now, days);
+        // 顺延天数取下单时快照的会员卡剩余天数:start=now+defer、expire=now+(defer+有效天数),时分秒=回调当刻
+        int defer = deferDaysByOrderNo(orderNo);
+        Date start = addDays(now, defer);
+        Date expire = addDays(now, defer + days);
 
         // 幂等核心:仅 status=9 待支付时才激活;重复回调/并发命中 0 行直接返回,不再记账/计数
-        int rows = vipBenefitMapper.activate(orderNo, now, expire);
+        int rows = vipBenefitMapper.activate(orderNo, start, expire);
         if (rows == 0) {
             return 0;
         }
@@ -115,8 +124,10 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         }
         Date now = new Date();
         int days = card.getValidityDays() == null ? 0 : card.getValidityDays();
+        // 加购顺延天数取下单时快照(本单会员卡之前的剩余天数,不含本单新买会员卡时长)
+        int defer = deferDaysByOrderNo(orderNo);
         //幂等激活:仅 status=9 待支付命中;重复回调命中0行直接返回,不重复计数
-        int rows = vipBenefitMapper.activate(orderNo, now, addDays(now, days));
+        int rows = vipBenefitMapper.activate(orderNo, addDays(now, defer), addDays(now, defer + days));
         if (rows == 0) {
             return 0;
         }
@@ -130,5 +141,40 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         c.setTime(date);
         c.add(Calendar.DAY_OF_MONTH, days);
         return c.getTime();
+    }
+
+    /** 按订单号取下单时快照的顺延天数(null/无记录记 0) */
+    private int deferDaysByOrderNo(String orderNo) {
+        VipBenefit vb = vipBenefitMapper.selectByOrderNo(orderNo);
+        if (vb == null || vb.getDeferDays() == null) {
+            return 0;
+        }
+        return vb.getDeferDays() < 0 ? 0 : vb.getDeferDays();
+    }
+
+    /**
+     * 会员卡剩余整天数(下单时快照用):无有效会员卡/已过期 → 0;
+     * 否则按日期(各截断到当天0点)算 会员卡到期日 - 今天 的正天数。
+     */
+    private int remainDaysOfMembership(Long userId) {
+        Device dev = deviceMapper.selectUserValidity(userId);
+        if (dev == null || dev.getValidityDate() == null) {
+            return 0;
+        }
+        long todayMs = truncateToDay(new Date());
+        long expireMs = truncateToDay(dev.getValidityDate());
+        long diffDays = (expireMs - todayMs) / (24L * 60 * 60 * 1000);
+        return diffDays > 0 ? (int) diffDays : 0;
+    }
+
+    /** 截断到当天 0 点的毫秒值(忽略时分秒) */
+    private long truncateToDay(Date date) {
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        return c.getTimeInMillis();
     }
 }
