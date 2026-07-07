@@ -107,7 +107,8 @@
 		<view style="height: 300rpx;"></view>
 		<!-- 立即购买弹窗 -->
 		<package-details :show="show" @handleClose="handleClose" :couponId="couponId" :price="noCouponPrice"
-			:storeAddrId="myStore.storeAddrId" :fitCardId="fitCardId"></package-details>
+			:storeAddrId="myStore.storeAddrId" :fitCardId="fitCardId"
+			:buyVipCardId="(buyVipChecked && vipCardInfo) ? vipCardInfo.vipCardId : ''"></package-details>
 
 		<!-- 切换门店 -->
 		<area-list :show="storeShow" :storeAreaList="storeAreaList" @hanleClose="hanleClose"></area-list>
@@ -191,8 +192,8 @@
 			// 非权益会员 + 有上架权益卡 + 当前选的不是连续包月卡 → 显示随单开通权益会员入口
 			showVipBuy() {
 				const notBenefit = this.cardList.length > 0 && this.cardList[0].isBenefitMember != 1;
-				const notAutoPay = !this.fitCardRow || !(this.fitCardRow.autoPay > 0);
-				return notBenefit && notAutoPay && !!this.vipCardInfo;
+				// 连续卡首单也可随单开通:首期并入委托代扣扣款,不再排除 autoPay>0
+				return notBenefit && !!this.vipCardInfo;
 			}
 		},
 		onLoad(options) {
@@ -392,7 +393,7 @@
 				this.couponId = '';
 				this.couponInfo = null;
 				this.couponPrice = null;
-				if (item.autoPay > 0) this.buyVipChecked = false; //连续包月卡不支持随单开通权益会员
+				// 连续包月卡现也支持随单开通权益会员,切换套餐时保留勾选状态
 				this.noCouponPrice = this.calcTotal(item);
 				this.fitCardRow = item;
 				this.package = index;

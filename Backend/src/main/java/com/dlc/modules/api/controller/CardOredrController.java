@@ -118,7 +118,7 @@ public class CardOredrController extends BaseController{
         //随单开通权益会员:非连续包月卡可加购一张VIP权益卡,本单卡价按权益价、总价加上权益卡实时价(后端重算,不信前端)
         BigDecimal vipCardPrice = BigDecimal.ZERO;
         if (params.get("buyVipCardId") != null && StringUtils.isNotBlank(String.valueOf(params.get("buyVipCardId")))
-                && (fitCard.getAutoPay() == null || fitCard.getAutoPay() == 0)) {
+                ) { //随单开通权益会员:放开连续卡首单加购(续费单不经过本controller,不会误加购)
             //卡不存在/已下架由 queryVipCardDetail 抛 ERROR_VIP_CARD_OFF_SHELF
             VipBenefitCard vipCard = vipCardService.queryVipCardDetail(Long.valueOf(String.valueOf(params.get("buyVipCardId"))));
             vipCardPrice = vipCard.getCurrentPrice();
