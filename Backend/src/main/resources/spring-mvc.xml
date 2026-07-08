@@ -19,6 +19,8 @@
     <context:annotation-config/>
     <mvc:default-servlet-handler/>
     <aop:aspectj-autoproxy proxy-target-class="true"/>
+    <!-- 注意：本处 FastJson 转换器已被文件末尾第二处 <mvc:annotation-driven>（Jackson + JsonObjectMapper）覆盖，
+         当前实际不生效。调整全局 JSON 序列化/反序列化行为请改 com.dlc.common.config.JsonObjectMapper -->
     <mvc:annotation-driven>
         <mvc:message-converters register-defaults="true">
             <bean class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter">
@@ -272,7 +274,8 @@
         <task:scheduled ref="groupToPrivateScanTask" method="scan" cron="0 20 3 * * ?"/>
     </task:scheduled-tasks>
 
-    <!-- 注册RequestMappingHandlerMapping 和RequestMappingHandlerAdapter 两个bean。-->
+    <!-- 注意：此处第二个 <mvc:annotation-driven> 声明会覆盖文件开头的 FastJson 配置（Spring bean 同名覆盖），
+         全局 @RequestBody/@ResponseBody 实际走这里的 Jackson（JsonObjectMapper）。请勿随意删除本块或调换两处声明顺序 -->
     <mvc:annotation-driven>
         <mvc:message-converters>
             <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">

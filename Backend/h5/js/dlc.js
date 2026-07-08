@@ -110,7 +110,8 @@ function removeStorage(name) {
 
 // 日期格式化
 function format(time, ff) {
-    time = new Date(time)
+    // iOS Safari/微信 webview 不识别 "yyyy-MM-dd HH:mm:ss"(空格分隔)格式,需把 - 换成 /
+    time = typeof time === 'string' ? new Date(time.replace(/-/g, '/')) : new Date(time)
     var year = time.getFullYear()
     var month = time.getMonth() + 1 < 10 ? '0' + (time.getMonth() + 1) : time.getMonth() + 1
     var date = time.getDate() < 10 ? '0' + time.getDate() : time.getDate()

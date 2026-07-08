@@ -6,6 +6,7 @@ import org.apache.shiro.authz.AuthorizationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -53,6 +54,16 @@ public class RRExceptionHandler {
 	public R handleNumberFormatException(NumberFormatException e) {
 		logger.error(e.getMessage(), e);
 		return R.error("数据格式异常");
+	}
+
+	/**
+	 * @RequestBody 参数绑定/反序列化失败（如日期、数字格式不对）。
+	 * 没有这个 handler 时会落到下面的 Exception 兜底，只返回"操作有误"，完全无法定位是哪个字段的问题
+	 */
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public R handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+		logger.error(e.getMessage(), e);
+		return R.error(-1, "请求参数格式错误：" + e.getMostSpecificCause().getMessage());
 	}
 
 	@ExceptionHandler(Exception.class)

@@ -177,7 +177,8 @@ function formatDate(now, ff) {
 }
 // 转换时间
 function format(time, ff) {
-    var d = new Date(time);
+    // iOS Safari/微信 webview 不识别 "yyyy-MM-dd HH:mm:ss"(空格分隔)格式,需把 - 换成 /
+    var d = typeof time === 'string' ? new Date(time.replace(/-/g, '/')) : new Date(time);
     return formatDate(d, ff);
 }
 // 转时间戳
