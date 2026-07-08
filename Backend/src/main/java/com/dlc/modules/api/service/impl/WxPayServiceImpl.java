@@ -23,17 +23,13 @@ import com.dlc.common.utils.UUIDUtil;
 import com.dlc.modules.api.dao.CardOrderMapper;
 import com.dlc.modules.api.dao.DeviceMapper;
 import com.dlc.modules.api.dao.StoreAddressMapper;
-import com.dlc.modules.api.dao.FitCardMapper;
 import com.dlc.modules.api.dao.UserInfoMapper;
-import com.dlc.modules.api.dao.VipBenefitMapper;
 import com.dlc.modules.api.entity.CardOrder;
-import com.dlc.modules.api.entity.FitCard;
 import com.dlc.modules.api.entity.Device;
 import com.dlc.modules.api.entity.StoreAddress;
 import com.dlc.modules.api.entity.UserInfo;
 import com.dlc.modules.api.service.CardOrderService;
 import com.dlc.modules.api.service.IncomePayDetailService;
-import com.dlc.modules.api.service.VipBenefitService;
 import com.dlc.modules.api.service.WxPayService;
 import com.dlc.modules.api.vo.PapPayApplyVo;
 import com.dlc.modules.api.vo.UserInfoVo;
@@ -107,12 +103,6 @@ public class WxPayServiceImpl implements WxPayService {
     private IncomePayDetailService incomePayDetailService;
     @Autowired
     private RedisUtils redisUtils;
-    @Autowired
-    private VipBenefitMapper vipBenefitMapper;
-    @Autowired
-    private FitCardMapper fitCardMapper;
-    @Autowired
-    private VipBenefitService vipBenefitService;
     
     @Override
     public SortedMap<String, String> appPreenTrustWebParams(UserInfoVo userVo, String orderNo, int type) {
@@ -219,7 +209,6 @@ public class WxPayServiceImpl implements WxPayService {
 	                log.info("第一次发起代扣申请失败");
 	                //解约--让用户重新发起
 	                deleteContract(contractId);
-	                //首期扣款申请失败不物理清占位:同步失败≠未扣款(如SYSTEMERROR结果未知),保留 status=9 占位以便晚到的异步扣款回调仍能激活权益卡;占位不被 countValidByUser 认可,无副作用
 	            }
         	}else {
         		try {
@@ -232,8 +221,6 @@ public class WxPayServiceImpl implements WxPayService {
 	                if (res > 0) {
 	                    log.info("=========添加自动续费收支明细==========");
 	                    incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,ConfigConstant.WXAUTOPAY);
-                    //连续卡0元首单加购的权益卡:此路径无代扣,开卡成功后一并激活(与非0首期回调对齐,幂等)
-                    vipBenefitService.activateAttached(orderNo);
 	                }
         		}catch(Exception e) {
         			log.info(">>微信代扣价格为零异常{}", e);
@@ -296,14 +283,6 @@ public class WxPayServiceImpl implements WxPayService {
         String[] s3 = CommonUtil.tryStrings(device.getNextPriceTitle3());
         if (device.getBuyCount() > s1.length + s2.length && device.getNextPrice3() != null && device.getNextPrice3().compareTo(BigDecimal.ZERO) > 0) {//次月扣款金额
         	price = device.getNextPrice3();
-        }
-        // 已激活VIP权益会员(名下有正常且未过期权益卡)→ 本期按会员卡权益价扣;否则沿用上面阶梯 price
-        if (vipBenefitMapper.countValidByUser(device.getProxyId()) > 0) {
-            FitCard benefitFitCard = fitCardMapper.getFitCardInfo(device.getFitCardId());
-            if (benefitFitCard != null && benefitFitCard.getBenefitPrice() != null
-                    && benefitFitCard.getBenefitPrice().compareTo(BigDecimal.ZERO) > 0) {
-                price = benefitFitCard.getBenefitPrice();
-            }
         }
         SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd");
     	String validityDate = df.format(device.getValidityDate().getTime() + device.getValidity() * 24l * 60l * 60l * 1000l);

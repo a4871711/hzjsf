@@ -216,8 +216,6 @@ public class WxPayController extends BaseController {
                 if (res > 0) {
                     log.info("=========添加自动续费收支明细==========");
                     incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,ConfigConstant.WXAUTOPAY);
-                    //连续卡首单随单加购的权益卡:首期代扣成功后激活(幂等,按订单号 status=9;续费单无占位自动跳过)
-                    vipBenefitService.activateAttached(orderNo);
                 }
             }else{
                 //这一块好像不对，能走到这里的好像都是一些成功签约，但是卡余额不足之类的原因扣费失败。待核查后删除

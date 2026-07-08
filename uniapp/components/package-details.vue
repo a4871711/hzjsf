@@ -92,11 +92,6 @@
 			couponId: {
 				type: String,
 				default: ''
-			},
-			//随单开通权益会员:勾选的权益卡商品id(连续卡首单加购,一并带给后端算首期总价)
-			buyVipCardId: {
-				type: [String, Number],
-				default: ''
 			}
 		},
 		watch: {
@@ -130,8 +125,7 @@
 					paySum: this.price,
 					fitCardId: this.fitCardId,
 					couponId: this.couponId,
-					storeAddressId: this.storeAddrId,
-					buyVipCardId: this.buyVipCardId
+					storeAddressId: this.storeAddrId
 				}
 				createOrder(data).then((res) => {
 					if (res.code == 1) {
