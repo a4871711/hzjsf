@@ -44,7 +44,7 @@
 						<!-- <view class="item-title">{{item.autoPay != 0 ?'连续包':''}}{{item.ctName}}</view> -->
 						<view class="item-title">{{item.cardName||'--'}}</view>
 						<view class="price">
-							<text class="text">¥</text>{{calcPrice(item)}}
+							<text class="text">¥</text>{{item.isNewUser==1?(item.newUserPrice || item.cardPrice):item.cardPrice }}
 						</view>
 
 						<view class="btn flex_1" v-if="item.cardType != 10">{{item.validity}}天</view>
@@ -69,18 +69,6 @@
 					</view>
 
 					<image src="/static/image/my_icon-dr.png" alt="" class="icon-arrow" />
-				</view>
-			</view>
-
-			<!-- 随单开通权益会员(非权益会员可加购,本单立享权益价) -->
-			<view class="discount flex_s vip-buy" v-if="showVipBuy" @click="toggleBuyVip">
-				<view class="left">
-					<view class="vip-check" :class="buyVipChecked ? 'checked' : ''"></view>
-					<view class="title">开通权益会员</view>
-					<view class="ky">{{vipCardInfo.cardName}}·购卡享权益价</view>
-				</view>
-				<view class="right flex">
-					<view>+¥{{vipCardInfo.currentPrice}}</view>
 				</view>
 			</view>
 
@@ -125,7 +113,6 @@
 		getMyStore,
 		getfitCardList,
 		getStoreInfo,
-		getVipCardList,
 	} from '@/api/index'
 	import {
 		getOpenDoorQR,
@@ -176,8 +163,6 @@
 				tipsContent: '', //弹窗提示信息
 				tipsShow: false, //是否显示提示弹窗
 				userVipData: {}, //用户会员卡数据
-				vipCardInfo: null, //可随单加购的权益会员卡(上架第一张)
-				buyVipChecked: false, //是否勾选随单开通权益会员
 				openVip: '', //判断点击开通会员和详情点进来的情况，有的情况下就是开通点进来的否者就是详情
 				itemFitCardId: null, //用于判断外部套餐列表点击第几个
 
@@ -186,14 +171,6 @@
 		components: {
 			packageDetails,
 			areaList,
-		},
-		computed: {
-			// 非权益会员 + 有上架权益卡 + 当前选的不是连续包月卡 → 显示随单开通权益会员入口
-			showVipBuy() {
-				const notBenefit = this.cardList.length > 0 && this.cardList[0].isBenefitMember != 1;
-				const notAutoPay = !this.fitCardRow || !(this.fitCardRow.autoPay > 0);
-				return notBenefit && notAutoPay && !!this.vipCardInfo;
-			}
 		},
 		onLoad(options) {
 			if (options) {
@@ -217,41 +194,8 @@
 			console.log(this.couponInfo, 'lll')
 			this.checkCoupon();
 			this.getUserVipInfo();
-			this.getVipCard();
 		},
 		methods: {
-			// 应付价：权益会员(或勾选随单开通)且卡配了权益卡价 → benefitPrice；新人 → 新人价；否则单价
-			calcPrice(item) {
-				if ((item.isBenefitMember == 1 || this.buyVipChecked) && Number(item.benefitPrice) > 0) {
-					return item.benefitPrice;
-				}
-				return item.isNewUser == 1 ? (item.newUserPrice || item.cardPrice) : item.cardPrice;
-			},
-			// 底部应付合计：套餐价(勾选加购视同权益会员) + 勾选的权益会员卡实时价
-			calcTotal(item) {
-				let p = Number(this.calcPrice(item));
-				if (this.buyVipChecked && this.vipCardInfo) {
-					p = Number((p + Number(this.vipCardInfo.currentPrice)).toFixed(2));
-				}
-				return p;
-			},
-			// 可随单加购的权益会员卡(取上架第一张;无上架卡则不显示入口)
-			async getVipCard() {
-				try {
-					const r = await getVipCardList({ page: 1, limit: 1 });
-					const list = (r.data && r.data.list) || [];
-					this.vipCardInfo = list.length ? list[0] : null;
-				} catch (e) {
-					this.vipCardInfo = null;
-				}
-			},
-			// 勾/取消随单开通权益会员：套餐价切权益价 + 合计加权益卡价，并重扣优惠券
-			toggleBuyVip() {
-				this.buyVipChecked = !this.buyVipChecked;
-				this.noCouponPrice = this.calcTotal(this.fitCardRow);
-				this.price = this.calcTotal(this.fitCardRow);
-				this.checkCoupon();
-			},
 			// 跳转优惠券
 			jumpPageCoupons() {
 				console.log(this.myStore, 'llllllll')
@@ -339,9 +283,7 @@
 							paySum: this.noCouponPrice,
 							fitCardId: this.fitCardId,
 							couponId: this.couponId,
-							storeAddressId: this.myStore.storeAddrId,
-							//随单开通权益会员:勾选时带上权益卡id,后端按权益价+权益卡实时价重算合计
-							buyVipCardId: (this.buyVipChecked && this.vipCardInfo) ? this.vipCardInfo.vipCardId : ''
+							storeAddressId: this.myStore.storeAddrId
 						};
 						createOrder(data).then((res) => {
 							if (res.code == 1) {
@@ -392,11 +334,10 @@
 				this.couponId = '';
 				this.couponInfo = null;
 				this.couponPrice = null;
-				if (item.autoPay > 0) this.buyVipChecked = false; //连续包月卡不支持随单开通权益会员
-				this.noCouponPrice = this.calcTotal(item);
+				this.noCouponPrice = item.isNewUser == 1 ? (item.newUserPrice || item.cardPrice) : item.cardPrice;
 				this.fitCardRow = item;
 				this.package = index;
-				this.price = this.calcTotal(item);
+				this.price = item.isNewUser == 1 ? (item.newUserPrice || item.cardPrice) : item.cardPrice;
 				this.fitCardId = item.fitCardId;
 				this.cardType = item.cardType; //当前卡片类型
 				//这是防止选优惠券后重置进来的选择
@@ -441,15 +382,18 @@
 						this.fitCardRow = this.cardList.find((item) => {
 							return item.fitCardId == this.fitCardId;
 						});
-						this.noCouponPrice = this.calcTotal(this.fitCardRow)
-						this.price = this.calcTotal(this.fitCardRow);
+						this.noCouponPrice = this.fitCardRow.isNewUser == 1 ? (this.fitCardRow.newUserPrice || this
+							.fitCardRow.cardPrice) : this.fitCardRow.cardPrice
+						this.price = this.fitCardRow.isNewUser == 1 ? (this.fitCardRow.newUserPrice || this
+							.fitCardRow.cardPrice) : this.fitCardRow.cardPrice;
 						console.log(this.fitCardRow, 'this.fitCardRow')
 					} else {
 
 						// 页面初始化价格
-						this.price = this.calcTotal(row);
+						this.price = row.isNewUser == 1 ? (row.newUserPrice || row.cardPrice) : row.cardPrice;
 						this.fitCardId = row.fitCardId;
-						this.noCouponPrice = this.calcTotal(row)
+						this.noCouponPrice = row.isNewUser == 1 ? (row.newUserPrice || row.cardPrice) : row
+							.cardPrice
 						this.fitCardRow = row
 
 					}
@@ -692,37 +636,6 @@
 					width: 10rpx;
 					height: 17rpx;
 					margin-left: 13rpx;
-				}
-			}
-		}
-
-		.vip-buy {
-			margin-top: 20rpx;
-
-			.vip-check {
-				width: 32rpx;
-				height: 32rpx;
-				border: 2rpx solid #ccc;
-				border-radius: 50%;
-				box-sizing: border-box;
-				margin-right: 13rpx;
-				position: relative;
-
-				&.checked {
-					background: #DD541A;
-					border-color: #DD541A;
-
-					&::after {
-						content: '';
-						position: absolute;
-						left: 10rpx;
-						top: 4rpx;
-						width: 8rpx;
-						height: 16rpx;
-						border: solid #fff;
-						border-width: 0 3rpx 3rpx 0;
-						transform: rotate(45deg);
-					}
 				}
 			}
 		}

@@ -115,26 +115,6 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         return new PageUtils(list, total, query.getLimit(), query.getPage());
     }
 
-    @Override
-    public int activateAttached(String orderNo) {
-        //按订单号取加购权益卡的有效天数;普通购卡单无占位,幂等跳过
-        VipBenefitCard card = vipBenefitMapper.selectCardByOrderNo(orderNo);
-        if (card == null) {
-            return 0;
-        }
-        Date now = new Date();
-        int days = card.getValidityDays() == null ? 0 : card.getValidityDays();
-        // 加购顺延天数取下单时快照(本单会员卡之前的剩余天数,不含本单新买会员卡时长)
-        int defer = deferDaysByOrderNo(orderNo);
-        //幂等激活:仅 status=9 待支付命中;重复回调命中0行直接返回,不重复计数
-        int rows = vipBenefitMapper.activate(orderNo, addDays(now, defer), addDays(now, defer + days));
-        if (rows == 0) {
-            return 0;
-        }
-        vipBenefitMapper.incrSoldCount(card.getVipCardId());
-        return 1;
-    }
-
     /** 在 date 基础上加 days 天 */
     private Date addDays(Date date, int days) {
         Calendar c = Calendar.getInstance();

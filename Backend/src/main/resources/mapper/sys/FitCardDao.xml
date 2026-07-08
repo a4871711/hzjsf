@@ -22,18 +22,17 @@
         <result property="nextPrice3" column="nextPrice3"/>
         <result property="nextPriceTitle3" column="nextPriceTitle3"/>
         <result property="costPrice" column="costPrice"/>
-        <result property="benefitPrice" column="benefitPrice"/>
         <result property="createdDate" column="createdDate"/>
         <result property="useCount" column="useCount"/>
         <result property="storeAddrIds" column="storeAddrIds"/>
         <result property="showStoreAddrIds" column="showStoreAddrIds"/>
     </resultMap>
     <sql id="Base_Column_List">
-		cardType,cardName,cardPrice,newUserPrice,validity,cardImgUrl,cardRule,autoPay,status,nextPrice,nextPriceTitle,nextPrice2,nextPriceTitle2,nextPrice3,nextPriceTitle3,costPrice,benefitPrice,createdDate,useCount,storeAddrIds,showStoreAddrIds
+		cardType,cardName,cardPrice,newUserPrice,validity,cardImgUrl,cardRule,autoPay,status,nextPrice,nextPriceTitle,nextPrice2,nextPriceTitle2,nextPrice3,nextPriceTitle3,costPrice,createdDate,useCount,storeAddrIds,showStoreAddrIds
 	</sql>
     <select id="queryList" resultType="com.dlc.modules.sys.entity.FitCardEntity" parameterType="map">
         SELECT
-        f.fitCardId,f.cardType,f.cardName,f.cardPrice,f.newUserPrice,f.validity,f.cardImgUrl,f.cardRule,f.createdDate,f.autoPay,f.status,f.nextPrice,f.costPrice,f.benefitPrice,
+        f.fitCardId,f.cardType,f.cardName,f.cardPrice,f.newUserPrice,f.validity,f.cardImgUrl,f.cardRule,f.createdDate,f.autoPay,f.status,f.nextPrice,f.costPrice,
         t.ctName,f.nextPriceTitle,f.nextPrice2,f.nextPriceTitle2,f.nextPrice3,f.nextPriceTitle3,f.storeAddrIds,f.useCount,f.showStoreAddrIds
         FROM fit_card f INNER JOIN card_type t on t.cardType=f.cardType
         <where>  
@@ -92,7 +91,6 @@
         #{nextPrice3},
         #{nextPriceTitle3},
         #{costPrice},
-        #{benefitPrice},
         #{createdDate},
         #{useCount},
         #{storeAddrIds},
@@ -123,7 +121,6 @@
 		nextPrice3= #{nextPrice3},
 		nextPriceTitle3= #{nextPriceTitle3},
 		costPrice= #{costPrice},
-		benefitPrice= #{benefitPrice},
 		cardRule=#{cardRule},
 		useCount=#{useCount},
 		storeAddrIds=#{storeAddrIds},

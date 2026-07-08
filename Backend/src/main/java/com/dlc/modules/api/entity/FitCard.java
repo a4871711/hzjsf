@@ -17,9 +17,6 @@ public class FitCard implements Serializable {
 
     private BigDecimal costPrice;
 
-    /** 权益卡价格（权益会员专享价，>0 时权益会员按此价购买） */
-    private BigDecimal benefitPrice;
-
     private Integer validity;
 
     private String cardImgUrl;
@@ -80,14 +77,6 @@ public class FitCard implements Serializable {
             return firstPositivePrice(newUserPrice, cardPrice, costPrice);
         }
         return firstPositivePrice(cardPrice, costPrice);
-    }
-
-    /** 应付单价：权益会员且卡配了权益卡价 → benefitPrice；其余同 resolveSalePrice(isNewUser) */
-    public BigDecimal resolveSalePrice(boolean isNewUser, boolean isBenefitMember) {
-        if (isBenefitMember && benefitPrice != null && benefitPrice.compareTo(BigDecimal.ZERO) > 0) {
-            return benefitPrice;
-        }
-        return resolveSalePrice(isNewUser);
     }
 
     private static BigDecimal firstPositivePrice(BigDecimal... candidates) {
@@ -258,13 +247,5 @@ public class FitCard implements Serializable {
 
 	public void setShowStoreAddrIds(String showStoreAddrIds) {
 		this.showStoreAddrIds = showStoreAddrIds;
-	}
-
-	public BigDecimal getBenefitPrice() {
-		return benefitPrice;
-	}
-
-	public void setBenefitPrice(BigDecimal benefitPrice) {
-		this.benefitPrice = benefitPrice;
 	}
 }
