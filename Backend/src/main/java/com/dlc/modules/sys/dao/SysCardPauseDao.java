@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * 停卡记录(card_pause_record)后台只读查询。
  * 移动端停卡(api CardPauseController/Service)已完成写入,后台只提供列表给 admin 的 cardPause.vue 用。
- * 列表联表带出会员昵称手机号、卡名,并附本卡本年度停卡次数(yearCount)。
+ * 列表联表带出会员昵称手机号、卡名、停卡类型/金额/取消时间等,并派生展示状态 displayStatus(99=已结束)。
  * 对应 mapper/sys/SysCardPauseDao.xml(sys XML 热刷新,无需重启)。
  *
  * @date 2026-07-03

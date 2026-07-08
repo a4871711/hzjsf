@@ -50,7 +50,7 @@ public enum CodeAndMsg {
     VALIDATION_CODE_ERROR(104,"IOS授权解码失败"),
     USER_QROCDE_PASS(0,"用户二维码校验通过"),
 
-    // ===== VIP 权益转让 统一码表（详细技术设计 附录A，-50 ~ -70） =====
+    // ===== VIP 权益转让/权益停卡 统一码表（详细技术设计 附录A，-50 ~ -79） =====
     ERROR_VIP_BENEFIT_NOT_EXIST(-50,"权益不存在"),
     ERROR_VIP_BENEFIT_NOT_OWNER(-51,"该权益不属于你"),
     ERROR_VIP_BENEFIT_STATUS_ABNORMAL(-52,"权益状态异常"),
@@ -67,15 +67,20 @@ public enum CodeAndMsg {
     ERROR_VIP_TRANSFER_ARREARS(-63,"存在欠费，暂不可转让"),
     ERROR_VIP_TRANSFER_REFUNDED_CARD(-64,"已办理退卡，不可转让"),
     ERROR_VIP_TRANSFER_VIOLATION(-65,"存在重大违规记录"),
-    ERROR_PAUSE_LIMIT_MONTH(-66,"本月已停卡一次"),
-    ERROR_PAUSE_LIMIT_YEAR(-67,"全年停卡次数已用完，共12次"),
     ERROR_PAUSE_STATE(-68,"停卡状态异常"),
     ERROR_VIP_FEE_RULE_NOT_EXIST(-69,"转让费用规则不存在或未配置"),
     ERROR_VIP_FEE_RULE_FORMAT(-70,"分档配置格式有误"),
     ERROR_PAUSE_NOT_VIP_MEMBER(-71,"开通权益会员后才可停卡"),
     ERROR_VIP_REFUND_FAIL(-72,"服务费退款失败,请稍后重试"),
+    ERROR_VIP_CARD_NOT_ELIGIBLE(-73,"需持有指定会员卡才可购买该权益卡"),
+    ERROR_VIP_BENEFIT_ALREADY_HELD(-74,"已持有有效权益卡，到期后才可再次购买"),
+    ERROR_PAUSE_FREE_QUOTA_USED(-75,"30天内已使用过免费停卡"),
+    ERROR_PAUSE_FREE_DAYS_LIMIT(-76,"免费停卡最长7天"),
+    ERROR_PAUSE_RULE_NOT_CONFIG(-77,"该卡未开通付费停卡"),
+    ERROR_PAUSE_TIER_INVALID(-78,"停卡档位不存在"),
+    ERROR_PAUSE_CARD_NOT_BENEFIT(-79,"仅权益卡性质的会员卡可停卡"),
 
-    /* ===== 私教管理后台业务码(全局收口,唯一来源;避开 -1~-36 / 101~104 / VIP -50~-72) ===== */
+    /* ===== 私教管理后台业务码(全局收口,唯一来源;避开 -1~-36 / 101~104 / VIP -50~-79) ===== */
     /* —— 交易域 -80 ~ -99 —— */
     ERROR_PRODUCT_OFF(-80,"商品已下架"),
     ERROR_PRODUCT_NOT_EXIST(-81,"私教商品不存在"),

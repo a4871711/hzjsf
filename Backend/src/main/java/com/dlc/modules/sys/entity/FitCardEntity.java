@@ -23,7 +23,11 @@ public class FitCardEntity implements Serializable {
 	 * 卡片类型（0：月卡1:季卡2：半年卡3：年卡）
 	 */
 	private Integer cardType;
-	
+	/**
+	 * 卡种性质(全新维度,与cardType无关)：0：普通卡  1：权益卡性质(可作为VIP权益卡"可绑定会员卡"候选)
+	 */
+	private Integer cardNature;
+
 	private String cardName;
 	/**
 	 * 单价
@@ -119,6 +123,18 @@ public class FitCardEntity implements Serializable {
 	 */
 	public Integer getCardType() {
 		return cardType;
+	}
+	/**
+	 * 设置：卡种性质
+	 */
+	public void setCardNature(Integer cardNature) {
+		this.cardNature = cardNature;
+	}
+	/**
+	 * 获取：卡种性质
+	 */
+	public Integer getCardNature() {
+		return cardNature;
 	}
 	/**
 	 * 设置：单价

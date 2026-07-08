@@ -62,6 +62,8 @@ public class WxPayController extends BaseController {
     @Autowired
     private PtInstallmentService ptInstallmentService;
     @Autowired
+    private CardPauseService cardPauseService;
+    @Autowired
     private RedisUtils redisUtils;
     @Autowired
     private CardOrderService cardOrderService;
@@ -484,6 +486,11 @@ public class WxPayController extends BaseController {
                     //必须先于兜底 else,否则会错进 updateCardOrder 旧卡逻辑
                     log.info("-------分期后续期到账(小程序回调)=========" );
                     ptInstallmentService.installmentBillCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
+                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_PAUSE_FEE_TYPE)) {
+                    //付费停卡费(后缀c):单事务记账+停卡生效+预顺延有效期,幂等
+                    //必须先于兜底 else,否则停卡费单会错进 updateCardOrder 旧卡逻辑
+                    log.info("-------付费停卡费支付成功(小程序回调)=========" );
+                    cardPauseService.payCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
                 } else {
                     //更新健身卡订单
                     log.info("-------微信代扣更新健身卡订单=========" );

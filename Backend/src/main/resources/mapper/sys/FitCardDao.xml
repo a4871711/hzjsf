@@ -28,18 +28,19 @@
         <result property="showStoreAddrIds" column="showStoreAddrIds"/>
     </resultMap>
     <sql id="Base_Column_List">
-		cardType,cardName,cardPrice,newUserPrice,validity,cardImgUrl,cardRule,autoPay,status,nextPrice,nextPriceTitle,nextPrice2,nextPriceTitle2,nextPrice3,nextPriceTitle3,costPrice,createdDate,useCount,storeAddrIds,showStoreAddrIds
+		cardType,cardName,cardPrice,newUserPrice,validity,cardImgUrl,cardRule,autoPay,status,nextPrice,nextPriceTitle,nextPrice2,nextPriceTitle2,nextPrice3,nextPriceTitle3,costPrice,createdDate,useCount,storeAddrIds,showStoreAddrIds,cardNature
 	</sql>
     <select id="queryList" resultType="com.dlc.modules.sys.entity.FitCardEntity" parameterType="map">
         SELECT
         f.fitCardId,f.cardType,f.cardName,f.cardPrice,f.newUserPrice,f.validity,f.cardImgUrl,f.cardRule,f.createdDate,f.autoPay,f.status,f.nextPrice,f.costPrice,
-        t.ctName,f.nextPriceTitle,f.nextPrice2,f.nextPriceTitle2,f.nextPrice3,f.nextPriceTitle3,f.storeAddrIds,f.useCount,f.showStoreAddrIds
+        t.ctName,f.nextPriceTitle,f.nextPrice2,f.nextPriceTitle2,f.nextPrice3,f.nextPriceTitle3,f.storeAddrIds,f.useCount,f.showStoreAddrIds,f.cardNature
         FROM fit_card f INNER JOIN card_type t on t.cardType=f.cardType
-        <where>  
+        <where>
         	<if test="cardName != null and cardName != ''">
                 AND f.cardName LIKE concat('%',#{cardName},'%')
             </if>
             <if test="status != null and status != ''"> and f.status = #{status}</if>
+            <if test="cardNature != null and cardNature != ''"> and f.cardNature = #{cardNature}</if>
             <if test="startTime != null and ''!=startTime and endTime!=null and endTime!=''">
                 AND f.createdDate between #{startTime} and #{endTime}
             </if>
@@ -51,11 +52,12 @@
     </select>
     <select id="queryTotal" resultType="int">
 		SELECT COUNT(1) FROM  fit_card f INNER JOIN card_type t on t.cardType=f.cardType
-		<where>   
+		<where>
         	<if test="cardName != null and cardName != ''">
                 AND f.cardName LIKE concat('%',#{cardName},'%')
             </if>
             <if test="status != null and status != ''"> and f.status = #{status}</if>
+            <if test="cardNature != null and cardNature != ''"> and f.cardNature = #{cardNature}</if>
             <if test="startTime != null and ''!=startTime and endTime!=null and endTime!=''">
                 AND f.createdDate between #{startTime} and #{endTime}
             </if>
@@ -94,7 +96,8 @@
         #{createdDate},
         #{useCount},
         #{storeAddrIds},
-        #{showStoreAddrIds}
+        #{showStoreAddrIds},
+        #{cardNature}
         )
     </insert>
     <delete id="deleteBatch">
@@ -124,7 +127,8 @@
 		cardRule=#{cardRule},
 		useCount=#{useCount},
 		storeAddrIds=#{storeAddrIds},
-		showStoreAddrIds=#{showStoreAddrIds}
+		showStoreAddrIds=#{showStoreAddrIds},
+		cardNature=#{cardNature}
 		WHERE  fitCardId=#{fitCardId}
 	</update>
 
@@ -139,4 +143,13 @@
         status= #{status}
         WHERE  fitCardId=#{fitCardId}
     </update>
+
+    <!--统计给定ID中属于"权益卡性质"(cardNature=1)的数量,校验VIP权益卡"可绑定会员卡"配置用-->
+    <select id="countBenefitNatureByIds" resultType="int">
+        SELECT COUNT(1) FROM fit_card
+        WHERE cardNature = 1 AND fitCardId IN
+        <foreach item="id" collection="list" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
 </mapper>

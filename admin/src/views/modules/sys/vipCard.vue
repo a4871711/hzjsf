@@ -75,12 +75,15 @@ export default {
         { type: "input", label: "售价（元）", width: 350, prop: "price" },
         { type: "input", label: "有效天数", width: 350, prop: "validityDays" },
         { type: "select", label: "适用门店", width: 350, prop: "storeAddrIds", multiple: true },
+        { type: "select", label: "可绑定会员卡", width: 350, prop: "bindFitCardIds", multiple: true,
+          placeholder: '不选=不限制，任何会员均可购买' },
         { type: "switch", label: "显示实时购买人数", prop: "showBuyCount", values: [1, 0] },
         { type: "input", label: "展示基数/首发起算人数", width: 350, prop: "baseBuyCount" },
         { type: "input", label: "每多少人涨价", width: 350, prop: "stepNum", placeholder: "0=不动态涨价" },
         { type: "input", label: "每档加价（元）", width: 350, prop: "stepAddPrice" },
         { type: "input", label: "封顶价（元）", width: 350, prop: "priceCap", placeholder: "留空=不封顶" },
         { type: "select", label: "关联转让费用规则", width: 350, prop: "feeRuleId" },
+        { type: "select", label: "关联停卡规则", width: 350, prop: "pauseRuleId" },
         { type: "radio", label: "状态", width: 350, prop: "status", radios: [
           { value: 1, label: '上架' },
           { value: 2, label: '下架' }
@@ -104,6 +107,8 @@ export default {
     this.getData();
     this.getStoreList();
     this.getFeeRuleList();
+    this.getPauseRuleList();
+    this.getFitCardOptions();
   },
   methods: {
     // 表单初始值（sold_count 系统维护、不入表单）
@@ -115,7 +120,9 @@ export default {
         price: '',
         validityDays: 365,
         storeAddrIds: [],
+        bindFitCardIds: [],
         feeRuleId: '',
+        pauseRuleId: '',
         showBuyCount: 1,
         baseBuyCount: '',
         stepNum: '',
@@ -153,6 +160,7 @@ export default {
         list.forEach(function (r) {
           // storeAddrIds 字符串 -> 数字数组（供多选回显）
           r.storeAddrIds = r.storeAddrIds ? r.storeAddrIds.split(',').map(function (x) { return x * 1; }) : [];
+          r.bindFitCardIds = r.bindFitCardIds ? r.bindFitCardIds.split(',').map(function (x) { return x * 1; }) : [];
         });
         this.tableData = list;
         this.pagination.total = res.pages ? res.pages.totalCount : 0;
@@ -184,6 +192,24 @@ export default {
       opts.unshift({ value: '', label: '不关联（转让免费）' });
       this.formCols[this.labIndex(this.formCols, '关联转让费用规则')].options = opts;
     },
+    // 关联停卡规则下拉
+    async getPauseRuleList() {
+      var res = await this.apis.vipPauseRule_list({ page: 1, limit: 999 });
+      var list = (res.pages && res.pages.list) || [];
+      var opts = list.map(function (r) { return { value: r.pauseRuleId, label: r.ruleName }; });
+      opts.unshift({ value: '', label: '不关联（仅免费停卡额度）' });
+      this.formCols[this.labIndex(this.formCols, '关联停卡规则')].options = opts;
+    },
+    // 可绑定会员卡下拉(仅拉"权益卡性质"的 fit_card 作为候选)
+    async getFitCardOptions() {
+      var res = await this.apis.fitcard_list({ page: 1, limit: 999, cardNature: 1 });
+      var list = (res.pages && res.pages.list) || [];
+      list.forEach(function (item) {
+        item.value = item.fitCardId;
+        item.label = item.ctName ? (item.cardName + '（' + item.ctName + '）') : item.cardName;
+      });
+      this.formCols[this.labIndex(this.formCols, '可绑定会员卡')].options = list;
+    },
     openAdd() {
       this.formData = this.blankForm();
       this.elFormVisible();
@@ -193,9 +219,11 @@ export default {
       Object.keys(form).forEach(function (key) {
         if (row[key] !== undefined) form[key] = row[key];
       });
-      // storeAddrIds 在 getData 已转成数组；feeRuleId 为空归一成 ''
+      // storeAddrIds/bindFitCardIds 在 getData 已转成数组；feeRuleId 为空归一成 ''
       form.storeAddrIds = Array.isArray(row.storeAddrIds) ? row.storeAddrIds.slice() : [];
+      form.bindFitCardIds = Array.isArray(row.bindFitCardIds) ? row.bindFitCardIds.slice() : [];
       form.feeRuleId = (row.feeRuleId === null || row.feeRuleId === undefined) ? '' : row.feeRuleId;
+      form.pauseRuleId = (row.pauseRuleId === null || row.pauseRuleId === undefined) ? '' : row.pauseRuleId;
       this.formData = form;
       this.elFormVisible('编辑');
     },
@@ -209,6 +237,7 @@ export default {
     async submit() {
       var data = Object.assign({}, this.formData);
       data.storeAddrIds = (data.storeAddrIds || []).join(',');
+      data.bindFitCardIds = (data.bindFitCardIds || []).join(',');
       try {
         var res = !data.vipCardId
           ? await this.apis.vipCard_save(data)

@@ -3,14 +3,22 @@
 
 <mapper namespace="com.dlc.modules.sys.dao.SysCardPauseDao">
 
-    <!-- 停卡记录公共筛选:手机号/状态/起止日期 -->
+    <!-- 展示状态:生效中(0)且结束时间已过的记为 99=已结束;end_time 为 NULL 的旧开放式停卡中记录仍算 0 停卡中 -->
+    <sql id="DisplayStatus">
+        CASE WHEN t.status = 0 AND t.end_time IS NOT NULL AND t.end_time &lt;= NOW() THEN 99 ELSE t.status END
+    </sql>
+
+    <!-- 停卡记录公共筛选:手机号/展示状态(10/0/99/1/2/3)/停卡类型/起止日期 -->
     <sql id="Filter">
         <where>
             <if test="phone != null and phone != ''">
                 AND u.phone LIKE concat('%', #{phone}, '%')
             </if>
             <if test="status != null and status != ''">
-                AND t.status = #{status}
+                AND (<include refid="DisplayStatus"/>) = #{status}
+            </if>
+            <if test="pauseType != null and pauseType != ''">
+                AND t.pause_type = #{pauseType}
             </if>
             <if test="startDate != null and startDate != ''">
                 AND t.created_date &gt;= #{startDate}
@@ -29,14 +37,17 @@
             u.phone             AS phone,
             t.card_order_id     AS cardOrderId,
             fc.cardName         AS cardName,
+            t.pause_type        AS pauseType,
+            t.amount            AS amount,
+            t.pay_order_no      AS payOrderNo,
             DATE_FORMAT(t.start_time, '%Y-%m-%d %H:%i:%s') AS startTime,
             DATE_FORMAT(t.end_time, '%Y-%m-%d %H:%i:%s') AS endTime,
+            DATE_FORMAT(t.cancel_time, '%Y-%m-%d %H:%i:%s') AS cancelTime,
             t.pause_days        AS pauseDays,
+            t.actual_days       AS actualDays,
             t.status            AS status,
-            DATE_FORMAT(t.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate,
-            (SELECT COUNT(1) FROM card_pause_record p2
-                WHERE p2.card_order_id = t.card_order_id
-                  AND YEAR(p2.created_date) = YEAR(t.created_date)) AS yearCount
+            <include refid="DisplayStatus"/> AS displayStatus,
+            DATE_FORMAT(t.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate
         FROM card_pause_record t
         LEFT JOIN user_info u ON t.user_id = u.userId
         LEFT JOIN card_order co ON t.card_order_id = co.cardOrderId

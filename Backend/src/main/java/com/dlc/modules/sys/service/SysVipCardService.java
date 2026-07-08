@@ -31,4 +31,10 @@ public interface SysVipCardService {
 
     /** 上/下架 1上架 2下架 */
     int updateOnOffCard(Long vipCardId, Integer status);
+
+    /**
+     * 校验"可绑定会员卡"配置字符串:每个 fitCardId 都必须存在且为权益卡性质(cardNature=1)。
+     * null/空字符串视为未配置,直接通过(不限制)。
+     */
+    boolean isBindFitCardIdsValid(String bindFitCardIds);
 }

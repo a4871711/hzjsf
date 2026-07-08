@@ -8,6 +8,8 @@ public class FitCard implements Serializable {
     private Long fitCardId;
 
     private Integer cardType;
+    /** 卡种性质(全新维度,与cardType无关):0普通卡 1权益卡性质(可作为VIP权益卡"可绑定会员卡"候选) */
+    private Integer cardNature;
     private String cardName;
 
     private BigDecimal cardPrice;
@@ -53,6 +55,14 @@ public class FitCard implements Serializable {
 
     public void setCardType(Integer cardType) {
         this.cardType = cardType;
+    }
+
+    public Integer getCardNature() {
+        return cardNature;
+    }
+
+    public void setCardNature(Integer cardNature) {
+        this.cardNature = cardNature;
     }
 
     public BigDecimal getCardPrice() {

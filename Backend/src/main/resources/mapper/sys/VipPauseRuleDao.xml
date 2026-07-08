@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.VipPauseRuleDao">
+
+    <select id="queryList" resultType="com.dlc.modules.sys.entity.VipPauseRuleEntity" parameterType="map">
+        SELECT pause_rule_id AS pauseRuleId, rule_name AS ruleName, tiers_json AS tiersJson,
+               status, created_date AS createdDate
+        FROM vip_pause_rule
+        <where>
+            <if test="ruleName != null and ruleName != ''">
+                AND rule_name LIKE concat('%',#{ruleName},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_date DESC
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1) FROM vip_pause_rule
+        <where>
+            <if test="ruleName != null and ruleName != ''">
+                AND rule_name LIKE concat('%',#{ruleName},'%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <select id="queryObject" resultType="com.dlc.modules.sys.entity.VipPauseRuleEntity" parameterType="long">
+        SELECT pause_rule_id AS pauseRuleId, rule_name AS ruleName, tiers_json AS tiersJson,
+               status, created_date AS createdDate
+        FROM vip_pause_rule
+        WHERE pause_rule_id = #{pauseRuleId}
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.VipPauseRuleEntity">
+        INSERT INTO vip_pause_rule (rule_name, tiers_json, status, created_date)
+        VALUES (#{ruleName}, #{tiersJson}, #{status}, #{createdDate})
+    </insert>
+
+    <update id="update" parameterType="com.dlc.modules.sys.entity.VipPauseRuleEntity">
+        UPDATE vip_pause_rule SET
+            rule_name = #{ruleName},
+            tiers_json = #{tiersJson},
+            status = #{status}
+        WHERE pause_rule_id = #{pauseRuleId}
+    </update>
+
+    <delete id="deleteBatch">
+        DELETE FROM vip_pause_rule WHERE pause_rule_id IN
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 删除前校验:该停卡规则被多少个权益卡引用 -->
+    <select id="countCardRefByRuleId" resultType="int" parameterType="long">
+        SELECT COUNT(1) FROM vip_benefit_card WHERE pause_rule_id = #{pauseRuleId}
+    </select>
+</mapper>

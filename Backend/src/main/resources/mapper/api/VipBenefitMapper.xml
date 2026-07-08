@@ -140,4 +140,14 @@
           AND (expire_time IS NULL OR expire_time > NOW())
     </select>
 
+    <!-- 最新一张有效权益(与 countValidByUser 完全同条件;停卡按其 vip_card_id 找绑定的停卡规则) -->
+    <select id="selectLatestValidByUser" resultType="com.dlc.modules.api.entity.VipBenefit" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM vip_benefit
+        WHERE user_id = #{userId} AND status = 0
+          AND (expire_time IS NULL OR expire_time > NOW())
+        ORDER BY created_date DESC, vip_benefit_id DESC
+        LIMIT 1
+    </select>
+
 </mapper>

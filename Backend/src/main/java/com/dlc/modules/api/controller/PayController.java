@@ -56,6 +56,8 @@ public class PayController extends BaseController{
     private PtMemberWalletService ptMemberWalletService;
     @Autowired
     private PtInstallmentService ptInstallmentService;
+    @Autowired
+    private com.dlc.modules.api.service.CardPauseService cardPauseService;
 
     /**
      *  @Auther:YD
@@ -167,15 +169,16 @@ public class PayController extends BaseController{
                 //添加收支明细
                 int payType = ConfigConstant.WXPAY;
                 log.info("=========添加收支明细==========");
-                //VIP权益卡(后缀6)/转让服务费(后缀7)/私教商品(后缀b)/储值充值(后缀8)/分期首付(后缀9)/分期后续(后缀a)
-                //的记账在各自 service 内部单事务完成,此处跳过避免重复记账(后缀a非数字,若不跳过 Integer.valueOf 会抛异常)
+                //VIP权益卡(后缀6)/转让服务费(后缀7)/私教商品(后缀b)/储值充值(后缀8)/分期首付(后缀9)/分期后续(后缀a)/停卡费(后缀c)
+                //的记账在各自 service 内部单事务完成,此处跳过避免重复记账(后缀a/c非数字,若不跳过 Integer.valueOf 会抛异常)
                 String vipSuffix = orderNo.substring(orderNo.length()-1);
                 if (!vipSuffix.equals(ConfigConstant.VIP_CARD_BUY_TYPE)
                         && !vipSuffix.equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)
                         && !vipSuffix.equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)
                         && !vipSuffix.equals(ConfigConstant.WALLET_RECHARGE_TYPE)
                         && !vipSuffix.equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)
-                        && !vipSuffix.equals(ConfigConstant.INSTALLMENT_BILL_TYPE)) {
+                        && !vipSuffix.equals(ConfigConstant.INSTALLMENT_BILL_TYPE)
+                        && !vipSuffix.equals(ConfigConstant.CARD_PAUSE_FEE_TYPE)) {
                     incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,payType);
                 }
                 if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_ORDER_TYPE)){
@@ -218,6 +221,10 @@ public class PayController extends BaseController{
                     //分期后续期(后缀a):单事务记账+账单入账(pay_order_no行锁+status条件)+计划推进/结清,幂等
                     log.info("-------分期后续期到账=========================================" );
                     ptInstallmentService.installmentBillCallback(orderNo,wallet,transaction_id,payType);
+                }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_PAUSE_FEE_TYPE)){
+                    //付费停卡费(后缀c):单事务记账+停卡生效+预顺延有效期,幂等
+                    log.info("-------付费停卡费支付成功=========================================" );
+                    cardPauseService.payCallback(orderNo,wallet,transaction_id,payType);
                 }
                 log.info(">>微信回调成功");
                 response.getWriter().print("SUCCESS");

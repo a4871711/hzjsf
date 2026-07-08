@@ -146,6 +146,9 @@ public class SysVipCardController {
         if (vipCard.getPriceCap() != null && vipCard.getPriceCap().compareTo(BigDecimal.ZERO) < 0) {
             return R.error("封顶价不能小于0");
         }
+        if (!sysVipCardService.isBindFitCardIdsValid(vipCard.getBindFitCardIds())) {
+            return R.error("所选可绑定会员卡中包含不存在或非权益卡性质的卡，请重新选择");
+        }
         return null;
     }
 }

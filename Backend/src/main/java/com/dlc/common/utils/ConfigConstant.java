@@ -111,6 +111,11 @@ public class ConfigConstant {
     /**私教商品购买在income_pay_detail的支付用途(payType):后缀"b"非数字无法沿用Integer.valueOf自动映射,
      * 固定取14(constant表cId=1现占1~12,代码另占13自动续费,14未占用;展示名需在constant表配ckey=14)*/
     public static final int PT_PRIVATE_PAY_TYPE = 14;
+    /**付费停卡费用订单后缀*/
+    public static final String CARD_PAUSE_FEE_TYPE = "c";
+    /**付费停卡在income_pay_detail的支付用途(payType):后缀"c"非数字无法沿用Integer.valueOf自动映射,
+     * 固定取15(1~12为constant表旧占用,13自动续费,14私教商品,15未占用;展示名需在constant表配ckey=15)*/
+    public static final int CARD_PAUSE_PAY_TYPE = 15;
 
     /**用户缓存前缀*/
     public static final String USER = "hzjsf_user_";

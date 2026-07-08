@@ -6,8 +6,10 @@
     <!-- card_pause_record 为新表,下划线列 AS 驼峰 -->
     <sql id="Base_Column_List">
         pause_id AS pauseId, user_id AS userId, card_order_id AS cardOrderId,
-        pause_month AS pauseMonth, pause_days AS pauseDays, start_time AS startTime,
-        end_time AS endTime, status, created_date AS createdDate
+        pause_type AS pauseType, pause_rule_id AS pauseRuleId, amount,
+        pay_order_no AS payOrderNo, transaction_id AS transactionId, pay_time AS payTime,
+        pause_days AS pauseDays, start_time AS startTime, end_time AS endTime,
+        cancel_time AS cancelTime, actual_days AS actualDays, status, created_date AS createdDate
     </sql>
 
     <insert id="insertSelective" parameterType="com.dlc.modules.api.entity.CardPauseRecord"
@@ -16,49 +18,156 @@
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="userId != null">user_id,</if>
             <if test="cardOrderId != null">card_order_id,</if>
-            <if test="pauseMonth != null">pause_month,</if>
+            <if test="pauseType != null">pause_type,</if>
+            <if test="pauseRuleId != null">pause_rule_id,</if>
+            <if test="amount != null">amount,</if>
+            <if test="payOrderNo != null">pay_order_no,</if>
+            <if test="transactionId != null">transaction_id,</if>
+            <if test="payTime != null">pay_time,</if>
             <if test="pauseDays != null">pause_days,</if>
             <if test="startTime != null">start_time,</if>
             <if test="endTime != null">end_time,</if>
+            <if test="cancelTime != null">cancel_time,</if>
+            <if test="actualDays != null">actual_days,</if>
             <if test="status != null">status,</if>
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="userId != null">#{userId},</if>
             <if test="cardOrderId != null">#{cardOrderId},</if>
-            <if test="pauseMonth != null">#{pauseMonth},</if>
+            <if test="pauseType != null">#{pauseType},</if>
+            <if test="pauseRuleId != null">#{pauseRuleId},</if>
+            <if test="amount != null">#{amount},</if>
+            <if test="payOrderNo != null">#{payOrderNo},</if>
+            <if test="transactionId != null">#{transactionId},</if>
+            <if test="payTime != null">#{payTime},</if>
             <if test="pauseDays != null">#{pauseDays},</if>
             <if test="startTime != null">#{startTime},</if>
             <if test="endTime != null">#{endTime},</if>
+            <if test="cancelTime != null">#{cancelTime},</if>
+            <if test="actualDays != null">#{actualDays},</if>
             <if test="status != null">#{status},</if>
         </trim>
     </insert>
 
-    <!-- card_order 为老表,列名本身即驼峰;行锁串行化并发停卡 -->
+    <!-- card_order 为老表,列名本身即驼峰;行锁串行化并发停卡(cardId 供查 fit_card.cardNature) -->
     <select id="selectCardForUpdate" resultType="com.dlc.modules.api.entity.CardOrder" parameterType="long">
-        SELECT cardOrderId, userId, status, validityDate
+        SELECT cardOrderId, userId, cardId, status, validityDate
         FROM card_order
         WHERE cardOrderId = #{cardOrderId}
         FOR UPDATE
     </select>
 
-    <select id="countByCardMonth" resultType="int">
-        SELECT COUNT(1) FROM card_pause_record
-        WHERE card_order_id = #{cardOrderId} AND pause_month = #{pauseMonth}
+    <!-- fit_card 为老表,列名驼峰;cardNature=1 权益卡性质才可停卡 -->
+    <select id="selectCardNature" resultType="java.lang.Integer" parameterType="long">
+        SELECT cardNature FROM fit_card
+        WHERE fitCardId = #{cardId}
     </select>
 
-    <select id="countByCardYear" resultType="int">
-        SELECT COUNT(1) FROM card_pause_record
-        WHERE card_order_id = #{cardOrderId} AND pause_month LIKE #{yearPrefix}
+    <!-- 行锁用户行(user_info 老表,主键列名 userId),串行化同用户免费额度判定 -->
+    <select id="lockUserForFreeQuota" resultType="java.lang.Long" parameterType="long">
+        SELECT userId FROM user_info
+        WHERE userId = #{userId}
+        FOR UPDATE
     </select>
 
+    <!-- 最近一次免费停卡开始时间(滚动30天1次;已取消的免费停卡仍占额度,故含 0/1/2,不含未支付关闭)。
+         不加锁,仅供 precheck 展示口径 -->
+    <select id="selectLastFreePause" resultType="java.util.Date" parameterType="long">
+        SELECT MAX(start_time) FROM card_pause_record
+        WHERE user_id = #{userId} AND pause_type = 0 AND status IN (0, 1, 2)
+    </select>
+
+    <!-- 同上但锁定读:RR 隔离下普通聚合读会读事务开始时的旧快照,看不到并发已提交的免费单;
+         锁定读(FOR UPDATE)总读最新已提交版本,配合 lockUserForFreeQuota 的用户行锁真正串行化额度判定。
+         聚合不可加 FOR UPDATE,故改取最近一行 -->
+    <select id="selectLastFreePauseForUpdate" resultType="java.util.Date" parameterType="long">
+        SELECT start_time FROM card_pause_record
+        WHERE user_id = #{userId} AND pause_type = 0 AND status IN (0, 1, 2)
+        ORDER BY start_time DESC
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- 该卡当前占用中的停卡(生效中:开放式存量 end_time IS NULL 或未到计划结束;或待支付),锁定读取一条。
+         用锁定读而非普通 COUNT:同理规避 RR 快照,读到并发已提交的活跃停卡;返回 pause_id 或 null。
+         excludePauseId 排除自身(apply 传 0=不排除;payCallback 传本单 pauseId,查是否已被其它停卡顶替) -->
+    <select id="selectActivePauseIdForUpdate" resultType="java.lang.Long">
+        SELECT pause_id FROM card_pause_record
+        WHERE card_order_id = #{cardOrderId}
+          AND pause_id != #{excludePauseId}
+          AND ((status = 0 AND (end_time IS NULL OR end_time &gt; NOW())) OR status = 10)
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- (原 countActiveByCard 已由 selectActivePauseIdForUpdate 锁定读版取代) -->
+
+    <!-- 关闭该卡遗留的待支付停卡单(10→3 已关闭未支付),为新申请让路 -->
+    <update id="closeUnpaidByCard">
+        UPDATE card_pause_record
+        SET status = 3
+        WHERE card_order_id = #{cardOrderId} AND status = 10
+    </update>
+
+    <!-- 付费回调按支付单号行锁定位(pay_order_no 唯一) -->
+    <select id="selectByPayOrderNoForUpdate" resultType="com.dlc.modules.api.entity.CardPauseRecord" parameterType="string">
+        SELECT <include refid="Base_Column_List"/>
+        FROM card_pause_record
+        WHERE pay_order_no = #{orderNo}
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- 按支付单号取停卡记录(不加锁,记账反查 userId 用) -->
+    <select id="selectByPayOrderNo" resultType="com.dlc.modules.api.entity.CardPauseRecord" parameterType="string">
+        SELECT <include refid="Base_Column_List"/>
+        FROM card_pause_record
+        WHERE pay_order_no = #{orderNo}
+        LIMIT 1
+    </select>
+
+    <!-- 按 pause_id 取记录(不加锁,cancel 先探 cardOrderId 以"卡→单"序加锁防死锁) -->
+    <select id="selectByPauseId" resultType="com.dlc.modules.api.entity.CardPauseRecord" parameterType="long">
+        SELECT <include refid="Base_Column_List"/>
+        FROM card_pause_record
+        WHERE pause_id = #{pauseId}
+        LIMIT 1
+    </select>
+
+    <!-- 付费停卡生效:待支付(10)/已关闭未支付(3,迟到回调仍认账)→0 生效,命中0行=已处理 -->
+    <update id="activateByPayOrderNo">
+        UPDATE card_pause_record
+        SET status = 0, start_time = #{now}, end_time = #{endTime},
+            pay_time = #{now}, transaction_id = #{transactionId}
+        WHERE pause_id = #{pauseId} AND status IN (10, 3)
+    </update>
+
+    <!-- 付费停卡回调时卡已失效或已被其它停卡顶替:钱已实收,认账但不生效为停卡、不顺延有效期。
+         status(10待支付/3已关闭)→2,视为已支付作废(actual_days=0 标记未实际停卡),防双重顺延/顺延死卡 -->
+    <update id="voidPaidByPayOrderNo">
+        UPDATE card_pause_record
+        SET status = 2, pay_time = #{now}, transaction_id = #{transactionId},
+            cancel_time = #{now}, actual_days = 0
+        WHERE pause_id = #{pauseId} AND status IN (10, 3)
+    </update>
+
+    <!-- 提前取消:仅生效中且未到计划结束时间命中(开放式存量 end_time IS NULL 不进此,走旧 resume) -->
+    <update id="cancelPause">
+        UPDATE card_pause_record
+        SET status = 2, cancel_time = #{now}, actual_days = #{usedDays}
+        WHERE pause_id = #{pauseId} AND status = 0 AND end_time &gt; #{now}
+    </update>
+
+    <!-- 取本人生效中记录并行锁(取消入口串行化,防与付费回调/重复取消并发) -->
     <select id="selectPausingById" resultType="com.dlc.modules.api.entity.CardPauseRecord">
         SELECT <include refid="Base_Column_List"/>
         FROM card_pause_record
         WHERE pause_id = #{pauseId} AND user_id = #{userId} AND status = 0
         LIMIT 1
+        FOR UPDATE
     </select>
 
-    <!-- 幂等恢复:仅停卡中(status=0)命中 -->
+    <!-- 存量开放式记录恢复(旧 resume 语义):仅停卡中(status=0)命中 -->
     <update id="resume">
         UPDATE card_pause_record
         SET end_time = #{endTime}, pause_days = #{pauseDays}, status = 1
@@ -72,8 +181,18 @@
         WHERE cardOrderId = #{cardOrderId}
     </update>
 
+    <!-- 提前取消按未使用天数扣回有效期(与 extendCardValidity 对称) -->
+    <update id="shrinkCardValidity">
+        UPDATE card_order
+        SET validityDate = DATE_SUB(validityDate, INTERVAL #{days} DAY)
+        WHERE cardOrderId = #{cardOrderId}
+    </update>
+
+    <!-- 列表带派生列 displayStatus:生效中但已到计划结束时间 → 99已完成(到期零动作,库里仍是0) -->
     <select id="selectMyList" resultType="com.dlc.modules.api.entity.CardPauseRecord" parameterType="map">
-        SELECT <include refid="Base_Column_List"/>
+        SELECT <include refid="Base_Column_List"/>,
+               CASE WHEN status = 0 AND end_time IS NOT NULL AND end_time &lt;= NOW()
+                    THEN 99 ELSE status END AS displayStatus
         FROM card_pause_record
         <where>
             user_id = #{userId}

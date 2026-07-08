@@ -49,6 +49,8 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
     private PtMemberWalletFlowDao ptMemberWalletFlowDao;
     @Autowired
     private com.dlc.modules.api.dao.PtOrderInstallmentBillDao ptOrderInstallmentBillDao;
+    @Autowired
+    private CardPauseRecordMapper cardPauseRecordMapper;
     /**
      *  @Auther:YD
      *  @parameters:
@@ -67,6 +69,9 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
             //私教商品购买/分期首付/分期后续期:同属私教商品收款,固定取14(constant表cId=1需配ckey=14)。
             //后缀"b"/"a"非数字无法沿用 Integer.valueOf;后缀"9"虽为数字但9在本表语义为退款,故一并归14避免误分类。
             ipd.setPayType(ConfigConstant.PT_PRIVATE_PAY_TYPE);
+        } else if (suffix.equals(ConfigConstant.CARD_PAUSE_FEE_TYPE)) {
+            //付费停卡费:后缀"c"非数字无法沿用 Integer.valueOf,固定取15(展示名需在constant表配ckey=15)
+            ipd.setPayType(ConfigConstant.CARD_PAUSE_PAY_TYPE);
         } else {
             ipd.setPayType(Integer.valueOf(suffix));
         }
@@ -149,6 +154,13 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
                 if (ms.get("storeId") != null) {
                     ipd.setStoreId(((Number) ms.get("storeId")).longValue());
                 }
+            }
+        }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_PAUSE_FEE_TYPE)){
+            //付费停卡费订单(后缀c):按支付单号反查 card_pause_record 取 userId,门店取会员当前门店(仿VIP后缀6写法)
+            com.dlc.modules.api.entity.CardPauseRecord pauseRecord = cardPauseRecordMapper.selectByPayOrderNo(orderNo);
+            if (pauseRecord != null) {
+                ipd.setUserId(pauseRecord.getUserId());
+                ipd.setStoreId(userInfoMapper.queryStoreIdByUserId(pauseRecord.getUserId()));
             }
         }
         //订单号

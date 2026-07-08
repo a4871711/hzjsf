@@ -1,5 +1,6 @@
 package com.dlc.modules.sys.service.impl;
 
+import com.dlc.modules.sys.dao.FitCardDao;
 import com.dlc.modules.sys.dao.VipBenefitCardDao;
 import com.dlc.modules.sys.entity.VipBenefitCardEntity;
 import com.dlc.modules.sys.service.SysVipCardService;
@@ -7,9 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * VIP 权益卡商品(vip_benefit_card)后台服务实现
@@ -21,6 +25,8 @@ public class SysVipCardServiceImpl implements SysVipCardService {
 
     @Autowired
     private VipBenefitCardDao vipBenefitCardDao;
+    @Autowired
+    private FitCardDao fitCardDao;
 
     @Override
     public VipBenefitCardEntity queryObject(Long vipCardId) {
@@ -69,6 +75,24 @@ public class SysVipCardServiceImpl implements SysVipCardService {
     @Override
     public int updateOnOffCard(Long vipCardId, Integer status) {
         return vipBenefitCardDao.updateOnOffCard(vipCardId, status);
+    }
+
+    @Override
+    public boolean isBindFitCardIdsValid(String bindFitCardIds) {
+        if (bindFitCardIds == null || bindFitCardIds.trim().isEmpty()) {
+            return true;
+        }
+        Set<Long> idSet = new LinkedHashSet<Long>();
+        for (String s : bindFitCardIds.split(",")) {
+            String t = s.trim();
+            if (!t.isEmpty()) {
+                idSet.add(Long.parseLong(t));
+            }
+        }
+        if (idSet.isEmpty()) {
+            return true;
+        }
+        return fitCardDao.countBenefitNatureByIds(new ArrayList<Long>(idSet)) == idSet.size();
     }
 
     /**

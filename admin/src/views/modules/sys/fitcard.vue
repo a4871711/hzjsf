@@ -19,7 +19,7 @@
 <script>
 export default {
   components: {
-    
+
   },
   data() {
     var checkPhone = (rule, value, callback) => {
@@ -66,6 +66,7 @@ export default {
       tableCols: [
         { label: "ID", prop: "fitCardId" },
         { label: "卡片类型", prop: "ctName" },
+        { label: "卡片分类", prop: "cardNature", formatter: e => { return e.cardNature == 1 ? '权益卡' : '普通卡' } },
         { label: "卡名称", prop: "cardName" },
         { label: "单价", prop: "cardPrice" },
         { label: "新人价", prop: "newUserPrice" },
@@ -82,7 +83,7 @@ export default {
 			change: (row) => this.changeStatus(row),
 			isDisabled: e => !this.checkBtn('sys:fitcard:status')
 		},
-        { label: "创建时间", prop: 'createdDate', formatter: e => { return this.parseTime(e.createdDate) } },		
+        { label: "创建时间", prop: 'createdDate', formatter: e => { return this.parseTime(e.createdDate) } },
         {
           label: "操作",
           type: "button",
@@ -112,6 +113,7 @@ export default {
         fitCardId: '',
 		cardName: '',
         cardType: "",
+		cardNature: 0,
 		cardPrice: '',
 		newUserPrice: '',
 		costPrice: '',
@@ -137,10 +139,14 @@ export default {
 			{value: 3, label: '年卡'},
 			{value: 10, label: '次卡'}
 		] },
+		{ type: "radio", label: "卡片分类", width: 350, prop: "cardNature", radios: [
+			{value: 0, label: '普通卡'},
+			{value: 1, label: '权益卡'}
+		] },
         { type: "input", label: "卡名称", width: 350, prop: "cardName" },
         { type: "input", label: "单价", width: 350, prop: "cardPrice" },
         { type: "input", label: "新人价", width: 350, prop: "newUserPrice" },
-        { type: "input", label: "原价", width: 350, prop: "costPrice" },	
+        { type: "input", label: "原价", width: 350, prop: "costPrice" },
         { type: "input", label: "有效天数", width: 350, prop: "validity" },
         { type: "input", label: "次卡次数", width: 350, prop: "useCount" },
         { type: "radio", label: "自动续费", width: 350, prop: "autoPay", radios: [
@@ -150,13 +156,13 @@ export default {
 			{value: 3, label: '三级'}
 		]  },
 		{ type: "select", label: "可用门店", width: 350, prop: "storeAddrIds", multiple: true },
-		{ type: "select", label: "可见门店", width: 350, prop: "showStoreAddrIds", multiple: true },	
+		{ type: "select", label: "可见门店", width: 350, prop: "showStoreAddrIds", multiple: true },
         { type: "input", label: "一级起月份", placeholder:'英文逗号分隔，如：1,2,3', width: 350, prop: "nextPriceTitle" },
-        { type: "input", label: "一级起价格", width: 350, prop: "nextPrice" },		
+        { type: "input", label: "一级起价格", width: 350, prop: "nextPrice" },
         { type: "input", label: "二级起月份", placeholder:'英文逗号分隔，如：4,5,6', width: 350, prop: "nextPriceTitle2" },
-        { type: "input", label: "二级起价格", width: 350, prop: "nextPrice2" },		
+        { type: "input", label: "二级起价格", width: 350, prop: "nextPrice2" },
         { type: "input", label: "三级起月份", placeholder:'英文逗号分隔，如：7,8,9', width: 350, prop: "nextPriceTitle3" },
-        { type: "input", label: "三级起价格", width: 350, prop: "nextPrice3" },	
+        { type: "input", label: "三级起价格", width: 350, prop: "nextPrice3" },
         { type: "input", label: "会员规则", width: 350, prop: "cardRule" },
         { type: "radio", label: "状态", width: 350, prop: "status", radios: [
 			{value: 1, label: '上架'},

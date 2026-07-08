@@ -140,7 +140,17 @@ export async function getMyTransferList(params = {}) {
   return Promise.reject(new Error(res.data.msg));
 }
 
-// 申请停卡(需登录;入参 cardOrderId)
+// 停卡预检(需登录;入参 cardOrderId 可选。data 含 {freeAvailable,nextFreeDate,maxFreeDays,tiers:[{index,days,price}]},tiers 空数组=该卡未开通付费停卡)
+export async function getCardPausePrecheck(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/cardPause/precheck', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 申请停卡(需登录;入参 cardOrderId,pauseType 0免费/1付费,免费传 pauseDays 1~7,付费传 tierIndex。免费返回 {pauseId,needPay:false};付费返回 {pauseId,needPay:true,orderNo,paySum})
 export async function applyCardPause(params = {}) {
   Request.isLogin = true; // 需要登录
   const res = await Request.post('/cardPause/apply', params);
@@ -154,6 +164,16 @@ export async function applyCardPause(params = {}) {
 export async function resumeCardPause(params = {}) {
   Request.isLogin = true; // 需要登录
   const res = await Request.post('/cardPause/resume', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 取消停卡(需登录;入参 pauseId。未使用天数从顺延的有效期中扣回,付费停卡不退款)
+export async function cancelCardPause(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/cardPause/cancel', params);
   if (res.data.code === 1) {
     return res.data;
   }

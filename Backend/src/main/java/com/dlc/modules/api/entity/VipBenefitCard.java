@@ -23,8 +23,12 @@ public class VipBenefitCard implements Serializable {
     private Integer validityDays;
     /** 适用门店ID(逗号分隔的 store_addr_id) */
     private String storeAddrIds;
+    /** 可绑定的会员卡ID列表(逗号分隔,取自 fit_card.fitCardId 且须为 cardNature=1 的权益卡性质记录);为空=不限制,任何会员均可购买 */
+    private String bindFitCardIds;
     /** 关联转让费用规则 */
     private Long feeRuleId;
+    /** 关联停卡规则(vip_pause_rule);为空=该卡未开通付费停卡 */
+    private Long pauseRuleId;
     /** 是否展示实时购买人数 1是0否 */
     private Integer showBuyCount;
     /** 起涨基数:已购<=此值不涨价 */
@@ -93,12 +97,28 @@ public class VipBenefitCard implements Serializable {
         this.storeAddrIds = storeAddrIds;
     }
 
+    public String getBindFitCardIds() {
+        return bindFitCardIds;
+    }
+
+    public void setBindFitCardIds(String bindFitCardIds) {
+        this.bindFitCardIds = bindFitCardIds;
+    }
+
     public Long getFeeRuleId() {
         return feeRuleId;
     }
 
     public void setFeeRuleId(Long feeRuleId) {
         this.feeRuleId = feeRuleId;
+    }
+
+    public Long getPauseRuleId() {
+        return pauseRuleId;
+    }
+
+    public void setPauseRuleId(Long pauseRuleId) {
+        this.pauseRuleId = pauseRuleId;
     }
 
     public Integer getShowBuyCount() {

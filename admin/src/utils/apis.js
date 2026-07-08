@@ -655,6 +655,55 @@ export default {
 		});
 	},
 
+	//停卡规则-列表
+	vipPauseRule_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipPauseRule/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
+	//停卡规则-详情
+	vipPauseRule_info(id) {
+		return $http({
+			url: $http.adornUrl(`/sys/vipPauseRule/info/${id}`),
+			method: 'get'
+		});
+	},
+	//停卡规则-新增
+	vipPauseRule_save(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipPauseRule/save'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//停卡规则-编辑
+	vipPauseRule_update(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipPauseRule/update'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//停卡规则-删除
+	vipPauseRule_delete(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipPauseRule/delete'),
+			method: 'post',
+			contentType: 'json',
+			data: JSON.stringify(data)
+		});
+	},
+
 	//VIP权益卡商品-列表
 	vipCard_list(data) {
 		return $http({

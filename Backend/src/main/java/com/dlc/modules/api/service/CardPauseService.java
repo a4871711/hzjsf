@@ -1,21 +1,28 @@
 package com.dlc.modules.api.service;
 
 import com.dlc.common.utils.PageUtils;
-import com.dlc.modules.api.entity.CardPauseRecord;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
  * 会员自助停卡 Service(移动端)
- * 开放式:apply 仅置停卡中、暂不顺延;resume 时按实际停卡天数顺延会员卡有效期
+ * 定期停卡:免费(滚动30天1次,自选1~7天)立即生效并预顺延有效期;
+ * 付费(按权益卡绑定停卡规则选档)微信支付回调成功后生效;可提前取消按未用天数扣回顺延(付费不退款)。
  */
 public interface CardPauseService {
 
-    /** 申请停卡:校验「每月1次/全年12次」,建停卡中记录 */
-    CardPauseRecord apply(Long userId, Long cardOrderId, Integer pauseDays);
+    /** 停卡预检:免费额度是否可用/下次可用时间/付费档位列表 */
+    Map<String, Object> precheck(Long userId);
 
-    /** 恢复停卡:回填实际天数 + 顺延 card_order.validityDate,幂等;返回 1 首次恢复成功 */
-    int resume(Long userId, Long pauseId);
+    /** 申请停卡:免费(pauseType=0)立即生效;付费(pauseType=1)建待支付单返回支付信息 */
+    Map<String, Object> apply(Long userId, Long cardOrderId, Integer pauseType, Integer pauseDays, Integer tierIndex);
+
+    /** 付费停卡支付回调:置生效+顺延有效期+记账,幂等;返回1首次生效成功 */
+    int payCallback(String orderNo, BigDecimal money, String transactionId, Integer payType);
+
+    /** 提前取消停卡:按未使用天数扣回顺延(付费不退款);存量开放式记录走旧恢复语义;返回1首次取消成功 */
+    int cancel(Long userId, Long pauseId);
 
     /** 我的停卡记录分页 */
     PageUtils myList(Map<String, Object> params);

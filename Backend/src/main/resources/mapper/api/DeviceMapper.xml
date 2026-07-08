@@ -580,7 +580,16 @@
     ORDER BY deviceId DESC
     LIMIT 1
   </select>
-  
+
+  <!-- 用户当前全部有效会员卡实例(会员可能同时持有多张,如次卡+月卡并存),供VIP权益卡"可绑定会员卡"资格校验用 -->
+  <select id="selectAllValidByUser" resultType="com.dlc.modules.api.entity.Device">
+    SELECT *
+    FROM device
+    WHERE proxyId = #{userId} and status in (0, 1)
+      and date_format(validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+    ORDER BY deviceId DESC
+  </select>
+
   <select id="selectByUser" resultType="com.dlc.modules.api.entity.Device">
     SELECT *
     FROM device

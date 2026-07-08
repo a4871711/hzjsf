@@ -6,8 +6,9 @@
     <!-- mybatis 全局已开启 mapUnderscoreToCamelCase,snake_case 列自动映射驼峰属性 -->
 
     <sql id="Base_Column_List">
-        vip_card_id, card_name, benefit_desc, price, validity_days, store_addr_ids, fee_rule_id,
-        show_buy_count, base_buy_count, step_num, step_add_price, price_cap, sold_count, status, created_date
+        vip_card_id, card_name, benefit_desc, price, validity_days, store_addr_ids, fee_rule_id, pause_rule_id,
+        show_buy_count, base_buy_count, step_num, step_add_price, price_cap, sold_count, status, created_date,
+        bind_fit_card_ids
     </sql>
 
     <select id="queryList" resultType="com.dlc.modules.sys.entity.VipBenefitCardEntity" parameterType="map">
@@ -50,11 +51,13 @@
     <insert id="save" parameterType="com.dlc.modules.sys.entity.VipBenefitCardEntity"
             useGeneratedKeys="true" keyProperty="vipCardId">
         INSERT INTO vip_benefit_card
-        (card_name, benefit_desc, price, validity_days, store_addr_ids, fee_rule_id,
-        show_buy_count, base_buy_count, step_num, step_add_price, price_cap, sold_count, status, created_date)
+        (card_name, benefit_desc, price, validity_days, store_addr_ids, fee_rule_id, pause_rule_id,
+        show_buy_count, base_buy_count, step_num, step_add_price, price_cap, sold_count, status, created_date,
+        bind_fit_card_ids)
         VALUES
-        (#{cardName}, #{benefitDesc}, #{price}, #{validityDays}, #{storeAddrIds}, #{feeRuleId},
-        #{showBuyCount}, #{baseBuyCount}, #{stepNum}, #{stepAddPrice}, #{priceCap}, 0, #{status}, #{createdDate})
+        (#{cardName}, #{benefitDesc}, #{price}, #{validityDays}, #{storeAddrIds}, #{feeRuleId}, #{pauseRuleId},
+        #{showBuyCount}, #{baseBuyCount}, #{stepNum}, #{stepAddPrice}, #{priceCap}, 0, #{status}, #{createdDate},
+        #{bindFitCardIds})
     </insert>
 
     <!-- 全量更新:不含 sold_count(系统维护,后台只读)、不含 created_date -->
@@ -66,12 +69,14 @@
         validity_days = #{validityDays},
         store_addr_ids = #{storeAddrIds},
         fee_rule_id = #{feeRuleId},
+        pause_rule_id = #{pauseRuleId},
         show_buy_count = #{showBuyCount},
         base_buy_count = #{baseBuyCount},
         step_num = #{stepNum},
         step_add_price = #{stepAddPrice},
         price_cap = #{priceCap},
-        status = #{status}
+        status = #{status},
+        bind_fit_card_ids = #{bindFitCardIds}
         WHERE vip_card_id = #{vipCardId}
     </update>
 
