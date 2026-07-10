@@ -21,7 +21,8 @@
 					<text class="cp-card__name">{{ cardTypeText(card.type) }}</text>
 					<text class="cp-card__sub">有效期至 {{ fmtDate(card.validityDate) }}</text>
 				</view>
-				<view class="cp-card__btn" @click="onApply(card)">申请停卡</view>
+				<view v-if="cardEligible(card)" class="cp-card__btn" :data-idx="idx" @click="onApply">申请停卡</view>
+				<view v-else class="cp-card__btn is-disabled" :data-idx="idx" @click="onIneligibleTap">{{ ineligibleReason(card) }}</view>
 			</view>
 			<view v-else-if="loaded" class="cp-tip">暂无生效中的会员卡</view>
 		</view>
@@ -58,7 +59,7 @@
 					<text class="cp-rec__label">实际停卡天数</text>
 					<text class="cp-rec__val">{{ rec.actualDays }} 天</text>
 				</view>
-				<view v-if="rec.displayStatus === 0" class="cp-rec__btn" @click="onCancel(rec)">恢复停卡</view>
+				<view v-if="rec.displayStatus === 0" class="cp-rec__btn" :data-idx="idx" @click="onCancel">恢复停卡</view>
 			</view>
 			<view v-else-if="loaded" class="cp-tip">还没有停卡记录</view>
 		</view>
@@ -144,6 +145,9 @@
 					tiers: []
 				},
 				precheckLoaded: false,
+				// 是否确认为有效权益会员:默认true兜底,只有明确收到 -71(非权益会员) 才置false;
+				// 网络抖动等其它失败不改变它,避免把真权益会员的卡也误判成"开通权益会员后可用"
+				isVipMember: true,
 				// 申请弹层
 				showApply: false,
 				applyCard: null,
@@ -221,7 +225,12 @@
 				getCardPausePrecheck({}).then((res) => {
 					this.precheck = Object.assign({}, this.precheck, res.data || {});
 					this.precheckLoaded = true;
-				}).catch(() => {
+					this.isVipMember = true;
+				}).catch((e) => {
+					// code===-71 才是后端确认的"非权益会员";网络抖动等其它失败不下此结论,保留上次已知状态
+					if (e && e.code === -71) {
+						this.isVipMember = false;
+					}
 					this.precheckLoaded = false;
 				});
 			},
@@ -239,9 +248,31 @@
 					done && done();
 				});
 			},
+			// 该卡是否满足停卡资格的展示态判断(真正校验仍在后端 precheck/apply):须当前确认是有效权益会员(isVipMember,
+			// 而非 precheckLoaded——后者会被网络抖动等无关失败一并置 false,见 isVipMember 定义处注释) 且这张卡是权益卡性质
+			cardEligible(card) {
+				return this.isVipMember && Number(card.cardNature) === 1;
+			},
+			// 不满足资格时按钮上的说明文案:cardNature 是卡的固有属性(购买商品时定死,不因开通权益会员而改变),
+			// 优先判断卡本身支不支持,避免对压根不是权益卡的卡显示"开通权益会员后可用"这种开了也没用的误导文案
+			ineligibleReason(card) {
+				if (Number(card.cardNature) !== 1) return '该卡不支持停卡';
+				if (!this.isVipMember) return '开通权益会员后可用';
+				return '';
+			},
+			// 点击置灰按钮:仅提示原因,不发请求不弹层
+			// 小程序端 v-if/v-else 两个互斥分支各自内联传参(@click="fn(card)")会导致取参错乱(实测 card 变 undefined),
+			// 改用标准 data-idx + dataset 传参
+			onIneligibleTap(e) {
+				const card = this.cards[Number(e.currentTarget.dataset.idx)];
+				if (!card) return;
+				this.config.Toast(this.ineligibleReason(card));
+			},
 			// 打开申请弹层:按卡再做一次预检(拿该卡的付费档位)
-			onApply(card) {
+			onApply(e) {
 				if (this.submitting) return;
+				const card = this.cards[Number(e.currentTarget.dataset.idx)];
+				if (!card) return;
 				const that = this;
 				getCardPausePrecheck({
 					cardOrderId: card.cardOrderId
@@ -260,8 +291,8 @@
 					that.freeDays = Number(that.applyPrecheck.maxFreeDays) || 7;
 					that.selectedTier = null;
 					that.showApply = true;
-				}).catch((e) => {
-					that.config.Toast((e && e.message) || '加载停卡信息失败');
+				}).catch((err) => {
+					that.config.Toast((err && err.message) || '加载停卡信息失败');
 				});
 			},
 			closeApply() {
@@ -366,9 +397,11 @@
 					that.config.Toast((e && e.message) || '申请失败');
 				});
 			},
-			// 提前取消停卡
-			onCancel(rec) {
+			// 提前取消停卡(同 onApply,data-idx + dataset 传参,规避 v-if 元素内联传参取参错乱)
+			onCancel(e) {
 				if (this.submitting) return;
+				const rec = this.records[Number(e.currentTarget.dataset.idx)];
+				if (!rec) return;
 				const that = this;
 				uni.showModal({
 					title: '恢复停卡',
@@ -507,6 +540,11 @@
 		color: #FFF;
 		font-size: 26rpx;
 		border-radius: 100rpx;
+	}
+
+	.cp-card__btn.is-disabled {
+		background: #EEEEEE;
+		color: #999;
 	}
 
 	.cp-rec {

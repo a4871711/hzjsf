@@ -22,11 +22,11 @@ public class CardPauseController extends BaseController {
     @Autowired
     private CardPauseService cardPauseService;
 
-    /** 停卡预检:免费额度是否可用/下次可用时间/付费档位列表 */
+    /** 停卡预检:免费额度是否可用/下次可用时间/付费档位列表;传 cardOrderId 时额外校验该卡是否权益卡性质 */
     @RequestMapping("/precheck")
-    public R precheck(HttpServletRequest request) {
+    public R precheck(Long cardOrderId, HttpServletRequest request) {
         Long userId = getUserId(request);
-        return R.reOk(cardPauseService.precheck(userId));
+        return R.reOk(cardPauseService.precheck(userId, cardOrderId));
     }
 
     /** 申请停卡:pauseType=0 免费(需 pauseDays 1~7)/1 付费(需 tierIndex,金额天数以后端规则为准) */

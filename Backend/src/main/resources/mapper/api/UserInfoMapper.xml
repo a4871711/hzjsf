@@ -447,6 +447,10 @@
   <select id="queryStoreAddrIdByUserId" resultType="java.lang.Long" parameterType="java.lang.Long">
       select storeAddressId from device where proxyId = #{userId} and status in (0,1,2) limit 1
   </select>
+  <!-- 行锁用户行,串行化同一用户维度的并发判定(照 CardPauseRecordMapper.lockUserForFreeQuota 同款写法) -->
+  <select id="lockUser" resultType="java.lang.Long" parameterType="java.lang.Long">
+      SELECT userId FROM user_info WHERE userId = #{userId} FOR UPDATE
+  </select>
 
   <!--更新签约信息-->
   <update id="updateContract" parameterType="com.dlc.modules.api.entity.UserInfo" >

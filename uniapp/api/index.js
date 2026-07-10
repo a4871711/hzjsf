@@ -140,6 +140,36 @@ export async function getMyTransferList(params = {}) {
   return Promise.reject(new Error(res.data.msg));
 }
 
+// 受让人确认接收(需登录;入参 transferId,仅待确认(40)可操作,成功即过户生效)
+export async function confirmVipTransfer(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/vipTransfer/confirm', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 受让人拒绝接收(需登录;入参 transferId,仅待确认(40)可操作,服务费原路退转让人)
+export async function rejectVipTransfer(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/vipTransfer/reject', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
+// 转让人撤回(需登录;入参 transferId;待审核(20)撤回退服务费,待确认(40)撤回不退)
+export async function withdrawVipTransfer(params = {}) {
+  Request.isLogin = true; // 需要登录
+  const res = await Request.post('/vipTransfer/withdraw', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
 // 停卡预检(需登录;入参 cardOrderId 可选。data 含 {freeAvailable,nextFreeDate,maxFreeDays,tiers:[{index,days,price}]},tiers 空数组=该卡未开通付费停卡)
 export async function getCardPausePrecheck(params = {}) {
   Request.isLogin = true; // 需要登录
@@ -147,7 +177,10 @@ export async function getCardPausePrecheck(params = {}) {
   if (res.data.code === 1) {
     return res.data;
   }
-  return Promise.reject(new Error(res.data.msg));
+  // 挂 code:前端要区分"-71确认非权益会员"和"网络抖动等其它失败",避免把后者也误判成非会员
+  const err = new Error(res.data.msg);
+  err.code = res.data.code;
+  return Promise.reject(err);
 }
 
 // 申请停卡(需登录;入参 cardOrderId,pauseType 0免费/1付费,免费传 pauseDays 1~7,付费传 tierIndex。免费返回 {pauseId,needPay:false};付费返回 {pauseId,needPay:true,orderNo,paySum})

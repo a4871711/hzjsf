@@ -70,10 +70,17 @@ public class CardPauseServiceImpl implements CardPauseService {
     // ====================== 停卡预检 ======================
 
     @Override
-    public Map<String, Object> precheck(Long userId) {
+    public Map<String, Object> precheck(Long userId, Long cardOrderId) {
         // 权益会员校验:仅持有有效 VIP 权益卡(正常且未过期)的会员可停卡
         if (vipBenefitMapper.countValidByUser(userId) <= 0) {
             throw new RRException(CodeAndMsg.ERROR_PAUSE_NOT_VIP_MEMBER);
+        }
+        // 指定卡时(申请弹层打开前的按卡预检):须为权益卡性质,否则该卡不支持停卡,与 apply() 的校验保持一致
+        if (cardOrderId != null) {
+            Integer cardNature = cardPauseRecordMapper.selectCardNatureByOrderId(cardOrderId, userId);
+            if (cardNature == null || cardNature != CARD_NATURE_BENEFIT) {
+                throw new RRException(CodeAndMsg.ERROR_PAUSE_CARD_NOT_BENEFIT);
+            }
         }
         Date now = new Date();
         // 免费停卡权益:由该会员权益卡的 free_pause_enabled 决定;无权益则无免费停卡(仅付费)

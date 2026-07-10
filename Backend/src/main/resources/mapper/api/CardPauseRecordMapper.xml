@@ -63,6 +63,17 @@
         WHERE fitCardId = #{cardId}
     </select>
 
+    <!-- precheck 展示态校验用:不加锁,按 cardOrderId+userId 一步查该卡性质(userId 限定防越权查他人卡)。
+         status/validityDate 条件与 apply() 的 selectCardForUpdate 校验对齐,避免"卡已停用/过期但仍
+         status=4(UpdateOrderStatusTask 未及时扫)"时 precheck 误判可停、点进弹层选完才在 apply() 被拒 -->
+    <select id="selectCardNatureByOrderId" resultType="java.lang.Integer">
+        SELECT fc.cardNature
+        FROM card_order co
+        LEFT JOIN fit_card fc ON co.cardId = fc.fitCardId
+        WHERE co.cardOrderId = #{cardOrderId} AND co.userId = #{userId}
+          AND co.status = 4 AND co.validityDate > NOW()
+    </select>
+
     <!-- 行锁用户行(user_info 老表,主键列名 userId),串行化同用户免费额度判定 -->
     <select id="lockUserForFreeQuota" resultType="java.lang.Long" parameterType="long">
         SELECT userId FROM user_info

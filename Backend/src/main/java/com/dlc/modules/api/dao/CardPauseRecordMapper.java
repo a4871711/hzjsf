@@ -23,6 +23,9 @@ public interface CardPauseRecordMapper {
     /** 查会员卡商品性质(fit_card.cardNature,1=权益卡性质才可停卡);卡不存在返回 null */
     Integer selectCardNature(@Param("cardId") Long cardId);
 
+    /** precheck 用:按 cardOrderId+userId(越权保护) 查该卡的 fit_card.cardNature,不加锁仅展示态校验;卡不存在/不属于本人返回 null */
+    Integer selectCardNatureByOrderId(@Param("cardOrderId") Long cardOrderId, @Param("userId") Long userId);
+
     /** 行锁用户行,串行化同一用户的免费额度判定(滚动30天1次) */
     Long lockUserForFreeQuota(@Param("userId") Long userId);
 

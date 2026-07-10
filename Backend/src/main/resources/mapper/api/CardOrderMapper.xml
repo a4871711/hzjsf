@@ -505,14 +505,16 @@
   </update>
   
   <select id="queryList" resultType="map">
-		select * from card_order
+		select co.*, fc.cardNature
+		from card_order co
+		left join fit_card fc on co.cardId = fc.fitCardId
         <where>
             <if test="userId != null and userId != ''">
-                and userId=#{userId}
+                and co.userId=#{userId}
             </if>
-            and status = 4
+            and co.status = 4
         </where>
-        order by cardOrderId DESC
+        order by co.cardOrderId DESC
 		<if test="offset != null and limit != null">
 			limit #{offset}, #{limit}
 		</if>

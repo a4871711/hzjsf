@@ -110,4 +110,7 @@ public interface UserInfoMapper {
 	UserInfoVo queryByUserId(String userId);
 
 	Map<String, Object> userStats(Map<String, Object> queryMap);
+
+	/** 行锁用户行(user_info,主键 userId),串行化同一受让人维度的操作(如 VIP 过户"一人一份权益"判定,防并发双通过) */
+	Long lockUser(Long userId);
 }

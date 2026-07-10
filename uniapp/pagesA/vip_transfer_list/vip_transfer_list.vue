@@ -8,7 +8,7 @@
 		</view>
 
 		<view v-if="list.length" class="tl-list">
-			<view class="tl-card" v-for="item in list" :key="item.viewKey">
+			<view class="tl-card" v-for="(item, idx) in list" :key="item.viewKey">
 				<view class="tl-card__head">
 					<text class="tl-card__name">{{ item.cardNameText }}</text>
 					<text class="tl-card__tag" :class="item.statusClassName">{{ item.statusLabel }}</text>
@@ -29,6 +29,12 @@
 					<text class="tl-label">审核备注</text>
 					<text class="tl-val">{{ item.auditRemark }}</text>
 				</view>
+				<!-- 操作区:我受让+待确认 → 确认/拒绝;我转出+待审核或待确认 → 撤回(data-idx 传参,勿内联传对象) -->
+				<view class="tl-btns" v-if="item.canAccept || item.canWithdraw">
+					<view v-if="item.canAccept" class="tl-btn is-primary" :data-idx="idx" @click="onConfirm">确认接收</view>
+					<view v-if="item.canAccept" class="tl-btn" :data-idx="idx" @click="onReject">拒绝</view>
+					<view v-if="item.canWithdraw" class="tl-btn" :data-idx="idx" @click="onWithdraw">撤回</view>
+				</view>
 			</view>
 		</view>
 
@@ -42,7 +48,10 @@
 
 <script>
 	import {
-		getMyTransferList
+		getMyTransferList,
+		confirmVipTransfer,
+		rejectVipTransfer,
+		withdrawVipTransfer
 	} from '@/api/index'
 
 	export default {
@@ -56,6 +65,8 @@
 				loaded: false,
 				noMore: false,
 				loading: false,
+				// 确认/拒绝/撤回提交中标记(与 loading 分开:loading 是拉列表专用,不能阻止操作请求的重复点击)
+				submitting: false,
 				myUserId: null
 			}
 		},
@@ -121,6 +132,7 @@
 			normalize(item, index) {
 				const row = item || {};
 				const isFrom = this.myUserId != null && Number(row.fromUserId) === this.myUserId;
+				const status = Number(row.status);
 				return Object.assign({}, row, {
 					viewKey: row.transferId ? String(row.transferId) : 'tf-' + index,
 					cardNameText: row.cardName || '权益卡',
@@ -128,7 +140,85 @@
 					feeText: this.feeText(row.serviceFee),
 					createdDateText: this.formatDateTime(row.createdDate),
 					statusLabel: this.statusText(row.status),
-					statusClassName: this.statusClass(row.status)
+					statusClassName: this.statusClass(row.status),
+					// 操作资格:我受让+40待确认可 确认/拒绝;我转出+20待审核或40待确认可撤回
+					canAccept: !isFrom && status === 40,
+					canWithdraw: isFrom && (status === 20 || status === 40)
+				});
+			},
+			// 受让人确认接收(data-idx 取项,规避小程序 v-if 元素内联传参取参错乱)
+			onConfirm(e) {
+				const item = this.list[Number(e.currentTarget.dataset.idx)];
+				if (!item || this.submitting) return;
+				const that = this;
+				uni.showModal({
+					title: '确认接收',
+					content: '确认接收该权益转让？确认后权益立即过户到你名下，继承剩余有效期。',
+					success: (r) => {
+						if (!r.confirm) return;
+						that.submitting = true;
+						confirmVipTransfer({
+							transferId: item.transferId
+						}).then(() => {
+							that.submitting = false;
+							that.config.Toast('已确认，权益已到账');
+							that.loadList(true);
+						}).catch((err) => {
+							that.submitting = false;
+							that.config.Toast((err && err.message) || '操作失败');
+						});
+					}
+				});
+			},
+			// 受让人拒绝接收
+			onReject(e) {
+				const item = this.list[Number(e.currentTarget.dataset.idx)];
+				if (!item || this.submitting) return;
+				const that = this;
+				uni.showModal({
+					title: '拒绝接收',
+					content: '确认拒绝该权益转让？拒绝后转让关闭，服务费原路退回转让人。',
+					success: (r) => {
+						if (!r.confirm) return;
+						that.submitting = true;
+						rejectVipTransfer({
+							transferId: item.transferId
+						}).then(() => {
+							that.submitting = false;
+							that.config.Toast('已拒绝');
+							that.loadList(true);
+						}).catch((err) => {
+							that.submitting = false;
+							that.config.Toast((err && err.message) || '操作失败');
+						});
+					}
+				});
+			},
+			// 转让人撤回(20待审核撤回退服务费,40待确认撤回不退,文案区分)
+			onWithdraw(e) {
+				const item = this.list[Number(e.currentTarget.dataset.idx)];
+				if (!item || this.submitting) return;
+				const that = this;
+				const content = Number(item.status) === 20 ?
+					'确认撤回该转让申请？撤回后服务费原路退回。' :
+					'确认撤回该转让？审核已通过，撤回后服务费不予退还。';
+				uni.showModal({
+					title: '撤回转让',
+					content: content,
+					success: (r) => {
+						if (!r.confirm) return;
+						that.submitting = true;
+						withdrawVipTransfer({
+							transferId: item.transferId
+						}).then(() => {
+							that.submitting = false;
+							that.config.Toast('已撤回');
+							that.loadList(true);
+						}).catch((err) => {
+							that.submitting = false;
+							that.config.Toast((err && err.message) || '操作失败');
+						});
+					}
 				});
 			},
 			feeText(v) {
@@ -249,6 +339,28 @@
 		justify-content: space-between;
 		padding: 10rpx 0;
 		font-size: 26rpx;
+	}
+
+	.tl-btns {
+		display: flex;
+		justify-content: flex-end;
+		padding: 16rpx 0;
+		border-top: 1rpx solid #F2F2F2;
+		margin-top: 8rpx;
+	}
+
+	.tl-btn {
+		padding: 12rpx 36rpx;
+		margin-left: 20rpx;
+		border: 1rpx solid #C8923B;
+		color: #C8923B;
+		font-size: 26rpx;
+		border-radius: 100rpx;
+	}
+
+	.tl-btn.is-primary {
+		background: #C8923B;
+		color: #FFF;
 	}
 
 	.tl-label {

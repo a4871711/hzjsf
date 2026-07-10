@@ -142,6 +142,10 @@ public class VipTransferServiceImpl implements VipTransferService {
         if (!storeApplicable(toUser.getNowStoreId(), card.getStoreAddrIds())) {
             throw new RRException(CodeAndMsg.ERROR_VIP_STORE_NOT_APPLICABLE);
         }
+        // 17. 受让人未持有效权益:一人一份权益口径(与购卡 -74 禁重购一致),已持有则不可再受让
+        if (vipBenefitMapper.countValidByUser(toUser.getUserId()) > 0) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TO_USER_HAS_BENEFIT);
+        }
     }
 
     /** 受让人当前门店是否在权益卡适用门店集合内(含未归属门店 nowStoreId<=0 → 不在范围,拦截) */
@@ -412,6 +416,17 @@ public class VipTransferServiceImpl implements VipTransferService {
             log.error("VIP过户失败:权益已过期,transferId={}, vipBenefitId={}, expireTime={}",
                     transferId, vb.getVipBenefitId(), vb.getExpireTime());
             throw new RRException(CodeAndMsg.ERROR_VIP_BENEFIT_EXPIRED);
+        }
+        // 复核受让人未持有效权益(与 checkTransferable 第17条同款):审核通过到确认之间最长 N 天,
+        // 受让人可能已自购权益或接收了别的转让;一人一份口径下不可再过户给他。处置同过期分支:
+        // 抛异常回滚、本单停在40,到 confirm_deadline 由超时任务扫为52并退服务费。
+        // 先锁受让人行(user_info,照 lockUserForFreeQuota 同款):挡住"同一受让人同时被两笔不同转让单
+        // 过户"的竞态——不加锁的话,两个 transferId 各自锁的是不同 vipBenefit 行,互不冲突,可能都在对方
+        // 提交前读到 countValidByUser=0 而同时过户成功,破坏一人一份权益的不变式。
+        userInfoMapper.lockUser(t.getToUserId());
+        if (vipBenefitMapper.countValidByUser(t.getToUserId()) > 0) {
+            log.error("VIP过户失败:受让人已持有有效权益,transferId={}, toUserId={}", transferId, t.getToUserId());
+            throw new RRException(CodeAndMsg.ERROR_VIP_TO_USER_HAS_BENEFIT);
         }
         // 1) 改归属:user_id 换受让人 + transfer_count+1 + transferable=1;
         //    store_id/store_addr_id 不动(附录D.3),expire_time 不动(继承剩余有效期,D-10)

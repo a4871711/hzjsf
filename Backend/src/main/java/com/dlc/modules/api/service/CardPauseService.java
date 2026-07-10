@@ -12,8 +12,8 @@ import java.util.Map;
  */
 public interface CardPauseService {
 
-    /** 停卡预检:免费额度是否可用/下次可用时间/付费档位列表 */
-    Map<String, Object> precheck(Long userId);
+    /** 停卡预检:免费额度是否可用/下次可用时间/付费档位列表。cardOrderId 非空时额外校验该卡是否权益卡性质(申请弹层前置校验用) */
+    Map<String, Object> precheck(Long userId, Long cardOrderId);
 
     /** 申请停卡:免费(pauseType=0)立即生效;付费(pauseType=1)建待支付单返回支付信息 */
     Map<String, Object> apply(Long userId, Long cardOrderId, Integer pauseType, Integer pauseDays, Integer tierIndex);
