@@ -1,8 +1,11 @@
 <template>
 	<view class="cp-page">
 		<!-- 免费额度状态 -->
-		<view class="cp-quota" v-if="precheckLoaded">
-			<view v-if="precheck.freeAvailable" class="cp-quota__txt is-ok">
+		<view class="cp-quota" :class="{ 'is-plain': !precheck.freeEntitled }" v-if="precheckLoaded">
+			<view v-if="!precheck.freeEntitled" class="cp-quota__txt is-none">
+				未开通免费停卡权益
+			</view>
+			<view v-else-if="precheck.freeAvailable" class="cp-quota__txt is-ok">
 				免费停卡额度：可用（每次最长{{ precheck.maxFreeDays || 7 }}天）
 			</view>
 			<view v-else class="cp-quota__txt">
@@ -75,8 +78,7 @@
 				@click="pickMode('free')">
 				<view class="cp-opt__head">
 					<text class="cp-opt__name">免费停卡</text>
-					<text class="cp-opt__desc" v-if="applyPrecheck.freeAvailable">每次最长{{ applyPrecheck.maxFreeDays || 7 }}天</text>
-					<text class="cp-opt__desc" v-else>本期额度已用{{ nextFreeDateText !== '—' ? '，' + nextFreeDateText + ' 后可用' : '' }}</text>
+					<text class="cp-opt__desc">{{ freeOptionDesc }}</text>
 				</view>
 				<view class="cp-days" v-if="pauseMode === 'free' && applyPrecheck.freeAvailable">
 					<view class="cp-days__label">停卡天数</view>
@@ -102,7 +104,7 @@
 					</view>
 				</view>
 			</view>
-			<view class="cp-pop__none" v-else-if="!applyPrecheck.freeAvailable">该卡未开通付费停卡</view>
+			<view class="cp-pop__none" v-else-if="noneTip">{{ noneTip }}</view>
 
 			<view class="cp-pop__btn" :class="{ 'is-disabled': submitting || !canSubmit }" @click="onSubmit">
 				{{ submitting ? '提交中...' : (pauseMode === 'paid' ? '确认并支付' : '确认停卡') }}
@@ -131,7 +133,9 @@
 				loaded: false,
 				submitting: false,
 				// 页面级预检(免费额度横幅)
+				// freeEntitled 默认 true 兜底:后端老版本无此字段时不影响原有三态逻辑
 				precheck: {
+					freeEntitled: true,
 					freeAvailable: false,
 					nextFreeDate: null,
 					maxFreeDays: 7,
@@ -142,6 +146,7 @@
 				showApply: false,
 				applyCard: null,
 				applyPrecheck: {
+					freeEntitled: true,
 					freeAvailable: false,
 					nextFreeDate: null,
 					maxFreeDays: 7,
@@ -164,6 +169,19 @@
 				const arr = [];
 				for (let i = 1; i <= max; i++) arr.push(i);
 				return arr;
+			},
+			// 免费停卡选项的副标题:区分"未开通权益"/"额度可用"/"本期已用"三态
+			freeOptionDesc() {
+				if (!this.applyPrecheck.freeEntitled) return '未开通免费停卡权益';
+				if (this.applyPrecheck.freeAvailable) return '每次最长' + (Number(this.applyPrecheck.maxFreeDays) || 7) + '天';
+				return '本期额度已用' + (this.nextFreeDateText !== '—' ? '，' + this.nextFreeDateText + ' 后可用' : '');
+			},
+			// 无付费档位时的兜底提示:既无权益又无档位=不支持停卡;有权益但档位空=仅未开通付费
+			noneTip() {
+				if (this.applyPrecheck.tiers && this.applyPrecheck.tiers.length) return '';
+				if (!this.applyPrecheck.freeEntitled) return '该卡暂不支持停卡';
+				if (!this.applyPrecheck.freeAvailable) return '该卡未开通付费停卡';
+				return '';
 			},
 			canSubmit() {
 				if (this.pauseMode === 'free') {
@@ -229,6 +247,7 @@
 					const d = res.data || {};
 					that.applyCard = card;
 					that.applyPrecheck = Object.assign({
+						freeEntitled: true,
 						freeAvailable: false,
 						nextFreeDate: null,
 						maxFreeDays: 7,
@@ -248,9 +267,15 @@
 				this.showApply = false;
 			},
 			pickMode(mode) {
-				if (mode === 'free' && !this.applyPrecheck.freeAvailable) {
-					this.config.Toast('本期免费额度已用' + (this.nextFreeDateText !== '—' ? '，下次可免费停卡时间：' + this.nextFreeDateText : ''));
-					return;
+				if (mode === 'free') {
+					if (!this.applyPrecheck.freeEntitled) {
+						this.config.Toast('未开通免费停卡权益');
+						return;
+					}
+					if (!this.applyPrecheck.freeAvailable) {
+						this.config.Toast('本期免费额度已用' + (this.nextFreeDateText !== '—' ? '，下次可免费停卡时间：' + this.nextFreeDateText : ''));
+						return;
+					}
 				}
 				this.pauseMode = mode;
 			},
@@ -433,6 +458,15 @@
 	.cp-quota__txt.is-ok {
 		color: #C8923B;
 		font-weight: 600;
+	}
+
+	/* 未开通免费停卡权益:中性灰底提示样式 */
+	.cp-quota.is-plain {
+		background: #F0F0F0;
+	}
+
+	.cp-quota__txt.is-none {
+		color: #999;
 	}
 
 	.cp-sec {

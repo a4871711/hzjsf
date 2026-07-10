@@ -84,6 +84,10 @@ export default {
         { type: "input", label: "封顶价（元）", width: 350, prop: "priceCap", placeholder: "留空=不封顶" },
         { type: "select", label: "关联转让费用规则", width: 350, prop: "feeRuleId" },
         { type: "select", label: "关联停卡规则", width: 350, prop: "pauseRuleId" },
+        { type: "radio", label: "免费停卡权益", width: 350, prop: "freePauseEnabled", radios: [
+          { value: 1, label: '有' },
+          { value: 0, label: '无' }
+        ] },
         { type: "radio", label: "状态", width: 350, prop: "status", radios: [
           { value: 1, label: '上架' },
           { value: 2, label: '下架' }
@@ -123,6 +127,7 @@ export default {
         bindFitCardIds: [],
         feeRuleId: '',
         pauseRuleId: '',
+        freePauseEnabled: 1,
         showBuyCount: 1,
         baseBuyCount: '',
         stepNum: '',
@@ -224,6 +229,8 @@ export default {
       form.bindFitCardIds = Array.isArray(row.bindFitCardIds) ? row.bindFitCardIds.slice() : [];
       form.feeRuleId = (row.feeRuleId === null || row.feeRuleId === undefined) ? '' : row.feeRuleId;
       form.pauseRuleId = (row.pauseRuleId === null || row.pauseRuleId === undefined) ? '' : row.pauseRuleId;
+      // freePauseEnabled 归一成数字（radio 用 === 比对）；旧记录无此字段时默认「有」
+      form.freePauseEnabled = (row.freePauseEnabled === null || row.freePauseEnabled === undefined) ? 1 : Number(row.freePauseEnabled);
       this.formData = form;
       this.elFormVisible('编辑');
     },

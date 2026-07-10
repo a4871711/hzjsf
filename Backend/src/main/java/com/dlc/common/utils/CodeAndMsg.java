@@ -79,8 +79,10 @@ public enum CodeAndMsg {
     ERROR_PAUSE_RULE_NOT_CONFIG(-77,"该卡未开通付费停卡"),
     ERROR_PAUSE_TIER_INVALID(-78,"停卡档位不存在"),
     ERROR_PAUSE_CARD_NOT_BENEFIT(-79,"仅权益卡性质的会员卡可停卡"),
+    // 停卡码 -75~-79 已用满,免费停卡权益码借用早期空闲位 -37
+    ERROR_PAUSE_FREE_NOT_ENTITLED(-37,"未开通免费停卡权益"),
 
-    /* ===== 私教管理后台业务码(全局收口,唯一来源;避开 -1~-36 / 101~104 / VIP -50~-79) ===== */
+    /* ===== 私教管理后台业务码(全局收口,唯一来源;避开 -1~-37 / 101~104 / VIP -50~-79) ===== */
     /* —— 交易域 -80 ~ -99 —— */
     ERROR_PRODUCT_OFF(-80,"商品已下架"),
     ERROR_PRODUCT_NOT_EXIST(-81,"私教商品不存在"),

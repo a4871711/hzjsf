@@ -9,7 +9,8 @@
         fee_rule_id AS feeRuleId, show_buy_count AS showBuyCount,
         base_buy_count AS baseBuyCount, step_num AS stepNum, step_add_price AS stepAddPrice,
         price_cap AS priceCap, sold_count AS soldCount, status, created_date AS createdDate,
-        bind_fit_card_ids AS bindFitCardIds, pause_rule_id AS pauseRuleId
+        bind_fit_card_ids AS bindFitCardIds, pause_rule_id AS pauseRuleId,
+        free_pause_enabled AS freePauseEnabled
     </sql>
 
     <select id="queryList" resultType="com.dlc.modules.api.entity.VipBenefitCard" parameterType="map">

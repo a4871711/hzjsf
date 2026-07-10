@@ -76,13 +76,17 @@ public class CardPauseServiceImpl implements CardPauseService {
             throw new RRException(CodeAndMsg.ERROR_PAUSE_NOT_VIP_MEMBER);
         }
         Date now = new Date();
-        // 免费额度:滚动30天1次(不加锁,展示口径;真正判定在 apply 锁内重算)
+        // 免费停卡权益:由该会员权益卡的 free_pause_enabled 决定;无权益则无免费停卡(仅付费)
+        boolean freeEntitled = isFreePauseEntitled(userId);
+        // 免费额度:滚动30天1次(不加锁,展示口径;真正判定在 apply 锁内重算);无免费权益则恒不可用
         Date lastFree = cardPauseRecordMapper.selectLastFreePause(userId);
-        boolean freeAvailable = lastFree == null
-                || lastFree.getTime() + FREE_QUOTA_PERIOD_MS <= now.getTime();
-        Date nextFreeDate = freeAvailable ? null : new Date(lastFree.getTime() + FREE_QUOTA_PERIOD_MS);
+        boolean freeAvailable = freeEntitled && (lastFree == null
+                || lastFree.getTime() + FREE_QUOTA_PERIOD_MS <= now.getTime());
+        Date nextFreeDate = (freeEntitled && !freeAvailable && lastFree != null)
+                ? new Date(lastFree.getTime() + FREE_QUOTA_PERIOD_MS) : null;
 
         Map<String, Object> data = new LinkedHashMap<String, Object>();
+        data.put("freeEntitled", freeEntitled);
         data.put("freeAvailable", freeAvailable);
         data.put("nextFreeDate", nextFreeDate);
         data.put("maxFreeDays", FREE_MAX_DAYS);
@@ -142,6 +146,23 @@ public class CardPauseServiceImpl implements CardPauseService {
             index++;
         }
         return tiers;
+    }
+
+    /**
+     * 该会员是否享有免费停卡权益:最新有效权益 → 来源权益卡 free_pause_enabled=1。
+     * NULL 兜底为有(向后兼容,列默认1);无有效权益/无权益卡记录返回 false。
+     */
+    private boolean isFreePauseEntitled(Long userId) {
+        VipBenefit benefit = vipBenefitMapper.selectLatestValidByUser(userId);
+        if (benefit == null || benefit.getVipCardId() == null) {
+            return false;
+        }
+        VipBenefitCard card = vipBenefitCardMapper.selectByIdIgnoreStatus(benefit.getVipCardId());
+        if (card == null) {
+            return false;
+        }
+        Integer flag = card.getFreePauseEnabled();
+        return flag == null || flag == 1;
     }
 
     /** tiers_json 元素结构,FastJSON 反序列化用 */
@@ -204,6 +225,10 @@ public class CardPauseServiceImpl implements CardPauseService {
 
     /** 免费停卡:滚动30天1次,自选1~7天,立即生效并预顺延有效期 */
     private Map<String, Object> applyFree(Long userId, Long cardOrderId, Integer pauseDays) {
+        // 免费停卡权益校验:该会员权益卡未开通免费停卡则拒绝(仅能付费停卡)
+        if (!isFreePauseEntitled(userId)) {
+            throw new RRException(CodeAndMsg.ERROR_PAUSE_FREE_NOT_ENTITLED);
+        }
         if (pauseDays == null || pauseDays < 1 || pauseDays > FREE_MAX_DAYS) {
             throw new RRException(CodeAndMsg.ERROR_PAUSE_FREE_DAYS_LIMIT);
         }

@@ -8,7 +8,7 @@
     <sql id="Base_Column_List">
         vip_card_id, card_name, benefit_desc, price, validity_days, store_addr_ids, fee_rule_id, pause_rule_id,
         show_buy_count, base_buy_count, step_num, step_add_price, price_cap, sold_count, status, created_date,
-        bind_fit_card_ids
+        bind_fit_card_ids, free_pause_enabled
     </sql>
 
     <select id="queryList" resultType="com.dlc.modules.sys.entity.VipBenefitCardEntity" parameterType="map">
@@ -53,11 +53,11 @@
         INSERT INTO vip_benefit_card
         (card_name, benefit_desc, price, validity_days, store_addr_ids, fee_rule_id, pause_rule_id,
         show_buy_count, base_buy_count, step_num, step_add_price, price_cap, sold_count, status, created_date,
-        bind_fit_card_ids)
+        bind_fit_card_ids, free_pause_enabled)
         VALUES
         (#{cardName}, #{benefitDesc}, #{price}, #{validityDays}, #{storeAddrIds}, #{feeRuleId}, #{pauseRuleId},
         #{showBuyCount}, #{baseBuyCount}, #{stepNum}, #{stepAddPrice}, #{priceCap}, 0, #{status}, #{createdDate},
-        #{bindFitCardIds})
+        #{bindFitCardIds}, #{freePauseEnabled})
     </insert>
 
     <!-- 全量更新:不含 sold_count(系统维护,后台只读)、不含 created_date -->
@@ -70,6 +70,7 @@
         store_addr_ids = #{storeAddrIds},
         fee_rule_id = #{feeRuleId},
         pause_rule_id = #{pauseRuleId},
+        free_pause_enabled = #{freePauseEnabled},
         show_buy_count = #{showBuyCount},
         base_buy_count = #{baseBuyCount},
         step_num = #{stepNum},

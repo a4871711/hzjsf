@@ -29,6 +29,13 @@ ALTER TABLE `vip_benefit_card`
   COMMENT '关联停卡规则(vip_pause_rule),NULL=不关联(仅免费停卡额度)'
   AFTER `fee_rule_id`;
 
+-- 2b) vip_benefit_card：免费停卡权益开关。1=该权益卡会员享有"每30天免费停卡1次"权益,0=无(仅付费停卡)。
+--     默认1向后兼容:存量权益卡会员保持原有免费停卡权益。
+ALTER TABLE `vip_benefit_card`
+  ADD COLUMN `free_pause_enabled` TINYINT NOT NULL DEFAULT 1
+  COMMENT '免费停卡权益:1有(每30天1次) 0无(仅付费停卡)'
+  AFTER `pause_rule_id`;
+
 -- 3) card_pause_record 升级：
 --    删每月唯一键与 pause_month(旧限制废弃)；新增免费/付费、支付、取消相关列。
 --    status 语义变更：10待支付 0生效(到期后查询时判"已结束",不写库)

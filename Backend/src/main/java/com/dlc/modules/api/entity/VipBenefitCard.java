@@ -29,6 +29,8 @@ public class VipBenefitCard implements Serializable {
     private Long feeRuleId;
     /** 关联停卡规则(vip_pause_rule);为空=该卡未开通付费停卡 */
     private Long pauseRuleId;
+    /** 免费停卡权益:1有(每30天1次) 0无(仅付费停卡) */
+    private Integer freePauseEnabled;
     /** 是否展示实时购买人数 1是0否 */
     private Integer showBuyCount;
     /** 起涨基数:已购<=此值不涨价 */
@@ -119,6 +121,14 @@ public class VipBenefitCard implements Serializable {
 
     public void setPauseRuleId(Long pauseRuleId) {
         this.pauseRuleId = pauseRuleId;
+    }
+
+    public Integer getFreePauseEnabled() {
+        return freePauseEnabled;
+    }
+
+    public void setFreePauseEnabled(Integer freePauseEnabled) {
+        this.freePauseEnabled = freePauseEnabled;
     }
 
     public Integer getShowBuyCount() {
