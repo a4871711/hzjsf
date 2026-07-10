@@ -6,7 +6,7 @@
 				未开通免费停卡权益
 			</view>
 			<view v-else-if="precheck.freeAvailable" class="cp-quota__txt is-ok">
-				免费停卡额度：可用（每次最长{{ precheck.maxFreeDays || 7 }}天）
+				免费停卡：可用 1 次（每次最长{{ precheck.maxFreeDays || 7 }}天）
 			</view>
 			<view v-else class="cp-quota__txt">
 				本期免费额度已用，下次可免费停卡时间：{{ nextFreeDateText }}
@@ -36,7 +36,7 @@
 							{{ rec.pauseType === 1 ? ('付费¥' + formatPrice(rec.amount)) : '免费' }}
 						</text>
 					</view>
-					<text class="cp-rec__tag" :class="tagClass(rec.displayStatus)">{{ statusText(rec.displayStatus) }}</text>
+					<text class="cp-rec__tag" :class="{ 'is-on': rec.displayStatus === 0, 'is-wait': rec.displayStatus === 10, 'is-gray': rec.displayStatus !== 0 && rec.displayStatus !== 10 }">{{ statusText(rec.displayStatus) }}</text>
 				</view>
 				<view class="cp-rec__line" v-if="rec.pauseDays != null">
 					<text class="cp-rec__label">停卡天数</text>
@@ -58,13 +58,13 @@
 					<text class="cp-rec__label">实际停卡天数</text>
 					<text class="cp-rec__val">{{ rec.actualDays }} 天</text>
 				</view>
-				<view v-if="rec.displayStatus === 0" class="cp-rec__btn" @click="onCancel(rec)">取消停卡</view>
+				<view v-if="rec.displayStatus === 0" class="cp-rec__btn" @click="onCancel(rec)">恢复停卡</view>
 			</view>
 			<view v-else-if="loaded" class="cp-tip">还没有停卡记录</view>
 		</view>
 
 		<view class="cp-note">
-			规则：权益会员每30天可免费停卡1次（每次最长7天）；免费额度用完可按档位付费停卡；停卡立即生效、到期自动恢复；停卡期间可手动取消，未使用天数从顺延的有效期中扣回，付费停卡不退款。
+			规则：仅权益卡性质的会员卡可申请停卡。权益会员每30天可免费停卡1次（每次最长7天）；免费额度用完可按档位付费停卡（付费不退款）。停卡立即生效、停卡期间不可入场；到期自动恢复，也可手动点“恢复停卡”提前结束，按实际停卡天数顺延有效期。
 		</view>
 
 		<!-- 申请停卡弹层 -->
@@ -105,6 +105,8 @@
 				</view>
 			</view>
 			<view class="cp-pop__none" v-else-if="noneTip">{{ noneTip }}</view>
+
+			<view class="cp-pop__hint">停卡期间不可入场；恢复时按实际停卡天数顺延有效期。</view>
 
 			<view class="cp-pop__btn" :class="{ 'is-disabled': submitting || !canSubmit }" @click="onSubmit">
 				{{ submitting ? '提交中...' : (pauseMode === 'paid' ? '确认并支付' : '确认停卡') }}
@@ -369,8 +371,8 @@
 				if (this.submitting) return;
 				const that = this;
 				uni.showModal({
-					title: '取消停卡',
-					content: '确认取消本次停卡？取消后未使用天数将从有效期中扣回，付费停卡费用不退还。',
+					title: '恢复停卡',
+					content: '确认恢复本次停卡？恢复后停卡结束、卡立即可用，按实际已停天数顺延有效期，付费停卡费用不退还。',
 					success: (r) => {
 						if (!r.confirm) return;
 						that.submitting = true;
@@ -378,7 +380,7 @@
 							pauseId: rec.pauseId
 						}).then(() => {
 							that.submitting = false;
-							that.config.Toast('已取消停卡');
+							that.config.Toast('已恢复，卡可正常使用');
 							that.loadRecords();
 							that.loadPrecheck();
 						}).catch((e) => {
@@ -404,15 +406,10 @@
 					0: '停卡中',
 					99: '已结束',
 					1: '已恢复',
-					2: '已取消',
+					2: '已恢复',
 					3: '已关闭'
 				};
 				return map[displayStatus] || '';
-			},
-			tagClass(displayStatus) {
-				if (displayStatus === 0) return 'is-on';
-				if (displayStatus === 10) return 'is-wait';
-				return 'is-gray';
 			},
 			formatPrice(v) {
 				const n = Number(v);
@@ -736,6 +733,16 @@
 		font-size: 24rpx;
 		color: #E6544F;
 		padding: 8rpx 0 20rpx;
+	}
+
+	.cp-pop__hint {
+		font-size: 22rpx;
+		color: #B58A3C;
+		background: #FBF0DC;
+		border-radius: 12rpx;
+		padding: 14rpx 18rpx;
+		line-height: 1.5;
+		margin-bottom: 16rpx;
 	}
 
 	.cp-pop__btn {

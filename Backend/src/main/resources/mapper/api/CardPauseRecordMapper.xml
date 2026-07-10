@@ -174,18 +174,25 @@
         WHERE pause_id = #{pauseId} AND status = 0
     </update>
 
-    <!-- 顺延会员卡有效期(card_order 列名驼峰) -->
+    <!-- 顺延会员卡有效期(card_order 列名驼峰);同步顺延对应 device.validityDate。
+         入场校验(刷脸/扫码)读的是 device 那份有效期,两表仅在购卡时对齐、之后停卡顺延不会自动同步,
+         若只改 card_order,顺延出的天数入场层面看不到(闸机仍按 device 老日期拦人),故此处一并顺延 device。
+         LEFT JOIN:card_order.deviceId 为空或无匹配 device 时仅顺延 card_order,device 部分不更新任何行。 -->
     <update id="extendCardValidity">
-        UPDATE card_order
-        SET validityDate = DATE_ADD(validityDate, INTERVAL #{days} DAY)
-        WHERE cardOrderId = #{cardOrderId}
+        UPDATE card_order co
+        LEFT JOIN device d ON d.deviceId = co.deviceId
+        SET co.validityDate = DATE_ADD(co.validityDate, INTERVAL #{days} DAY),
+            d.validityDate = DATE_ADD(d.validityDate, INTERVAL #{days} DAY)
+        WHERE co.cardOrderId = #{cardOrderId}
     </update>
 
-    <!-- 提前取消按未使用天数扣回有效期(与 extendCardValidity 对称) -->
+    <!-- 提前取消按未使用天数扣回有效期(与 extendCardValidity 对称,同步扣回 device.validityDate) -->
     <update id="shrinkCardValidity">
-        UPDATE card_order
-        SET validityDate = DATE_SUB(validityDate, INTERVAL #{days} DAY)
-        WHERE cardOrderId = #{cardOrderId}
+        UPDATE card_order co
+        LEFT JOIN device d ON d.deviceId = co.deviceId
+        SET co.validityDate = DATE_SUB(co.validityDate, INTERVAL #{days} DAY),
+            d.validityDate = DATE_SUB(d.validityDate, INTERVAL #{days} DAY)
+        WHERE co.cardOrderId = #{cardOrderId}
     </update>
 
     <!-- 列表带派生列 displayStatus:生效中但已到计划结束时间 → 99已完成(到期零动作,库里仍是0) -->
@@ -204,6 +211,15 @@
         <if test="offset != null and limit != null">
             LIMIT #{offset}, #{limit}
         </if>
+    </select>
+
+    <!-- 该用户当前是否有生效中的停卡窗口(入场拦截时区分"停卡中"与"已过期"提示用);
+         口径与 DeviceMapper.excludePausingDevice 的 cpr 条件一致 -->
+    <select id="countActivePauseByUser" resultType="int" parameterType="long">
+        SELECT COUNT(1) FROM card_pause_record
+        WHERE user_id = #{userId} AND status = 0
+          AND start_time <![CDATA[ <= ]]> NOW()
+          AND (end_time IS NULL OR end_time <![CDATA[ > ]]> NOW())
     </select>
 
     <select id="countMyList" resultType="int" parameterType="map">

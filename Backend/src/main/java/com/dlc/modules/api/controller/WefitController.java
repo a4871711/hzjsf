@@ -7,6 +7,7 @@ import com.dlc.common.utils.ConfigConstant;
 import com.dlc.common.utils.OrderNoGenerator;
 import com.dlc.common.utils.R;
 import com.dlc.common.utils.RedisUtils;
+import com.dlc.modules.api.dao.CardPauseRecordMapper;
 import com.dlc.modules.api.dao.DeviceMapper;
 import com.dlc.modules.api.dao.OpenDoorRecordMapper;
 import com.dlc.modules.api.dao.StoreAddressMapper;
@@ -39,6 +40,9 @@ public class WefitController extends BaseController{
     private DeviceMapper deviceMapper;
 
     @Autowired
+    private CardPauseRecordMapper cardPauseRecordMapper;
+
+    @Autowired
     private StoreAddressMapper storeAddressMapper;
 
     @Autowired
@@ -69,6 +73,10 @@ public class WefitController extends BaseController{
         //验证用户会员卡
         Long proxyId = deviceMapper.checkUserValidity(Long.parseLong(user_id));
         if(proxyId == null){
+            // 停卡期间该卡被 checkUserValidity 排除,给出准确原因(而非误报"非会员卡")
+            if(cardPauseRecordMapper.countActivePauseByUser(Long.parseLong(user_id)) > 0){
+                return R.reError("会员卡停卡中，暂不可使用");
+            }
             return R.reError("非会员卡用户，请购卡后使用");
         }
         RidoVo deviceV2 = storeDeviceV2Service.queryRidoDeviceByDeviceUserId(user_id, "301");
@@ -159,7 +167,9 @@ public class WefitController extends BaseController{
             Long proxyId = deviceMapper.checkUserValidity(Long.parseLong(uid));
             Map deviceMap = deviceMapper.selectByProxyId(Long.parseLong(uid));
             if(deviceMap == null || deviceMap.isEmpty()) {
-            	openDoorRecord.setRemark("会员卡已过期");
+            	// 停卡期间该卡被 checkUserValidity/selectByProxyId 排除,区分"停卡中"与"已过期"
+            	boolean pausing = cardPauseRecordMapper.countActivePauseByUser(Long.parseLong(uid)) > 0;
+            	openDoorRecord.setRemark(pausing ? "会员卡停卡中" : "会员卡已过期");
             	openDoorRecordMapper.insert(openDoorRecord);
             	return code;
             }

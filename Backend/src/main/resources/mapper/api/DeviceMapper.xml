@@ -45,6 +45,23 @@
     createTime,buyCount,validity,storeAddrIds,type,useCount,nextPrice,nextPriceTitle,nextPrice2
       ,nextPriceTitle2,nextPrice3,nextPriceTitle3,validityDate
   </sql>
+
+  <!-- 停卡入场拦截:排除"当前处于生效中停卡窗口"的那一行 device。
+       精确到卡:card_pause_record → card_order.deviceId → device.deviceId,只拦被停的卡,
+       名下其它有效卡(其它 device 行)不受影响。刷脸(queryIsForbiddenByIds)/扫码(checkUserValidity)/取详情(selectByProxyId)三处入场校验共用。
+       cpr.status=0 且 start<=now<end 才算停卡窗口生效中(end_time IS NULL 为旧开放式存量停卡)。
+       ${da} 为外层 device 表别名,由调用处 include 时以 property 传入(硬编码常量,非用户输入,无注入风险)。 -->
+  <sql id="excludePausingDevice">
+      and not exists (
+          select 1 from card_pause_record cpr
+          inner join card_order cpo on cpo.cardOrderId = cpr.card_order_id
+          where cpr.status = 0
+            and cpr.start_time <![CDATA[ <= ]]> now()
+            and (cpr.end_time is null or cpr.end_time <![CDATA[ > ]]> now())
+            and cpo.deviceId = ${da}.deviceId
+      )
+  </sql>
+
   <select id="selectByPrimaryKey" resultType="com.dlc.modules.api.entity.Device" parameterType="java.lang.Long" >
     select 
     *
@@ -59,6 +76,7 @@
         </foreach>
       and d.status in (0,1)
       and date_format(d.validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+      <include refid="excludePausingDevice"><property name="da" value="d"/></include>
   </select>
 
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
@@ -532,6 +550,7 @@
   <select id="selectByProxyId" resultType="java.util.Map" parameterType="java.lang.Long">
     select * from device where proxyId = #{userId} and status in (0,1)
     and date_format(validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+    <include refid="excludePausingDevice"><property name="da" value="device"/></include>
     ORDER BY deviceId DESC limit 1
   </select>
   <!--查询该用户是否在该门店买过卡-->
@@ -568,6 +587,7 @@
     FROM device
     WHERE proxyId = #{userId} and status in (0, 1)
       and date_format(validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+      <include refid="excludePausingDevice"><property name="da" value="device"/></include>
     ORDER BY deviceId DESC
     LIMIT 1
   </select>

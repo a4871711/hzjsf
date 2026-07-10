@@ -76,6 +76,9 @@ public interface CardPauseRecordMapper {
     /** 提前取消时按未使用天数扣回会员卡有效期 */
     int shrinkCardValidity(@Param("cardOrderId") Long cardOrderId, @Param("days") Integer days);
 
+    /** 该用户当前是否有生效中的停卡窗口(status=0 且 start<=now<end);>0=停卡中。入场被拦时区分"停卡中"与"已过期"提示用 */
+    int countActivePauseByUser(@Param("userId") Long userId);
+
     /** 我的停卡记录分页(可按 card_order_id 过滤,带派生列 displayStatus) */
     List<CardPauseRecord> selectMyList(Map<String, Object> params);
 
