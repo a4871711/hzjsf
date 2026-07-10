@@ -44,6 +44,11 @@
 			cardList: {
 				type: Array,
 				default: () => []
+			},
+			// 当前门店 storeId,点进详情页后带给下单页(card_renewal 需 id=storeId)
+			storeId: {
+				type: [String, Number],
+				default: ''
 			}
 		},
 		methods: {
@@ -67,7 +72,8 @@
 			},
 			goDetail(item) {
 				if (!item.vipCardId) return;
-				this.config.path('/pagesA/vip_card_detail/vip_card_detail?vipCardId=' + item.vipCardId);
+				const sid = this.storeId ? ('&storeId=' + this.storeId) : '';
+				this.config.path('/pagesA/vip_card_detail/vip_card_detail?vipCardId=' + item.vipCardId + sid);
 			}
 		}
 	}

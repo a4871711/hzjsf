@@ -2,6 +2,7 @@ package com.dlc.modules.api.dao;
 
 import com.dlc.modules.api.entity.FitCard;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,4 +31,7 @@ public interface FitCardMapper {
     Map<String,Object> queryFitCardInfo(Long id);
 
 	FitCard getFitCardInfo(Long valueOf);
+
+	/** 按 fitCardId 列表查上架(status=1)会员卡详情;权益卡详情页"可购买会员卡"区块用 */
+	List<FitCard> selectOnShelfByIds(@Param("ids") List<Long> ids);
 }

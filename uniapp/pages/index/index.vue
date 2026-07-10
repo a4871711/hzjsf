@@ -67,7 +67,7 @@
 			<view class="index-title flex_s">
 				<view>VIP权益卡</view>
 			</view>
-			<vip-benefit-card :card-list="benefitCardList"></vip-benefit-card>
+			<vip-benefit-card :card-list="benefitCardList" :storeId="myStore.storeId"></vip-benefit-card>
 		</view>
 
 		<!-- 门店教练 -->
@@ -302,15 +302,16 @@
 					this.$store.state.total = res.total;
 				});
 			},
-			// vip会员套餐
+			// vip会员套餐(首页只展示非权益卡:cardNature != 1;权益类型会员卡只在权益卡详情页出现)
 			getfitCardList(storeAddrId) {
 				let data = {
 					storeId: storeAddrId
 					// cardType:3
 				}
 				getfitCardList(data).then((res) => {
-					res.data = res.data.slice(0, 3);
-					this.cardList = res.data.map((item) => {
+					let list = (res.data || []).filter((item) => Number(item.cardNature) !== 1);
+					list = list.slice(0, 3);
+					this.cardList = list.map((item) => {
 						return {
 							...item,
 							cardPrice: item.cardPrice

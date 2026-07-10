@@ -15,4 +15,11 @@ public interface VipCardService {
 
     /** 查单条上架权益卡详情,带实时动态价;不存在/已下架抛 ERROR_VIP_CARD_OFF_SHELF */
     VipBenefitCard queryVipCardDetail(Long vipCardId);
+
+    /**
+     * 详情页展示版:在 {@link #queryVipCardDetail(Long)} 基础上额外填充
+     * 绑定的可购买会员卡(bindFitCards,仅上架)与当前用户是否已持有效权益(hasBenefit)。
+     * userId 为 null(未登录)时 hasBenefit=false。
+     */
+    VipBenefitCard queryVipCardDetail(Long vipCardId, Long userId);
 }

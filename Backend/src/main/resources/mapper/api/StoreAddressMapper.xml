@@ -343,4 +343,15 @@
     FROM store_address
     WHERE storeId = #{storeId}
   </select>
+
+  <!-- 按门店地址 id 批量查门店名(权益卡详情"适用哪些门店"展示) -->
+  <select id="selectStoreNamesByIds" resultType="java.lang.String">
+    SELECT storeName
+    FROM store_address
+    WHERE storeAddrId IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+    ORDER BY storeAddrId
+  </select>
 </mapper>

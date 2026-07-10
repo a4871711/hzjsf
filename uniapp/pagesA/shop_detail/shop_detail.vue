@@ -130,14 +130,15 @@
 					this.coachList = res.page.list;
 				});
 			},
-			// vip会员套餐
+			// vip会员套餐(门店详情页只展示非权益卡:cardNature != 1,与首页口径一致)
 			getfitCardList(storeAddrId) {
 				let data = {
 					storeId: storeAddrId
 				}
 				getfitCardList(data).then((res) => {
-					res.data = res.data.slice(0, 3);
-					this.cardList = res.data.map((item) => {
+					let list = (res.data || []).filter((item) => Number(item.cardNature) !== 1);
+					list = list.slice(0, 3);
+					this.cardList = list.map((item) => {
 						return {
 							...item,
 							cardPrice: item.cardPrice

@@ -188,4 +188,11 @@
       FROM fit_card f INNER JOIN card_type c ON c.cardType=f.cardType
       WHERE f.fitCardId = #{id}
   </select>
+  <!--按 fitCardId 列表查上架会员卡详情(权益卡详情页"可购买会员卡"区块用)-->
+  <select id="selectOnShelfByIds" resultType="com.dlc.modules.api.entity.FitCard">
+    SELECT f.*, c.ctName
+      FROM fit_card f INNER JOIN card_type c ON c.cardType=f.cardType
+      WHERE f.status=1 AND f.fitCardId IN
+      <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+  </select>
 </mapper>

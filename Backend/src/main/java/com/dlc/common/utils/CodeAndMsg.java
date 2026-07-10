@@ -72,6 +72,7 @@ public enum CodeAndMsg {
     ERROR_VIP_FEE_RULE_FORMAT(-70,"分档配置格式有误"),
     ERROR_PAUSE_NOT_VIP_MEMBER(-71,"开通权益会员后才可停卡"),
     ERROR_VIP_REFUND_FAIL(-72,"服务费退款失败,请稍后重试"),
+    /** @deprecated 2026-07-10 方向翻转:改为买权益类型会员卡须先持权益卡(-38),本码已无抛出点,保留占位勿复用 */
     ERROR_VIP_CARD_NOT_ELIGIBLE(-73,"需持有指定会员卡才可购买该权益卡"),
     ERROR_VIP_BENEFIT_ALREADY_HELD(-74,"已持有有效权益卡，到期后才可再次购买"),
     ERROR_PAUSE_FREE_QUOTA_USED(-75,"30天内已使用过免费停卡"),
@@ -81,6 +82,8 @@ public enum CodeAndMsg {
     ERROR_PAUSE_CARD_NOT_BENEFIT(-79,"仅权益卡性质的会员卡可停卡"),
     // 停卡码 -75~-79 已用满,免费停卡权益码借用早期空闲位 -37
     ERROR_PAUSE_FREE_NOT_ENTITLED(-37,"未开通免费停卡权益"),
+    // 会员卡购买门槛:权益类型会员卡(cardNature=1)须先购买权益卡,借用早期空闲位 -38
+    ERROR_FIT_CARD_NEED_BENEFIT(-38,"请先购买权益卡后再购买该会员卡"),
 
     /* ===== 私教管理后台业务码(全局收口,唯一来源;避开 -1~-37 / 101~104 / VIP -50~-79) ===== */
     /* —— 交易域 -80 ~ -99 —— */

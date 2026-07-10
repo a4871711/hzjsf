@@ -47,4 +47,7 @@ public interface StoreAddressMapper {
 
 	Map<String, Object> queryStoreAddressByStoreId(long storeId);
 
+	/** 按门店地址 id 批量查门店名(权益卡详情"适用哪些门店"展示) */
+	List<String> selectStoreNamesByIds(@Param("ids") List<Long> ids);
+
 }

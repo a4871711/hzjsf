@@ -1,5 +1,7 @@
 package com.dlc.modules.api.service.impl;
 
+import com.dlc.common.exception.RRException;
+import com.dlc.common.utils.CodeAndMsg;
 import com.dlc.common.utils.ConfigConstant;
 import com.dlc.common.utils.DateUtils;
 import com.dlc.common.utils.OrderNoGenerator;
@@ -8,6 +10,7 @@ import com.dlc.modules.api.dao.*;
 import com.dlc.modules.api.entity.*;
 import com.dlc.modules.api.service.CardOrderService;
 import com.dlc.modules.api.service.StoreAddressService;
+import com.dlc.modules.api.service.VipBenefitService;
 import com.dlc.modules.api.vo.UserInfoVo;
 import com.vdurmont.emoji.EmojiParser;
 
@@ -48,6 +51,8 @@ public class CardOrderServiceImpl implements CardOrderService {
     private StoreAddressMapper storeAddressMapper;
     @Autowired
     private StoreAddressService storeAddressService;
+    @Autowired
+    private VipBenefitService vipBenefitService;
 
     private Logger log = LoggerFactory.getLogger(getClass());
 
@@ -84,6 +89,14 @@ public class CardOrderServiceImpl implements CardOrderService {
     @Override
     public Map<String,Object> createFitCardOrder(UserInfoVo user, Map<String, Object> params, int flag) {
         log.info("创建订单params："+ params +"========================");
+        // 权益类型会员卡(cardNature=1)须持有效权益卡才能购买/续费。校验放在本方法(手动下单与
+        // 自动代扣 papAutoPay 的共用入口)而非 Controller,两条路径统一拦截;自动代扣被拦时
+        // 异常由 papAutoPay 循环 catch,仅跳过该用户当日续费,不影响其他用户
+        FitCard natureCard = fitCardMapper.getFitCardInfo(Long.valueOf(String.valueOf(params.get("fitCardId"))));
+        if (natureCard != null && natureCard.getCardNature() != null && natureCard.getCardNature() == 1
+                && !vipBenefitService.hasValidBenefit(user.getUserId())) {
+            throw new RRException(CodeAndMsg.ERROR_FIT_CARD_NEED_BENEFIT);
+        }
         CardOrder cardOrder = new CardOrder();
         //用户id
         cardOrder.setUserId(user.getUserId());

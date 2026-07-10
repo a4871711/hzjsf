@@ -105,6 +105,8 @@ public class CardOredrController extends BaseController{
         if(fitCard == null) {
         	return R.error("卡套餐不存在");
         }
+        // 权益类型会员卡(cardNature=1)须持有效权益的 -38 校验在 CardOrderServiceImpl.createFitCardOrder
+        // 统一拦截(覆盖手动下单+自动代扣两条路径),此处不再重复
         boolean isNewUser = !sysIncomePayDetailService.hasValidCardPurchase(user.getUserId());
         BigDecimal cardPrice = fitCard.resolveSalePrice(isNewUser);
         if(cardPrice.compareTo(paySum) == -1 || paySum.compareTo(new BigDecimal(-1)) == 0){ //实际卡价格小于传进来的价格

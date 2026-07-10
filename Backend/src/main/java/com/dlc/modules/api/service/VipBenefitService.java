@@ -26,4 +26,7 @@ public interface VipBenefitService {
 
     /** 我的权益分页列表(默认查 status=0 正常) */
     PageUtils myBenefits(Map<String, Object> params);
+
+    /** 该用户是否为权益会员(名下有正常且未过期的权益);userId 为 null 时返回 false */
+    boolean hasValidBenefit(Long userId);
 }

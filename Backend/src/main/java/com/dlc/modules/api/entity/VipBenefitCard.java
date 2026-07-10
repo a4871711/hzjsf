@@ -3,6 +3,7 @@ package com.dlc.modules.api.entity;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * VIP 权益卡商品(移动端展示用,对应表 vip_benefit_card)
@@ -50,6 +51,15 @@ public class VipBenefitCard implements Serializable {
 
     /** 非表字段:后端按当前 sold_count 实时算出的动态购买价 */
     private BigDecimal currentPrice;
+
+    /** 非表字段:该权益卡绑定的可购买会员卡详情(仅上架),详情页"可购买会员卡"区块渲染 */
+    private List<FitCard> bindFitCards;
+
+    /** 非表字段:当前请求用户是否已持有效权益(未登录=false);前端据此决定点击会员卡是否放行 */
+    private Boolean hasBenefit;
+
+    /** 非表字段:适用门店名列表(按 storeAddrIds 查 store_address.storeName);详情页"适用哪些门店"弹窗展示 */
+    private List<String> storeNames;
 
     public Long getVipCardId() {
         return vipCardId;
@@ -201,5 +211,29 @@ public class VipBenefitCard implements Serializable {
 
     public void setCurrentPrice(BigDecimal currentPrice) {
         this.currentPrice = currentPrice;
+    }
+
+    public List<FitCard> getBindFitCards() {
+        return bindFitCards;
+    }
+
+    public void setBindFitCards(List<FitCard> bindFitCards) {
+        this.bindFitCards = bindFitCards;
+    }
+
+    public Boolean getHasBenefit() {
+        return hasBenefit;
+    }
+
+    public void setHasBenefit(Boolean hasBenefit) {
+        this.hasBenefit = hasBenefit;
+    }
+
+    public List<String> getStoreNames() {
+        return storeNames;
+    }
+
+    public void setStoreNames(List<String> storeNames) {
+        this.storeNames = storeNames;
     }
 }

@@ -54,11 +54,14 @@ public class VipCardController extends BaseController {
      * 权益卡详情,后端实时算动态价;不存在/已下架返回 ERROR_VIP_CARD_OFF_SHELF
      */
     @RequestMapping("/detail")
-    public R detail(Long vipCardId) {
+    public R detail(Long vipCardId, HttpServletRequest request) {
         if (vipCardId == null) {
             return R.reError("缺少参数 vipCardId");
         }
-        return R.reOk(vipCardService.queryVipCardDetail(vipCardId));
+        // 已登录则识别用户(未登录静默返回 null),用于填充 hasBenefit;不强制登录,保持公开浏览
+        UserInfoVo user = getUserVoIgnore(request);
+        Long userId = user == null ? null : user.getUserId();
+        return R.reOk(vipCardService.queryVipCardDetail(vipCardId, userId));
     }
 
     /**

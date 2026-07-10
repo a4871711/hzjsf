@@ -112,6 +112,7 @@
 	import {
 		getMyStore,
 		getfitCardList,
+		getFitCardInfo,
 		getStoreInfo,
 	} from '@/api/index'
 	import {
@@ -165,6 +166,7 @@
 				userVipData: {}, //用户会员卡数据
 				openVip: '', //判断点击开通会员和详情点进来的情况，有的情况下就是开通点进来的否者就是详情
 				itemFitCardId: null, //用于判断外部套餐列表点击第几个
+				single: false, //true=只展示 itemFitCardId 这一张卡(权益卡详情页"可购买会员卡"跳转专用),不展示该门店其它套餐
 
 			};
 		},
@@ -180,6 +182,7 @@
 				this.itemFitCardId = options.fitCardId
 				// console.log(options.fitCardId, 'this.fitCardRow = item;')
 			}
+			this.single = options.single == '1'
 			console.log(this.itemFitCardId, 'onLoad')
 			this.storeId = options.id;
 			// 用完了删除掉
@@ -320,6 +323,9 @@
 
 								})
 							}
+						}).catch((e) => {
+							// -38 须先购买权益卡等业务码:createOrder 封装对 code!=1 一律 reject,必须接住提示
+							that.config.Toast((e && e.message) || '下单失败');
 						});
 					}
 
@@ -359,48 +365,80 @@
 					storeId: storeAddrId
 				}
 				getfitCardList(data).then((res) => {
-					this.cardList = res.data.map((item) => {
+					let list = (res.data || []).map((item) => {
 						return {
 							...item,
 							cardPrice: item.cardPrice
 						}
 					});
-					let row = this.cardList[0];
-					console.log('row==', row)
-					if (this.fitCardId) {
-						row = this.cardList.find((item) => {
-							return item.fitCardId === this.fitCardId;
-						});
-					}
-
-					if (!row) {
-						row = this.cardList[0];
-					}
-					// 外部点击逃禅进入参数复制
-					if (this.itemFitCardId) {
-						this.fitCardId = this.itemFitCardId
-						this.fitCardRow = this.cardList.find((item) => {
-							return item.fitCardId == this.fitCardId;
-						});
-						this.noCouponPrice = this.fitCardRow.isNewUser == 1 ? (this.fitCardRow.newUserPrice || this
-							.fitCardRow.cardPrice) : this.fitCardRow.cardPrice
-						this.price = this.fitCardRow.isNewUser == 1 ? (this.fitCardRow.newUserPrice || this
-							.fitCardRow.cardPrice) : this.fitCardRow.cardPrice;
-						console.log(this.fitCardRow, 'this.fitCardRow')
+					if (this.single && this.itemFitCardId) {
+						// 权益卡详情页"可购买会员卡"跳转专用:只展示这一张卡,不展示该门店其它套餐
+						list = list.filter((item) => item.fitCardId == this.itemFitCardId);
+						if (!list.length) {
+							// 绑定卡未挂在当前门店的套餐列表(storeAddrIds/showStoreAddrIds 过滤)时,
+							// 按 fitCardId 兜底拉单卡,避免空列表下 fitCardRow=undefined 直接报错
+							getFitCardInfo({
+								id: this.itemFitCardId
+							}).then((r) => {
+								this.cardList = r.data ? [r.data] : [];
+								this.applyCardSelection();
+							}).catch(() => {
+								this.applyCardSelection();
+							});
+							return;
+						}
 					} else {
-
-						// 页面初始化价格
-						this.price = row.isNewUser == 1 ? (row.newUserPrice || row.cardPrice) : row.cardPrice;
-						this.fitCardId = row.fitCardId;
-						this.noCouponPrice = row.isNewUser == 1 ? (row.newUserPrice || row.cardPrice) : row
-							.cardPrice
-						this.fitCardRow = row
-
+						// 普通购卡入口不展示权益类型会员卡(cardNature=1 只能从权益卡详情页购买),
+						// 口径与首页/门店页一致,避免选中后下单才被后端 -38 拒绝
+						list = list.filter((item) => Number(item.cardNature) !== 1);
 					}
-
-					// 查询优惠券
-					this.checkCoupon();
+					this.cardList = list;
+					this.applyCardSelection();
 				});
+			},
+			// 套餐列表就绪后统一做默认选卡+价格初始化(getfitCardList 主路径与 single 兜底路径共用)
+			applyCardSelection() {
+				let row = this.cardList[0];
+				console.log('row==', row)
+				if (this.fitCardId) {
+					row = this.cardList.find((item) => {
+						return item.fitCardId === this.fitCardId;
+					});
+				}
+
+				if (!row) {
+					row = this.cardList[0];
+				}
+				if (!row) {
+					// 列表为空且单卡兜底也失败:不再初始化价格,避免 undefined 解引用
+					this.config.Toast('该会员卡当前不可购买');
+					return;
+				}
+				// 外部点击逃禅进入参数复制
+				if (this.itemFitCardId) {
+					this.fitCardId = this.itemFitCardId
+					// 找不到指定卡时退回默认卡,防 undefined 解引用
+					this.fitCardRow = this.cardList.find((item) => {
+						return item.fitCardId == this.fitCardId;
+					}) || row;
+					this.noCouponPrice = this.fitCardRow.isNewUser == 1 ? (this.fitCardRow.newUserPrice || this
+						.fitCardRow.cardPrice) : this.fitCardRow.cardPrice
+					this.price = this.fitCardRow.isNewUser == 1 ? (this.fitCardRow.newUserPrice || this
+						.fitCardRow.cardPrice) : this.fitCardRow.cardPrice;
+					console.log(this.fitCardRow, 'this.fitCardRow')
+				} else {
+
+					// 页面初始化价格
+					this.price = row.isNewUser == 1 ? (row.newUserPrice || row.cardPrice) : row.cardPrice;
+					this.fitCardId = row.fitCardId;
+					this.noCouponPrice = row.isNewUser == 1 ? (row.newUserPrice || row.cardPrice) : row
+						.cardPrice
+					this.fitCardRow = row
+
+				}
+
+				// 查询优惠券
+				this.checkCoupon();
 			},
 			// 跳门店
 			switchTab() {
@@ -550,11 +588,10 @@
 
 			.vip-card {
 				.scroll-view {
-					display: flex;
-					justify-content: flex-start;
 					white-space: nowrap;
 					width: 100%;
 					padding-bottom: 30px;
+					text-align: left; //.card 根容器是 text-align:center,卡片是 inline-block 会继承居中,单张卡时居中;这里强制靠左
 
 					.select-border {
 						border: 2px solid #a6937a;
@@ -562,6 +599,7 @@
 
 					.item {
 						display: inline-block;
+						text-align: center; //外层为让单卡靠左设了 text-align:left,卡内文字要恢复居中
 						width: 174rpx;
 						height: 250rpx;
 						background: #fff7e3;

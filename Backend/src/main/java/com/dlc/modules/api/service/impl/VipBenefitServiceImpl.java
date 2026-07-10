@@ -56,9 +56,6 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         }
         // 复用第6步:查上架权益卡 + 后端实时算动态价;不存在/已下架抛 ERROR_VIP_CARD_OFF_SHELF
         VipBenefitCard card = vipCardService.queryVipCardDetail(vipCardId);
-        // 可绑定会员卡资格前置条件:bindFitCardIds 为空=不限制;否则要求当前持有的全部有效会员卡中
-        // 至少一张命中该列表(会员可能同时持有多张有效会员卡,如次卡+月卡并存,故查全部而非只查最新一张)
-        checkBindFitCardEligibility(card.getBindFitCardIds(), userId);
         // 应付金额一律后端按当前 sold_count 重算,不信前端传值
         BigDecimal price = card.getCurrentPrice();
 
@@ -124,30 +121,9 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         return new PageUtils(list, total, query.getLimit(), query.getPage());
     }
 
-    /** 购买资格:bindFitCardIds 为空=不限制;否则要求当前持有的全部有效会员卡中至少一张命中该逗号列表 */
-    private void checkBindFitCardEligibility(String bindFitCardIds, Long userId) {
-        if (bindFitCardIds == null || bindFitCardIds.trim().isEmpty()) {
-            return;
-        }
-        List<Device> devices = deviceMapper.selectAllValidByUser(userId);
-        if (devices != null) {
-            for (Device dev : devices) {
-                if (dev.getFitCardId() != null && containsId(bindFitCardIds, dev.getFitCardId())) {
-                    return;
-                }
-            }
-        }
-        throw new RRException(CodeAndMsg.ERROR_VIP_CARD_NOT_ELIGIBLE);
-    }
-
-    /** 逗号列表是否包含 id(逐项 trim 后精确匹配,口径对齐 VipTransferServiceImpl#storeApplicable 的既有写法) */
-    private boolean containsId(String commaIds, Long id) {
-        for (String s : commaIds.split(",")) {
-            if (s.trim().equals(String.valueOf(id))) {
-                return true;
-            }
-        }
-        return false;
+    @Override
+    public boolean hasValidBenefit(Long userId) {
+        return userId != null && vipBenefitMapper.countValidByUser(userId) > 0;
     }
 
     /** 在 date 基础上加 days 天 */

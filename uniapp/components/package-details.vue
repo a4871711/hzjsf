@@ -156,6 +156,9 @@
 
 						});
 					}
+				}).catch((e) => {
+					// -38 须先购买权益卡等业务码:createOrder 封装对 code!=1 一律 reject,必须接住提示
+					this.config.Toast((e && e.message) || '下单失败');
 				});
 			}
 		}
