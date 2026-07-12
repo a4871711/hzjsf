@@ -58,6 +58,9 @@ public class VipBenefitCard implements Serializable {
     /** 非表字段:当前请求用户是否已持有效权益(未登录=false);前端据此决定点击会员卡是否放行 */
     private Boolean hasBenefit;
 
+    /** 非表字段:当前请求用户持有的是否就是本卡(卡级,区别于用户级 hasBenefit);前端据此显示"已开通/查看" */
+    private Boolean heldThis;
+
     /** 非表字段:适用门店名列表(按 storeAddrIds 查 store_address.storeName);详情页"适用哪些门店"弹窗展示 */
     private List<String> storeNames;
 
@@ -227,6 +230,14 @@ public class VipBenefitCard implements Serializable {
 
     public void setHasBenefit(Boolean hasBenefit) {
         this.hasBenefit = hasBenefit;
+    }
+
+    public Boolean getHeldThis() {
+        return heldThis;
+    }
+
+    public void setHeldThis(Boolean heldThis) {
+        this.heldThis = heldThis;
     }
 
     public List<String> getStoreNames() {

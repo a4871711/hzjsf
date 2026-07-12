@@ -19,7 +19,8 @@
 					<text class="num">{{ formatPrice(curPrice(item)) }}</text>
 					<text class="early" v-if="isRaised(item)">早买更优惠</text>
 				</view>
-				<view class="bc-btn">立即抢购</view>
+				<!-- heldThis=持有的就是这张卡(列表此时只返回它,下架也返回)→ 入口变"查看" -->
+				<view class="bc-btn">{{ item.heldThis ? '查看' : '立即抢购' }}</view>
 			</view>
 
 			<!-- 副标题(权益描述) -->

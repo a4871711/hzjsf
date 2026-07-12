@@ -8,6 +8,7 @@ import com.dlc.modules.api.dao.FitCardMapper;
 import com.dlc.modules.api.dao.StoreAddressMapper;
 import com.dlc.modules.api.dao.VipBenefitCardMapper;
 import com.dlc.modules.api.entity.FitCard;
+import com.dlc.modules.api.entity.VipBenefit;
 import com.dlc.modules.api.entity.VipBenefitCard;
 import com.dlc.modules.api.service.VipBenefitService;
 import com.dlc.modules.api.service.VipCardService;
@@ -34,7 +35,28 @@ public class VipCardServiceImpl implements VipCardService {
     private StoreAddressMapper storeAddressMapper;
 
     @Override
-    public PageUtils queryVipCardList(Map<String, Object> params) {
+    public PageUtils queryVipCardList(Map<String, Object> params, Long userId) {
+        // 已持有效权益的用户:列表退化为"我的权益卡"单卡展示——只返回其持有的那张卡
+        // (下架也展示,heldThis=true,前端把"立即抢购"换成"查看"),忽略门店筛选;
+        // 未登录/无权益走原上架列表
+        VipBenefit held = vipBenefitService.latestValidBenefit(userId);
+        if (held != null && held.getVipCardId() != null) {
+            Query query = new Query(params);
+            List<VipBenefitCard> list = new ArrayList<VipBenefitCard>();
+            // 单卡展示语义下只有第 1 页有数据:防上拉加载把同一张卡翻页重复渲染
+            if (query.getPage() <= 1) {
+                VipBenefitCard card = loadHeldCard(held.getVipCardId());
+                if (card != null) {
+                    list.add(card);
+                }
+            }
+            return new PageUtils(list, list.size(), query.getLimit(), query.getPage());
+        }
+        return queryOnShelfList(params);
+    }
+
+    /** 上架权益卡分页列表(未登录/无权益用户的默认视图) */
+    private PageUtils queryOnShelfList(Map<String, Object> params) {
         Query query = new Query(params);
         List<VipBenefitCard> list = vipBenefitCardMapper.queryList(query);
         int total = vipBenefitCardMapper.queryTotal(query);
@@ -44,6 +66,18 @@ public class VipCardServiceImpl implements VipCardService {
             }
         }
         return new PageUtils(list, total, query.getLimit(), query.getPage());
+    }
+
+    /** 加载用户持有的权益卡(无视上下架)并补齐展示字段;卡记录被物理删除时返回 null */
+    private VipBenefitCard loadHeldCard(Long vipCardId) {
+        VipBenefitCard card = vipBenefitCardMapper.selectByIdIgnoreStatus(vipCardId);
+        if (card == null) {
+            return null;
+        }
+        fillDisplayFields(card);
+        card.setHasBenefit(Boolean.TRUE);
+        card.setHeldThis(Boolean.TRUE);
+        return card;
     }
 
     @Override
@@ -59,12 +93,25 @@ public class VipCardServiceImpl implements VipCardService {
 
     @Override
     public VipBenefitCard queryVipCardDetail(Long vipCardId, Long userId) {
-        VipBenefitCard card = queryVipCardDetail(vipCardId);
+        // 持有效权益(与购卡 -38 硬校验口径同源,避免"页面放行、下单被拒"的分叉)
+        VipBenefit held = vipBenefitService.latestValidBenefit(userId);
+        boolean heldThis = held != null && vipCardId.equals(held.getVipCardId());
+        VipBenefitCard card;
+        if (heldThis) {
+            // 用户持有的正是这张卡:下架也允许查看(首页"查看"入口),否则点进来被"已下架"弹回
+            card = loadHeldCard(vipCardId);
+            if (card == null) {
+                throw new RRException(CodeAndMsg.ERROR_VIP_CARD_OFF_SHELF);
+            }
+        } else {
+            card = queryVipCardDetail(vipCardId);
+        }
         // 该权益卡绑定的可购买会员卡(仅上架),供详情页"可购买会员卡"区块展示
         card.setBindFitCards(loadBindFitCards(card.getBindFitCardIds()));
-        // 当前用户是否已持有效权益:决定前端点击会员卡是否放行。
-        // 统一走 hasValidBenefit,与购卡 -38 硬校验口径同源,避免"页面放行、下单被拒"的分叉
-        card.setHasBenefit(vipBenefitService.hasValidBenefit(userId));
+        // hasBenefit=持任意有效权益(用户级,控制绑定卡购买门槛);heldThis=持本卡(卡级,
+        // 控制顶部"已开通"——持卡A的用户看卡B详情不能显示"已开通")
+        card.setHasBenefit(held != null);
+        card.setHeldThis(heldThis);
         // 适用门店名列表:详情页"适用哪些门店"弹窗展示
         card.setStoreNames(loadStoreNames(card.getStoreAddrIds()));
         return card;

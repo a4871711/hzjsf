@@ -123,7 +123,13 @@ public class VipBenefitServiceImpl implements VipBenefitService {
 
     @Override
     public boolean hasValidBenefit(Long userId) {
-        return userId != null && vipBenefitMapper.countValidByUser(userId) > 0;
+        // 收口到 latestValidBenefit 同一 SQL 出口,避免"有效权益"判定口径分叉
+        return latestValidBenefit(userId) != null;
+    }
+
+    @Override
+    public VipBenefit latestValidBenefit(Long userId) {
+        return userId == null ? null : vipBenefitMapper.selectLatestValidByUser(userId);
     }
 
     /** 在 date 基础上加 days 天 */

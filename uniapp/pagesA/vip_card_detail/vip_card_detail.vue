@@ -4,7 +4,9 @@
 		<view class="vc-hero">
 			<view class="vc-hero-top flex_s">
 				<view class="vc-kicker">VIP 权益卡</view>
-				<view class="vc-buy-btn-top" @click="onBuy">立即购买</view>
+				<!-- heldThis=持有的正是本卡(卡级):显示"已开通";持其它权益卡的用户看本卡不显示 -->
+				<view class="vc-buy-btn-top vc-btn-owned" v-if="card.heldThis">已开通</view>
+				<view class="vc-buy-btn-top" v-else @click="onBuy">立即购买</view>
 			</view>
 			<view class="vc-title">{{ card.cardName || '--' }}</view>
 			<view class="vc-price-row">
@@ -288,6 +290,12 @@
 			font-size: 32rpx;
 			font-weight: 900;
 			box-shadow: 0rpx 4rpx 12rpx 0rpx rgba(0, 0, 0, 0.15);
+
+			&.vc-btn-owned {
+				background: rgba(255, 255, 255, 0.35);
+				color: #ffffff;
+				box-shadow: none;
+			}
 		}
 
 		.vc-title {

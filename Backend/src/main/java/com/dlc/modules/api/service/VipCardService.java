@@ -10,8 +10,12 @@ import java.util.Map;
  */
 public interface VipCardService {
 
-    /** 分页查上架权益卡列表,每条带实时动态价 currentPrice;show_buy_count=0 的卡不暴露 soldCount */
-    PageUtils queryVipCardList(Map<String, Object> params);
+    /**
+     * 分页查上架权益卡列表,每条带实时动态价 currentPrice;show_buy_count=0 的卡不暴露 soldCount。
+     * 已持有效权益的用户(userId 非 null 且有权益)退化为"我的权益卡"单卡展示:只返回其持有的
+     * 那张卡(下架也返回,heldThis=true,前端把"立即抢购"换成"查看"),忽略门店筛选,仅第 1 页有数据
+     */
+    PageUtils queryVipCardList(Map<String, Object> params, Long userId);
 
     /** 查单条上架权益卡详情,带实时动态价;不存在/已下架抛 ERROR_VIP_CARD_OFF_SHELF */
     VipBenefitCard queryVipCardDetail(Long vipCardId);

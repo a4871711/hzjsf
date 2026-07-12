@@ -29,12 +29,15 @@ public class VipCardController extends BaseController {
      * 权益卡列表(小程序浏览),分页 + 后端实时算的动态价 currentPrice
      */
     @RequestMapping("/list")
-    public R list(@RequestParam Map<String, Object> params) {
+    public R list(@RequestParam Map<String, Object> params, HttpServletRequest request) {
         // page/limit 规范成正整数:挡住 0/负数/非数字脏参数,
         // 否则 Query 算出负 offset → SQL "LIMIT 负数" 报错
         params.put("page", String.valueOf(toPositiveInt(params.get("page"), 1)));
         params.put("limit", String.valueOf(toPositiveInt(params.get("limit"), 10)));
-        return R.reOk(vipCardService.queryVipCardList(params));
+        // 已登录则识别用户(未登录静默 null):已持有效权益的用户只看到其持有的那张卡(下架也展示)
+        UserInfoVo user = getUserVoIgnore(request);
+        Long userId = user == null ? null : user.getUserId();
+        return R.reOk(vipCardService.queryVipCardList(params, userId));
     }
 
     /** 把入参解析为正整数;null / 非数字 / <=0 一律取默认值 */
