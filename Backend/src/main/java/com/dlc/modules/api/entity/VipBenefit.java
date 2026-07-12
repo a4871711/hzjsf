@@ -33,7 +33,7 @@ public class VipBenefit implements Serializable {
     private Date expireTime;
     /** 下单时会员卡剩余整天数快照,激活据此顺延生效/到期(无有效期为0) */
     private Integer deferDays;
-    /** 9待支付 0正常 1已转出失效 2已冻结 3已过期 */
+    /** 9待支付 0正常 1已转出失效 2已冻结 3已过期 4已注销(后台权益会员页注销,终态) */
     private Integer status;
     /** 已被转让次数 */
     private Integer transferCount;

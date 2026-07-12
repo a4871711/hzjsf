@@ -6,3 +6,7 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# 工具产物
+.playwright-mcp/
+Backend/.setting/

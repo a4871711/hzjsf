@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dlc.modules.sys.dao.SysVipMemberDao">
+
+    <!-- 权益会员公共筛选:持有人手机号/状态/购买日期区间/门店数据权限;排除 9待支付(未付款不算权益会员,购买记录页可见) -->
+    <sql id="Filter">
+        <where>
+            b.status &lt;&gt; 9
+            <if test="phone != null and phone != ''">
+                AND u.phone LIKE concat('%', #{phone}, '%')
+            </if>
+            <!-- status 过滤:数据层过期不落库(status 恒=0,过期靠 expire_time 实时算),
+                 故「3已过期」映射为 status=0 且已过期;「0生效中」需反向排除已过期 -->
+            <if test="status != null and status != ''">
+                <choose>
+                    <when test='status.toString().equals("3")'>
+                        AND b.status = 0 AND b.expire_time IS NOT NULL AND b.expire_time &lt;= NOW()
+                    </when>
+                    <when test='status.toString().equals("0")'>
+                        AND b.status = 0 AND (b.expire_time IS NULL OR b.expire_time &gt; NOW())
+                    </when>
+                    <otherwise>
+                        AND b.status = #{status}
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND b.created_date &gt;= #{startDate}
+            </if>
+            <!-- 止日含当天(<次日零点),与 SysVipCardOrderDao 一致 -->
+            <if test="endDate != null and endDate != ''">
+                AND b.created_date &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+            </if>
+            <!-- 门店数据权限:storeIds 为逗号分隔串,空则不过滤(超级管理员看全部) -->
+            <if test="storeIds != null and storeIds != ''">
+                AND b.store_id IN (${storeIds})
+            </if>
+        </where>
+    </sql>
+
+    <select id="queryList" resultType="java.util.Map" parameterType="map">
+        SELECT
+            b.vip_benefit_id    AS vipBenefitId,
+            b.user_id           AS userId,
+            u.nickname          AS nickname,
+            u.phone             AS phone,
+            b.store_addr_id     AS storeAddrId,
+            COALESCE(sa.storeName, s.storeName) AS storeName,
+            c.store_addr_ids    AS storeAddrIds,
+            c.card_name         AS cardName,
+            <!-- 对外状态:正常(0)但已过期的记录派生为 3已过期,让列表标签/筛选与真实有效性一致 -->
+            CASE WHEN b.status = 0 AND b.expire_time IS NOT NULL AND b.expire_time &lt;= NOW()
+                 THEN 3 ELSE b.status END AS status,
+            b.remark            AS remark,
+            DATE_FORMAT(b.expire_time, '%Y-%m-%d %H:%i:%s') AS expireTime,
+            DATE_FORMAT(b.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate
+        FROM vip_benefit b
+        LEFT JOIN user_info u ON b.user_id = u.userId
+        LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        LEFT JOIN store_address sa ON b.store_addr_id = sa.storeAddrId
+        LEFT JOIN store s ON b.store_id = s.storeId
+        <include refid="Filter"/>
+        ORDER BY b.created_date DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="queryTotal" resultType="int" parameterType="map">
+        SELECT COUNT(1)
+        FROM vip_benefit b
+        LEFT JOIN user_info u ON b.user_id = u.userId
+        <include refid="Filter"/>
+    </select>
+
+    <!-- 带前置状态校验的状态流转:命中 0 行 = 当前状态不允许该操作 -->
+    <update id="updateStatus">
+        UPDATE vip_benefit
+        SET status = #{toStatus}
+        WHERE vip_benefit_id = #{vipBenefitId}
+          AND status IN
+        <foreach collection="fromStatus" item="s" open="(" separator="," close=")">#{s}</foreach>
+    </update>
+
+    <update id="updateRemark">
+        UPDATE vip_benefit
+        SET remark = #{remark}
+        WHERE vip_benefit_id = #{vipBenefitId}
+    </update>
+
+    <!-- 改到期时间;过期不落库(status 恒0),改到未来即自动恢复生效,无需回写 status。
+         仅允许作用于 0正常/2冻结(含派生过期的 0);已转出(1)/已注销(4)/待支付(9)不可改 -->
+    <update id="updateValidity">
+        UPDATE vip_benefit
+        SET expire_time = #{expireTime}
+        WHERE vip_benefit_id = #{vipBenefitId} AND status IN (0, 2)
+    </update>
+
+    <!-- 在途转让单计数:20待审核/40待受让人确认;注销前用于阻断,避免服务费占押与幽灵转让单 -->
+    <select id="countActiveTransfer" resultType="int" parameterType="long">
+        SELECT COUNT(1) FROM vip_benefit_transfer
+        WHERE vip_benefit_id = #{vipBenefitId} AND status IN (20, 40)
+    </select>
+
+    <!-- 更换开通门店:storeId 由 store_address 反查联动,保持两列一致;终态记录不可改 -->
+    <update id="updateStore">
+        UPDATE vip_benefit b
+        JOIN store_address sa ON sa.storeAddrId = #{storeAddrId}
+        SET b.store_addr_id = sa.storeAddrId,
+            b.store_id = sa.storeId
+        WHERE b.vip_benefit_id = #{vipBenefitId} AND b.status IN (0, 2)
+    </update>
+</mapper>

@@ -837,6 +837,72 @@ export default {
 		});
 	},
 
+	//权益会员-列表
+	vipMember_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipMember/list'),
+			method: 'get',
+			params: $http.adornParams({
+				...data
+			})
+		});
+	},
+	//权益会员-停用/启用({vipBenefitId, disable:1停用 0启用})
+	vipMember_freeze(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipMember/freeze'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//权益会员-备注({vipBenefitId, remark})
+	vipMember_remark(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipMember/remark'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//权益会员-更新有效期({vipBenefitId, expireTime})
+	vipMember_updateValidity(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipMember/updateValidity'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//权益会员-更换开通门店({vipBenefitId, storeAddrId})
+	vipMember_changeStore(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipMember/changeStore'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+	//权益会员-注销({vipBenefitId})
+	vipMember_cancel(data) {
+		return $http({
+			url: $http.adornUrl('/sys/vipMember/cancel'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({
+				...data
+			}, false, 'json')
+		});
+	},
+
 	//权益卡购买记录-列表(后台只读)
 	vipCardOrder_list(data) {
 		return $http({
