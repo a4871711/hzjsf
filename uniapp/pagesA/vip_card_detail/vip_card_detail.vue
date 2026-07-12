@@ -85,6 +85,7 @@
 			return {
 				vipCardId: null,
 				storeId: '',
+				storeAddrId: '',
 				card: {}
 			}
 		},
@@ -148,6 +149,8 @@
 			this.vipCardId = option.vipCardId;
 			// 入口页(首页)带来的当前门店 storeId,点击绑定会员卡时透传给下单页
 			this.storeId = option.storeId || '';
+			// 当前门店 storeAddrId:购买时随单传后端,写入购买记录的门店归属
+			this.storeAddrId = option.storeAddrId || '';
 			this.getDetail();
 		},
 		methods: {
@@ -204,10 +207,14 @@
 					return;
 				}
 				const that = this;
-				// 1) 后端下单(重算动态价、建待支付权益),拿订单号 + 应付金额
-				buyVipCard({
+				// 1) 后端下单(重算动态价、建待支付权益),拿订单号 + 应付金额;
+				// 随单带当前门店,写入购买记录的门店归属(空则不传,后端按老口径兜底)
+				const buyParams = {
 					vipCardId: this.vipCardId
-				}).then((res) => {
+				};
+				if (this.storeId) buyParams.storeId = this.storeId;
+				if (this.storeAddrId) buyParams.storeAddrId = this.storeAddrId;
+				buyVipCard(buyParams).then((res) => {
 					const orderNo = res.data.orderNo;
 					const paySum = res.data.paySum;
 					// 2) 复用小程序统一支付 /wx/proPay 取调起参数

@@ -50,6 +50,11 @@
 			storeId: {
 				type: [String, Number],
 				default: ''
+			},
+			// 当前门店 storeAddrId,随购买单写入 vip_benefit 的门店归属(后台购买记录展示)
+			storeAddrId: {
+				type: [String, Number],
+				default: ''
 			}
 		},
 		methods: {
@@ -74,7 +79,8 @@
 			goDetail(item) {
 				if (!item.vipCardId) return;
 				const sid = this.storeId ? ('&storeId=' + this.storeId) : '';
-				this.config.path('/pagesA/vip_card_detail/vip_card_detail?vipCardId=' + item.vipCardId + sid);
+				const said = this.storeAddrId ? ('&storeAddrId=' + this.storeAddrId) : '';
+				this.config.path('/pagesA/vip_card_detail/vip_card_detail?vipCardId=' + item.vipCardId + sid + said);
 			}
 		}
 	}

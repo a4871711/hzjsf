@@ -7,6 +7,7 @@ import com.dlc.common.utils.OrderNoGenerator;
 import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
 import com.dlc.modules.api.dao.DeviceMapper;
+import com.dlc.modules.api.dao.StoreMapper;
 import com.dlc.modules.api.dao.UserInfoMapper;
 import com.dlc.modules.api.dao.VipBenefitMapper;
 import com.dlc.modules.api.entity.Device;
@@ -46,9 +47,11 @@ public class VipBenefitServiceImpl implements VipBenefitService {
     private UserInfoMapper userInfoMapper;
     @Autowired
     private DeviceMapper deviceMapper;
+    @Autowired
+    private StoreMapper storeMapper;
 
     @Override
-    public Map<String, Object> buy(UserInfoVo user, Long vipCardId) {
+    public Map<String, Object> buy(UserInfoVo user, Long vipCardId, Long storeId, Long storeAddrId) {
         Long userId = user.getUserId();
         // 持有未过期有效权益(status=0且未过期)时禁止重复购买
         if (vipBenefitMapper.countValidByUser(userId) > 0) {
@@ -68,9 +71,20 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         vb.setOriginUserId(userId);
         vb.setVipCardId(vipCardId);
         vb.setSourceOrderNo(orderNo);
-        vb.setStoreId(userInfoMapper.queryStoreIdByUserId(userId));
-        int nowStoreId = user.getNowStoreId();
-        vb.setStoreAddrId(nowStoreId > 0 ? (long) nowStoreId : null);
+        // 门店归属:优先前端随单传的"购买时所在门店"(小程序首页/详情页的当前定位门店),但须校验
+        // 该 store_id 真实存在——它是后台"权益卡购买记录"按门店做数据权限过滤的字段
+        // (SysVipCardOrderDao.Filter: AND b.store_id IN (#{storeIds})),不可无脑信任客户端传值,
+        // 否则恶意请求可传任意/不存在的门店 id 把购买记录伪装成别的门店、或让记录从所有门店视图消失。
+        // 校验不通过或未传:回退老口径(会员卡归属门店,无会员卡则 NULL)
+        Long verifiedStoreId = (storeId != null && storeMapper.selectByPrimaryKey(storeId) != null)
+                ? storeId : null;
+        vb.setStoreId(verifiedStoreId != null ? verifiedStoreId : userInfoMapper.queryStoreIdByUserId(userId));
+        if (storeAddrId != null) {
+            vb.setStoreAddrId(storeAddrId);
+        } else {
+            int nowStoreId = user.getNowStoreId();
+            vb.setStoreAddrId(nowStoreId > 0 ? (long) nowStoreId : null);
+        }
         vb.setOriginPrice(price);
         // 下单即快照会员卡剩余整天数(此刻会员卡未被本单续期),激活据此顺延生效/到期;无有效期为0=立即生效
         vb.setDeferDays(remainDaysOfMembership(userId));

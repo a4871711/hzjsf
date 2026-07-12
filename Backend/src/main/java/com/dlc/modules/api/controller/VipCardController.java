@@ -71,14 +71,15 @@ public class VipCardController extends BaseController {
      * 权益卡购买下单(仅微信,需登录):后端按当前 sold_count 重算价、建待支付权益,返回微信调起参数
      */
     @RequestMapping("/buy")
-    public R buy(Long vipCardId, HttpServletRequest request) {
+    public R buy(Long vipCardId, Long storeId, Long storeAddrId, HttpServletRequest request) {
         if (vipCardId == null) {
             return R.reError("缺少参数 vipCardId");
         }
         // 登录 + 封禁校验(未登录/被禁由 getUserVo 抛对应业务码;卡已下架由 service 抛 ERROR_VIP_CARD_OFF_SHELF)
         UserInfoVo user = getUserVo(request);
+        // storeId/storeAddrId=购买时所在门店(可空),写入购买记录的门店归属供后台展示
         // 返回 {orderNo, paySum},前端据此调 /wx/proPay 调起小程序支付
-        return R.reOk(vipBenefitService.buy(user, vipCardId));
+        return R.reOk(vipBenefitService.buy(user, vipCardId, storeId, storeAddrId));
     }
 
     /**

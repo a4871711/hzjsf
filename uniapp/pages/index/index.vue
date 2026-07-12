@@ -67,7 +67,8 @@
 			<view class="index-title flex_s">
 				<view>VIP权益卡</view>
 			</view>
-			<vip-benefit-card :card-list="benefitCardList" :storeId="myStore.storeId"></vip-benefit-card>
+			<vip-benefit-card :card-list="benefitCardList" :storeId="myStore.storeId"
+				:storeAddrId="myStore.storeAddrId"></vip-benefit-card>
 		</view>
 
 		<!-- 门店教练 -->
