@@ -31,7 +31,8 @@ export default {
           { value: 0, label: '正常' },
           { value: 1, label: '已转出' },
           { value: 2, label: '已冻结' },
-          { value: 3, label: '已过期' }
+          { value: 3, label: '已过期' },
+          { value: 4, label: '已注销' }
         ] },
         { type: "daterange", placeholder: "购买时间", prop: "dateRange", width: 260 },
       ],
@@ -45,6 +46,7 @@ export default {
         { label: "购买人", prop: "originNickname", formatter: e => (e.originNickname || '') + ' ' + (e.originPhone || '') },
         { label: "当前持有人", prop: "holderNickname", formatter: e => (e.holderNickname || '') + ' ' + (e.holderPhone || '') },
         { label: "权益卡", prop: "cardName" },
+        { label: "门店", prop: "storeName", formatter: e => e.storeName || '—' },
         { label: "购买售价", prop: "originPrice", formatter: e => e.originPrice != null && e.originPrice !== '' ? '¥' + e.originPrice : '—' },
         { label: "购买时间", prop: "createdDate", formatter: e => e.createdDate ? this.parseTime(e.createdDate) : '—' },
         { label: "生效", prop: "startTime", formatter: e => e.startTime ? this.parseTime(e.startTime) : '—' },
@@ -59,14 +61,15 @@ export default {
     this.getData();
   },
   methods: {
-    // 状态标签:9待支付灰 / 0正常绿 / 1已转出蓝 / 2已冻结橙 / 3已过期灰
+    // 状态标签:9待支付灰 / 0正常绿 / 1已转出蓝 / 2已冻结橙 / 3已过期灰 / 4已注销灰
     statusTag(status) {
       var map = {
         9: ['待支付', '#f4f4f5', '#909399', '#e9e9eb'],
         0: ['正常', '#f0f9eb', '#67C23A', '#e1f3d8'],
         1: ['已转出', '#ecf5ff', '#409EFF', '#d9ecff'],
         2: ['已冻结', '#fdf6ec', '#E6A23C', '#faecd8'],
-        3: ['已过期', '#f4f4f5', '#909399', '#e9e9eb']
+        3: ['已过期', '#f4f4f5', '#909399', '#e9e9eb'],
+        4: ['已注销', '#f4f4f5', '#909399', '#e9e9eb']
       };
       var s = map[status] || ['未知', '#f4f4f5', '#909399', '#e9e9eb'];
       return '<span style="padding:2px 8px;border-radius:3px;font-size:12px;background:' + s[1] + ';color:' + s[2] + ';border:1px solid ' + s[3] + '">' + s[0] + '</span>';

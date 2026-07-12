@@ -37,6 +37,7 @@
             hu.phone            AS holderPhone,
             b.vip_card_id       AS vipCardId,
             c.card_name         AS cardName,
+            s.storeName         AS storeName,
             b.source_order_no   AS sourceOrderNo,
             b.origin_price      AS originPrice,
             b.transfer_count    AS transferCount,
@@ -48,6 +49,7 @@
         LEFT JOIN user_info ou ON b.origin_user_id = ou.userId
         LEFT JOIN user_info hu ON b.user_id = hu.userId
         LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        LEFT JOIN store s ON s.storeId = b.store_id
         <include refid="Filter"/>
         ORDER BY b.created_date DESC
         <if test="offset != null and limit != null">
