@@ -1,18 +1,23 @@
-# 数据库增量 SQL 目录（Flyway 自动执行已停用，脚本需手动执行）
+# Flyway 迁移脚本目录
 
-> **⚠️ 2026-07-12 起 Flyway 自动迁移已停用**（生产 MySQL 账号无 global_variables 访问权限，
-> `spring-jdbc.xml` 中 flyway bean 已注释）。本目录仍是**唯一的增量 SQL 落点**（沿用
-> Flyway 命名规范做版本管理），但每个脚本需在**开发库与生产库各手动执行一次**，
-> 执行情况记录在下方「执行台账」。pom.xml 里的 flyway-core 依赖暂保留，便于将来恢复自动迁移。
+启动时（Spring 容器初始化 `flyway` bean）会自动按版本号顺序执行本目录下的 SQL，
+执行记录写入库中的 `flyway_schema_history` 表，已执行过的脚本不会重复执行。
 
-## 执行台账（新脚本上线必须更新此表）
+> 2026-07-12：曾因生产 MySQL 账号缺 global_variables 访问权限短暂停用改手动执行；
+> 该权限问题已解决，Flyway 恢复启用。
 
-| 脚本 | 开发库 | 生产库 |
-|---|---|---|
-| V20260710_01__idx_card_pause_card_order.sql | 已执行 2026-07-12 | ☐ 待执行 |
-| V20260712_01__vip_member_admin.sql | 已执行 2026-07-12 | ☐ 待执行 |
+## ⚠️ 脚本必须写成幂等的（不能假设所有环境都是从零开始执行）
 
-## 命名规则（沿用 Flyway 规范，便于将来恢复自动迁移）
+本目录曾在 Flyway 停用期间存在过“手动执行”的过渡阶段，个别脚本的 SQL 效果可能已经
+通过手动方式在某些库（尤其是开发库）生效，但未被 `flyway_schema_history` 记录。
+Flyway 恢复启用后会对着这些库重新尝试执行这些脚本——`CREATE INDEX`/`ALTER TABLE ADD COLUMN`
+等语句如果不做存在性判断，会因为对象已存在而报错，导致 `migrate()` 抛异常、
+Spring 容器初始化失败（`sqlSessionFactory` 依赖 `flyway` 先执行）。
+
+**新脚本涉及 DDL 时，一律先判断再执行**（`information_schema` 查询 + `PREPARE`/`EXECUTE` 动态 SQL，
+或 MySQL 8.0.29+ 可直接用 `ADD COLUMN IF NOT EXISTS`/`CREATE INDEX IF NOT EXISTS`）。
+
+## 命名规则（必须遵守，否则 Flyway 不识别）
 
 ```
 V<版本号>__<描述>.sql        （V 大写，双下划线）
@@ -20,10 +25,12 @@ V<版本号>__<描述>.sql        （V 大写，双下划线）
 ```
 
 - 版本号推荐用日期 + 当日序号（如 `20260710_01`），保证递增、避免多人冲突
-- 脚本一旦在任一环境执行过就**不要再改内容**；要改就再加一个新版本脚本
-- 若将来恢复 Flyway：已有库会被 baseline 记为版本 1，新脚本版本号必须大于 1（日期式天然满足）
+- 脚本一旦被 Flyway **执行过**（即出现在某个环境的 `flyway_schema_history` 里）就**不要再改内容**
+  （Flyway 校验 checksum，改了会在该环境启动报错）；要改就再加一个新版本脚本。
+  尚未被任何环境的 Flyway 执行过的脚本（`flyway_schema_history` 里查不到）可以放心修改。
+- 首次接入时已有库会被 baseline 记为版本 1，因此新脚本版本号必须大于 1（日期式天然满足）
 
 ## 与旧 sql/ 目录的关系
 
-`Backend/sql/` 下是本目录启用**之前**的手工增量脚本，不迁入本目录。
-此后的新增量一律写到本目录，不再往 `sql/` 加。
+`Backend/sql/` 下是接入 Flyway **之前**的手工增量脚本，视为已随 baseline 存在于库中，
+不迁入本目录。此后的新增量一律写到本目录，不再往 `sql/` 加。
