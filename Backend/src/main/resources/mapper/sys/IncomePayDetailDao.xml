@@ -26,6 +26,7 @@
     <select id="queryList" resultType="com.dlc.modules.sys.entity.SysIncomePayDetailEntity" parameterType="map">
         select ipd.*,ui.nickname userName,ui.phone,s.storeName,
         c.autoPay,c.oldValidityDate,c.validityDate,c.buyCount,c.type as cardType,c.paySum,
+        f.cardNature,
         CASE
             WHEN ipd.payType = 13 OR ipd.tradeType = 13 OR c.payType = 13 THEN '自动'
             WHEN ipd.tradeType IN (1, 2, 3) OR c.payType IN (1, 2, 3) THEN '用户'
@@ -35,8 +36,13 @@
         LEFT JOIN user_info ui ON ui.userId=ipd.userId
         LEFT JOIN store_address s ON s.storeId = ipd.storeId
         LEFT JOIN card_order c ON c.orderNo = ipd.orderNo
+        LEFT JOIN fit_card f ON f.fitCardId = c.cardId
         <where>
             ipd.payType in (2,3,4,5,6,9,10,11,13)
+            <if test="cardNature!=null and cardNature!=''">
+                <!-- 关联不到 fit_card 的行(孤儿订单/非卡收支)按普通卡口径,保证普通卡+权益卡=全部 -->
+                AND IFNULL(f.cardNature, 0) = #{cardNature}
+            </if>
             <if test="userName!=null and userName!=''">
                 AND ui.nickname LIKE concat('%',#{userName},'%')
             </if>
@@ -109,8 +115,14 @@
         select count(1) from income_pay_detail ipd
         INNER JOIN user_info ui ON ui.userId=ipd.userId
         LEFT JOIN store_address s ON s.storeId = ipd.storeId
+        LEFT JOIN card_order c ON c.orderNo = ipd.orderNo
+        LEFT JOIN fit_card f ON f.fitCardId = c.cardId
         <where>
-            payType in (2,3,4,5,6,9,10,11,13)
+            ipd.payType in (2,3,4,5,6,9,10,11,13)
+            <if test="cardNature!=null and cardNature!=''">
+                <!-- 关联不到 fit_card 的行(孤儿订单/非卡收支)按普通卡口径,保证普通卡+权益卡=全部 -->
+                AND IFNULL(f.cardNature, 0) = #{cardNature}
+            </if>
             <if test="userName!=null and userName!=''">
                 AND ui.nickname LIKE concat('%',#{userName},'%')
             </if>

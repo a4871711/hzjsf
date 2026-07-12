@@ -199,8 +199,8 @@ public class SysIncomePayDetailController {
         }
 
         String fileName = "会员购卡记录.xls";
-        String[] titles = {"姓名", "手机号码", "所属门店", "会员类型", "是否自动续费", "支付方式", "订单金额", "卡券金额", "支付金额", "有效期(旧)", "有效期(新)", "购卡时间"};
-        String[] columns = {"userName", "phone", "storeName", "ctName", "renewSourceDesc", "payTypeDesc", "paySum", "couponMoney", "money", "oldValidityDate", "validityDate", "transactionTime"};
+        String[] titles = {"姓名", "手机号码", "所属门店", "会员类型", "卡片分类", "是否自动续费", "支付方式", "订单金额", "卡券金额", "支付金额", "有效期(旧)", "有效期(新)", "购卡时间"};
+        String[] columns = {"userName", "phone", "storeName", "ctName", "cardNature", "renewSourceDesc", "payTypeDesc", "paySum", "couponMoney", "money", "oldValidityDate", "validityDate", "transactionTime"};
         export(response, sysIncomePayDetailList, fileName, titles, columns);
 
     }
@@ -267,6 +267,9 @@ public class SysIncomePayDetailController {
                     values[i][j] = String.valueOf(money.doubleValue());
                 } else {
                     values[i][j] = obj == null ? "" : obj.toString();
+                }
+                if ("cardNature".equals(column)) {
+                    values[i][j] = "1".equals(values[i][j]) ? "权益卡" : "普通卡";
                 }
                 if ("tradeType".equals(column)) {
                     if (values[i][j] != null) {

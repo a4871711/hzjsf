@@ -126,6 +126,10 @@ public class SysIncomePayDetailEntity implements Serializable {
 	@TableField(exist = false)
 	private String renewSourceDesc;
 
+	/** 卡片分类：0普通卡 1权益卡（关联 fit_card.cardNature，非卡订单为 null） */
+	@TableField(exist = false)
+	private Integer cardNature;
+
 	/**
 	 * 设置：明细ID
 	 */
@@ -377,5 +381,13 @@ public class SysIncomePayDetailEntity implements Serializable {
 
 	public void setRenewSourceDesc(String renewSourceDesc) {
 		this.renewSourceDesc = renewSourceDesc;
+	}
+
+	public Integer getCardNature() {
+		return cardNature;
+	}
+
+	public void setCardNature(Integer cardNature) {
+		this.cardNature = cardNature;
 	}
 }

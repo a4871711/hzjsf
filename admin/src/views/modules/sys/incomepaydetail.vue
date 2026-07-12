@@ -25,6 +25,7 @@ export default {
 				phone: '',
 				storeName: '',
 				payType: '',
+				cardNature: '',
 				sdate:'',
 				edate:'',
 				createdDate:[]
@@ -42,6 +43,17 @@ export default {
 					options: [
 						{ value: '2', label: '微信支付' },
 						{ value: '13', label: '自动续费' }
+					]
+				},
+				{
+					type: 'select',
+					label: '',
+					placeholder: '卡片分类',
+					prop: 'cardNature',
+					width: 200,
+					options: [
+						{ value: '0', label: '普通卡' },
+						{ value: '1', label: '权益卡' }
 					]
 				},
 				{ type: "daterange", placeholder: "注册时间", prop: "createdDate", width: 200, change:e=> {
@@ -70,6 +82,7 @@ export default {
 				{ label: "头像", prop: "headImgUrl", type: 'image' },
 				{ label: '所属门店', prop: 'storeName' },
 				{ label: '会员类型', prop: 'ctName' },
+				{ label: '卡片分类', prop: 'cardNature', formatter: e => { return e.cardNature == 1 ? '权益卡' : '普通卡' } },
 				{
 					label: '是否自动续费',
 					prop: 'renewSourceDesc',
