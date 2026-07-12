@@ -91,13 +91,16 @@
 
 	<!-- Flyway：容器启动时自动执行 classpath:db/migration 下的增量 SQL；
 	     已有库首次启动会自动 baseline（记为版本1），之后只执行更高版本号的新脚本 -->
+	<!-- 因服务器MySQL账号无global_variables访问权限，已注释掉Flyway，采用手动维护SQL -->
+	<!--
 	<bean id="flyway" class="org.flywaydb.core.Flyway" init-method="migrate">
 		<property name="dataSource" ref="dataSource" />
 		<property name="locations" value="classpath:db/migration" />
 		<property name="baselineOnMigrate" value="true" />
 	</bean>
+	-->
 
-	<bean id="sqlSessionFactory" class="com.baomidou.mybatisplus.spring.MybatisSqlSessionFactoryBean" depends-on="flyway">
+	<bean id="sqlSessionFactory" class="com.baomidou.mybatisplus.spring.MybatisSqlSessionFactoryBean">
 		<property name="configLocation" value="classpath:mybatis.xml" />
 		<property name="mapperLocations" value="classpath:mapper/**/*.xml" />
 		<property name="dataSource" ref="dataSource" />
