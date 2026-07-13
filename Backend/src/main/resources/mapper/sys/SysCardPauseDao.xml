@@ -8,9 +8,11 @@
         CASE WHEN t.status = 0 AND t.end_time IS NOT NULL AND t.end_time &lt;= NOW() THEN 99 ELSE t.status END
     </sql>
 
-    <!-- 停卡记录公共筛选:手机号/展示状态(10/0/99/1/2/3)/停卡类型/起止日期 -->
+    <!-- 停卡记录公共筛选:手机号/展示状态(0/99/1/2)/停卡类型/起止日期 -->
     <sql id="Filter">
         <where>
+            <!-- 只显示支付成功的停卡:排除 10待支付、3已关闭(付费停卡未完成支付/超时关闭的占位单,不算有效停卡) -->
+            t.status NOT IN (10, 3)
             <if test="phone != null and phone != ''">
                 AND u.phone LIKE concat('%', #{phone}, '%')
             </if>

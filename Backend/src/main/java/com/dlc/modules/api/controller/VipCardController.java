@@ -89,8 +89,15 @@ public class VipCardController extends BaseController {
     public R myBenefits(@RequestParam Map<String, Object> params, HttpServletRequest request) {
         Long userId = getUserId(request);
         params.put("userId", userId);
-        // status 默认 0(正常),允许 0/2/3 等取值
-        params.put("status", toIntOrDefault(params.get("status"), 0));
+        // status 显式传才精确筛选(0正常/2已冻结/4已注销...);不传则返回名下全部状态,由 SQL 默认排除 9 待支付占位单。
+        // 原先无条件默认 0 会被 MyBatis 的 OGNL 空串比较吞掉过滤(Integer 0 时 status!='' 恒 false),
+        // 反而返回全部状态且被前端标成「正常」,故改为按是否传参决定是否精确筛选。
+        Object statusParam = params.get("status");
+        if (statusParam != null && !"".equals(String.valueOf(statusParam).trim())) {
+            params.put("status", toIntOrDefault(statusParam, 0));
+        } else {
+            params.remove("status");
+        }
         // page/limit 规范成正整数,挡住 0/负数/非数字脏参数
         params.put("page", String.valueOf(toPositiveInt(params.get("page"), 1)));
         params.put("limit", String.valueOf(toPositiveInt(params.get("limit"), 10)));

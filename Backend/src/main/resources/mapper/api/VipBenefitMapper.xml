@@ -113,7 +113,10 @@
         LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
         <where>
             b.user_id = #{userId}
-            <if test="status != null and status != ''">
+            <!-- 排除 9 待支付占位单(未付款不算持有);其余(正常/冻结/注销/过期)都返回,前端各标状态 -->
+            AND b.status &lt;&gt; 9
+            <!-- status 用 .toString() 判空,避开 OGNL 对 Integer 0 求 status!='' 恒 false 的坑 -->
+            <if test="status != null and status.toString() != ''">
                 AND b.status = #{status}
             </if>
         </where>
@@ -127,7 +130,8 @@
         SELECT COUNT(1) FROM vip_benefit
         <where>
             user_id = #{userId}
-            <if test="status != null and status != ''">
+            AND status &lt;&gt; 9
+            <if test="status != null and status.toString() != ''">
                 AND status = #{status}
             </if>
         </where>

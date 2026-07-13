@@ -46,12 +46,10 @@ export default {
       searchForm: [
         { type: "input", placeholder: "会员手机", prop: "phone", width: 200 },
         { type: "select", placeholder: "状态", prop: "status", width: 160, options: [
-          { value: 10, label: '待支付' },
           { value: 0, label: '停卡中' },
           { value: 99, label: '已结束' },
           { value: 1, label: '已恢复(历史)' },
-          { value: 2, label: '已取消' },
-          { value: 3, label: '已关闭' }
+          { value: 2, label: '已取消' }
         ] },
         { type: "select", placeholder: "类型", prop: "pauseType", width: 160, options: [
           { value: 0, label: '免费' },
