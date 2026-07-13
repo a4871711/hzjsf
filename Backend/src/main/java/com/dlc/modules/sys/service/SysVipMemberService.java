@@ -14,6 +14,9 @@ public interface SysVipMemberService {
 
     int queryTotal(Map<String, Object> map);
 
+    /** 导出用:不分页返回全部符合筛选的权益会员(字段已转导出文本) */
+    List<Map<String, Object>> queryExportList(Map<String, Object> map);
+
     /** 停用(0正常→2已冻结)或启用(2→0);当前状态不允许时抛 RRException */
     void freeze(Long vipBenefitId, boolean disable);
 

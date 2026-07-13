@@ -27,7 +27,6 @@ export default {
       searchForm: [
         { type: "input", placeholder: "会员手机(购买人/持有人)", prop: "phone", width: 240 },
         { type: "select", placeholder: "状态", prop: "status", width: 160, options: [
-          { value: 9, label: '待支付' },
           { value: 0, label: '正常' },
           { value: 1, label: '已转出' },
           { value: 2, label: '已冻结' },

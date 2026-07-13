@@ -21,6 +21,9 @@ public interface SysVipMemberDao {
 
     int queryTotal(Map<String, Object> map);
 
+    /** 导出用:不分页取全部符合筛选的权益会员,字段已在 XML 里转成导出可读文本 */
+    List<Map<String, Object>> queryExportList(Map<String, Object> map);
+
     /** 状态流转带前置状态校验(乐观):命中 0 行说明当前状态不允许该操作 */
     int updateStatus(@Param("vipBenefitId") Long vipBenefitId,
                      @Param("fromStatus") List<Integer> fromStatus,

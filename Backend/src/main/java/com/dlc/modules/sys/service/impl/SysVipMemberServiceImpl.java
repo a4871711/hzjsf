@@ -35,6 +35,11 @@ public class SysVipMemberServiceImpl implements SysVipMemberService {
     }
 
     @Override
+    public List<Map<String, Object>> queryExportList(Map<String, Object> map) {
+        return sysVipMemberDao.queryExportList(map);
+    }
+
+    @Override
     public void freeze(Long vipBenefitId, boolean disable) {
         int rows = disable
                 ? sysVipMemberDao.updateStatus(vipBenefitId, Arrays.asList(0), 2)

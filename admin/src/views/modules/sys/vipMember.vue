@@ -3,12 +3,13 @@
     <r-search ref="search" :searchData="searchData" :searchForm="searchForm" :searchHandle="searchHandle" />
     <r-table
       :isSelection="false"
-      :isHandle="false"
+      :isHandle="true"
       :isPagination="true"
       :tableData="tableData"
       :tableCols="tableCols"
       :tablePage="pagination"
       :loading="tableLoading"
+      :tableHandles="tableHandles"
       @refresh="page()" />
 
     <!-- 更新有效期 -->
@@ -138,6 +139,25 @@ export default {
         },
       ],
       pagination: { limit: 10, offset: 1, total: 1 },
+      tableHandles: [
+        {
+          label: "导出",
+          type: "primary",
+          handle: e => {
+            // 导出条件与列表搜索一致;走后端 /sys/vipMember/export 直接下载 xls(与门店会员导出同一方式)
+            var dr = this.searchData.dateRange || [];
+            var params = { phone: this.searchData.phone, status: this.searchData.status, startDate: dr[0] || '', endDate: dr[1] || '' };
+            var parts = [];
+            for (var key in params) {
+              var val = params[key];
+              if (val !== '' && val !== null && val !== undefined) {
+                parts.push(key + '=' + encodeURIComponent(val));
+              }
+            }
+            window.open('/sys/vipMember/export?' + parts.join('&'));
+          }
+        }
+      ],
       validityDialog: { show: false, row: null, expireTime: '' },
       storeDialog: { show: false, row: null, storeAddrId: '', options: [] },
     };

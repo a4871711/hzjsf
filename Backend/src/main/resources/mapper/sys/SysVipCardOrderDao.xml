@@ -6,6 +6,8 @@
     <!-- 购买记录公共筛选:手机号(购买人/持有人任一)/状态/起止日期/门店数据权限 -->
     <sql id="Filter">
         <where>
+            <!-- 只显示已支付记录:排除 9待支付占位单(下单时预占,支付成功后才转正式状态) -->
+            b.status &lt;&gt; 9
             <if test="phone != null and phone != ''">
                 AND (ou.phone LIKE concat('%', #{phone}, '%') OR hu.phone LIKE concat('%', #{phone}, '%'))
             </if>

@@ -16,7 +16,8 @@ import java.util.Map;
  * VIP 权益卡购买记录(vip_benefit)后台只读查询。
  * 权益卡的购买/激活在移动端 api 侧(VipBenefitService),后台仅提供列表给 admin 的 vipCardOrder.vue 用。
  * 一行 vip_benefit = 一张被买下的权益卡实例(无独立订单表);列表同时带出购买人(origin_user_id)
- * 与当前持有人(user_id),转让过的两者不同。含 status=9 待支付占位单。
+ * 与当前持有人(user_id),转让过的两者不同。列表只显示已支付记录,排除 status=9 待支付占位单
+ * (占位单仍入库供支付流程回填,只是不在购买记录里展示)。
  *
  * @date 2026-07-03
  */

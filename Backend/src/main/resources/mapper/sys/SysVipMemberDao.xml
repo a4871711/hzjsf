@@ -74,6 +74,40 @@
         <include refid="Filter"/>
     </select>
 
+    <!-- 导出:复用同一 Filter(含排除9待支付),状态/可用门店直接转导出可读文本。
+         状态字段特意命名 statusText(不叫 status),避免 SysUserController.export 把它按门店会员的
+         status 语义(0待确认/1已确认…)误转;不带 LIMIT,由 Controller 传不含 offset/limit 的原始 params 全量导出 -->
+    <select id="queryExportList" resultType="java.util.Map" parameterType="map">
+        SELECT
+            b.vip_benefit_id    AS vipBenefitId,
+            u.nickname          AS nickname,
+            u.phone             AS phone,
+            COALESCE(sa.storeName, s.storeName) AS storeName,
+            (SELECT GROUP_CONCAT(sa2.storeName SEPARATOR '、')
+               FROM store_address sa2
+              WHERE FIND_IN_SET(sa2.storeAddrId, c.store_addr_ids)) AS availableStores,
+            c.card_name         AS cardName,
+            CASE
+                WHEN b.status = 0 AND b.expire_time IS NOT NULL AND b.expire_time &lt;= NOW() THEN '已过期'
+                WHEN b.status = 0 THEN '生效中'
+                WHEN b.status = 1 THEN '已转出'
+                WHEN b.status = 2 THEN '已冻结'
+                WHEN b.status = 3 THEN '已过期'
+                WHEN b.status = 4 THEN '已注销'
+                ELSE '未知'
+            END                 AS statusText,
+            DATE_FORMAT(b.expire_time, '%Y-%m-%d %H:%i:%s') AS expireTime,
+            DATE_FORMAT(b.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate,
+            b.remark            AS remark
+        FROM vip_benefit b
+        LEFT JOIN user_info u ON b.user_id = u.userId
+        LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        LEFT JOIN store_address sa ON b.store_addr_id = sa.storeAddrId
+        LEFT JOIN store s ON b.store_id = s.storeId
+        <include refid="Filter"/>
+        ORDER BY b.created_date DESC
+    </select>
+
     <!-- 带前置状态校验的状态流转:命中 0 行 = 当前状态不允许该操作 -->
     <update id="updateStatus">
         UPDATE vip_benefit
