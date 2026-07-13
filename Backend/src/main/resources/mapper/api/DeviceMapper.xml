@@ -601,6 +601,19 @@
     LIMIT 1
   </select>
 
+  <!-- 开门码/入场专用:在 selectUserValidity 基础上加停卡排除(停卡期间该卡不返回)。
+       不直接改 selectUserValidity——它另被续费/支付/VIP绑定/后台等多处复用,那些语义是"名下有没有有效卡",
+       不应因停卡把卡当成"无卡";只有入场/开门码才需要"停卡期间视为不可用"。与 checkUserValidity/selectByProxyId 口径一致。 -->
+  <select id="selectUserValidityForEntry" resultType="com.dlc.modules.api.entity.Device">
+    SELECT *
+    FROM device
+    WHERE proxyId = #{userId} and status in (0, 1)
+      and date_format(validityDate, '%Y-%m-%d') <![CDATA[ >= ]]> date_format(now(), '%Y-%m-%d')
+      <include refid="excludePausingDevice"><property name="da" value="device"/></include>
+    ORDER BY deviceId DESC
+    LIMIT 1
+  </select>
+
   <!-- 用户当前全部有效会员卡实例(会员可能同时持有多张,如次卡+月卡并存),供VIP权益卡"可绑定会员卡"资格校验用 -->
   <select id="selectAllValidByUser" resultType="com.dlc.modules.api.entity.Device">
     SELECT *

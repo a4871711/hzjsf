@@ -17,6 +17,7 @@ import com.dlc.common.utils.*;
 import com.dlc.common.validator.ValidatorUtils;
 import com.dlc.common.validator.group.AddGroup;
 import com.dlc.common.validator.group.LoginGroup;
+import com.dlc.modules.api.dao.CardPauseRecordMapper;
 import com.dlc.modules.api.dao.DeviceMapper;
 import com.dlc.modules.api.dao.OpenDoorRecordMapper;
 import com.dlc.modules.api.entity.Advertising;
@@ -74,6 +75,8 @@ public class UserInfoController extends BaseController {
     private DeviceMapper deviceMapper;
     @Autowired
     private OpenDoorRecordMapper openDoorRecordMapper;
+    @Autowired
+    private CardPauseRecordMapper cardPauseRecordMapper;
 
     @Value("${rpro3_qrcode_path}")
     private String rpro3QrcodePath;
@@ -1850,8 +1853,12 @@ public class UserInfoController extends BaseController {
     @RequestMapping("/getOpenDoorQR")
     public R getOpenDoorQR(@RequestParam Map<String,Object> params, HttpServletRequest req){
     	UserInfoVo userVo = getUserVo(req);
-    	Device device = deviceMapper.selectUserValidity(userVo.getUserId());
+    	// 开门码走带停卡排除的入场专用查询:停卡期间该卡被 excludePausingDevice 排除,不再出码
+    	Device device = deviceMapper.selectUserValidityForEntry(userVo.getUserId());
     	if(device == null) {
+    		if(cardPauseRecordMapper.countActivePauseByUser(userVo.getUserId()) > 0) {
+    			return R.reError("会员卡停卡中，暂不可使用");
+    		}
     		return R.reError("未购买会员或过期");
     	}
     	int rand = new Random().nextInt(1000000);

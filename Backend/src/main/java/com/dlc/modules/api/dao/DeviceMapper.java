@@ -45,6 +45,8 @@ public interface DeviceMapper {
     Long checkUserValidity(Long userId);
 
 	Device selectUserValidity(Long userId);
+	/** 开门码/入场专用:同 selectUserValidity,但排除"停卡中"的卡(见 excludePausingDevice) */
+	Device selectUserValidityForEntry(Long userId);
 	Device selectByUser(Long userId);
 	/** 用户当前全部有效(状态正常且未过期)的会员卡实例;会员可能同时持有多张(如次卡+月卡并存) */
 	List<Device> selectAllValidByUser(Long userId);
