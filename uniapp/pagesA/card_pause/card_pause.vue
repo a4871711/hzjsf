@@ -65,7 +65,7 @@
 		</view>
 
 		<view class="cp-note">
-			规则：仅权益卡性质的会员卡可申请停卡。权益会员每30天可免费停卡1次（每次最长7天）；免费额度用完可按档位付费停卡（付费不退款）。停卡立即生效、停卡期间不可入场；到期自动恢复，也可手动点“恢复停卡”提前结束，按实际停卡天数顺延有效期。
+			规则：付费停卡，付费不可退，停卡立即生效，停卡期间不可入场，到期自动恢复，也可以手动点击“恢复停卡”，提前结束，按照实际停卡天数顺延有效期。
 		</view>
 
 		<!-- 申请停卡弹层 -->
@@ -107,7 +107,7 @@
 			</view>
 			<view class="cp-pop__none" v-else-if="noneTip">{{ noneTip }}</view>
 
-			<view class="cp-pop__hint">停卡期间不可入场；恢复时按实际停卡天数顺延有效期。</view>
+			<view class="cp-pop__hint">停卡立即生效、停卡期间不可入场；到期自动恢复，也可手动提前结束，按照实际停卡天数顺延有效期。</view>
 
 			<view class="cp-pop__btn" :class="{ 'is-disabled': submitting || !canSubmit }" @click="onSubmit">
 				{{ submitting ? '提交中...' : (pauseMode === 'paid' ? '确认并支付' : '确认停卡') }}
