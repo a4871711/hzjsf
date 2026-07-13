@@ -188,10 +188,11 @@
     <!-- 顺延会员卡有效期(card_order 列名驼峰);同步顺延对应 device.validityDate。
          入场校验(刷脸/扫码)读的是 device 那份有效期,两表仅在购卡时对齐、之后停卡顺延不会自动同步,
          若只改 card_order,顺延出的天数入场层面看不到(闸机仍按 device 老日期拦人),故此处一并顺延 device。
-         LEFT JOIN:card_order.deviceId 为空或无匹配 device 时仅顺延 card_order,device 部分不更新任何行。 -->
+         关联优先按卡(card_order.deviceId);deviceId 为空时 fallback 按会员(device.proxyId=card_order.userId,实测每会员单 device)确保 device 那份有效期也被顺延。 -->
     <update id="extendCardValidity">
         UPDATE card_order co
-        LEFT JOIN device d ON d.deviceId = co.deviceId
+        LEFT JOIN device d ON (co.deviceId is not null and d.deviceId = co.deviceId)
+                           or (co.deviceId is null and d.proxyId = co.userId and d.status in (0, 1))
         SET co.validityDate = DATE_ADD(co.validityDate, INTERVAL #{days} DAY),
             d.validityDate = DATE_ADD(d.validityDate, INTERVAL #{days} DAY)
         WHERE co.cardOrderId = #{cardOrderId}
@@ -200,7 +201,8 @@
     <!-- 提前取消按未使用天数扣回有效期(与 extendCardValidity 对称,同步扣回 device.validityDate) -->
     <update id="shrinkCardValidity">
         UPDATE card_order co
-        LEFT JOIN device d ON d.deviceId = co.deviceId
+        LEFT JOIN device d ON (co.deviceId is not null and d.deviceId = co.deviceId)
+                           or (co.deviceId is null and d.proxyId = co.userId and d.status in (0, 1))
         SET co.validityDate = DATE_SUB(co.validityDate, INTERVAL #{days} DAY),
             d.validityDate = DATE_SUB(d.validityDate, INTERVAL #{days} DAY)
         WHERE co.cardOrderId = #{cardOrderId}
