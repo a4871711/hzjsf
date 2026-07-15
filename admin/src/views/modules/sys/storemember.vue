@@ -44,6 +44,7 @@ export default {
 		auditStatus: '',
 		autoPay: '',
 		status: '',
+		cardNature: '',
 		remark:'',
 		startTime:'',
 		endTime:'',
@@ -73,6 +74,10 @@ export default {
 		{ type: "select", placeholder: "自动续费", prop: "autoPay", width: 200,options: [
 			{value: 1, 'label': '是'},
 			{value: 0, 'label': '否'}
+		]},
+		{ type: "select", placeholder: "卡片分类", prop: "cardNature", width: 200,options: [
+			{value: 1, 'label': '权益卡'},
+			{value: 0, 'label': '普通卡'}
 		]},
         //{ type: "input", placeholder: "备注", prop: "remark", width: 200 },
         { type: "daterange", placeholder: "到期时间", prop: "regTime", width: 200, change:e=> {

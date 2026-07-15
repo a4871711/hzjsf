@@ -523,6 +523,9 @@
             <if test="status != null and status != ''">
                 AND d.status = #{status}
             </if>
+            <if test="cardNature != null and cardNature != ''">
+                AND IFNULL((select fc.cardNature from fit_card fc where fc.fitCardId = d.fitCardId limit 1), 0) = #{cardNature}
+            </if>
         </where>
         order by d.createTime desc
     </select>
@@ -585,6 +588,9 @@
             </if>        
             <if test="status != null and status != ''">
                 AND d.status = #{status}
+            </if>
+            <if test="cardNature != null and cardNature != ''">
+                AND IFNULL((select fc.cardNature from fit_card fc where fc.fitCardId = d.fitCardId limit 1), 0) = #{cardNature}
             </if>
         </where>
         <choose>
@@ -651,6 +657,9 @@
             </if>        
             <if test="status != null and status != ''">
                 AND d.status = #{status}
+            </if>
+            <if test="cardNature != null and cardNature != ''">
+                AND IFNULL((select fc.cardNature from fit_card fc where fc.fitCardId = d.fitCardId limit 1), 0) = #{cardNature}
             </if>
         </where>
     </select>
