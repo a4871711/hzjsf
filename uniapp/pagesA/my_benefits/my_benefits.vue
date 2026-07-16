@@ -186,14 +186,13 @@
 			},
 			statusText(item) {
 				if (item.status === 9) return '待支付';
-				if (item.status === 1) return '已转出';
 				if (item.status === 2) return '已冻结';
 				if (item.status === 4) return '已注销';
 				if (item.status === 3 || this.isExpired(item)) return '已过期';
 				return '正常';
 			},
 			statusClass(item) {
-				if (item.status === 3 || item.status === 1 || item.status === 4 || this.isExpired(item)) return 'is-gray';
+				if (item.status === 3 || item.status === 4 || this.isExpired(item)) return 'is-gray';
 				return 'is-on';
 			},
 			formatPrice(v) {

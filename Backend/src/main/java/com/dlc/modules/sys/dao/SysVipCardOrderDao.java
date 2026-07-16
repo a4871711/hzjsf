@@ -23,4 +23,7 @@ public interface SysVipCardOrderDao {
 
     /** 与 queryList 同条件的总数 */
     int queryTotal(Map<String, Object> params);
+
+    /** 导出用:与 queryList 同条件但不分页,字段已在 XML 里转成导出可读文本(状态转中文、购买人/持有人拼手机号) */
+    List<Map<String, Object>> queryExportList(Map<String, Object> params);
 }

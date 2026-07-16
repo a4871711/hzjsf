@@ -14,4 +14,7 @@ public interface SysVipCardOrderService {
     List<Map<String, Object>> queryList(Map<String, Object> params);
 
     int queryTotal(Map<String, Object> params);
+
+    /** 导出用:与列表同条件但不分页返回全部(字段已转导出文本) */
+    List<Map<String, Object>> queryExportList(Map<String, Object> params);
 }

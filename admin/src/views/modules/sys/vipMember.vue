@@ -59,7 +59,6 @@ export default {
           { value: 0, label: '生效中' },
           { value: 2, label: '已冻结' },
           { value: 3, label: '已过期' },
-          { value: 1, label: '已转出' },
           { value: 4, label: '已注销' }
         ] },
         { type: "daterange", placeholder: "购买时间", prop: "dateRange", width: 260 },
@@ -167,11 +166,11 @@ export default {
     this.getData();
   },
   methods: {
-    // 状态标签:0生效中绿 / 2已冻结橙 / 3已过期灰 / 1已转出蓝 / 4已注销灰
+    // 状态标签:0生效中绿 / 2已冻结橙 / 3已过期灰 / 4已注销灰
+    // (status=1「已转出」是设计字典里定义、但过户走「改归属人」实现从不写入的死状态,不作筛选/标签)
     statusTag(status) {
       var map = {
         0: ['生效中', '#f0f9eb', '#67C23A', '#e1f3d8'],
-        1: ['已转出', '#ecf5ff', '#409EFF', '#d9ecff'],
         2: ['已冻结', '#fdf6ec', '#E6A23C', '#faecd8'],
         3: ['已过期', '#f4f4f5', '#909399', '#e9e9eb'],
         4: ['已注销', '#f4f4f5', '#909399', '#e9e9eb']

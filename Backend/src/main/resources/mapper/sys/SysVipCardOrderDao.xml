@@ -66,4 +66,37 @@
         LEFT JOIN user_info hu ON b.user_id = hu.userId
         <include refid="Filter"/>
     </select>
+
+    <!-- 导出:复用同一 Filter(含排除9待支付),购买人/持有人拼成"昵称 手机号"文本、状态转中文;
+         状态字段特意命名 statusText(不叫 status),避免 SysUserController.export 把它按门店会员的
+         status 语义误转;不带 LIMIT,由 Controller 传不含 offset/limit 的原始 params 全量导出。
+         列与前端 vipCardOrder 表格一致,状态映射同前端 statusTag(按 b.status 直译,不额外判过期) -->
+    <select id="queryExportList" resultType="java.util.Map" parameterType="map">
+        SELECT
+            b.vip_benefit_id    AS vipBenefitId,
+            TRIM(CONCAT(COALESCE(ou.nickname, ''), ' ', COALESCE(ou.phone, ''))) AS buyerText,
+            TRIM(CONCAT(COALESCE(hu.nickname, ''), ' ', COALESCE(hu.phone, ''))) AS holderText,
+            c.card_name         AS cardName,
+            s.storeName         AS storeName,
+            b.origin_price      AS originPrice,
+            DATE_FORMAT(b.created_date, '%Y-%m-%d %H:%i:%s') AS createdDate,
+            DATE_FORMAT(b.start_time, '%Y-%m-%d %H:%i:%s') AS startTime,
+            DATE_FORMAT(b.expire_time, '%Y-%m-%d %H:%i:%s') AS expireTime,
+            b.transfer_count    AS transferCount,
+            CASE
+                WHEN b.status = 0 THEN '正常'
+                WHEN b.status = 1 THEN '已转出'
+                WHEN b.status = 2 THEN '已冻结'
+                WHEN b.status = 3 THEN '已过期'
+                WHEN b.status = 4 THEN '已注销'
+                ELSE '未知'
+            END                 AS statusText
+        FROM vip_benefit b
+        LEFT JOIN user_info ou ON b.origin_user_id = ou.userId
+        LEFT JOIN user_info hu ON b.user_id = hu.userId
+        LEFT JOIN vip_benefit_card c ON b.vip_card_id = c.vip_card_id
+        LEFT JOIN store s ON s.storeId = b.store_id
+        <include refid="Filter"/>
+        ORDER BY b.created_date DESC
+    </select>
 </mapper>

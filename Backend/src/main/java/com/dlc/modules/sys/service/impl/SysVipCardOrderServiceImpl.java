@@ -28,4 +28,9 @@ public class SysVipCardOrderServiceImpl implements SysVipCardOrderService {
     public int queryTotal(Map<String, Object> params) {
         return sysVipCardOrderDao.queryTotal(params);
     }
+
+    @Override
+    public List<Map<String, Object>> queryExportList(Map<String, Object> params) {
+        return sysVipCardOrderDao.queryExportList(params);
+    }
 }

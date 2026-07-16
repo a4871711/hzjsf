@@ -3,12 +3,13 @@
     <r-search ref="search" :searchData="searchData" :searchForm="searchForm" :searchHandle="searchHandle" />
     <r-table
       :isSelection="false"
-      :isHandle="false"
+      :isHandle="true"
       :isPagination="true"
       :tableData="tableData"
       :tableCols="tableCols"
       :tablePage="pagination"
       :loading="tableLoading"
+      :tableHandles="tableHandles"
       @refresh="page()" />
   </div>
 </template>
@@ -28,7 +29,6 @@ export default {
         { type: "input", placeholder: "会员手机(购买人/持有人)", prop: "phone", width: 240 },
         { type: "select", placeholder: "状态", prop: "status", width: 160, options: [
           { value: 0, label: '正常' },
-          { value: 1, label: '已转出' },
           { value: 2, label: '已冻结' },
           { value: 3, label: '已过期' },
           { value: 4, label: '已注销' }
@@ -54,18 +54,37 @@ export default {
         { label: "状态", prop: "status", type: "html", html: e => this.statusTag(e.status) },
       ],
       pagination: { limit: 10, offset: 1, total: 1 },
+      tableHandles: [
+        {
+          label: "导出",
+          type: "primary",
+          handle: e => {
+            // 导出条件与列表搜索一致;走后端 /sys/vipCardOrder/export 直接下载 xls(与权益会员导出同一方式)
+            var dr = this.searchData.dateRange || [];
+            var params = { phone: this.searchData.phone, status: this.searchData.status, startDate: dr[0] || '', endDate: dr[1] || '' };
+            var parts = [];
+            for (var key in params) {
+              var val = params[key];
+              if (val !== '' && val !== null && val !== undefined) {
+                parts.push(key + '=' + encodeURIComponent(val));
+              }
+            }
+            window.open('/sys/vipCardOrder/export?' + parts.join('&'));
+          }
+        }
+      ],
     };
   },
   mounted() {
     this.getData();
   },
   methods: {
-    // 状态标签:9待支付灰 / 0正常绿 / 1已转出蓝 / 2已冻结橙 / 3已过期灰 / 4已注销灰
+    // 状态标签:9待支付灰 / 0正常绿 / 2已冻结橙 / 3已过期灰 / 4已注销灰
+    // (转让痕迹看「购买人≠持有人」与「转让次数」列;status=1「已转出」是过户走改归属实现从不写入的死状态,不作标签)
     statusTag(status) {
       var map = {
         9: ['待支付', '#f4f4f5', '#909399', '#e9e9eb'],
         0: ['正常', '#f0f9eb', '#67C23A', '#e1f3d8'],
-        1: ['已转出', '#ecf5ff', '#409EFF', '#d9ecff'],
         2: ['已冻结', '#fdf6ec', '#E6A23C', '#faecd8'],
         3: ['已过期', '#f4f4f5', '#909399', '#e9e9eb'],
         4: ['已注销', '#f4f4f5', '#909399', '#e9e9eb']

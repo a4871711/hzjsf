@@ -9,6 +9,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -43,5 +44,22 @@ public class SysVipCardOrderController {
         PageUtils pageUtils = new PageUtils(list, total, query.getLimit(), query.getPage());
         // 与 VIP 模块 sibling(SysCardPauseController)及前端 r-table 约定一致,key 用 "pages"
         return R.ok().put("pages", pageUtils);
+    }
+
+    /**
+     * 导出购买记录(xls)。筛选条件与列表一致(自带排除 9待支付),不分页导出全部;
+     * 购买人/持有人拼成"昵称 手机号"文本、状态由 SQL 转中文(见 queryExportList,状态字段命名
+     * statusText 避开 SysUserController.export 对 status 字段的硬编码转义),复用 SysUserController.export 输出。
+     */
+    @RequestMapping("/export")
+    @RequiresPermissions("sys:vipCardOrder:list")
+    public R export(@RequestParam Map<String, Object> params, HttpServletResponse response) throws Exception {
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreIds());
+        List<Map<String, Object>> list = sysVipCardOrderService.queryExportList(params);
+        String fileName = "权益卡购买记录.xls";
+        String[] titles = {"ID", "购买人", "当前持有人", "权益卡", "门店", "购买售价", "购买时间", "生效", "到期", "转让次数", "状态"};
+        String[] columns = {"vipBenefitId", "buyerText", "holderText", "cardName", "storeName", "originPrice", "createdDate", "startTime", "expireTime", "transferCount", "statusText"};
+        SysUserController.export(response, list, fileName, titles, columns);
+        return R.ok("正在导出数据...");
     }
 }

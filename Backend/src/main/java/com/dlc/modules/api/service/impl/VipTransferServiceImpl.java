@@ -136,9 +136,9 @@ public class VipTransferServiceImpl implements VipTransferService {
         if (card == null || card.getStatus() == null || card.getStatus() != 1) {
             throw new RRException(CodeAndMsg.ERROR_VIP_CARD_OFF_SHELF);
         }
-        // 16. 适用门店:受让人当前所属门店 ∈ 该权益来源权益卡的适用门店(R-01,D-3)
-        //     nowStoreId 是基本类型 int(即 store_addr_id,未归属门店为0);
-        //     比对口径对齐系统多值门店匹配:逐项 trim 后精确匹配
+        // 16. 适用门店:受让人当前所属门店 ∈ 该权益来源权益卡的适用门店(R-01,D-3);
+        //     权益卡适用门店为空 = 全部门店通用(对齐系统"空=全部门店"惯例,见 vipCard.vue 适用门店非必填),已归属门店的受让人放行;
+        //     nowStoreId 是基本类型 int(即 store_addr_id,未归属门店为0),未归属门店一律拦截。
         if (!storeApplicable(toUser.getNowStoreId(), card.getStoreAddrIds())) {
             throw new RRException(CodeAndMsg.ERROR_VIP_STORE_NOT_APPLICABLE);
         }
@@ -148,11 +148,22 @@ public class VipTransferServiceImpl implements VipTransferService {
         }
     }
 
-    /** 受让人当前门店是否在权益卡适用门店集合内(含未归属门店 nowStoreId<=0 → 不在范围,拦截) */
+    /**
+     * 受让人当前门店是否在权益卡适用门店集合内。
+     * 门店口径对齐系统惯例「空=全部门店」(后台建卡 vipCard.vue 适用门店非必填、注释"空=全部门店",
+     * 私教商品/预警规则同款):权益卡 store_addr_ids 为空 = 全部门店通用,已归属门店的受让人放行。
+     * 受让人未归属门店(nowStoreId<=0)仍拦截(设计文档 D.3:需受让人先归属门店)。
+     */
     private boolean storeApplicable(int toStoreAddrId, String applicableAddrIds) {
-        if (toStoreAddrId <= 0 || applicableAddrIds == null || applicableAddrIds.trim().isEmpty()) {
+        // 受让人未归属门店:一律拦截(需先归属门店,D.3)
+        if (toStoreAddrId <= 0) {
             return false;
         }
+        // 权益卡未配适用门店 = 全部门店通用 → 已归属门店的受让人放行
+        if (applicableAddrIds == null || applicableAddrIds.trim().isEmpty()) {
+            return true;
+        }
+        // 配了适用门店:逐项 trim 后精确匹配(对齐 find_in_set)
         for (String addrId : applicableAddrIds.split(",")) {
             if (addrId.trim().equals(String.valueOf(toStoreAddrId))) {
                 return true;
