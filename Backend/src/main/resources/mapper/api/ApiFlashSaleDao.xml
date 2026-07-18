@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 会员端限时秒杀(多商品版)。api 目录 XML 改动须重启 Tomcat。
+     对外售价按 biz_type 多态取:私教 sale_price / 会员卡 cardPrice / 权益卡基础 price。 -->
+<mapper namespace="com.dlc.modules.api.dao.ApiFlashSaleDao">
+
+    <sql id="productNameCol">
+        (case a.biz_type
+            when 2 then (select cardName from fit_card where fitCardId = p.product_id)
+            when 3 then (select card_name from vip_benefit_card where vip_card_id = p.product_id)
+            else (select product_name from pt_product where id = p.product_id)
+        end)
+    </sql>
+    <sql id="originPriceCol">
+        (case a.biz_type
+            when 2 then (select cardPrice from fit_card where fitCardId = p.product_id)
+            when 3 then (select price from vip_benefit_card where vip_card_id = p.product_id)
+            else (select sale_price from pt_product where id = p.product_id)
+        end)
+    </sql>
+    <sql id="productCoverCol">
+        (case a.biz_type
+            when 2 then (select cardImgUrl from fit_card where fitCardId = p.product_id)
+            when 3 then null
+            else (select cover_url from pt_product where id = p.product_id)
+        end)
+    </sql>
+
+    <select id="queryCurrentProductCards" resultType="java.util.HashMap">
+        SELECT a.id AS activityId, a.biz_type AS bizType, a.cover_url AS activityCover,
+               a.delivery_type AS deliveryType, a.week_days AS weekDays, a.stock_mode AS stockMode,
+               a.countdown_enabled AS countdownEnabled, a.countdown_minutes AS countdownMinutes,
+               a.sold_out_action AS soldOutAction, a.purchase_limit AS purchaseLimit,
+               DATE_FORMAT(a.start_time, '%Y-%m-%d %H:%i:%s') AS startTime,
+               DATE_FORMAT(a.end_time,   '%Y-%m-%d %H:%i:%s') AS endTime,
+               DATE_FORMAT(a.activity_start_date, '%Y-%m-%d') AS activityStartDate,
+               DATE_FORMAT(a.activity_end_date,   '%Y-%m-%d') AS activityEndDate,
+               p.product_id AS productId, p.flash_sale_price AS flashSalePrice,
+               p.activity_stock AS activityStock, p.sold_count AS soldCount,
+               <include refid="productNameCol"/> AS productName,
+               <include refid="originPriceCol"/> AS originPrice,
+               <include refid="productCoverCol"/> AS productCover
+        FROM mk_flash_sale_activity a
+        JOIN mk_flash_sale_product p ON p.activity_id = a.id AND p.deleted = 0
+        WHERE a.deleted = 0 AND a.status = 1
+          AND (
+                (a.delivery_type = 1 AND a.end_time &gt;= NOW() AND a.start_time &lt;= DATE_ADD(NOW(), INTERVAL 1 DAY))
+             OR (a.delivery_type = 2 AND a.activity_end_date &gt;= CURDATE() AND a.activity_start_date &lt;= CURDATE())
+          )
+        <!-- 门店过滤:口径对齐 queryFitCardList(可用+可见双 find_in_set,空=通店)与权益卡列表(store_addr_ids) -->
+        <if test="storeAddrId != null">
+          AND (case a.biz_type
+                when 2 then (select (IFNULL(storeAddrIds,'') = '' or find_in_set(#{storeAddrId}, storeAddrIds) &gt; 0)
+                                and (IFNULL(showStoreAddrIds,'') = '' or find_in_set(#{storeAddrId}, showStoreAddrIds) &gt; 0)
+                             from fit_card where fitCardId = p.product_id)
+                when 3 then (select (IFNULL(store_addr_ids,'') = '' or find_in_set(#{storeAddrId}, store_addr_ids) &gt; 0)
+                             from vip_benefit_card where vip_card_id = p.product_id)
+                else 1
+              end) = 1
+        </if>
+        ORDER BY a.id DESC, p.id ASC
+    </select>
+
+    <select id="queryStockMode" resultType="int">
+        SELECT stock_mode FROM mk_flash_sale_activity WHERE id = #{activityId}
+    </select>
+
+    <select id="queryTimeSlots" resultType="java.util.HashMap">
+        SELECT start_hm AS startHm, end_hm AS endHm
+        FROM mk_flash_sale_time_slot WHERE activity_id = #{activityId} ORDER BY id ASC
+    </select>
+
+    <select id="selectActivityProduct" resultType="java.util.HashMap">
+        SELECT a.id AS activityId, a.biz_type AS bizType,
+               a.delivery_type AS deliveryType, a.week_days AS weekDays, a.stock_mode AS stockMode,
+               a.purchase_limit AS purchaseLimit,
+               DATE_FORMAT(a.start_time, '%Y-%m-%d %H:%i:%s') AS startTime,
+               DATE_FORMAT(a.end_time,   '%Y-%m-%d %H:%i:%s') AS endTime,
+               DATE_FORMAT(a.activity_start_date, '%Y-%m-%d') AS activityStartDate,
+               DATE_FORMAT(a.activity_end_date,   '%Y-%m-%d') AS activityEndDate,
+               p.product_id AS productId, p.flash_sale_price AS flashSalePrice,
+               p.activity_stock AS activityStock, p.sold_count AS soldCount
+        FROM mk_flash_sale_activity a
+        JOIN mk_flash_sale_product p ON p.activity_id = a.id AND p.deleted = 0
+        WHERE a.id = #{activityId} AND a.deleted = 0 AND a.status = 1 AND p.product_id = #{productId}
+        LIMIT 1
+    </select>
+
+    <!-- 总量库存 CAS -->
+    <update id="increaseTotalSold">
+        UPDATE mk_flash_sale_product
+        SET sold_count = sold_count + 1
+        WHERE activity_id = #{activityId} AND product_id = #{productId} AND deleted = 0
+          AND sold_count &lt; activity_stock
+    </update>
+
+    <!-- 纯统计累加(无上限条件):每日库存模式扣完当日额度后同步累计已售,后台展示用 -->
+    <update id="increaseTotalSoldStat">
+        UPDATE mk_flash_sale_product
+        SET sold_count = sold_count + 1
+        WHERE activity_id = #{activityId} AND product_id = #{productId} AND deleted = 0
+    </update>
+
+    <!-- 每日库存:确保当天行存在(唯一键幂等) -->
+    <insert id="ensureDailyRow">
+        INSERT IGNORE INTO mk_flash_sale_daily_sold (activity_id, product_id, sold_date, sold_count)
+        VALUES (#{activityId}, #{productId}, #{soldDate}, 0)
+    </insert>
+
+    <!-- 每日库存 CAS:当天 sold+1 且 < 商品每日投放量(mk_flash_sale_product.activity_stock) -->
+    <update id="increaseDailySold">
+        UPDATE mk_flash_sale_daily_sold d
+        SET d.sold_count = d.sold_count + 1
+        WHERE d.activity_id = #{activityId} AND d.product_id = #{productId} AND d.sold_date = #{soldDate}
+          AND d.sold_count &lt; (SELECT activity_stock FROM mk_flash_sale_product
+                               WHERE activity_id = #{activityId} AND product_id = #{productId} AND deleted = 0 LIMIT 1)
+    </update>
+
+    <select id="queryDailySold" resultType="int">
+        SELECT COALESCE((SELECT sold_count FROM mk_flash_sale_daily_sold
+                         WHERE activity_id = #{activityId} AND product_id = #{productId} AND sold_date = #{soldDate}), 0)
+    </select>
+
+    <!-- 排除 0 待付款:与权益卡侧排除 9 同口径,否则用户取消支付后被自己的挂单锁死限购
+         (待付款单要等每小时超时任务置 5 才释放);已付终态防重由回调库存 CAS 兜底 -->
+    <select id="countMemberCardFlashOrders" resultType="int">
+        SELECT COUNT(*) FROM card_order
+        WHERE userId = #{userId} AND flash_sale_activity_id = #{activityId} AND cardId = #{productId}
+          AND status IN (1, 2, 3, 4)
+    </select>
+
+    <select id="countMemberBenefitFlashOrders" resultType="int">
+        SELECT COUNT(*) FROM vip_benefit
+        WHERE user_id = #{userId} AND flash_sale_activity_id = #{activityId} AND vip_card_id = #{productId}
+          AND status IN (0, 1, 2, 3)
+    </select>
+
+</mapper>

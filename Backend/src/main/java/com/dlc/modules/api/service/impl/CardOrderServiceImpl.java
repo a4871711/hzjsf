@@ -53,6 +53,8 @@ public class CardOrderServiceImpl implements CardOrderService {
     private StoreAddressService storeAddressService;
     @Autowired
     private VipBenefitService vipBenefitService;
+    @Autowired
+    private com.dlc.modules.api.service.ApiFlashSaleService apiFlashSaleService;
 
     private Logger log = LoggerFactory.getLogger(getClass());
 
@@ -197,6 +199,11 @@ public class CardOrderServiceImpl implements CardOrderService {
         cardOrder.setStatus(0);
         //创建时间
         cardOrder.setCreatedDate(new Date());
+        //限时秒杀来源(Controller 已校验活动有效并把秒杀价写进 paySum)
+        if (params.get("flashSaleActivityId") != null
+                && StringUtils.isNotBlank(String.valueOf(params.get("flashSaleActivityId")))) {
+            cardOrder.setFlashSaleActivityId(Long.valueOf(String.valueOf(params.get("flashSaleActivityId"))));
+        }
         log.info("插入card_order订单信息:" + cardOrder);
         int result = cardOrderMapper.insertSelective(cardOrder);
         log.info("插入card_order订单信息是否成功:" + result);
@@ -221,6 +228,14 @@ public class CardOrderServiceImpl implements CardOrderService {
         log.info("待更新会员卡：" + cardOrder);
         if (cardOrder == null || cardOrder.getStatus() == 4) { //不存在或已处理的不再处理
             return 0;
+        }
+        //限时秒杀会员卡：支付成功后 CAS 扣减秒杀库存(幂等由上面 status==4 早返回保证,只会执行一次)。
+        //会员卡无商品硬库存,秒杀库存仅活动表承载;高并发下极端超卖仅记警告不阻断已付订单(P0 取舍,见《秒杀功能.md》Q1b)。
+        if (cardOrder.getFlashSaleActivityId() != null) {
+            int dec = apiFlashSaleService.increaseSold(cardOrder.getFlashSaleActivityId(), cardOrder.getCardId(), cardOrder.getCreatedDate());
+            if (dec <= 0) {
+                log.warn("会员卡秒杀库存扣减失败(已售罄/活动失效) orderNo={}, activityId={}", orderNo, cardOrder.getFlashSaleActivityId());
+            }
         }
         //根据健身卡id查询出健身卡
         FitCard fitCard = fitCardMapper.selectByPrimaryKey(cardOrder.getCardId());

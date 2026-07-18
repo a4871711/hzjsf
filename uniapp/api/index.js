@@ -70,6 +70,16 @@ export async function getFitCardInfo(params = {}) {
   return Promise.reject(new Error(res.data.msg));
 }
 
+// 首页限时秒杀:当前门店进行中/预热的秒杀商品(公开,按 storeAddrId 过滤;data 直接是数组,空数组则首页不渲染秒杀区)
+export async function flashSaleCurrent(params = {}) {
+  Request.isLogin = false; // 公开接口,无需登录
+  const res = await Request.post('/flashSale/current', params);
+  if (res.data.code === 1) {
+    return res.data;
+  }
+  return Promise.reject(new Error(res.data.msg));
+}
+
 // VIP权益卡商品列表(公开,不取身份;返回 data 为分页对象 PageUtils,卡在 data.list)
 export async function getVipCardList(params = {}) {
   Request.isLogin = false; // 公开接口,无需登录

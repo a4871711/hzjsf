@@ -32,6 +32,8 @@ export async function getUserInfo(params = {}) {
 
 // 购买下单
 export async function createOrder(params = {}) {
+	// Request 是单例,isLogin 会残留上一次调用的值(如首页公开接口 flashSaleCurrent 置 false),须显式声明需登录
+	Request.isLogin = true;
 	const res = await Request.post('/cardOrder/createOrder', params);
 	if (res.data.code === 1) {
 		return res.data;

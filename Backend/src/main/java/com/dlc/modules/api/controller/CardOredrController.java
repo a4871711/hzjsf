@@ -56,6 +56,10 @@ public class CardOredrController extends BaseController{
     private CouponMapper couponMapper;
     @Autowired
     private SysIncomePayDetailService sysIncomePayDetailService;
+    @Autowired
+    private com.dlc.modules.api.dao.ApiFlashSaleDao apiFlashSaleDao;
+    @Autowired
+    private com.dlc.modules.api.service.ApiFlashSaleService apiFlashSaleService;
     
     /**
      * 列表
@@ -105,11 +109,37 @@ public class CardOredrController extends BaseController{
         if(fitCard == null) {
         	return R.error("卡套餐不存在");
         }
+        // ===== 限时秒杀：命中活动+商品且当前可抢，则用秒杀价作权威成交价(一口价,不分新老),绕过续费 nextPrice =====
+        BigDecimal flashPrice = null;
+        String fsaRaw = params.get("flashSaleActivityId") == null ? null : String.valueOf(params.get("flashSaleActivityId")).trim();
+        if (StringUtils.isNotBlank(fsaRaw) && !"null".equals(fsaRaw) && !"undefined".equals(fsaRaw)) {
+            Long flashActivityId = Long.valueOf(fsaRaw);
+            Long fitCardId = fitCard.getFitCardId(); // 会员卡的商品ID
+            // 校验活动+商品当前可抢(时段/库存)，不可抢由 service 抛业务错;下面再校验类型/限购
+            Map<String, Object> ap = apiFlashSaleService.checkBuyable(flashActivityId, fitCardId);
+            if (toInt(ap.get("bizType")) != 2) { return R.reError("该秒杀活动不是会员卡"); }
+            Object plimit = ap.get("purchaseLimit");
+            if (plimit != null && StringUtils.isNotBlank(String.valueOf(plimit))) {
+                int bought = apiFlashSaleDao.countMemberCardFlashOrders(user.getUserId(), flashActivityId, fitCardId);
+                if (bought >= Integer.parseInt(String.valueOf(plimit))) { return R.reError("已达该秒杀每人限购上限"); }
+            }
+            flashPrice = new BigDecimal(String.valueOf(ap.get("flashSalePrice")));
+            params.put("flashSaleActivityId", flashActivityId);
+            params.put("paySum", flashPrice);
+            paySum = flashPrice;
+            // 秒杀一口价:不与优惠券叠加,防止"秒杀价再减券额"双重优惠
+            params.remove("couponId");
+        } else {
+            // 非法/空值(如前端拼接出的 "null")直接移除,防止 Service 层 Long.valueOf 解析炸
+            params.remove("flashSaleActivityId");
+        }
         // 权益类型会员卡(cardNature=1)须持有效权益的 -38 校验在 CardOrderServiceImpl.createFitCardOrder
         // 统一拦截(覆盖手动下单+自动代扣两条路径),此处不再重复
         boolean isNewUser = !sysIncomePayDetailService.hasValidCardPurchase(user.getUserId());
         BigDecimal cardPrice = fitCard.resolveSalePrice(isNewUser);
-        if(cardPrice.compareTo(paySum) == -1 || paySum.compareTo(new BigDecimal(-1)) == 0){ //实际卡价格小于传进来的价格
+        if(flashPrice != null){
+            cardPrice = flashPrice; //秒杀价即成交价
+        } else if(cardPrice.compareTo(paySum) == -1 || paySum.compareTo(new BigDecimal(-1)) == 0){ //实际卡价格小于传进来的价格
             params.put("paySum", cardPrice);
             paySum = cardPrice;
         }
@@ -175,7 +205,8 @@ public class CardOredrController extends BaseController{
                 if (device.getBuyCount() > s1.length + s2.length && fitCard.getNextPrice3() != null && fitCard.getNextPrice3().compareTo(BigDecimal.ZERO) > 0) {//次月扣款金额
                 	cardPrice = device.getNextPrice3();
                 }
-                params.put("paySum", cardPrice); 
+                //秒杀命中时秒杀价一口价,不被续费 nextPrice 覆盖
+                params.put("paySum", flashPrice != null ? flashPrice : cardPrice);
             }else{
             	params.put("buyCount", 1);
             }           
@@ -228,5 +259,17 @@ public class CardOredrController extends BaseController{
         	}
         }*/
         return R.reOk(map);
+    }
+
+    /** 宽松取整：null/非数字返回 0（用于秒杀活动 map 字段解析） */
+    private int toInt(Object v) {
+        if (v == null) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(v).trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }

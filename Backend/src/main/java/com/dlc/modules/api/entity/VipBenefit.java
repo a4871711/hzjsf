@@ -42,8 +42,19 @@ public class VipBenefit implements Serializable {
     /** 创建时间 */
     private Date createdDate;
 
+    /** 秒杀活动ID(权益卡秒杀来源,mk_flash_sale_activity.id;非秒杀单为 null) */
+    private Long flashSaleActivityId;
+
     /** 非表字段:来源权益卡名称(myBenefits 展示用) */
     private String cardName;
+
+    public Long getFlashSaleActivityId() {
+        return flashSaleActivityId;
+    }
+
+    public void setFlashSaleActivityId(Long flashSaleActivityId) {
+        this.flashSaleActivityId = flashSaleActivityId;
+    }
 
     public Long getVipBenefitId() {
         return vipBenefitId;

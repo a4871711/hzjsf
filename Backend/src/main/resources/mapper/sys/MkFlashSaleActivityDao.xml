@@ -1,18 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!-- 限时秒杀活动(mk_flash_sale_activity)。状态 1上架/0下架;activity_stock 必填(售罄不可买);
-     sold_count 后台只读——update 语句不含该列,累加走 api 侧回调 CAS(PtPrivateOrderDao.increaseFlashSaleSoldCount)。 -->
+<!-- 限时秒杀活动(多商品版)。活动级字段在 mk_flash_sale_activity;商品在 mk_flash_sale_product;
+     循环生效每日时段在 mk_flash_sale_time_slot。列表只取活动级字段;编辑回显另查子表。 -->
 <mapper namespace="com.dlc.modules.sys.dao.MkFlashSaleActivityDao">
 
     <sql id="cols">
-        a.id, a.activity_name, a.product_id, a.flash_sale_price,
-        a.activity_stock, a.sold_count, a.purchase_limit,
+        a.id, a.activity_name as activityName, a.biz_type as bizType, a.cover_url as coverUrl,
+        a.delivery_type as deliveryType,
         DATE_FORMAT(a.start_time, '%Y-%m-%d %H:%i:%s') as startTime,
         DATE_FORMAT(a.end_time, '%Y-%m-%d %H:%i:%s') as endTime,
-        a.mt_group_buy_id, a.dy_group_buy_id, a.status,
-        a.created_by, a.created_at, a.updated_by, a.updated_at, a.deleted,
-        (select product_name from pt_product where id = a.product_id) as productName
+        DATE_FORMAT(a.activity_start_date, '%Y-%m-%d') as activityStartDate,
+        DATE_FORMAT(a.activity_end_date, '%Y-%m-%d') as activityEndDate,
+        a.week_days as weekDays, a.stock_mode as stockMode, a.purchase_limit as purchaseLimit,
+        a.countdown_enabled as countdownEnabled, a.countdown_minutes as countdownMinutes,
+        a.sold_out_action as soldOutAction, a.status,
+        a.created_by as createdBy, a.created_at as createdAt, a.updated_by as updatedBy,
+        a.updated_at as updatedAt, a.deleted
     </sql>
 
     <sql id="filter">
@@ -21,11 +25,11 @@
             <if test="activityName != null and activityName != ''">
                 AND a.activity_name LIKE concat('%',#{activityName},'%')
             </if>
+            <if test="bizType != null and bizType != ''">
+                AND a.biz_type = #{bizType}
+            </if>
             <if test="status != null and status != ''">
                 AND a.status = #{status}
-            </if>
-            <if test="productId != null and productId != ''">
-                AND a.product_id = #{productId}
             </if>
         </where>
     </sql>
@@ -39,69 +43,122 @@
         from mk_flash_sale_activity a
         <include refid="filter"/>
         <choose>
-            <when test="sidx != null and sidx.trim() != ''">
-                order by ${sidx} ${order}
-            </when>
-            <otherwise>
-                order by a.id desc
-            </otherwise>
+            <when test="sidx != null and sidx.trim() != ''">order by ${sidx} ${order}</when>
+            <otherwise>order by a.id desc</otherwise>
         </choose>
-        <if test="offset != null and limit != null">
-            limit #{offset}, #{limit}
-        </if>
+        <if test="offset != null and limit != null">limit #{offset}, #{limit}</if>
     </select>
 
     <select id="queryTotal" resultType="int">
-        select count(*) from mk_flash_sale_activity a
-        <include refid="filter"/>
+        select count(*) from mk_flash_sale_activity a <include refid="filter"/>
     </select>
 
+    <!-- 活动主表:循环/单次两套字段并存,由 delivery_type 决定用哪套;子表另写 -->
     <insert id="save" parameterType="com.dlc.modules.sys.entity.MkFlashSaleActivityEntity" useGeneratedKeys="true" keyProperty="id">
         insert into mk_flash_sale_activity
-        (`activity_name`, `product_id`, `flash_sale_price`,
-         `activity_stock`, `sold_count`, `purchase_limit`, `start_time`, `end_time`,
-         `mt_group_buy_id`, `dy_group_buy_id`, `status`,
+        (`activity_name`, `biz_type`, `cover_url`, `delivery_type`,
+         `start_time`, `end_time`, `activity_start_date`, `activity_end_date`, `week_days`, `stock_mode`,
+         `purchase_limit`, `countdown_enabled`, `countdown_minutes`, `sold_out_action`, `status`,
          `created_by`, `created_at`, `updated_by`, `updated_at`)
         values
-        (#{activityName}, #{productId}, #{flashSalePrice},
-         #{activityStock}, #{soldCount}, #{purchaseLimit}, #{startTime}, #{endTime},
-         #{mtGroupBuyId}, #{dyGroupBuyId}, #{status},
+        (#{activityName}, #{bizType}, #{coverUrl}, #{deliveryType},
+         #{startTime}, #{endTime}, #{activityStartDate}, #{activityEndDate}, #{weekDays}, #{stockMode},
+         #{purchaseLimit}, #{countdownEnabled}, #{countdownMinutes}, #{soldOutAction}, #{status},
          #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
     </insert>
 
-    <!-- sold_count 后台只读,本语句不写该列;可空列(限购/外部关联)无条件写入,支持清空 -->
+    <!-- 编辑:活动级字段全量覆盖(循环/单次未用的一套写 NULL);子表由 service 删后重建 -->
     <update id="update" parameterType="com.dlc.modules.sys.entity.MkFlashSaleActivityEntity">
-        update mk_flash_sale_activity
-        <set>
-            <if test="activityName != null">`activity_name` = #{activityName},</if>
-            <if test="productId != null">`product_id` = #{productId},</if>
-            <if test="flashSalePrice != null">`flash_sale_price` = #{flashSalePrice},</if>
-            <if test="activityStock != null">`activity_stock` = #{activityStock},</if>
-            `purchase_limit` = #{purchaseLimit},
-            <if test="startTime != null and startTime != ''">`start_time` = #{startTime},</if>
-            <if test="endTime != null and endTime != ''">`end_time` = #{endTime},</if>
-            `mt_group_buy_id` = #{mtGroupBuyId},
-            `dy_group_buy_id` = #{dyGroupBuyId},
-            <if test="status != null">`status` = #{status},</if>
-            <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
-            <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
-        </set>
+        update mk_flash_sale_activity set
+            `activity_name` = #{activityName}, `biz_type` = #{bizType}, `cover_url` = #{coverUrl},
+            `delivery_type` = #{deliveryType},
+            `start_time` = #{startTime}, `end_time` = #{endTime},
+            `activity_start_date` = #{activityStartDate}, `activity_end_date` = #{activityEndDate},
+            `week_days` = #{weekDays}, `stock_mode` = #{stockMode}, `purchase_limit` = #{purchaseLimit},
+            `countdown_enabled` = #{countdownEnabled}, `countdown_minutes` = #{countdownMinutes},
+            `sold_out_action` = #{soldOutAction}, `status` = #{status},
+            `updated_by` = #{updatedBy}, `updated_at` = #{updatedAt}
         where id = #{id}
     </update>
 
-    <!-- 上下架切换独立语句:不走全量 update,避免误清空可空列 -->
     <update id="changeStatus" parameterType="map">
         update mk_flash_sale_activity
         set `status` = #{status}, `updated_by` = #{updatedBy}, `updated_at` = now()
         where id = #{id} and deleted = 0
     </update>
 
-    <!-- 逻辑删除(进行中活动 service 层已校验禁删) -->
     <update id="deleteBatch">
         update mk_flash_sale_activity set deleted = 1 where id in
-        <foreach item="id" collection="array" open="(" separator="," close=")">
-            #{id}
-        </foreach>
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
     </update>
+
+    <!-- ===== 商品子表 mk_flash_sale_product ===== -->
+    <select id="queryProductsByActivity" parameterType="map" resultType="com.dlc.modules.sys.entity.MkFlashSaleProductEntity">
+        select p.id, p.activity_id as activityId, p.product_id as productId,
+               p.flash_sale_price as flashSalePrice, p.activity_stock as activityStock, p.sold_count as soldCount,
+               (case #{bizType}
+                    when 2 then (select cardName from fit_card where fitCardId = p.product_id)
+                    when 3 then (select card_name from vip_benefit_card where vip_card_id = p.product_id)
+                    else (select product_name from pt_product where id = p.product_id)
+               end) as productName,
+               (case #{bizType}
+                    when 2 then (select cardPrice from fit_card where fitCardId = p.product_id)
+                    when 3 then (select price from vip_benefit_card where vip_card_id = p.product_id)
+                    else (select sale_price from pt_product where id = p.product_id)
+               end) as originPrice
+        from mk_flash_sale_product p
+        where p.activity_id = #{activityId} and p.deleted = 0
+        order by p.id asc
+    </select>
+
+    <!-- sold_count 新建为 0;编辑重建时由 service 结转旧值(防已售清零超卖) -->
+    <insert id="insertProducts" parameterType="java.util.List">
+        insert into mk_flash_sale_product (activity_id, product_id, flash_sale_price, activity_stock, sold_count)
+        values
+        <foreach collection="list" item="p" separator=",">
+            (#{p.activityId}, #{p.productId}, #{p.flashSalePrice}, #{p.activityStock}, IFNULL(#{p.soldCount}, 0))
+        </foreach>
+    </insert>
+
+    <delete id="deleteProductsByActivity">
+        delete from mk_flash_sale_product where activity_id = #{activityId}
+    </delete>
+
+    <!-- ===== 每日时段子表 mk_flash_sale_time_slot ===== -->
+    <select id="queryTimeSlotsByActivity" resultType="com.dlc.modules.sys.entity.MkFlashSaleTimeSlotEntity">
+        select id, activity_id as activityId, start_hm as startHm, end_hm as endHm
+        from mk_flash_sale_time_slot where activity_id = #{activityId} order by id asc
+    </select>
+
+    <insert id="insertTimeSlots" parameterType="java.util.List">
+        insert into mk_flash_sale_time_slot (activity_id, start_hm, end_hm)
+        values
+        <foreach collection="list" item="t" separator=",">
+            (#{t.activityId}, #{t.startHm}, #{t.endHm})
+        </foreach>
+    </insert>
+
+    <delete id="deleteTimeSlotsByActivity">
+        delete from mk_flash_sale_time_slot where activity_id = #{activityId}
+    </delete>
+
+    <!-- 按 bizType 取单个商品的 名称/对外售价/是否上架(1可用 0不可用)，save 时逐商品校验秒杀价 -->
+    <select id="queryProductBrief" parameterType="map" resultType="map">
+        <choose>
+            <when test="bizType == 2">
+                select cardName as name, cardPrice as salePrice, (case when status = 1 then 1 else 0 end) as listing
+                from fit_card where fitCardId = #{productId}
+            </when>
+            <when test="bizType == 3">
+                select card_name as name, price as salePrice, (case when status = 1 then 1 else 0 end) as listing
+                from vip_benefit_card where vip_card_id = #{productId}
+            </when>
+            <otherwise>
+                select product_name as name, sale_price as salePrice,
+                       (case when listing_status = 1 and deleted = 0 then 1 else 0 end) as listing
+                from pt_product where id = #{productId}
+            </otherwise>
+        </choose>
+    </select>
 
 </mapper>

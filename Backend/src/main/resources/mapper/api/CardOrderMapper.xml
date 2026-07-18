@@ -181,6 +181,9 @@
       <if test="agent6Ids != null" >
         agent6Ids,
       </if>
+      <if test="flashSaleActivityId != null" >
+        flash_sale_activity_id,
+      </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
       <if test="cardOrderId != null" >
@@ -287,6 +290,9 @@
       </if>
       <if test="agent6Ids != null" >
         #{agent6Ids,jdbcType=VARCHAR},
+      </if>
+      <if test="flashSaleActivityId != null" >
+        #{flashSaleActivityId,jdbcType=BIGINT},
       </if>
     </trim>
   </insert>

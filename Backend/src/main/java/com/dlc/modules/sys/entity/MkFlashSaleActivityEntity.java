@@ -1,13 +1,13 @@
 package com.dlc.modules.sys.entity;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
- * 限时秒杀活动主表 mk_flash_sale_activity。状态：1上架/0下架。
- * activity_stock 必填（与拼团不同，售罄不可买）；sold_count 后台只读（update 语句不写该列）。
- * start_time/end_time 用 String 承接 SQL DATE_FORMAT 结果（与 PtCoachScheduleEntity 同一约定）。
+ * 限时秒杀活动主表 mk_flash_sale_activity（多商品版，照《秒杀功能.dc.html》设计稿）。
+ * 一活动多商品（子表 mk_flash_sale_product）；投放方式单次/循环；循环含生效日+每日时段（mk_flash_sale_time_slot）。
+ * 原单商品列(product_id/flash_sale_price/activity_stock/sold_count/mt_group_buy_id/dy_group_buy_id)已弃用。
  *
  * @author claude
  */
@@ -16,20 +16,30 @@ public class MkFlashSaleActivityEntity implements Serializable {
 
     private Long id;
     private String activityName;
-    /** 关联私教商品ID（→ pt_product.id） */
-    private Long productId;
-    /** 秒杀价（≤ 商品 sale_price） */
-    private BigDecimal flashSalePrice;
-    /** 秒杀库存（必填） */
-    private Integer activityStock;
-    /** 已售数量（后台只读） */
-    private Integer soldCount;
-    /** 每人限购，NULL=不限购（前端默认1） */
-    private Integer purchaseLimit;
+    /** 业务类型：1私教商品 2会员卡(→fit_card.fitCardId) 3权益卡(→vip_benefit_card.vip_card_id) */
+    private Integer bizType;
+    /** 秒杀首图URL（会员端卡片展示） */
+    private String coverUrl;
+    /** 投放方式：1单次生效 2循环生效 */
+    private Integer deliveryType;
+    /** 单次生效-起止（String 承接 DATE_FORMAT 结果） */
     private String startTime;
     private String endTime;
-    private String mtGroupBuyId;
-    private String dyGroupBuyId;
+    /** 循环生效-活动周期（yyyy-MM-dd） */
+    private String activityStartDate;
+    private String activityEndDate;
+    /** 循环生效-生效日 CSV：1..7（周一..周日） */
+    private String weekDays;
+    /** 库存方式：1每日投放 2投放总量 */
+    private Integer stockMode;
+    /** 每人限购，NULL=不限购 */
+    private Integer purchaseLimit;
+    /** 秒杀前倒计时：0关 1开 */
+    private Integer countdownEnabled;
+    /** 倒计时预热分钟（1/5/15） */
+    private Integer countdownMinutes;
+    /** 售罄后：1自动结束恢复原价 2显示售罄待结束 */
+    private Integer soldOutAction;
     /** 状态：1上架 0下架 */
     private Integer status;
     private Long createdBy;
@@ -39,9 +49,11 @@ public class MkFlashSaleActivityEntity implements Serializable {
     /** 是否删除：0否 1是 */
     private Integer deleted;
 
-    /* ===== 非持久字段 ===== */
-    /** 商品名（列表联 pt_product） */
-    private String productName;
+    /* ===== 非持久字段（save/update 入参 + queryObject 回显）===== */
+    /** 秒杀商品列表（子表 mk_flash_sale_product） */
+    private List<MkFlashSaleProductEntity> products;
+    /** 每日投放时段（子表 mk_flash_sale_time_slot，循环生效用） */
+    private List<MkFlashSaleTimeSlotEntity> timeSlots;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -49,20 +61,14 @@ public class MkFlashSaleActivityEntity implements Serializable {
     public String getActivityName() { return activityName; }
     public void setActivityName(String activityName) { this.activityName = activityName; }
 
-    public Long getProductId() { return productId; }
-    public void setProductId(Long productId) { this.productId = productId; }
+    public Integer getBizType() { return bizType; }
+    public void setBizType(Integer bizType) { this.bizType = bizType; }
 
-    public BigDecimal getFlashSalePrice() { return flashSalePrice; }
-    public void setFlashSalePrice(BigDecimal flashSalePrice) { this.flashSalePrice = flashSalePrice; }
+    public String getCoverUrl() { return coverUrl; }
+    public void setCoverUrl(String coverUrl) { this.coverUrl = coverUrl; }
 
-    public Integer getActivityStock() { return activityStock; }
-    public void setActivityStock(Integer activityStock) { this.activityStock = activityStock; }
-
-    public Integer getSoldCount() { return soldCount; }
-    public void setSoldCount(Integer soldCount) { this.soldCount = soldCount; }
-
-    public Integer getPurchaseLimit() { return purchaseLimit; }
-    public void setPurchaseLimit(Integer purchaseLimit) { this.purchaseLimit = purchaseLimit; }
+    public Integer getDeliveryType() { return deliveryType; }
+    public void setDeliveryType(Integer deliveryType) { this.deliveryType = deliveryType; }
 
     public String getStartTime() { return startTime; }
     public void setStartTime(String startTime) { this.startTime = startTime; }
@@ -70,11 +76,29 @@ public class MkFlashSaleActivityEntity implements Serializable {
     public String getEndTime() { return endTime; }
     public void setEndTime(String endTime) { this.endTime = endTime; }
 
-    public String getMtGroupBuyId() { return mtGroupBuyId; }
-    public void setMtGroupBuyId(String mtGroupBuyId) { this.mtGroupBuyId = mtGroupBuyId; }
+    public String getActivityStartDate() { return activityStartDate; }
+    public void setActivityStartDate(String activityStartDate) { this.activityStartDate = activityStartDate; }
 
-    public String getDyGroupBuyId() { return dyGroupBuyId; }
-    public void setDyGroupBuyId(String dyGroupBuyId) { this.dyGroupBuyId = dyGroupBuyId; }
+    public String getActivityEndDate() { return activityEndDate; }
+    public void setActivityEndDate(String activityEndDate) { this.activityEndDate = activityEndDate; }
+
+    public String getWeekDays() { return weekDays; }
+    public void setWeekDays(String weekDays) { this.weekDays = weekDays; }
+
+    public Integer getStockMode() { return stockMode; }
+    public void setStockMode(Integer stockMode) { this.stockMode = stockMode; }
+
+    public Integer getPurchaseLimit() { return purchaseLimit; }
+    public void setPurchaseLimit(Integer purchaseLimit) { this.purchaseLimit = purchaseLimit; }
+
+    public Integer getCountdownEnabled() { return countdownEnabled; }
+    public void setCountdownEnabled(Integer countdownEnabled) { this.countdownEnabled = countdownEnabled; }
+
+    public Integer getCountdownMinutes() { return countdownMinutes; }
+    public void setCountdownMinutes(Integer countdownMinutes) { this.countdownMinutes = countdownMinutes; }
+
+    public Integer getSoldOutAction() { return soldOutAction; }
+    public void setSoldOutAction(Integer soldOutAction) { this.soldOutAction = soldOutAction; }
 
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
@@ -94,6 +118,9 @@ public class MkFlashSaleActivityEntity implements Serializable {
     public Integer getDeleted() { return deleted; }
     public void setDeleted(Integer deleted) { this.deleted = deleted; }
 
-    public String getProductName() { return productName; }
-    public void setProductName(String productName) { this.productName = productName; }
+    public List<MkFlashSaleProductEntity> getProducts() { return products; }
+    public void setProducts(List<MkFlashSaleProductEntity> products) { this.products = products; }
+
+    public List<MkFlashSaleTimeSlotEntity> getTimeSlots() { return timeSlots; }
+    public void setTimeSlots(List<MkFlashSaleTimeSlotEntity> timeSlots) { this.timeSlots = timeSlots; }
 }

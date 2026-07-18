@@ -8,7 +8,7 @@
         vip_card_id AS vipCardId, source_order_no AS sourceOrderNo, store_id AS storeId,
         store_addr_id AS storeAddrId, origin_price AS originPrice, start_time AS startTime,
         expire_time AS expireTime, defer_days AS deferDays, status, transfer_count AS transferCount,
-        transferable, created_date AS createdDate
+        transferable, created_date AS createdDate, flash_sale_activity_id AS flashSaleActivityId
 </sql>
 
     <!-- 下单建待支付权益占位 -->
@@ -28,6 +28,7 @@
             <if test="status != null">status,</if>
             <if test="transferCount != null">transfer_count,</if>
             <if test="transferable != null">transferable,</if>
+            <if test="flashSaleActivityId != null">flash_sale_activity_id,</if>
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="userId != null">#{userId},</if>
@@ -43,6 +44,7 @@
             <if test="status != null">#{status},</if>
             <if test="transferCount != null">#{transferCount},</if>
             <if test="transferable != null">#{transferable},</if>
+            <if test="flashSaleActivityId != null">#{flashSaleActivityId},</if>
         </trim>
     </insert>
 

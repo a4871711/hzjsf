@@ -17,8 +17,9 @@ public interface VipBenefitService {
      * 权益卡购买下单(仅微信):后端按当前 sold_count 重算价(不信前端),
      * 建待支付权益占位(status=9),返回 {orderNo, paySum} 供前端调小程序统一支付(/wx/proPay)。
      * storeId/storeAddrId 为前端随单传的"购买时所在门店"(可空,空则回退会员卡归属门店/nowStoreId)
+     * flashSaleActivityId 为限时秒杀活动ID(可空);命中则用秒杀价成交(暂停动态涨价)、秒杀限购叠加、来源登记到 vip_benefit
      */
-    Map<String, Object> buy(UserInfoVo user, Long vipCardId, Long storeId, Long storeAddrId);
+    Map<String, Object> buy(UserInfoVo user, Long vipCardId, Long storeId, Long storeAddrId, Long flashSaleActivityId);
 
     /**
      * 微信支付成功回调激活:单事务内 幂等激活 + 记账(用途=6) + sold_count+1。

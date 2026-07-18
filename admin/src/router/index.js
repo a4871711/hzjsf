@@ -198,7 +198,14 @@ router.beforeEach((to, from, next) => {
 			  }).then((data) => {
 			  		console.log(data)
 					data.menuList.map(res => {
-						if(res.type == 2)btns.push(res.perms.toLowerCase())
+						// 收集按钮级权限:标准 renren 是 type==2 单权限记录;营销域把整页权限逗号平铺在
+						// type==1 菜单记录的 perms 上(见 sys_menu_marketing.sql),故按逗号拆分、兼容两种写法。
+						if (res.perms) {
+							res.perms.split(',').forEach(p => {
+								var perm = (p || '').trim().toLowerCase()
+								if (perm) btns.push(perm)
+							})
+						}
 					})
 					window.btns_arr = btns;
 			  		localStorage.setItem('btns_' + localStorage.role, JSON.stringify(btns || '[]'))

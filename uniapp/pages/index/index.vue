@@ -49,6 +49,11 @@
 			</view>
 		</view>
 
+		<!-- 限时秒杀(空数组不渲染) -->
+		<view class="flash-box" v-if="flashSaleList.length">
+			<flash-sale-card :list="flashSaleList" @buy="onFlashBuy" @more="onFlashMore" @expired="onFlashExpired"></flash-sale-card>
+		</view>
+
 		<!-- vip -->
 		<view class="vip-box">
 			<view class="index-title flex_s">
@@ -137,6 +142,7 @@
 	import CoachScrollView from '@/components/coach-scroll-view.vue';
 	import VipCard from '@/components/vip-card.vue';
 	import VipBenefitCard from '@/components/vip-benefit-card.vue';
+	import FlashSaleCard from '@/components/flash-sale-card/flash-sale-card.vue';
 
 	import {
 		getSwiper,
@@ -145,12 +151,19 @@
 		getCoachList,
 		getStoreCount,
 		getVipCardList,
+		flashSaleCurrent,
+		buyVipCard,
 	} from '@/api/index'
+	import {
+		createOrder,
+		Wxpay
+	} from '@/api/my.js'
 	export default {
 		components: {
 			CoachScrollView,
 			VipCard,
 			VipBenefitCard,
+			FlashSaleCard,
 		},
 		data() {
 			return {
@@ -163,6 +176,8 @@
 				coachList: [], // 门店教练
 				cardList: [], // vip卡片列表
 				benefitCardList: [], // VIP权益卡列表
+				flashSaleList: [], // 限时秒杀商品列表
+				flashBuying: false, // 抢购防抖:下单/支付进行中禁止重复点击
 				myStore: {}, //我的门店
 				latitude: '',
 				longitude: '',
@@ -276,8 +291,122 @@
 					this.myStore = store
 					this.getCoachList(store.storeId);
 					this.getfitCardList(store.storeAddrId);
+					this.getFlashSale(store.storeAddrId);
 					this.getStoreCount(this.latitude, this.longitude)
 				});
+			},
+			// 限时秒杀:按当前门店拉取进行中/预热的秒杀商品(公开接口,空数组则不渲染秒杀区)
+			getFlashSale(storeAddrId) {
+				flashSaleCurrent({
+					storeAddrId: storeAddrId
+				}).then((res) => {
+					this.flashSaleList = res.data || [];
+				}).catch(() => {
+					this.flashSaleList = [];
+				});
+			},
+			// 倒计时归零(预热转开抢/进行中结束):重拉最新秒杀状态
+			onFlashExpired() {
+				if (this.myStore && this.myStore.storeAddrId) {
+					this.getFlashSale(this.myStore.storeAddrId);
+				}
+			},
+			// 抢购分发:按 bizType 复用现有下单流,透传 flashSaleActivityId,价格用秒杀价
+			onFlashBuy(item) {
+				if (!item) return;
+				const bizType = Number(item.bizType);
+				if (bizType === 1) {
+					// 私教:会员端购买页未起步,占位
+					this.config.Toast('敬请期待');
+					return;
+				}
+				if (this.flashBuying) return;
+				if (bizType === 2) {
+					this.buyFlashFitCard(item);
+				} else if (bizType === 3) {
+					this.buyFlashVipCard(item);
+				} else {
+					this.config.Toast('该商品暂不支持购买');
+				}
+			},
+			// 会员卡(bizType=2):复用 /cardOrder/createOrder(card_renewal 同款下单流),带秒杀活动ID
+			buyFlashFitCard(item) {
+				const that = this;
+				this.flashBuying = true;
+				createOrder({
+					paySum: item.flashSalePrice,
+					fitCardId: item.productId,
+					couponId: '',
+					storeAddressId: this.myStore.storeAddrId,
+					flashSaleActivityId: item.activityId
+				}).then((res) => {
+					if (res.code == 1) {
+						that.flashPay(res.data.orderNo, res.data.paySum, '/pagesA/card_record/card_record');
+					} else {
+						that.flashBuying = false;
+					}
+				}).catch((e) => {
+					that.flashBuying = false;
+					that.config.Toast((e && e.message) || '下单失败');
+				});
+			},
+			// 权益卡(bizType=3):复用 /vipCard/buy(vip_card_detail 同款下单流),带秒杀活动ID
+			buyFlashVipCard(item) {
+				const that = this;
+				this.flashBuying = true;
+				buyVipCard({
+					vipCardId: item.productId,
+					storeId: this.myStore.storeId,
+					storeAddrId: this.myStore.storeAddrId,
+					flashSaleActivityId: item.activityId
+				}).then((res) => {
+					that.flashPay(res.data.orderNo, res.data.paySum, '/pagesA/my_benefits/my_benefits');
+				}).catch((e) => {
+					that.flashBuying = false;
+					that.config.Toast((e && e.message) || '下单失败');
+				});
+			},
+			// 统一支付:复用 /wx/proPay 取调起参数 → 微信支付(与会员卡/权益卡现有流程一致)
+			flashPay(orderNo, paySum, successUrl) {
+				const that = this;
+				Wxpay({
+					orderNo: orderNo,
+					paySum: paySum
+				}).then((r) => {
+					if (r.code == 1) {
+						uni.requestPayment({
+							appId: r.params.appId,
+							nonceStr: r.params.nonceStr,
+							package: r.params.package,
+							paySign: r.params.paySign,
+							signType: r.params.signType,
+							timeStamp: r.params.timeStamp,
+							success: () => {
+								that.flashBuying = false;
+								that.config.Toast('抢购成功');
+								setTimeout(() => {
+									uni.redirectTo({
+										url: successUrl
+									});
+								}, 1000);
+							},
+							fail: () => {
+								that.flashBuying = false;
+								that.config.Toast('支付已取消');
+							}
+						});
+					} else {
+						that.flashBuying = false;
+						that.config.Toast(r.msg || '发起支付失败');
+					}
+				}).catch(() => {
+					that.flashBuying = false;
+					that.config.Toast('发起支付失败');
+				});
+			},
+			// 更多秒杀:暂无独立列表页,占位
+			onFlashMore() {
+				this.config.Toast('更多秒杀活动敬请期待');
 			},
 			// 教练列表
 			getCoachList(storeId) {
@@ -599,6 +728,10 @@
 				}
 			}
 		}
+	}
+
+	.flash-box {
+		margin-top: 50rpx;
 	}
 
 	.vip-box {

@@ -63,7 +63,18 @@ public class CardOrder implements Serializable {
     private Date finishTime;
     private Integer buyCount;
 
+    /** 秒杀活动ID(会员卡秒杀来源,mk_flash_sale_activity.id;非秒杀单为 null) */
+    private Long flashSaleActivityId;
+
     private static final long serialVersionUID = 1L;
+
+    public Long getFlashSaleActivityId() {
+        return flashSaleActivityId;
+    }
+
+    public void setFlashSaleActivityId(Long flashSaleActivityId) {
+        this.flashSaleActivityId = flashSaleActivityId;
+    }
 
     public Long getCardOrderId() {
         return cardOrderId;

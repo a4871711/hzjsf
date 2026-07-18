@@ -6,6 +6,7 @@ import com.dlc.common.utils.ConfigConstant;
 import com.dlc.common.utils.OrderNoGenerator;
 import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
+import com.dlc.modules.api.dao.ApiFlashSaleDao;
 import com.dlc.modules.api.dao.DeviceMapper;
 import com.dlc.modules.api.dao.StoreMapper;
 import com.dlc.modules.api.dao.UserInfoMapper;
@@ -18,6 +19,8 @@ import com.dlc.modules.api.service.PayService;
 import com.dlc.modules.api.service.VipBenefitService;
 import com.dlc.modules.api.service.VipCardService;
 import com.dlc.modules.api.vo.UserInfoVo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -49,9 +52,15 @@ public class VipBenefitServiceImpl implements VipBenefitService {
     private DeviceMapper deviceMapper;
     @Autowired
     private StoreMapper storeMapper;
+    @Autowired
+    private ApiFlashSaleDao apiFlashSaleDao;
+    @Autowired
+    private com.dlc.modules.api.service.ApiFlashSaleService apiFlashSaleService;
+
+    private Logger log = LoggerFactory.getLogger(getClass());
 
     @Override
-    public Map<String, Object> buy(UserInfoVo user, Long vipCardId, Long storeId, Long storeAddrId) {
+    public Map<String, Object> buy(UserInfoVo user, Long vipCardId, Long storeId, Long storeAddrId, Long flashSaleActivityId) {
         Long userId = user.getUserId();
         // 持有未过期有效权益(status=0且未过期)时禁止重复购买
         if (vipBenefitMapper.countValidByUser(userId) > 0) {
@@ -61,6 +70,25 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         VipBenefitCard card = vipCardService.queryVipCardDetail(vipCardId);
         // 应付金额一律后端按当前 sold_count 重算,不信前端传值
         BigDecimal price = card.getCurrentPrice();
+
+        // ===== 限时秒杀：命中活动+商品且当前可抢则用秒杀价成交(暂停动态涨价)，秒杀限购与"一人一卡"叠加 =====
+        Long flashActivityId = null;
+        if (flashSaleActivityId != null) {
+            // 校验活动+商品当前可抢(时段/库存)，不可抢由 service 抛业务错
+            Map<String, Object> ap = apiFlashSaleService.checkBuyable(flashSaleActivityId, vipCardId);
+            if (toInt(ap.get("bizType")) != 3) {
+                throw new RRException("该秒杀活动不是权益卡");
+            }
+            Object plimit = ap.get("purchaseLimit");
+            if (plimit != null && String.valueOf(plimit).trim().length() > 0) {
+                int bought = apiFlashSaleDao.countMemberBenefitFlashOrders(userId, flashSaleActivityId, vipCardId);
+                if (bought >= Integer.parseInt(String.valueOf(plimit))) {
+                    throw new RRException("已达该秒杀每人限购上限");
+                }
+            }
+            price = new BigDecimal(String.valueOf(ap.get("flashSalePrice")));
+            flashActivityId = flashSaleActivityId;
+        }
 
         // 订单号末位拼后缀 6(权益卡购买),作回调激活的幂等键
         String orderNo = OrderNoGenerator.getOrderIdByTime() + ConfigConstant.VIP_CARD_BUY_TYPE;
@@ -91,6 +119,7 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         vb.setStatus(9);
         vb.setTransferCount(0);
         vb.setTransferable(1);
+        vb.setFlashSaleActivityId(flashActivityId);
         vipBenefitMapper.insertSelective(vb);
 
         // 返回订单号 + 应付金额,前端据此调小程序统一支付(/wx/proPay)调起微信
@@ -124,6 +153,14 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         // 记账放在激活判定之后,确保重复回调不会重复写流水
         incomePayDetailService.saveIncomePayDetail(orderNo, transactionNumber, money, payType);
         vipBenefitMapper.incrSoldCount(card.getVipCardId());
+        // 限时秒杀权益卡：激活成功后 CAS 扣减秒杀库存(幂等由上面 activate 仅 status=9 命中保证,只执行一次)
+        VipBenefit boughtVb = vipBenefitMapper.selectByOrderNo(orderNo);
+        if (boughtVb != null && boughtVb.getFlashSaleActivityId() != null) {
+            int dec = apiFlashSaleService.increaseSold(boughtVb.getFlashSaleActivityId(), boughtVb.getVipCardId(), boughtVb.getCreatedDate());
+            if (dec <= 0) {
+                log.warn("权益卡秒杀库存扣减失败(已售罄/活动失效) orderNo={}, activityId={}", orderNo, boughtVb.getFlashSaleActivityId());
+            }
+        }
         return 1;
     }
 
@@ -144,6 +181,18 @@ public class VipBenefitServiceImpl implements VipBenefitService {
     @Override
     public VipBenefit latestValidBenefit(Long userId) {
         return userId == null ? null : vipBenefitMapper.selectLatestValidByUser(userId);
+    }
+
+    /** 宽松取整：null/非数字返回 0（用于秒杀活动 map 字段解析） */
+    private int toInt(Object v) {
+        if (v == null) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(v).trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /** 在 date 基础上加 days 天 */
