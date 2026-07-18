@@ -198,9 +198,13 @@ router.beforeEach((to, from, next) => {
 			  }).then((data) => {
 			  		console.log(data)
 					data.menuList.map(res => {
-						// 收集按钮级权限:标准 renren 是 type==2 单权限记录;营销域把整页权限逗号平铺在
-						// type==1 菜单记录的 perms 上(见 sys_menu_marketing.sql),故按逗号拆分、兼容两种写法。
+						// 收集按钮级权限,整串+拆分双份 push:
+						// ① 整串(原样小写)——老页面 checkBtn('sys:user:save,sys:role:select') 传逗号整串,靠整串元素匹配;
+						// ② 按逗号拆分的单权限——营销域把整页权限平铺在 type==1 菜单 perms 上
+						//    (见 sys_menu_marketing.sql),页面按单权限 checkBtn('sys:mkFlashSale:save') 查询。
+						// 两种历史写法并存,只 push 一种都会漏,故取超集。
 						if (res.perms) {
+							btns.push(res.perms.toLowerCase())
 							res.perms.split(',').forEach(p => {
 								var perm = (p || '').trim().toLowerCase()
 								if (perm) btns.push(perm)

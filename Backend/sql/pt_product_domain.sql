@@ -49,7 +49,7 @@ CREATE TABLE `pt_product` (
   `validity_days` INT NOT NULL COMMENT '有效期天数；长期可约定为-1',
   `refund_type` TINYINT NOT NULL DEFAULT 2 COMMENT '退款方式：1支持 2不支持 3人工审核',
   `refund_rule` VARCHAR(500) DEFAULT NULL COMMENT '退款规则说明',
-  `visible_groups` JSON DEFAULT NULL COMMENT '可见人群，例如 member,new_user,student',
+  `visible_groups` TEXT DEFAULT NULL COMMENT '可见人群，例如 member,new_user,student',
   `purchase_limit` INT DEFAULT NULL COMMENT '每人限购数量',
   `sale_stock` INT DEFAULT NULL COMMENT '可售库存，NULL表示不限量',
   `sold_count` INT NOT NULL DEFAULT 0 COMMENT '已售数量',
