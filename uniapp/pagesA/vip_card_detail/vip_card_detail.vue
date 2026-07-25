@@ -3,7 +3,10 @@
 		<!-- 顶部权益卡主信息 -->
 		<view class="vc-hero">
 			<view class="vc-hero-top flex_s">
-				<view class="vc-kicker">VIP 权益卡</view>
+				<view class="vc-kicker-wrap">
+					<view class="vc-kicker">VIP 权益卡</view>
+					<view class="vc-kicker vc-validity">有效期 {{ card.validityDays || 365 }} 天</view>
+				</view>
 				<!-- heldThis=持有的正是本卡(卡级):显示"已开通";持其它权益卡的用户看本卡不显示 -->
 				<view class="vc-buy-btn-top vc-btn-owned" v-if="card.heldThis">已开通</view>
 				<view class="vc-buy-btn-top" v-else @click="onBuy">立即购买</view>
@@ -13,9 +16,9 @@
 				<text class="now"><text class="sym">¥</text>{{ formatPrice(curPrice) }}</text>
 				<text class="base" v-if="isRaised">首发价 ¥{{ formatPrice(card.price) }}</text>
 			</view>
-			<view class="vc-tags">
-				<text class="tag">有效期 {{ card.validityDays || 365 }} 天</text>
-				<text class="tag" v-if="storeNames.length">适用门店：{{ storeNames.join('、') }}</text>
+			<!-- 有效期已并入顶部 kicker 行,此处只剩适用门店;无门店时整行不渲染,避免空 margin -->
+			<view class="vc-tags" v-if="storeNames.length">
+				<text class="tag">适用门店：{{ storeNames.join('、') }}</text>
 			</view>
 			<view class="vc-raise-tip" v-if="isRaised && card.stepNum > 0">
 				首发优惠递减：每 {{ card.stepNum }} 人涨 ¥{{ formatPrice(card.stepAddPrice) }}<text
@@ -68,6 +71,17 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 协议勾选(已开通无购买入口,不展示) -->
+		<view class="tips-txt" v-if="!card.heldThis">
+			<u-checkbox-group activeColor="#DD541A">
+				<u-checkbox :checked="checked" shape="circle" activeColor="#DD541A" size="15" labelSize="13"
+					label="我已阅读并同意" @change="getchecked"></u-checkbox><text class="text_red"
+					@click="config.path('/pagesA/agreement/agreement?type=0')">《用户协议》</text>、<text
+					class="text_red"
+					@click="config.path('/pagesA/agreement/agreement?type=7')">《权益会员协议》</text>
+			</u-checkbox-group>
+		</view>
 	</view>
 </template>
 
@@ -86,7 +100,8 @@
 				vipCardId: null,
 				storeId: '',
 				storeAddrId: '',
-				card: {}
+				card: {},
+				checked: false
 			}
 		},
 		computed: {
@@ -201,9 +216,17 @@
 				if (isNaN(n)) return '0';
 				return Number.isInteger(n) ? String(n) : n.toFixed(2);
 			},
+			// 协议勾选状态
+			getchecked(val) {
+				this.checked = val;
+			},
 			onBuy() {
 				if (!this.vipCardId) {
 					this.config.Toast('缺少权益卡参数');
+					return;
+				}
+				if (!this.checked) {
+					this.config.Toast('请先同意协议！');
 					return;
 				}
 				const that = this;
@@ -280,6 +303,11 @@
 			align-items: center;
 		}
 
+		.vc-kicker-wrap {
+			display: flex;
+			align-items: center;
+		}
+
 		.vc-kicker {
 			display: inline-block;
 			padding: 6rpx 20rpx;
@@ -287,6 +315,10 @@
 			background: rgba(255, 255, 255, 0.25);
 			color: #ffffff;
 			font-size: 22rpx;
+
+			&.vc-validity {
+				margin-left: 12rpx;
+			}
 		}
 
 		.vc-buy-btn-top {
@@ -443,6 +475,21 @@
 			color: #E15B00;
 			font-weight: 800;
 			margin: 0 4rpx;
+		}
+	}
+
+	/* 协议勾选行(同 card_renewal) */
+	.tips-txt {
+		padding: 10rpx 0 40rpx;
+		font-size: 24rpx !important;
+		color: #999999;
+
+		.u-checkbox-group--row {
+			justify-content: center;
+		}
+
+		.text_red {
+			color: #DD541A;
 		}
 	}
 

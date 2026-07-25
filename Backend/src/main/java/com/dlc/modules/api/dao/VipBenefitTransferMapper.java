@@ -20,6 +20,9 @@ public interface VipBenefitTransferMapper {
     /** 同一权益在途(10待付费/20待审核/40待确认)转让单数量,>0 即已有进行中的转让 */
     int countInProgress(@Param("vipBenefitId") Long vipBenefitId);
 
+    /** 转让人名下生效中的权益类型会员卡(fit_card.cardNature=1)数量,>0 不可转让权益(该类卡以持有权益为购买前提,-38) */
+    int countValidNatureCardByUser(@Param("userId") Long userId);
+
     /** 服务费支付成功回调:仅 status=10→20 并写微信交易号,幂等(重复回调命中0行) */
     int feePaid(@Param("feeOrderNo") String feeOrderNo,
                 @Param("transactionNumber") String transactionNumber);

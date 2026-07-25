@@ -68,6 +68,7 @@ public enum CodeAndMsg {
     ERROR_VIP_TRANSFER_REFUNDED_CARD(-64,"已办理退卡，不可转让"),
     ERROR_VIP_TRANSFER_VIOLATION(-65,"存在重大违规记录"),
     ERROR_VIP_TO_USER_HAS_BENEFIT(-66,"受让人已持有有效权益，不可接收转让"),
+    ERROR_VIP_TRANSFER_HAS_NATURE_CARD(-67,"名下有生效中的权益类型会员卡，暂不可转让"),
     ERROR_PAUSE_STATE(-68,"停卡状态异常"),
     ERROR_VIP_FEE_RULE_NOT_EXIST(-69,"转让费用规则不存在或未配置"),
     ERROR_VIP_FEE_RULE_FORMAT(-70,"分档配置格式有误"),

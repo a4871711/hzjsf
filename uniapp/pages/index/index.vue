@@ -54,6 +54,30 @@
 			<flash-sale-card :list="flashSaleList" @buy="onFlashBuy" @more="onFlashMore" @expired="onFlashExpired"></flash-sale-card>
 		</view>
 
+		<!-- 秒杀确认弹窗:确认商品信息+勾选对应协议后才下单 -->
+		<u-popup :show="flashConfirmShow" :round="15" mode="bottom" @close="closeFlashConfirm">
+			<view class="flash-confirm">
+				<view class="fc-name">{{ flashConfirmItem.productName || '--' }}</view>
+				<view class="fc-price-row">
+					<text class="fc-label">秒杀价</text>
+					<text class="fc-flash"><text class="fc-sym">¥</text>{{ flashPrice(flashConfirmItem.flashSalePrice) }}</text>
+					<text class="fc-origin" v-if="flashConfirmItem.originPrice != null">¥{{ flashPrice(flashConfirmItem.originPrice) }}</text>
+				</view>
+				<view class="tips-txt">
+					<u-checkbox-group activeColor="#DD541A">
+						<u-checkbox :checked="flashChecked" shape="circle" activeColor="#DD541A" size="15" labelSize="13"
+							label="我已阅读并同意" @change="getFlashChecked"></u-checkbox><text class="text_red"
+							@click="config.path('/pagesA/agreement/agreement?type=0')">《用户协议》</text>、<text
+							class="text_red" v-if="flashConfirmItem.bizType == 3"
+							@click="config.path('/pagesA/agreement/agreement?type=7')">《权益会员协议》</text><text
+							class="text_red" v-else
+							@click="config.path('/pagesA/agreement/agreement?type=2')">《矢历连续包月协议》</text>
+					</u-checkbox-group>
+				</view>
+				<view class="fc-btn" @click="confirmFlashBuy">确认支付 ¥{{ flashPrice(flashConfirmItem.flashSalePrice) }}</view>
+			</view>
+		</u-popup>
+
 		<!-- vip -->
 		<view class="vip-box">
 			<view class="index-title flex_s">
@@ -178,6 +202,9 @@
 				benefitCardList: [], // VIP权益卡列表
 				flashSaleList: [], // 限时秒杀商品列表
 				flashBuying: false, // 抢购防抖:下单/支付进行中禁止重复点击
+				flashConfirmShow: false, // 秒杀确认弹窗
+				flashConfirmItem: {}, // 弹窗展示的秒杀商品
+				flashChecked: false, // 秒杀协议勾选(每次打开弹窗重置)
 				myStore: {}, //我的门店
 				latitude: '',
 				longitude: '',
@@ -311,7 +338,7 @@
 					this.getFlashSale(this.myStore.storeAddrId);
 				}
 			},
-			// 抢购分发:按 bizType 复用现有下单流,透传 flashSaleActivityId,价格用秒杀价
+			// 抢购入口:先弹确认弹窗(商品+对应协议),勾选协议后才走下单
 			onFlashBuy(item) {
 				if (!item) return;
 				const bizType = Number(item.bizType);
@@ -320,14 +347,42 @@
 					this.config.Toast('敬请期待');
 					return;
 				}
-				if (this.flashBuying) return;
-				if (bizType === 2) {
-					this.buyFlashFitCard(item);
-				} else if (bizType === 3) {
-					this.buyFlashVipCard(item);
-				} else {
+				if (bizType !== 2 && bizType !== 3) {
 					this.config.Toast('该商品暂不支持购买');
+					return;
 				}
+				if (this.flashBuying) return;
+				this.flashConfirmItem = item;
+				this.flashChecked = false;
+				this.flashConfirmShow = true;
+			},
+			// 秒杀协议勾选状态
+			getFlashChecked(val) {
+				this.flashChecked = val;
+			},
+			closeFlashConfirm() {
+				this.flashConfirmShow = false;
+			},
+			// 弹窗确认:校验协议后按 bizType 分发原下单流,透传 flashSaleActivityId,价格用秒杀价
+			confirmFlashBuy() {
+				if (!this.flashChecked) {
+					this.config.Toast('请先同意协议！');
+					return;
+				}
+				if (this.flashBuying) return;
+				const item = this.flashConfirmItem;
+				this.flashConfirmShow = false;
+				if (Number(item.bizType) === 2) {
+					this.buyFlashFitCard(item);
+				} else {
+					this.buyFlashVipCard(item);
+				}
+			},
+			// 秒杀价格展示(同 flash-sale-card.formatPrice)
+			flashPrice(v) {
+				const n = Number(v);
+				if (isNaN(n)) return '0';
+				return Number.isInteger(n) ? String(n) : n.toFixed(2);
 			},
 			// 会员卡(bizType=2):复用 /cardOrder/createOrder(card_renewal 同款下单流),带秒杀活动ID
 			buyFlashFitCard(item) {
@@ -732,6 +787,72 @@
 
 	.flash-box {
 		margin-top: 50rpx;
+	}
+
+	/* 秒杀确认弹窗 */
+	.flash-confirm {
+		padding: 48rpx 40rpx 60rpx;
+		box-sizing: border-box;
+
+		.fc-name {
+			font-size: 34rpx;
+			font-weight: 800;
+			color: #111111;
+		}
+
+		.fc-price-row {
+			margin-top: 24rpx;
+			display: flex;
+			align-items: baseline;
+
+			.fc-label {
+				font-size: 24rpx;
+				color: #999999;
+				margin-right: 12rpx;
+			}
+
+			.fc-flash {
+				font-size: 52rpx;
+				font-weight: 900;
+				color: #E15B00;
+				line-height: 1;
+
+				.fc-sym {
+					font-size: 28rpx;
+					font-weight: 800;
+				}
+			}
+
+			.fc-origin {
+				margin-left: 16rpx;
+				font-size: 24rpx;
+				color: #999999;
+				text-decoration: line-through;
+			}
+		}
+
+		.tips-txt {
+			margin-top: 40rpx;
+			font-size: 24rpx !important;
+			color: #999999;
+
+			.text_red {
+				color: #DD541A;
+			}
+		}
+
+		.fc-btn {
+			margin-top: 36rpx;
+			height: 88rpx;
+			border-radius: 44rpx;
+			background: linear-gradient(90deg, #ff8a3d 0%, #E15B00 100%);
+			color: #FFFFFF;
+			font-size: 32rpx;
+			font-weight: 800;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
 	}
 
 	.vip-box {

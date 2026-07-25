@@ -49,6 +49,17 @@
                 OR (status = 10 AND created_date > DATE_SUB(NOW(), INTERVAL 30 MINUTE)) )
     </select>
 
+    <!-- 转让人名下生效中的权益类型会员卡(cardNature=1)数量(发起/审核复核/过户前复核用)。
+         生效口径与停卡 precheck(CardPauseRecordMapper.selectCardNatureByOrderId)对齐:
+         status=4 且 validityDate>NOW();card_order/fit_card 为老表,列名本身即驼峰 -->
+    <select id="countValidNatureCardByUser" resultType="int" parameterType="long">
+        SELECT COUNT(1)
+        FROM card_order co
+        JOIN fit_card fc ON co.cardId = fc.fitCardId
+        WHERE co.userId = #{userId} AND co.status = 4
+          AND co.validityDate &gt; NOW() AND fc.cardNature = 1
+    </select>
+
     <!-- 服务费支付成功:仅 status=10→20,幂等(重复回调命中0行) -->
     <update id="feePaid">
         UPDATE vip_benefit_transfer

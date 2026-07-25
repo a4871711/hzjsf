@@ -98,7 +98,7 @@ export default {
       }, this.searchData));
       var list = res.page.list || [];
 	  list.map(res => {
-	  	res.typeDesc = res.type == 0 ? '用户协议' : res.type == 1 ? '隐私协议': res.type == 2 ? '矢历连续包月协议' : res.type == 3 ? '矢历连续会员协议' : res.type == 4 ? '矢历连续次卡会员协议' : res.type == 5 ? '管理端服务协议' : '管理端隐私协议' 
+	  	res.typeDesc = res.type == 0 ? '用户协议' : res.type == 1 ? '隐私协议': res.type == 2 ? '矢历连续包月协议' : res.type == 3 ? '矢历连续会员协议' : res.type == 4 ? '矢历连续次卡会员协议' : res.type == 5 ? '管理端服务协议' : res.type == 6 ? '管理端隐私协议' : '权益会员协议'
 	  })
       this.tableData = list;
       this.pagination.total = res.page.totalCount;

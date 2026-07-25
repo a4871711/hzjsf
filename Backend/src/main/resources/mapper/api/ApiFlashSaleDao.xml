@@ -19,13 +19,6 @@
             else (select sale_price from pt_product where id = p.product_id)
         end)
     </sql>
-    <sql id="productCoverCol">
-        (case a.biz_type
-            when 2 then (select cardImgUrl from fit_card where fitCardId = p.product_id)
-            when 3 then null
-            else (select cover_url from pt_product where id = p.product_id)
-        end)
-    </sql>
 
     <select id="queryCurrentProductCards" resultType="java.util.HashMap">
         SELECT a.id AS activityId, a.biz_type AS bizType, a.cover_url AS activityCover,
@@ -39,8 +32,7 @@
                p.product_id AS productId, p.flash_sale_price AS flashSalePrice,
                p.activity_stock AS activityStock, p.sold_count AS soldCount,
                <include refid="productNameCol"/> AS productName,
-               <include refid="originPriceCol"/> AS originPrice,
-               <include refid="productCoverCol"/> AS productCover
+               <include refid="originPriceCol"/> AS originPrice
         FROM mk_flash_sale_activity a
         JOIN mk_flash_sale_product p ON p.activity_id = a.id AND p.deleted = 0
         WHERE a.deleted = 0 AND a.status = 1

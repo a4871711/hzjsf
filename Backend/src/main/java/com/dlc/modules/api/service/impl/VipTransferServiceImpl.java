@@ -146,6 +146,11 @@ public class VipTransferServiceImpl implements VipTransferService {
         if (vipBenefitMapper.countValidByUser(toUser.getUserId()) > 0) {
             throw new RRException(CodeAndMsg.ERROR_VIP_TO_USER_HAS_BENEFIT);
         }
+        // 18. 转让人名下无生效中的权益类型会员卡(cardNature=1):该类会员卡以持有权益为购买前提(-38,
+        //     2026-07-10 方向翻转),权益转走会让生效中的会员卡失去前提,且转让人可借此绕开一人一份重新购权益
+        if (vipBenefitTransferMapper.countValidNatureCardByUser(fromUser.getUserId()) > 0) {
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_HAS_NATURE_CARD);
+        }
     }
 
     /**
@@ -427,6 +432,14 @@ public class VipTransferServiceImpl implements VipTransferService {
             log.error("VIP过户失败:权益已过期,transferId={}, vipBenefitId={}, expireTime={}",
                     transferId, vb.getVipBenefitId(), vb.getExpireTime());
             throw new RRException(CodeAndMsg.ERROR_VIP_BENEFIT_EXPIRED);
+        }
+        // 复核转让人名下无生效中的权益类型会员卡(与 checkTransferable 第18条同款):审核通过到确认之间
+        // 转让人此刻仍持权益,-38 拦不住他新买权益类型会员卡;若已买,过户会让该卡失去持权前提。
+        // 处置同过期分支:抛异常回滚、本单停在40,到 confirm_deadline 由超时任务扫为52并退服务费。
+        if (vipBenefitTransferMapper.countValidNatureCardByUser(t.getFromUserId()) > 0) {
+            log.error("VIP过户失败:转让人名下有生效中的权益类型会员卡,transferId={}, fromUserId={}",
+                    transferId, t.getFromUserId());
+            throw new RRException(CodeAndMsg.ERROR_VIP_TRANSFER_HAS_NATURE_CARD);
         }
         // 复核受让人未持有效权益(与 checkTransferable 第17条同款):审核通过到确认之间最长 N 天,
         // 受让人可能已自购权益或接收了别的转让;一人一份口径下不可再过户给他。处置同过期分支:

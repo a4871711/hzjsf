@@ -38,6 +38,9 @@
 					case '4':
 						newTitle = '矢历连续次卡会员协议';
 						break;
+					case '7':
+						newTitle = '权益会员协议';
+						break;
 					default:
 						newTitle = '没获取到'
 						// 如果没有匹配的case，可以在这里处理

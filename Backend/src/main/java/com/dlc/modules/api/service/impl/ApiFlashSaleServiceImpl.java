@@ -81,11 +81,8 @@ public class ApiFlashSaleServiceImpl implements ApiFlashSaleService {
             card.put("productId", row.get("productId"));
             card.put("bizType", row.get("bizType"));
             card.put("productName", row.get("productName"));
-            Object cover = row.get("activityCover");
-            if (cover == null || "".equals(String.valueOf(cover).trim())) {
-                cover = row.get("productCover");
-            }
-            card.put("coverUrl", cover);
+            // 封面只取活动配置图,不回落商品自身图(商品图多为门店实拍,秒杀卡位不适合展示);没配则前端不渲染图片
+            card.put("coverUrl", row.get("activityCover"));
             card.put("flashSalePrice", row.get("flashSalePrice"));
             card.put("originPrice", row.get("originPrice"));
             card.put("activityStock", stock);

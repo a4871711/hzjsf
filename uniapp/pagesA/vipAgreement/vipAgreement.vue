@@ -39,6 +39,9 @@
 				      case 4:
 				        newItem.text = '矢历连续次卡会员协议';
 				        break;
+				      case 7:
+				        newItem.text = '权益会员协议';
+				        break;
 				      default:
 				        // 如果没有匹配的case，可以在这里处理
 				        break;

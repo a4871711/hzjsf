@@ -23,8 +23,6 @@
 				v-for="(item, index) in list" :key="index">
 				<!-- 预热角标 -->
 				<view class="fs-corner" v-if="item.status === 'preheat'">预热</view>
-				<!-- 封面 -->
-				<image class="fs-cover" :src="item.coverUrl" mode="aspectFill" v-if="item.coverUrl"></image>
 				<view class="fs-name">{{ item.productName || '--' }}</view>
 				<!-- 价格:秒杀价大号橙 + 划线原价 -->
 				<view class="fs-price-row">
@@ -281,13 +279,6 @@
 					background: #FF9800;
 					color: #ffffff;
 					font-size: 20rpx;
-				}
-
-				.fs-cover {
-					width: 100%;
-					height: 160rpx;
-					border-radius: 12rpx;
-					margin-bottom: 12rpx;
 				}
 
 				.fs-name {
