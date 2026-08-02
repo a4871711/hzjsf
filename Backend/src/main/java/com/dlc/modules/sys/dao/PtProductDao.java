@@ -16,4 +16,8 @@ public interface PtProductDao extends BaseDao<PtProductEntity> {
 
     /** 统计某编号前缀已有的商品数，用于撞号兜底重试 */
     int countByNoPrefix(@Param("prefix") String prefix);
+
+    /** 分类改名时同步商品名称快照，兼容旧接口和移动端读取 category_name。 */
+    int updateCategoryNameByCategoryId(@Param("categoryId") Long categoryId,
+                                       @Param("categoryName") String categoryName);
 }

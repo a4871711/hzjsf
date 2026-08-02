@@ -61,9 +61,8 @@ public class SysPtProductController extends AbstractController {
         params.remove("order");
 
         List<PtProductEntity> list = sysPtProductService.queryList(params);
-        String[] titles = {"编号", "商品名称", "商品类型", "服务类型", "适用门店", "指定教练",
-                "售价", "课时", "单次时长(分钟)", "有效期", "提成结算方式", "上架状态",
-                "排序", "创建时间", "更新时间"};
+        String[] titles = {"编号", "商品名称", "商品类型", "商品分类", "服务类型", "适用门店", "指定教练",
+                "售价", "课时", "单次时长(分钟)", "有效期", "上架状态", "排序", "创建时间", "更新时间"};
         String fileName = "私教商品列表_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".xlsx";
         XSSFWorkbook workbook = ExportExcel.getXSSFWorkbook("私教商品列表", titles, buildExportValues(list));
         writeWorkbook(response, fileName, workbook);
@@ -135,14 +134,14 @@ public class SysPtProductController extends AbstractController {
             values[i][0] = valueOf(product.getProductNo());
             values[i][1] = valueOf(product.getProductName());
             values[i][2] = valueOf(product.getTypeName());
-            values[i][3] = serviceTypeText(product.getServiceType());
-            values[i][4] = valueOf(product.getStoreNames());
-            values[i][5] = isBlank(product.getCoachNames()) ? "不限教练" : product.getCoachNames();
-            values[i][6] = valueOf(product.getSalePrice());
-            values[i][7] = valueOf(product.getLessonCount());
-            values[i][8] = valueOf(product.getDurationMinutes());
-            values[i][9] = validityText(product.getValidityDays());
-            values[i][10] = settlementModeText(product.getSettlementMode());
+            values[i][3] = valueOf(product.getCategoryName());
+            values[i][4] = serviceTypeText(product.getServiceType());
+            values[i][5] = valueOf(product.getStoreNames());
+            values[i][6] = isBlank(product.getCoachNames()) ? "不限教练" : product.getCoachNames();
+            values[i][7] = valueOf(product.getSalePrice());
+            values[i][8] = valueOf(product.getLessonCount());
+            values[i][9] = valueOf(product.getDurationMinutes());
+            values[i][10] = validityText(product.getValidityDays());
             values[i][11] = Integer.valueOf(1).equals(product.getListingStatus()) ? "已上架" : "未上架";
             values[i][12] = valueOf(product.getSortNo());
             values[i][13] = product.getCreatedAt() == null ? "" : dateFormat.format(product.getCreatedAt());
@@ -159,11 +158,6 @@ public class SysPtProductController extends AbstractController {
             return "一对多";
         }
         return "";
-    }
-
-    private String settlementModeText(Integer settlementMode) {
-        // 历史商品未设置结算方式时按系统兼容规则视为按次结算。
-        return Integer.valueOf(2).equals(settlementMode) ? "包月结算" : "按次结算";
     }
 
     private String validityText(Integer validityDays) {

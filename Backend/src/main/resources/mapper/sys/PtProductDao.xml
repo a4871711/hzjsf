@@ -100,9 +100,9 @@
     <insert id="save" parameterType="com.dlc.modules.sys.entity.PtProductEntity" useGeneratedKeys="true" keyProperty="id">
         insert into pt_product
         (`product_no`, `product_name`, `product_subtitle`, `product_type_id`, `service_type`,
-         `category_name`, `cover_url`, `product_intro`, `product_detail`, `target_desc`,
+         `category_id`, `category_name`, `cover_url`, `product_intro`, `product_detail`, `target_desc`,
          `original_price`, `sale_price`, `member_price`, `new_user_price`,
-         `lesson_count`, `duration_minutes`, `validity_days`, `settlement_mode`,
+         `lesson_count`, `duration_minutes`, `validity_days`,
          `refund_type`, `refund_rule`, `visible_groups`, `purchase_limit`, `sale_stock`, `sold_count`,
          `booking_gap_minutes`, `booking_capacity`, `latest_booking_hours`, `latest_free_cancel_hours`,
          `no_show_deduct`, `coach_confirm_required`,
@@ -111,9 +111,9 @@
          `created_by`, `created_at`, `updated_by`, `updated_at`)
         values
         (#{productNo}, #{productName}, #{productSubtitle}, #{productTypeId}, #{serviceType},
-         #{categoryName}, #{coverUrl}, #{productIntro}, #{productDetail}, #{targetDesc},
+         #{categoryId}, #{categoryName}, #{coverUrl}, #{productIntro}, #{productDetail}, #{targetDesc},
          #{originalPrice}, #{salePrice}, #{memberPrice}, #{newUserPrice},
-         #{lessonCount}, #{durationMinutes}, #{validityDays}, #{settlementMode},
+         #{lessonCount}, #{durationMinutes}, #{validityDays},
          #{refundType}, #{refundRule}, #{visibleGroups}, #{purchaseLimit}, #{saleStock}, #{soldCount},
          #{bookingGapMinutes}, #{bookingCapacity}, #{latestBookingHours}, #{latestFreeCancelHours},
          #{noShowDeduct}, #{coachConfirmRequired},
@@ -129,7 +129,8 @@
             <if test="productSubtitle != null">`product_subtitle` = #{productSubtitle},</if>
             <if test="productTypeId != null">`product_type_id` = #{productTypeId},</if>
             <if test="serviceType != null">`service_type` = #{serviceType},</if>
-            <if test="categoryName != null">`category_name` = #{categoryName},</if>
+            `category_id` = #{categoryId},
+            `category_name` = #{categoryName},
             <if test="coverUrl != null">`cover_url` = #{coverUrl},</if>
             <if test="productIntro != null">`product_intro` = #{productIntro},</if>
             <if test="productDetail != null">`product_detail` = #{productDetail},</if>
@@ -141,7 +142,6 @@
             <if test="lessonCount != null">`lesson_count` = #{lessonCount},</if>
             <if test="durationMinutes != null">`duration_minutes` = #{durationMinutes},</if>
             <if test="validityDays != null">`validity_days` = #{validityDays},</if>
-            <if test="settlementMode != null">`settlement_mode` = #{settlementMode},</if>
             <if test="refundType != null">`refund_type` = #{refundType},</if>
             <if test="refundRule != null">`refund_rule` = #{refundRule},</if>
             <if test="visibleGroups != null">`visible_groups` = #{visibleGroups},</if>
@@ -176,5 +176,11 @@
     <select id="countByNoPrefix" resultType="int">
         select count(*) from pt_product where product_no like concat(#{prefix},'%')
     </select>
+
+    <update id="updateCategoryNameByCategoryId">
+        update pt_product
+        set category_name = #{categoryName}, updated_at = now()
+        where category_id = #{categoryId} and deleted = 0
+    </update>
 
 </mapper>

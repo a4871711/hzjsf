@@ -175,33 +175,28 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         }
         // 冻结转已用(第11步,同事务)
         memberPrivateBenefitService.finish(apt.getBenefitId(), lessonOf(apt));
-        settlePerLessonCommission(apt);
+        settleLessonFee(apt);
     }
 
-    /** 按次商品只在实际完成核销后结算：订单净实收 ÷ 总课时 × 提成比例。 */
-    private void settlePerLessonCommission(PtPrivateAppointmentEntity apt) {
+    /** 课程实际完成后，按核销课时数结算实际授课教练的固定课时费。 */
+    private void settleLessonFee(PtPrivateAppointmentEntity apt) {
         PtPrivateOrderEntity order = ptPrivateOrderDao.queryObject(apt.getOrderId());
-        if (order == null || !Integer.valueOf(1).equals(order.getSettlementMode())
-                || apt.getCoachId() == null || order.getLessonCount() == null || order.getLessonCount() <= 0) {
+        if (order == null || apt.getCoachId() == null) {
             return;
         }
         PtCoachFeeRuleEntity rule = sysCoachFeeRuleService.matchFeeRule(
-                apt.getCoachId(), order.getProductId(), order.getStoreId(), 2);
-        if (rule == null || rule.getCommissionRate() == null) {
+                apt.getCoachId(), order.getProductId(), order.getStoreId(), 1);
+        if (rule == null || rule.getLessonFee() == null) {
             return;
         }
-        BigDecimal paid = order.getPaidAmount() == null ? BigDecimal.ZERO : order.getPaidAmount();
-        BigDecimal refunded = order.getRefundAmount() == null ? BigDecimal.ZERO : order.getRefundAmount();
-        BigDecimal lessonBase = paid.subtract(refunded)
-                .divide(new BigDecimal(order.getLessonCount()), 2, RoundingMode.HALF_UP);
-        BigDecimal commission = lessonBase.multiply(rule.getCommissionRate())
-                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        int lessonCount = lessonOf(apt);
+        BigDecimal lessonFee = rule.getLessonFee().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalFee = lessonFee.multiply(new BigDecimal(lessonCount)).setScale(2, RoundingMode.HALF_UP);
         SysCoachTradeDetailEntity detail = new SysCoachTradeDetailEntity();
         detail.setCoachId(apt.getCoachId());
         detail.setTradeType(1);
-        detail.setMoney(commission);
-        detail.setOrigMoney(lessonBase);
-        detail.setPercent(rule.getCommissionRate().doubleValue());
+        detail.setMoney(totalFee);
+        detail.setOrigMoney(totalFee);
         detail.setTransactionNumber("PT_LESSON_" + apt.getId());
         detail.setOrderNo(order.getOrderNo());
         detail.setStatus(1);

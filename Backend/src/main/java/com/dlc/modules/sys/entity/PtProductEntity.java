@@ -23,6 +23,8 @@ public class PtProductEntity implements Serializable {
     private Long productTypeId;
     /** 服务类型：1一对一 2一对多 */
     private Integer serviceType;
+    /** 商品分类ID，关联 pt_product_category；可空表示未分类 */
+    private Long categoryId;
     private String categoryName;
     private String coverUrl;
     private String productIntro;
@@ -36,8 +38,6 @@ public class PtProductEntity implements Serializable {
     private Integer durationMinutes;
     /** 有效期天数；长期=-1 */
     private Integer validityDays;
-    /** 提成结算方式：1按次（完成课时后结算） 2包月（支付成功后结算） */
-    private Integer settlementMode;
     /** 退款方式：1支持 2不支持 3人工审核 */
     private Integer refundType;
     private String refundRule;
@@ -116,6 +116,9 @@ public class PtProductEntity implements Serializable {
     public Integer getServiceType() { return serviceType; }
     public void setServiceType(Integer serviceType) { this.serviceType = serviceType; }
 
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
 
@@ -151,9 +154,6 @@ public class PtProductEntity implements Serializable {
 
     public Integer getValidityDays() { return validityDays; }
     public void setValidityDays(Integer validityDays) { this.validityDays = validityDays; }
-
-    public Integer getSettlementMode() { return settlementMode; }
-    public void setSettlementMode(Integer settlementMode) { this.settlementMode = settlementMode; }
 
     public Integer getRefundType() { return refundType; }
     public void setRefundType(Integer refundType) { this.refundType = refundType; }

@@ -252,8 +252,8 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             throw new RRException("私教订单状态推进失败,orderNo=" + orderNo);
         }
 
-        // 包月不等上课核销：支付成功即按订单实收总金额计算销售提成。
-        settleMonthlyCommission(order, scale(wallet));
+        // 销售提成由规则类型决定：支付成功后按订单实收金额结算给销售归属教练。
+        settleSalesCommission(order, scale(wallet));
 
         // 幂等闸2:建权益,activate 内部按 order_id 查重;课时/有效期一律取订单快照,不回查商品
         memberPrivateBenefitService.activate(order.getId(), order.getMemberId(), order.getProductId(),
@@ -527,14 +527,9 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         order.setProductTypeName(product.getTypeName());
         order.setServiceType(product.getServiceType());
         order.setStoreId(storeId);
-        int settlementMode = Integer.valueOf(2).equals(product.getSettlementMode()) ? 2 : 1;
-        order.setSettlementMode(settlementMode);
-        if (settlementMode == 2) {
-            List<Long> coachIds = ptPrivateOrderDao.queryProductCoachIds(product.getId());
-            if (coachIds.size() != 1) {
-                throw new RRException("包月结算商品必须指定且只能指定一名教练");
-            }
-            // 订单记录归属教练快照，后续改商品配置不会改写既有佣金归属。
+        List<Long> coachIds = ptPrivateOrderDao.queryProductCoachIds(product.getId());
+        if (coachIds.size() == 1) {
+            // 商品只有一名指定教练时记录销售归属；多教练商品不能擅自把销售提成归给其中一人。
             order.setCoachId(coachIds.get(0));
         }
         // 课时/时长/有效期快照:激活权益(第13步)一律取订单快照,不回查商品
@@ -573,9 +568,11 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         return (amount == null ? BigDecimal.ZERO : amount).setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** 包月商品按订单实收总额计算；规则为空时不产生提成明细。 */
-    private void settleMonthlyCommission(PtPrivateOrderEntity order, BigDecimal paidAmount) {
-        if (!Integer.valueOf(2).equals(order.getSettlementMode()) || order.getCoachId() == null) {
+    /** 支付成功后匹配销售提成规则；没有唯一销售归属或规则时不产生提成明细。 */
+    private void settleSalesCommission(PtPrivateOrderEntity order, BigDecimal paidAmount) {
+        if (order.getCoachId() == null) {
+            log.warn("私教订单未绑定唯一销售归属教练，跳过销售提成 orderNo={},productId={}",
+                    order.getOrderNo(), order.getProductId());
             return;
         }
         PtCoachFeeRuleEntity rule = sysCoachFeeRuleService.matchFeeRule(
@@ -591,7 +588,7 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         detail.setMoney(commission);
         detail.setOrigMoney(paidAmount);
         detail.setPercent(rule.getCommissionRate().doubleValue());
-        detail.setTransactionNumber("PT_MONTH_" + order.getId());
+        detail.setTransactionNumber("PT_SALE_" + order.getId());
         detail.setOrderNo(order.getOrderNo());
         detail.setStatus(1);
         detail.setTransactionTime(new Date());

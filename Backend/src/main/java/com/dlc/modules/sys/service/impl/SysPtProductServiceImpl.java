@@ -34,6 +34,8 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     @Autowired
     private PtProductTypeDao ptProductTypeDao;
     @Autowired
+    private PtProductCategoryDao ptProductCategoryDao;
+    @Autowired
     private PtProductStoreRelDao ptProductStoreRelDao;
     @Autowired
     private PtProductCoachRelDao ptProductCoachRelDao;
@@ -317,17 +319,6 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     }
 
     private void validateBase(PtProductEntity e) {
-        // 历史商品未配置时按按次结算兼容；包月商品必须在商品层锁定唯一归属教练。
-        if (e.getSettlementMode() == null) {
-            e.setSettlementMode(1);
-        }
-        if (!Integer.valueOf(1).equals(e.getSettlementMode()) && !Integer.valueOf(2).equals(e.getSettlementMode())) {
-            throw new RRException("提成结算方式不合法");
-        }
-        if (Integer.valueOf(2).equals(e.getSettlementMode())
-                && (e.getCoachIds() == null || e.getCoachIds().size() != 1)) {
-            throw new RRException("包月结算商品必须指定且只能指定一名教练");
-        }
         if (StringUtils.isBlank(e.getProductName())) {
             throw new RRException("商品名称不能为空");
         }
@@ -345,6 +336,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (!Integer.valueOf(1).equals(type.getStatus())) {
             throw new RRException("商品类型已停用，不能选择");
         }
+        normalizeCategory(e);
         if (e.getServiceType() == null || (!Integer.valueOf(1).equals(e.getServiceType()) && !Integer.valueOf(2).equals(e.getServiceType()))) {
             throw new RRException("请选择服务类型");
         }
@@ -396,8 +388,26 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         }
     }
 
+    /**
+     * 分类由服务端配置决定名称，避免前端伪造或分类改名后 ID/名称不一致。
+     * 分类保持选填；未选择时同时清空 ID 和名称快照。
+     */
+    private void normalizeCategory(PtProductEntity entity) {
+        if (entity.getCategoryId() == null) {
+            entity.setCategoryName(null);
+            return;
+        }
+        PtProductCategoryEntity category = ptProductCategoryDao.queryObject(entity.getCategoryId());
+        if (category == null || Integer.valueOf(1).equals(category.getDeleted())) {
+            throw new RRException("商品分类不存在");
+        }
+        if (!Integer.valueOf(1).equals(category.getStatus())) {
+            throw new RRException("商品分类已停用，不能选择");
+        }
+        entity.setCategoryName(category.getCategoryName());
+    }
+
     private void applyDefaults(PtProductEntity e) {
-        if (e.getSettlementMode() == null) { e.setSettlementMode(1); }
         if (e.getSoldCount() == null) { e.setSoldCount(0); }
         if (e.getListingStatus() == null) { e.setListingStatus(0); }
         if (e.getSortNo() == null) { e.setSortNo(0); }
@@ -476,9 +486,6 @@ public class SysPtProductServiceImpl implements SysPtProductService {
             throw new RRException("至少需要一个适用门店，不能上架");
         }
         List<Long> coachIds = ptProductCoachRelDao.queryCoachIds(productId);
-        if (Integer.valueOf(2).equals(p.getSettlementMode()) && coachIds.size() != 1) {
-            throw new RRException("包月结算商品必须指定且只能指定一名教练，不能上架");
-        }
         if (!coachIds.isEmpty()) {
             for (Long coachId : coachIds) {
                 PtCoachEntity coach = ptCoachDao.queryObject(coachId);

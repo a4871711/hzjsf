@@ -177,14 +177,6 @@
                 <el-input v-model="form.validityDays" placeholder="天数，>0" />
               </el-form-item>
             </el-col>
-            <el-col :span="24">
-              <el-form-item label="提成结算方式" prop="settlementMode">
-                <el-radio-group v-model="form.settlementMode">
-                  <el-radio :label="1">按次结算（每节完成后，按实收单节金额计算）</el-radio>
-                  <el-radio :label="2">包月结算（支付成功后，按实收总金额计算）</el-radio>
-                </el-radio-group>
-              </el-form-item>
-            </el-col>
             <el-col :span="12">
               <el-form-item label="是否支持退款" prop="refundType">
                 <el-radio-group v-model="form.refundType">
@@ -259,10 +251,10 @@
             </el-col>
             <el-col :span="24">
               <el-form-item label="指定教练">
-                <el-select v-model="form.coachIds" multiple filterable :multiple-limit="form.settlementMode === 2 ? 1 : 0" :placeholder="form.settlementMode === 2 ? '包月结算必须选择一名教练' : '留空=不限教练（符合条件的教练都可约）'" style="width:100%;">
+                <el-select v-model="form.coachIds" multiple filterable placeholder="留空=不限教练（符合条件的教练都可约）" style="width:100%;">
                   <el-option v-for="op in coachOptions" :key="op.value" :label="op.label" :value="op.value" />
                 </el-select>
-                <span v-if="form.settlementMode === 2" class="tip">包月商品在支付成功时按实收总金额计算提成，教练归属固定为此处选择的一名。</span>
+                <span class="tip">销售提成在商品仅指定一名教练时自动归属；课时费按实际授课教练结算。</span>
               </el-form-item>
             </el-col>
             <el-col :span="24">
@@ -567,7 +559,6 @@ export default {
         durationMinutes: 60,
         validityLong: 0, // 前端辅助：0=按天数 1=长期(-1)
         validityDays: 365,
-        settlementMode: 1,
         refundType: 2,
         refundRule: '',
         visibleGroupsArr: [], // 前端辅助：提交时 join 成 visibleGroups 字符串
@@ -829,10 +820,6 @@ export default {
         }
         if (f.refundType === 1 && !f.refundRule) {
           this.$message.error('支持退款时，请填写退款规则')
-          return
-        }
-        if (f.settlementMode === 2 && (!f.coachIds || f.coachIds.length !== 1)) {
-          this.$message.error('包月结算商品必须指定且只能指定一名教练')
           return
         }
         this.submit()
