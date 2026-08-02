@@ -2,8 +2,16 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.dlc.modules.sys.dao.PtCoachFeeRuleDao">
 
+    <select id="lockCoachForUpdate" resultType="long">
+        select id from pt_coach where id = #{coachId} for update
+    </select>
+
     <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtCoachFeeRuleEntity">
         select * from pt_coach_fee_rule where id = #{value}
+    </select>
+
+    <select id="queryObjectForUpdate" resultType="com.dlc.modules.sys.entity.PtCoachFeeRuleEntity">
+        select * from pt_coach_fee_rule where id = #{id} for update
     </select>
 
     <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachFeeRuleEntity">
@@ -13,7 +21,15 @@
                   from store_address sa
                   left join store s on s.storeId = sa.storeId
                  where sa.storeAddrId = f.store_id) as storeName,
-               (select product_name from pt_product where id = f.product_id) as productName
+               (select product_name from pt_product where id = f.product_id) as productName,
+               (select count(*)
+                  from pt_coach_fee_rule other_rule
+                 where other_rule.coach_id = f.coach_id
+                   and f.status = 1
+                   and (other_rule.product_id = f.product_id or other_rule.product_id = 0 or f.product_id = 0)
+                   and (other_rule.store_id = f.store_id or other_rule.store_id = 0 or f.store_id = 0)
+                   and other_rule.rule_type &lt;&gt; f.rule_type
+                   and other_rule.status = 1) as conflictCount
         from pt_coach_fee_rule f
         <where>
             <if test="coachId != null and coachId != ''">AND f.coach_id = #{coachId}</if>
@@ -102,6 +118,15 @@
         select count(*) from pt_coach_fee_rule
         where coach_id = #{coachId} and product_id = #{productId}
           and store_id = #{storeId} and rule_type = #{ruleType}
+        <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
+    </select>
+
+    <select id="countEnabledOtherType" resultType="int">
+        select count(*) from pt_coach_fee_rule
+        where coach_id = #{coachId}
+          and (product_id = #{productId} or product_id = 0 or #{productId} = 0)
+          and (store_id = #{storeId} or store_id = 0 or #{storeId} = 0)
+          and rule_type &lt;&gt; #{ruleType} and status = 1
         <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
     </select>
 

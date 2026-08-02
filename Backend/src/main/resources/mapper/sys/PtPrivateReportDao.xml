@@ -6,8 +6,8 @@
        1) 收入确认基准=已完成预约(appointment_status=3),按 finish_at 落统计日;beginDate/endDate 必填,门店隔离 storeIds。
        2) 单次收入 = 净实收(o.paid_amount-o.refund_amount) / 订单总课时(o.lesson_count) * 本次完成课时(a.lesson_count)。
           【先算后汇总】: 逐 appointment 行算 unitIncome 再 SUM,严禁"先 SUM 金额/课时再除"(多订单口径会串味)。
-       3) 单次成本 = 命中课时费 lesson_fee * 本次完成课时;命中优先 (coach,product) 后 (coach,0),status=1 且已生效;
-          缺配 lesson_fee 视为 0 且该行进 abnormalList 异常分流。用标量子查询 LIMIT 1 保证每行仅 1 个成本值(避免 JOIN 多规则放大 SUM)。
+       3) 单次课时提成成本 = 单次收入 * 按课时提成比例;历史固定 lesson_fee 规则仍按固定金额兼容;
+          缺配按课时提成规则视为 0 且该行进 abnormalList 异常分流。用标量子查询 LIMIT 1 保证每行仅 1 个成本值。
        4) o.lesson_count>0 强约束防除零(=0 进异常列表,不进正式汇总)。
        5) 毛利=收入-成本;毛利率=毛利/收入*100,收入=0 显示 0。金额一律 ROUND(...,2)。
      跨店结算规则本期不落账:报表不按 pt_cross_store_settlement_rule 拆分门店归属(§17.1/§17.3)。
@@ -19,12 +19,16 @@
         ( (o.paid_amount - o.refund_amount) / o.lesson_count * a.lesson_count )
     </sql>
 
-    <!-- 单行成本: 命中课时费(缺配0)*本次完成课时。
+    <!-- 单行成本: 新规则按单次收入*比例，历史固定课时费按固定金额*本次课时，缺配为0。
          标量子查询按优先级排序取 1 条: 先课程精确(product_id=a.product_id 排前),再门店精确(store_id=a.store_id 排前),
          product_id/store_id 命中范围为 {精确, 0不限};effective_time<=now 或 NULL。 -->
     <sql id="RowCost">
         ( IFNULL((
-            SELECT fr.lesson_fee
+            SELECT CASE
+                     WHEN IFNULL(fr.commission_rate, 0) &gt; 0
+                       THEN <include refid="RowIncome"/> * fr.commission_rate / 100
+                     ELSE IFNULL(fr.lesson_fee, 0) * a.lesson_count
+                   END
             FROM pt_coach_fee_rule fr
             WHERE fr.coach_id = a.coach_id
               AND fr.rule_type = 1
@@ -34,7 +38,7 @@
               AND (fr.effective_time IS NULL OR fr.effective_time &lt;= NOW())
             ORDER BY (fr.product_id = a.product_id) DESC, (fr.store_id = a.store_id) DESC
             LIMIT 1
-          ), 0) * a.lesson_count )
+          ), 0) )
     </sql>
 
     <!-- 公共筛选: 已完成核销 + 统计区间(finish_at 落当天,止日含当天) + 门店隔离 + 教练/课程模糊 + 防除零 -->
@@ -258,10 +262,11 @@
         AND ( s.storeId IS NULL
               OR c.id IS NULL
               OR fr.id IS NULL
+              OR (IFNULL(fr.commission_rate, 0) &lt;= 0 AND IFNULL(fr.lesson_fee, 0) &lt;= 0)
               OR o.lesson_count &lt;= 0 )
     </sql>
 
-    <!-- 命中课时费的规则 id 判定(用于"未配课时费"标记),同 RowCost 优先级取 1 条 -->
+    <!-- 命中按课时提成规则的 id 判定，同 RowCost 优先级取 1 条。 -->
     <sql id="AbnormalFeeJoin">
         LEFT JOIN pt_coach_fee_rule fr ON fr.id = (
             SELECT fx.id
@@ -288,7 +293,10 @@
                 WHEN s.storeId IS NULL       THEN '完成记录缺少门店'
                 WHEN c.id IS NULL            THEN '完成记录缺少教练'
                 WHEN o.lesson_count &lt;= 0    THEN '订单总课时非法(无法折算收入)'
-                WHEN fr.id IS NULL           THEN '教练课时费未配置(成本按0)'
+                WHEN fr.id IS NULL           THEN '按课时提成未配置(课时成本按0)'
+                WHEN IFNULL(fr.commission_rate, 0) &lt;= 0
+                     AND IFNULL(fr.lesson_fee, 0) &lt;= 0
+                                                THEN '按课时提成比例无效(课时成本按0)'
             END                                   AS abnormalReason
         FROM pt_private_appointment a
         JOIN pt_private_order o ON o.id = a.order_id

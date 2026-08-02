@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 教练分成规则（课时费/销售提成）。路径 /sys/commission。
+ * 教练分成规则（按课时提成/整单提成）。路径 /sys/commission。
  *
  * @author claude
  */

@@ -252,8 +252,8 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             throw new RRException("私教订单状态推进失败,orderNo=" + orderNo);
         }
 
-        // 销售提成由规则类型决定：支付成功后按订单实收金额结算给销售归属教练。
-        settleSalesCommission(order, scale(wallet));
+        // 整单提成由规则类型决定：支付成功后按订单实收金额结算给订单归属教练。
+        settleWholeOrderCommission(order, scale(wallet));
 
         // 幂等闸2:建权益,activate 内部按 order_id 查重;课时/有效期一律取订单快照,不回查商品
         memberPrivateBenefitService.activate(order.getId(), order.getMemberId(), order.getProductId(),
@@ -529,7 +529,7 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         order.setStoreId(storeId);
         List<Long> coachIds = ptPrivateOrderDao.queryProductCoachIds(product.getId());
         if (coachIds.size() == 1) {
-            // 商品只有一名指定教练时记录销售归属；多教练商品不能擅自把销售提成归给其中一人。
+            // 商品只有一名指定教练时记录订单归属；多教练商品不能擅自把整单提成归给其中一人。
             order.setCoachId(coachIds.get(0));
         }
         // 课时/时长/有效期快照:激活权益(第13步)一律取订单快照,不回查商品
@@ -568,10 +568,10 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         return (amount == null ? BigDecimal.ZERO : amount).setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** 支付成功后匹配销售提成规则；没有唯一销售归属或规则时不产生提成明细。 */
-    private void settleSalesCommission(PtPrivateOrderEntity order, BigDecimal paidAmount) {
+    /** 支付成功后匹配整单提成规则；没有唯一订单归属教练或规则时不产生提成明细。 */
+    private void settleWholeOrderCommission(PtPrivateOrderEntity order, BigDecimal paidAmount) {
         if (order.getCoachId() == null) {
-            log.warn("私教订单未绑定唯一销售归属教练，跳过销售提成 orderNo={},productId={}",
+            log.warn("私教订单未绑定唯一归属教练，跳过整单提成 orderNo={},productId={}",
                     order.getOrderNo(), order.getProductId());
             return;
         }

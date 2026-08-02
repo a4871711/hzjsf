@@ -20,11 +20,11 @@ public class PtCoachFeeRuleEntity implements Serializable {
     /** 适用门店ID，0=全部门店 */
     private Long storeId;
     private String ruleName;
-    /** 规则类型：1课时费 2销售提成 */
+    /** 提成方式：1按课时提成 2整单提成 */
     private Integer ruleType;
-    /** 单次课时费（rule_type=1） */
+    /** 历史固定课时费兼容字段；新规则统一写0 */
     private BigDecimal lessonFee;
-    /** 销售提成比例%（rule_type=2） */
+    /** 提成比例%，两种提成方式均必填 */
     private BigDecimal commissionRate;
     /** 生效时间，NULL=立即生效 */
     private Date effectiveTime;
@@ -45,6 +45,8 @@ public class PtCoachFeeRuleEntity implements Serializable {
     private String storeName;
     /** 非持久字段：列表展示用课程名 */
     private String productName;
+    /** 非持久字段：同一作用域内已启用的另一种提成方式数量 */
+    private Integer conflictCount;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -102,4 +104,7 @@ public class PtCoachFeeRuleEntity implements Serializable {
 
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }
+
+    public Integer getConflictCount() { return conflictCount; }
+    public void setConflictCount(Integer conflictCount) { this.conflictCount = conflictCount; }
 }

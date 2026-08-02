@@ -1,5 +1,5 @@
 -- =====================================================================
--- 私教 · 商品域后台菜单(类型/商品/附赠团课)
+-- 私教 · 商品域后台菜单(类型/分类/商品/附赠团课)
 -- 依据《失历健身私教管理后台_详细实现文档》总则 §0.5 菜单与按钮权限总表
 -- 仿 sys_menu_vip.sql：父目录 NOT EXISTS 只建一次；菜单按 url 防重；perms 平铺该页全部按钮权限
 -- 铁律：① url 必须指向真实 vue 路径(modules/sys/xxx.html)否则前端动态路由不注册
@@ -22,19 +22,32 @@ SELECT t.menu_id, '商品类型管理', 'modules/sys/ptProductType.html',
 FROM (SELECT menu_id FROM sys_menu WHERE name='私教管理' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/ptProductType.html');
 
--- 3) 「私教商品」菜单 → 前端 views/modules/sys/ptProduct.vue；perms 平铺 5 个按钮
+-- 3) 「商品分类管理」菜单 → 前端 views/modules/sys/ptProductCategory.vue；perms 平铺 6 个按钮
+INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
+SELECT t.menu_id, '商品分类管理', 'modules/sys/ptProductCategory.html',
+       'sys:ptproductcategory:list,sys:ptproductcategory:info,sys:ptproductcategory:save,sys:ptproductcategory:update,sys:ptproductcategory:delete,sys:ptproductcategory:updateStatus',
+       1, 'fa fa-list-alt', 6
+FROM (SELECT menu_id FROM sys_menu WHERE name='私教管理' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/ptProductCategory.html');
+
+-- 4) 「私教商品」菜单 → 前端 views/modules/sys/ptProduct.vue；perms 平铺 5 个按钮
 INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
 SELECT t.menu_id, '私教商品', 'modules/sys/ptProduct.html',
        'sys:ptproduct:list,sys:ptproduct:info,sys:ptproduct:save,sys:ptproduct:update,sys:ptproduct:delete',
-       1, 'fa fa-cube', 6
+       1, 'fa fa-cube', 7
 FROM (SELECT menu_id FROM sys_menu WHERE name='私教管理' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/ptProduct.html');
 
--- 4) 「附赠团课权益」菜单 → 前端 views/modules/sys/ptMemberGroupBenefit.vue；perms 平铺 2 个按钮
+-- 5) 「附赠团课权益」菜单 → 前端 views/modules/sys/ptMemberGroupBenefit.vue；perms 平铺 2 个按钮
 INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
 SELECT t.menu_id, '附赠团课权益', 'modules/sys/ptMemberGroupBenefit.html',
        'sys:ptmembergroupbenefit:list,sys:ptmembergroupbenefit:info',
-       1, 'fa fa-gift', 7
+       1, 'fa fa-gift', 8
 FROM (SELECT menu_id FROM sys_menu WHERE name='私教管理' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/ptMemberGroupBenefit.html');
 
+-- 已存在菜单同步排序，保证分类管理位于类型管理和私教商品之间。
+UPDATE sys_menu SET order_num = 5 WHERE url = 'modules/sys/ptProductType.html';
+UPDATE sys_menu SET order_num = 6 WHERE url = 'modules/sys/ptProductCategory.html';
+UPDATE sys_menu SET order_num = 7 WHERE url = 'modules/sys/ptProduct.html';
+UPDATE sys_menu SET order_num = 8 WHERE url = 'modules/sys/ptMemberGroupBenefit.html';

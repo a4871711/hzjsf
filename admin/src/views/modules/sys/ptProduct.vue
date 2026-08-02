@@ -71,8 +71,10 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="商品分类" prop="categoryName">
-                <el-input v-model="form.categoryName" placeholder="增肌/减脂/塑形/康复/综合训练等" />
+              <el-form-item label="商品分类" prop="categoryId">
+                <el-select v-model="form.categoryId" placeholder="请选择商品分类" clearable filterable style="width:100%;">
+                  <el-option v-for="op in categoryOptions" :key="op.value" :label="op.label" :value="op.value" />
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -398,6 +400,7 @@ export default {
       selection: [],
       // 下拉数据源
       typeOptions: [],
+      categoryOptions: [],
       storeOptions: [],
       coachOptions: [],
       groupClassOptions: [],
@@ -533,9 +536,14 @@ export default {
   mounted () {
     this.getData()
     this.getTypeOptions()
+    this.getCategoryOptions()
     this.getStoreList()
     this.getCoachList()
     this.getGroupClassList()
+  },
+  activated () {
+    // 从分类管理页切回商品页时刷新下拉，无需整页刷新。
+    this.getCategoryOptions()
   },
   methods: {
     // 表单初始值（product_no/sold_count 后端维护，不入表单）
@@ -546,6 +554,7 @@ export default {
         productSubtitle: '',
         productTypeId: '',
         serviceType: 1,
+        categoryId: '',
         categoryName: '',
         coverUrl: '',
         productIntro: '',
@@ -662,6 +671,13 @@ export default {
       this.typeMap = map
       this.typeOptions = opts
       this.searchForm[this.searchIndex(this.searchForm, '商品类型')].options = opts
+    },
+    async getCategoryOptions () {
+      var res = await this.apis.ptProductCategory_options()
+      var list = res.list || []
+      this.categoryOptions = list.map(function (item) {
+        return { value: item.id, label: item.categoryName }
+      })
     },
     async getStoreList () {
       var res = await this.apis.store_list({ page: 1, limit: 999 })

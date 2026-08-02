@@ -7,7 +7,7 @@ import java.util.Map;
 
 /**
  * 私教收入报表 Service（第23步 §19，纯只读聚合查询）。
- * 口径见 mapper/sys/PtPrivateReportDao.xml：先按 appointment 行算单次收入再 SUM；成本命中课时费规则缺配=0 进异常分流。
+ * 口径见 mapper/sys/PtPrivateReportDao.xml：先按 appointment 行算单次收入再 SUM；课时成本按提成比例计算，缺配=0 进异常分流。
  * beginDate/endDate 必填，门店隔离由 controller 传入 storeIds。
  *
  * @author claude

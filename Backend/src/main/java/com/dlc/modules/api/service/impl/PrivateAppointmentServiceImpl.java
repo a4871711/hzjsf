@@ -175,28 +175,46 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         }
         // 冻结转已用(第11步,同事务)
         memberPrivateBenefitService.finish(apt.getBenefitId(), lessonOf(apt));
-        settleLessonFee(apt);
+        settlePerLessonCommission(apt);
     }
 
-    /** 课程实际完成后，按核销课时数结算实际授课教练的固定课时费。 */
-    private void settleLessonFee(PtPrivateAppointmentEntity apt) {
+    /** 课程实际完成后，按“订单净实收/总课时×本次课时×提成比例”结算实际授课教练。 */
+    private void settlePerLessonCommission(PtPrivateAppointmentEntity apt) {
         PtPrivateOrderEntity order = ptPrivateOrderDao.queryObject(apt.getOrderId());
-        if (order == null || apt.getCoachId() == null) {
+        if (order == null || apt.getCoachId() == null
+                || order.getLessonCount() == null || order.getLessonCount() <= 0) {
             return;
         }
         PtCoachFeeRuleEntity rule = sysCoachFeeRuleService.matchFeeRule(
                 apt.getCoachId(), order.getProductId(), order.getStoreId(), 1);
-        if (rule == null || rule.getLessonFee() == null) {
+        if (rule == null) {
             return;
         }
         int lessonCount = lessonOf(apt);
-        BigDecimal lessonFee = rule.getLessonFee().setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalFee = lessonFee.multiply(new BigDecimal(lessonCount)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal paidAmount = order.getPaidAmount() == null ? BigDecimal.ZERO : order.getPaidAmount();
+        BigDecimal refundAmount = order.getRefundAmount() == null ? BigDecimal.ZERO : order.getRefundAmount();
+        BigDecimal lessonIncome = paidAmount.subtract(refundAmount)
+                .divide(new BigDecimal(order.getLessonCount()), 8, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal(lessonCount));
+        BigDecimal commission;
+        Double percent = null;
+        if (rule.getCommissionRate() != null && rule.getCommissionRate().compareTo(BigDecimal.ZERO) > 0) {
+            commission = lessonIncome.multiply(rule.getCommissionRate())
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            percent = rule.getCommissionRate().doubleValue();
+        } else if (rule.getLessonFee() != null && rule.getLessonFee().compareTo(BigDecimal.ZERO) > 0) {
+            // 历史固定课时费规则继续可结算，编辑后会转为新的百分比规则。
+            commission = rule.getLessonFee().multiply(new BigDecimal(lessonCount))
+                    .setScale(2, RoundingMode.HALF_UP);
+        } else {
+            return;
+        }
         SysCoachTradeDetailEntity detail = new SysCoachTradeDetailEntity();
         detail.setCoachId(apt.getCoachId());
         detail.setTradeType(1);
-        detail.setMoney(totalFee);
-        detail.setOrigMoney(totalFee);
+        detail.setMoney(commission);
+        detail.setOrigMoney(lessonIncome.setScale(2, RoundingMode.HALF_UP));
+        detail.setPercent(percent);
         detail.setTransactionNumber("PT_LESSON_" + apt.getId());
         detail.setOrderNo(order.getOrderNo());
         detail.setStatus(1);

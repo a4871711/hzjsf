@@ -33,12 +33,12 @@ export default {
       searchForm: [
         { type: 'input', placeholder: '教练姓名', prop: 'coachName', width: 160 },
         { type: 'select',
-          placeholder: '规则类型',
+          placeholder: '提成方式',
           prop: 'ruleType',
           width: 150,
           options: [
-          { value: 1, label: '课时费' },
-          { value: 2, label: '销售提成' }
+          { value: 1, label: '按课时提成' },
+          { value: 2, label: '整单提成' }
           ] },
         { type: 'select', placeholder: '适用门店', prop: 'storeId', width: 180, options: [] },
         { type: 'select',
@@ -64,8 +64,8 @@ export default {
         { label: '教练', prop: 'coachName', width: 100, formatter: e => e.coachName || this.coachMap[e.coachId] || ('#' + e.coachId) },
         { label: '适用门店', prop: 'storeId', width: 130, formatter: e => e.storeId ? (e.storeName || this.storeMap[e.storeId] || ('#' + e.storeId)) : '全部门店' },
         { label: '适用课程', prop: 'productId', width: 140, formatter: e => e.productId ? (e.productName || this.productMap[e.productId] || ('#' + e.productId)) : '全部课程' },
-        { label: '规则类型', type: 'tag', width: 100, prop: 'ruleType', theme: (row) => row.ruleType === 1 ? '' : 'warning', formatter: e => e.ruleType === 1 ? '课时费' : '销售提成' },
-        { label: '金额/比例', prop: 'lessonFee', width: 120, formatter: e => this.amountText(e) },
+        { label: '提成方式', type: 'tag', width: 180, prop: 'ruleType', theme: (row) => row.ruleType === 1 ? '' : 'warning', formatter: e => this.ruleTypeText(e) },
+        { label: '提成比例', prop: 'commissionRate', width: 160, formatter: e => this.amountText(e) },
         { label: '生效时间', prop: 'effectiveTime', width: 160, formatter: e => e.effectiveTime ? this.parseTime(e.effectiveTime) : '立即生效' },
         {
           label: '状态',
@@ -95,15 +95,13 @@ export default {
         { type: 'select', label: '适用门店', width: 320, prop: 'storeIds', multiple: true, options: [], placeholder: '留空=全部门店' },
         { type: 'select', label: '适用课程', width: 320, prop: 'productIds', multiple: true, options: [], placeholder: '留空=全部课程' },
         { type: 'radio',
-          label: '规则类型',
+          label: '提成方式',
           prop: 'ruleType',
           radios: [
-          { value: 1, label: '课时费' },
-          { value: 2, label: '销售提成' }
-          ],
-          change: () => this.onRuleTypeChange() },
-        { type: 'input', label: '单次课时费（元）', width: 320, prop: 'lessonFee', isShow: () => this.formData.ruleType === 1 },
-        { type: 'input', label: '销售提成比例（%）', width: 320, prop: 'commissionRate', isShow: () => this.formData.ruleType === 2, placeholder: '0-100' },
+          { value: 1, label: '按课时提成' },
+          { value: 2, label: '整单提成' }
+          ] },
+        { type: 'input', label: '提成比例（%）', width: 320, prop: 'commissionRate', placeholder: '请输入 0-100 之间的数字' },
         { type: 'dateTime', label: '生效时间', width: 320, prop: 'effectiveTime', placeholder: '留空=立即生效' },
         { type: 'radio',
           label: '规则状态',
@@ -121,7 +119,7 @@ export default {
           { required: true, message: '请选择教练', trigger: 'change' }
         ],
         ruleType: [
-          { required: true, message: '请选择规则类型', trigger: 'change' }
+          { required: true, message: '请选择提成方式', trigger: 'change' }
         ]
       },
       formHandle: [
@@ -151,10 +149,18 @@ export default {
       }
     },
     amountText (row) {
-      if (row.ruleType === 1) {
-        return '¥' + (row.lessonFee != null ? row.lessonFee : 0) + '/节'
+      if (row.commissionRate != null && Number(row.commissionRate) > 0) {
+        return row.commissionRate + '%'
       }
-      return (row.commissionRate != null ? row.commissionRate : 0) + '% 提成'
+      // 兼容历史固定课时费数据；编辑保存后会转换为百分比规则。
+      if (row.ruleType === 1 && row.lessonFee != null && Number(row.lessonFee) > 0) {
+        return '历史固定 ¥' + row.lessonFee + '/节（待改比例）'
+      }
+      return '待配置'
+    },
+    ruleTypeText (row) {
+      var text = row.ruleType === 1 ? '按课时提成' : '整单提成'
+      return Number(row.conflictCount) > 0 ? text + '（冲突，请停用一种）' : text
     },
     async getData () {
       this.tableLoading = true
@@ -213,14 +219,6 @@ export default {
       this.productMap = productMap
       this.formCols[this.labIndex(this.formCols, '适用课程')].options = productOpts
     },
-    onRuleTypeChange () {
-      // 切类型时清掉另一类型的值，避免残留提交
-      if (this.formData.ruleType === 1) {
-        this.formData.commissionRate = ''
-      } else {
-        this.formData.lessonFee = ''
-      }
-    },
     openAdd () {
       this.formData = this.blankForm()
       this.elFormVisible()
@@ -240,17 +238,10 @@ export default {
     elFormSubmit () {
       this.$refs.elForm.$refs.ruleForm.validate((valid) => {
         if (!valid) return
-        if (this.formData.ruleType === 1) {
-          if (this.formData.lessonFee === '' || Number(this.formData.lessonFee) <= 0) {
-            this.$message.error('课时费必须大于 0')
-            return
-          }
-        } else {
-          var rate = Number(this.formData.commissionRate)
-          if (this.formData.commissionRate === '' || rate <= 0 || rate > 100) {
-            this.$message.error('销售提成比例需在 0-100 之间')
-            return
-          }
+        var rate = Number(this.formData.commissionRate)
+        if (this.formData.commissionRate === '' || rate <= 0 || rate > 100) {
+          this.$message.error('提成比例需在 0-100 之间')
+          return
         }
         var message = this.formData.id
           ? '确定保存当前单条分成规则的修改？'
@@ -274,13 +265,8 @@ export default {
         data.storeId = data.storeIds.length ? data.storeIds[0] : 0
         data.productId = data.productIds.length ? data.productIds[0] : 0
       }
-      if (data.ruleType === 1) {
-        data.lessonFee = Number(data.lessonFee)
-        data.commissionRate = null
-      } else {
-        data.commissionRate = Number(data.commissionRate)
-        data.lessonFee = 0
-      }
+      data.commissionRate = Number(data.commissionRate)
+      data.lessonFee = 0
       if (!data.effectiveTime) data.effectiveTime = null
       try {
         var res = !data.id

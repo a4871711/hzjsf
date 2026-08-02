@@ -1,6 +1,6 @@
 -- =====================================================================
--- 私教 · 商品域建表(类型/商品/门店/教练/分期规则/附赠团课)
--- pt_product_type(+4类初始化), pt_product(+推荐位列), 关联表, pt_installment_rule(分期规则建表归此), 附赠团课规则与会员权益
+-- 私教 · 商品域建表(类型/分类/商品/门店/教练/分期规则/附赠团课)
+-- pt_product_type、pt_product_category、pt_product、关联表、分期规则、附赠团课规则与会员权益
 -- 依据《私教需求文档》第21节 DDL + 《失历健身私教管理后台_详细实现文档》总则0.4/各域§2
 -- 字符集 utf8mb4；标 -- 【补充】 的列/索引为需求DDL未给、实现所需(评审项)
 -- 可在开发库执行(需确认非生产)
@@ -28,6 +28,29 @@ INSERT INTO `pt_product_type` (`id`, `type_name`, `sort_no`, `status`) VALUES
 (3, '包月服务', 80, 1),
 (4, '团课', 70, 1);
 
+CREATE TABLE `pt_product_category` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `category_name` VARCHAR(50) NOT NULL COMMENT '分类名称，例如增肌、减脂、塑形、康复',
+  `sort_no` INT NOT NULL DEFAULT 0 COMMENT '排序权重',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0停用 1启用',
+  `created_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '创建人ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人ID',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0否 1是',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pt_product_category_name_deleted` (`category_name`, `deleted`),
+  KEY `idx_pt_product_category_status` (`status`),
+  KEY `idx_pt_product_category_sort` (`sort_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='私教商品分类表';
+
+INSERT INTO `pt_product_category` (`category_name`, `sort_no`, `status`) VALUES
+('增肌', 100, 1),
+('减脂', 90, 1),
+('塑形', 80, 1),
+('康复', 70, 1),
+('综合训练', 60, 1);
+
 CREATE TABLE `pt_product` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `product_no` VARCHAR(32) NOT NULL COMMENT '商品编号，例如 SJ202606020001',
@@ -35,6 +58,7 @@ CREATE TABLE `pt_product` (
   `product_subtitle` VARCHAR(100) DEFAULT NULL COMMENT '商品副标题',
   `product_type_id` BIGINT UNSIGNED NOT NULL COMMENT '商品类型ID，关联pt_product_type',
   `service_type` TINYINT NOT NULL DEFAULT 1 COMMENT '服务类型：1一对一 2一对多',
+  `category_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '商品分类ID，关联pt_product_category',
   `category_name` VARCHAR(50) DEFAULT NULL COMMENT '商品分类名称',
   `cover_url` VARCHAR(255) DEFAULT NULL COMMENT '商品封面图',
   `product_intro` VARCHAR(255) DEFAULT NULL COMMENT '商品简介',
@@ -74,6 +98,7 @@ CREATE TABLE `pt_product` (
   UNIQUE KEY `uk_pt_product_no` (`product_no`),
   KEY `idx_pt_product_name` (`product_name`),
   KEY `idx_pt_product_type_id` (`product_type_id`),
+  KEY `idx_pt_product_category_id` (`category_id`),
   KEY `idx_pt_product_listing_status` (`listing_status`),
   KEY `idx_pt_product_sort` (`sort_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='私教商品主表';

@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 /**
  * 私教收入报表 · 明细行 VO（一行=一次已完成核销，第23步 §19）。
  * unitIncome = 净实收(paid-refund) ÷ 订单总课时 × 本次完成课时（按 appointment 行先算，不先汇总）。
- * unitCost = 命中课时费(缺配0) × 本次完成课时；unitGross = unitIncome - unitCost。
+ * unitCost = unitIncome × 按课时提成比例（历史固定课时费兼容）；unitGross = unitIncome - unitCost。
  *
  * @author claude
  */

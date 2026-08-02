@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 /**
  * 私教收入报表 · 顶部汇总卡片 VO（第23步 §19）。
  * 口径：按已完成预约 finish_at 落统计日；单次收入=净实收÷订单总课时×本次完成课时（按行先算再 SUM）；
- * 成本命中 pt_coach_fee_rule(rule_type=1，先(coach,product)后(coach,0)) 缺配=0；毛利率 income=0 显示 0。
+ * 课时成本命中 pt_coach_fee_rule(rule_type=1) 后按单次收入×比例计算，历史固定课时费兼容，缺配=0。
  *
  * @author claude
  */
@@ -17,7 +17,7 @@ public class PrivateReportSummaryVo implements Serializable {
     private Long totalLessons;
     /** 收入金额（净实收按行折算后 SUM） */
     private BigDecimal income;
-    /** 课时成本（命中课时费×本次完成课时后 SUM，缺配按0） */
+    /** 课时成本（单次收入×按课时提成比例后 SUM，历史固定课时费兼容，缺配按0） */
     private BigDecimal cost;
     /** 毛利 = income - cost */
     private BigDecimal grossProfit;

@@ -46,6 +46,8 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
         if (entity.getCoachId() == null) {
             throw new RRException("请选择教练");
         }
+        // 同一教练的规则写入串行化，避免两种提成方式并发通过“先查再存”。
+        ptCoachFeeRuleDao.lockCoachForUpdate(entity.getCoachId());
         // 门店×课程 笛卡尔展开（空集合 = 不限 = 0）
         List<Long> storeIds = (entity.getStoreIds() == null || entity.getStoreIds().isEmpty())
                 ? singletonZero() : entity.getStoreIds();
@@ -59,6 +61,10 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
                 if (ptCoachFeeRuleDao.countByUk(entity.getCoachId(), pid, sid, entity.getRuleType(), null) > 0) {
                     throw new RRException("规则已存在（教练+门店+课程+类型重复）");
                 }
+                Integer status = entity.getStatus() == null ? 1 : entity.getStatus();
+                if (Integer.valueOf(1).equals(status)) {
+                    ensureOnlyOneEnabledType(entity.getCoachId(), pid, sid, entity.getRuleType(), null);
+                }
                 PtCoachFeeRuleEntity row = new PtCoachFeeRuleEntity();
                 row.setCoachId(entity.getCoachId());
                 row.setProductId(pid);
@@ -68,7 +74,7 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
                 row.setLessonFee(entity.getLessonFee());
                 row.setCommissionRate(entity.getCommissionRate());
                 row.setEffectiveTime(entity.getEffectiveTime());
-                row.setStatus(entity.getStatus() == null ? 1 : entity.getStatus());
+                row.setStatus(status);
                 row.setCreatedBy(entity.getCreatedBy());
                 row.setUpdatedBy(entity.getCreatedBy());
                 row.setCreatedAt(now);
@@ -83,7 +89,7 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
         if (entity.getId() == null) {
             throw new RRException("缺少参数：id");
         }
-        PtCoachFeeRuleEntity old = ptCoachFeeRuleDao.queryObject(entity.getId());
+        PtCoachFeeRuleEntity old = ptCoachFeeRuleDao.queryObjectForUpdate(entity.getId());
         if (old == null) {
             throw new RRException("规则不存在");
         }
@@ -92,11 +98,22 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
         Long coachId = entity.getCoachId() != null ? entity.getCoachId() : old.getCoachId();
         Long storeId = entity.getStoreId() != null ? entity.getStoreId() : old.getStoreId();
         Long productId = entity.getProductId() != null ? entity.getProductId() : old.getProductId();
+        Integer status = entity.getStatus() != null ? entity.getStatus() : old.getStatus();
+        lockCoachScope(old.getCoachId(), coachId);
         entity.setRuleType(ruleType);
         entity.setCoachId(coachId);
+        entity.setStoreId(storeId);
+        entity.setProductId(productId);
+        entity.setStatus(status);
+        if (entity.getRuleName() == null) {
+            entity.setRuleName(old.getRuleName());
+        }
         validateType(entity);
         if (ptCoachFeeRuleDao.countByUk(coachId, productId, storeId, ruleType, entity.getId()) > 0) {
             throw new RRException("规则已存在（教练+门店+课程+类型重复）");
+        }
+        if (Integer.valueOf(1).equals(status)) {
+            ensureOnlyOneEnabledType(coachId, productId, storeId, ruleType, entity.getId());
         }
         entity.setUpdatedAt(new Date());
         ptCoachFeeRuleDao.update(entity);
@@ -112,8 +129,14 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
         if (id == null || (status == null || (status != 0 && status != 1))) {
             throw new RRException("规则状态非法");
         }
-        if (ptCoachFeeRuleDao.queryObject(id) == null) {
+        PtCoachFeeRuleEntity old = ptCoachFeeRuleDao.queryObjectForUpdate(id);
+        if (old == null) {
             throw new RRException("规则不存在");
+        }
+        ptCoachFeeRuleDao.lockCoachForUpdate(old.getCoachId());
+        if (Integer.valueOf(1).equals(status)) {
+            ensureOnlyOneEnabledType(old.getCoachId(), old.getProductId(), old.getStoreId(),
+                    old.getRuleType(), old.getId());
         }
         PtCoachFeeRuleEntity u = new PtCoachFeeRuleEntity();
         u.setId(id);
@@ -156,19 +179,42 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
         if (e.getRuleType() == null) {
             throw new RRException("请选择规则类型");
         }
-        if (Integer.valueOf(1).equals(e.getRuleType())) {
-            if (e.getLessonFee() == null || e.getLessonFee().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new RRException("课时费规则的单次课时费必须大于0");
-            }
-        } else if (Integer.valueOf(2).equals(e.getRuleType())) {
-            if (e.getCommissionRate() == null
-                    || e.getCommissionRate().compareTo(BigDecimal.ZERO) <= 0
-                    || e.getCommissionRate().compareTo(new BigDecimal("100")) > 0) {
-                throw new RRException("销售提成比例必须在 (0,100] 之间");
-            }
-        } else {
+        if (!Integer.valueOf(1).equals(e.getRuleType()) && !Integer.valueOf(2).equals(e.getRuleType())) {
             throw new RRException("规则类型非法");
         }
+        if (e.getCommissionRate() == null
+                || e.getCommissionRate().compareTo(BigDecimal.ZERO) <= 0
+                || e.getCommissionRate().compareTo(new BigDecimal("100")) > 0) {
+            throw new RRException("提成比例必须在 (0,100] 之间");
+        }
+        // 新规则统一按比例结算，固定课时费字段仅保留用于读取历史数据。
+        e.setLessonFee(BigDecimal.ZERO);
+    }
+
+    private void ensureOnlyOneEnabledType(Long coachId, Long productId, Long storeId,
+                                          Integer ruleType, Long excludeId) {
+        if (ptCoachFeeRuleDao.countEnabledOtherType(coachId, productId, storeId, ruleType, excludeId) > 0) {
+            throw new RRException("同一教练下作用范围重叠的门店和课程只能启用一种提成方式");
+        }
+    }
+
+    /** 按ID顺序锁定涉及的教练行，避免规则迁移教练时出现交叉死锁。 */
+    private void lockCoachScope(Long oldCoachId, Long newCoachId) {
+        if (oldCoachId == null && newCoachId == null) {
+            return;
+        }
+        if (oldCoachId == null || oldCoachId.equals(newCoachId)) {
+            ptCoachFeeRuleDao.lockCoachForUpdate(newCoachId);
+            return;
+        }
+        if (newCoachId == null) {
+            ptCoachFeeRuleDao.lockCoachForUpdate(oldCoachId);
+            return;
+        }
+        Long first = oldCoachId < newCoachId ? oldCoachId : newCoachId;
+        Long second = oldCoachId < newCoachId ? newCoachId : oldCoachId;
+        ptCoachFeeRuleDao.lockCoachForUpdate(first);
+        ptCoachFeeRuleDao.lockCoachForUpdate(second);
     }
 
     private List<Long> singletonZero() {

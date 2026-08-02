@@ -31,7 +31,7 @@
 
     <!-- 口径说明 -->
     <div class="pr-caliber">
-      口径说明：收入 = 净实收 ÷ 订单总课时 × 完成课时；成本 = 教练课时费；预约完成即核销（按完成日期统计）。
+      口径说明：收入 = 净实收 ÷ 订单总课时 × 完成课时；课时成本 = 单次收入 × 按课时提成比例；预约完成即核销（按完成日期统计）。
     </div>
 
     <!-- 统计卡片 -->
@@ -99,7 +99,7 @@
       </el-tab-pane>
 
       <el-tab-pane label="异常数据" name="abnormal">
-        <div class="pr-caliber">异常数据：完成核销行中缺门店 / 缺教练 / 未配课时费(成本按0)，不计入正式汇总。</div>
+        <div class="pr-caliber">异常数据：完成核销行中缺门店 / 缺教练 / 未配按课时提成(课时成本按0)，不计入正式汇总。</div>
         <r-table :isSelection="false" :isHandle="false" :isPagination="true"
           :tableData="tableData" :tableCols="abnormalCols" :tablePage="pagination" :loading="tableLoading" @refresh="pageTable" />
       </el-tab-pane>

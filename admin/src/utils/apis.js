@@ -1224,6 +1224,67 @@ export default {
 		});
 	},
 
+	// 私教商品分类-列表
+	ptProductCategory_list(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptProductCategory/list'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+	// 私教商品分类-详情({id})
+	ptProductCategory_info(data) {
+		return $http({
+			url: $http.adornUrl(`/sys/ptProductCategory/info/${data.id}`),
+			method: 'get',
+			params: $http.adornParams({})
+		});
+	},
+	// 私教商品分类-新增
+	ptProductCategory_save(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptProductCategory/save'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({ ...data }, false, 'json')
+		});
+	},
+	// 私教商品分类-修改
+	ptProductCategory_update(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptProductCategory/update'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({ ...data }, false, 'json')
+		});
+	},
+	// 私教商品分类-删除(ids 数组)
+	ptProductCategory_delete(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptProductCategory/delete'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData(data, false, 'json')
+		});
+	},
+	// 私教商品分类-启用/停用({id,status})
+	ptProductCategory_updateStatus(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptProductCategory/updateStatus'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({ ...data }, false, 'json')
+		});
+	},
+	// 私教商品分类-启用下拉项
+	ptProductCategory_options(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptProductCategory/options'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+
 	// 私教商品-列表
 	ptProduct_list(data) {
 		return $http({
