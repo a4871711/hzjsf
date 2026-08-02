@@ -34,4 +34,24 @@ public interface SysPrivateAppointmentDao {
 
     /** 教练是否在管辖门店范围内(coachBook 前越权校验):storeIds 空=超管放行 */
     int countCoachInScope(@Param("coachId") Long coachId, @Param("storeIds") String storeIds);
+
+    /** 代预约教练候选:按姓名/手机号/ID搜索,且只返回启用及管辖门店内的教练 */
+    List<Map<String, Object>> queryCoachOptions(@Param("keyword") String keyword,
+                                                @Param("storeIds") String storeIds);
+
+    /**
+     * 代预约会员候选:按姓名/手机号/ID搜索,按管理员门店隔离;
+     * 选择教练后再收窄到该教练所属门店。
+     */
+    List<Map<String, Object>> queryMemberOptions(@Param("keyword") String keyword,
+                                                 @Param("storeIds") String storeIds,
+                                                 @Param("coachId") Long coachId);
+
+    /**
+     * 代预约商品候选:教练、商品门店、教练排班取交集;
+     * memberId 非空时再限定会员当前门店及可用权益。
+     */
+    List<Map<String, Object>> queryProductOptions(@Param("coachId") Long coachId,
+                                                  @Param("memberId") Long memberId,
+                                                  @Param("storeIds") String storeIds);
 }

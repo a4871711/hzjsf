@@ -1,5 +1,7 @@
 package com.dlc.modules.sys.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.dlc.common.exception.RRException;
 import com.dlc.modules.api.dao.PtMemberPrivateBenefitDao;
 import com.dlc.modules.api.dao.PtPrivateOrderDao;
@@ -73,6 +75,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
 
     @Override
     public void save(PtProductEntity entity) {
+        normalizeVisibleGroups(entity, false);
         validateBase(entity);
         applyDefaults(entity);
         Date now = new Date();
@@ -108,6 +111,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (old == null || Integer.valueOf(1).equals(old.getDeleted())) {
             throw new RRException("商品不存在");
         }
+        normalizeVisibleGroups(entity, true);
         validateBase(entity);
         applyDefaults(entity);
         Date now = new Date();
@@ -313,6 +317,17 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     }
 
     private void validateBase(PtProductEntity e) {
+        // 历史商品未配置时按按次结算兼容；包月商品必须在商品层锁定唯一归属教练。
+        if (e.getSettlementMode() == null) {
+            e.setSettlementMode(1);
+        }
+        if (!Integer.valueOf(1).equals(e.getSettlementMode()) && !Integer.valueOf(2).equals(e.getSettlementMode())) {
+            throw new RRException("提成结算方式不合法");
+        }
+        if (Integer.valueOf(2).equals(e.getSettlementMode())
+                && (e.getCoachIds() == null || e.getCoachIds().size() != 1)) {
+            throw new RRException("包月结算商品必须指定且只能指定一名教练");
+        }
         if (StringUtils.isBlank(e.getProductName())) {
             throw new RRException("商品名称不能为空");
         }
@@ -382,6 +397,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     }
 
     private void applyDefaults(PtProductEntity e) {
+        if (e.getSettlementMode() == null) { e.setSettlementMode(1); }
         if (e.getSoldCount() == null) { e.setSoldCount(0); }
         if (e.getListingStatus() == null) { e.setListingStatus(0); }
         if (e.getSortNo() == null) { e.setSortNo(0); }
@@ -399,6 +415,35 @@ public class SysPtProductServiceImpl implements SysPtProductService {
             e.setBookingCapacity(1);
         } else if (e.getBookingCapacity() == null || e.getBookingCapacity() < 1) {
             e.setBookingCapacity(1);
+        }
+    }
+
+    /**
+     * visible_groups 是 MySQL JSON 字段，统一保存为 JSON 数组字符串。
+     * 新增未选择人群时写入 []；编辑请求未携带该字段时保持原值，避免部分更新误清空。
+     */
+    private void normalizeVisibleGroups(PtProductEntity entity, boolean keepNullOnUpdate) {
+        String visibleGroups = entity.getVisibleGroups();
+        if (visibleGroups == null) {
+            if (!keepNullOnUpdate) {
+                entity.setVisibleGroups("[]");
+            }
+            return;
+        }
+        if (StringUtils.isBlank(visibleGroups)) {
+            entity.setVisibleGroups("[]");
+            return;
+        }
+        try {
+            JSONArray groups = JSON.parseArray(visibleGroups);
+            if (groups == null) {
+                throw new RRException("可见人群格式不正确");
+            }
+            entity.setVisibleGroups(groups.toJSONString());
+        } catch (RRException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RRException("可见人群格式不正确");
         }
     }
 
@@ -431,6 +476,9 @@ public class SysPtProductServiceImpl implements SysPtProductService {
             throw new RRException("至少需要一个适用门店，不能上架");
         }
         List<Long> coachIds = ptProductCoachRelDao.queryCoachIds(productId);
+        if (Integer.valueOf(2).equals(p.getSettlementMode()) && coachIds.size() != 1) {
+            throw new RRException("包月结算商品必须指定且只能指定一名教练，不能上架");
+        }
         if (!coachIds.isEmpty()) {
             for (Long coachId : coachIds) {
                 PtCoachEntity coach = ptCoachDao.queryObject(coachId);

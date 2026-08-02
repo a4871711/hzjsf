@@ -1,5 +1,7 @@
 package com.dlc.modules.sys.controller;
 
+import com.dlc.common.exception.RRException;
+import com.dlc.common.utils.ExportExcel;
 import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
 import com.dlc.common.utils.R;
@@ -8,9 +10,16 @@ import com.dlc.modules.sys.entity.TeamClassEntity;
 import com.dlc.modules.sys.service.SysPtProductService;
 import com.dlc.modules.sys.shiro.ShiroUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -29,12 +38,35 @@ public class SysPtProductController extends AbstractController {
     @RequestMapping("/list")
     @RequiresPermissions("sys:ptproduct:list")
     public R list(@RequestParam Map<String, Object> params) {
-        params.put("storeIds", ShiroUtils.getUserEntity().getStoreIds());
+        // pt_product_store_rel.store_id 保存门店地址ID，不是 store.storeId。
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
         Query query = new Query(params);
         List<PtProductEntity> list = sysPtProductService.queryList(query);
         int total = sysPtProductService.queryTotal(query);
         PageUtils pageUtil = new PageUtils(list, total, query.getLimit(), query.getPage());
         return R.ok().put("page", pageUtil);
+    }
+
+    /**
+     * 按当前筛选条件导出全部私教商品。导出范围与列表保持一致，并复用列表门店数据权限。
+     */
+    @RequestMapping("/export")
+    @RequiresPermissions("sys:ptproduct:list")
+    public void export(@RequestParam Map<String, Object> params, HttpServletResponse response) {
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
+        params.remove("page");
+        params.remove("limit");
+        params.remove("offset");
+        params.remove("sidx");
+        params.remove("order");
+
+        List<PtProductEntity> list = sysPtProductService.queryList(params);
+        String[] titles = {"编号", "商品名称", "商品类型", "服务类型", "适用门店", "指定教练",
+                "售价", "课时", "单次时长(分钟)", "有效期", "提成结算方式", "上架状态",
+                "排序", "创建时间", "更新时间"};
+        String fileName = "私教商品列表_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".xlsx";
+        XSSFWorkbook workbook = ExportExcel.getXSSFWorkbook("私教商品列表", titles, buildExportValues(list));
+        writeWorkbook(response, fileName, workbook);
     }
 
     @RequestMapping("/info/{id}")
@@ -93,5 +125,82 @@ public class SysPtProductController extends AbstractController {
     public R groupClassOptions() {
         List<TeamClassEntity> list = sysPtProductService.groupClassOptions();
         return R.ok().put("list", list);
+    }
+
+    private String[][] buildExportValues(List<PtProductEntity> list) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String[][] values = new String[list.size()][15];
+        for (int i = 0; i < list.size(); i++) {
+            PtProductEntity product = list.get(i);
+            values[i][0] = valueOf(product.getProductNo());
+            values[i][1] = valueOf(product.getProductName());
+            values[i][2] = valueOf(product.getTypeName());
+            values[i][3] = serviceTypeText(product.getServiceType());
+            values[i][4] = valueOf(product.getStoreNames());
+            values[i][5] = isBlank(product.getCoachNames()) ? "不限教练" : product.getCoachNames();
+            values[i][6] = valueOf(product.getSalePrice());
+            values[i][7] = valueOf(product.getLessonCount());
+            values[i][8] = valueOf(product.getDurationMinutes());
+            values[i][9] = validityText(product.getValidityDays());
+            values[i][10] = settlementModeText(product.getSettlementMode());
+            values[i][11] = Integer.valueOf(1).equals(product.getListingStatus()) ? "已上架" : "未上架";
+            values[i][12] = valueOf(product.getSortNo());
+            values[i][13] = product.getCreatedAt() == null ? "" : dateFormat.format(product.getCreatedAt());
+            values[i][14] = product.getUpdatedAt() == null ? "" : dateFormat.format(product.getUpdatedAt());
+        }
+        return values;
+    }
+
+    private String serviceTypeText(Integer serviceType) {
+        if (Integer.valueOf(1).equals(serviceType)) {
+            return "一对一";
+        }
+        if (Integer.valueOf(2).equals(serviceType)) {
+            return "一对多";
+        }
+        return "";
+    }
+
+    private String settlementModeText(Integer settlementMode) {
+        // 历史商品未设置结算方式时按系统兼容规则视为按次结算。
+        return Integer.valueOf(2).equals(settlementMode) ? "包月结算" : "按次结算";
+    }
+
+    private String validityText(Integer validityDays) {
+        if (validityDays == null) {
+            return "";
+        }
+        return Integer.valueOf(-1).equals(validityDays) ? "长期有效" : validityDays + "天";
+    }
+
+    private String valueOf(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private void writeWorkbook(HttpServletResponse response, String fileName, XSSFWorkbook workbook) {
+        try {
+            String encodedName = URLEncoder.encode(fileName, "UTF-8").replace("+", "%20");
+            String legacyName = new String(fileName.getBytes("UTF-8"), "ISO8859-1");
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=\"" + legacyName
+                    + "\"; filename*=UTF-8''" + encodedName);
+            try (OutputStream outputStream = response.getOutputStream()) {
+                workbook.write(outputStream);
+                outputStream.flush();
+            }
+        } catch (IOException e) {
+            throw new RRException("导出私教商品失败");
+        } finally {
+            try {
+                workbook.close();
+            } catch (IOException ignored) {
+                // 响应流已完成，关闭工作簿失败不覆盖原始导出结果。
+            }
+        }
     }
 }

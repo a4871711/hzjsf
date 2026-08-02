@@ -86,6 +86,10 @@ http.interceptors.request.use(config => {
 var is401 = false;
 http.interceptors.response.use(response => { 
 	handleResponseLoading();
+	// 文件下载需要保留响应头和 Blob，不能按普通 R JSON 结构解析。
+	if (response.config.responseType === 'blob') {
+		return response
+	}
 	// console.log(response);
 	//TODO
 	const res = response.data

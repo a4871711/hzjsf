@@ -27,6 +27,15 @@ public interface SysPrivateAppointmentService {
     /** 教练在管辖门店范围内判存(coachBook 前越权校验) */
     boolean coachInScope(Long coachId, String storeIds);
 
+    /** 代预约教练远程搜索候选 */
+    List<Map<String, Object>> queryCoachOptions(String keyword, String storeIds);
+
+    /** 代预约会员远程搜索候选;coachId 非空时只查该教练所属门店会员 */
+    List<Map<String, Object>> queryMemberOptions(String keyword, String storeIds, Long coachId);
+
+    /** 代预约商品候选;memberId 非空时只返回会员有可用权益的商品 */
+    List<Map<String, Object>> queryProductOptions(Long coachId, Long memberId, String storeIds);
+
     /** 完成核销:委托第14步 finishAppointment(条件 UPDATE 1→3 幂等 + 账本 finish) */
     void finish(Long appointmentId, Long operatorId);
 

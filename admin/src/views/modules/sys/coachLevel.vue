@@ -1,9 +1,5 @@
 <template>
   <div>
-    <div class="page-head">
-      <div class="page-title">教练等级管理</div>
-      <div class="page-desc">配置教练等级主数据（供教练档案下拉与用户端排序展示），按排序权重倒序。</div>
-    </div>
     <r-table
       :isSelection="false"
       :isHandle="true"
@@ -182,19 +178,3 @@ export default {
   }
 }
 </script>
-
-<style scoped lang="scss">
-.page-head {
-  margin-bottom: 16px;
-}
-.page-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
-}
-.page-desc {
-  margin-top: 4px;
-  font-size: 13px;
-  color: #909399;
-}
-</style>

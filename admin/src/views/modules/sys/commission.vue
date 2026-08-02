@@ -1,20 +1,5 @@
 <template>
   <div>
-    <div class="page-head">
-      <div class="page-title">教练分成规则</div>
-      <div class="page-desc">配置教练课时费 / 销售提成规则，结算时按 4 级优先级命中。</div>
-    </div>
-    <!-- 4 级优先级说明卡 -->
-    <div class="rule-tip">
-      <div class="rule-tip-title">匹配优先级（先精确后宽泛，命中即用）</div>
-      <div class="rule-tip-body">
-        <span class="lv">L1</span> 教练 + 门店 + 课程
-        <span class="lv">L2</span> 教练 + 课程
-        <span class="lv">L3</span> 教练 + 门店
-        <span class="lv">L4</span> 教练默认
-      </div>
-      <div class="rule-tip-foot">无匹配按 0 处理并在报表标异常；课时费与销售提成需分别建规则。保存时按「门店 × 课程」组合拆成多条规则入库。</div>
-    </div>
     <r-search ref="search" :searchData="searchData" :searchForm="searchForm" :searchHandle="searchHandle" />
     <r-table
       :isSelection="false"
@@ -38,6 +23,7 @@ export default {
       tableLoading: false,
       coachMap: {},
       storeMap: {},
+      productMap: {},
       searchData: {
         coachName: '',
         ruleType: '',
@@ -76,8 +62,8 @@ export default {
         { label: 'ID', prop: 'id', width: 70 },
         { label: '规则名称', prop: 'ruleName' },
         { label: '教练', prop: 'coachName', width: 100, formatter: e => e.coachName || this.coachMap[e.coachId] || ('#' + e.coachId) },
-        { label: '适用门店', prop: 'storeId', width: 130, formatter: e => e.storeId ? (this.storeMap[e.storeId] || ('#' + e.storeId)) : '全部门店' },
-        { label: '适用课程', prop: 'productId', width: 110, formatter: e => e.productId ? ('#' + e.productId) : '全部课程' },
+        { label: '适用门店', prop: 'storeId', width: 130, formatter: e => e.storeId ? (e.storeName || this.storeMap[e.storeId] || ('#' + e.storeId)) : '全部门店' },
+        { label: '适用课程', prop: 'productId', width: 140, formatter: e => e.productId ? (e.productName || this.productMap[e.productId] || ('#' + e.productId)) : '全部课程' },
         { label: '规则类型', type: 'tag', width: 100, prop: 'ruleType', theme: (row) => row.ruleType === 1 ? '' : 'warning', formatter: e => e.ruleType === 1 ? '课时费' : '销售提成' },
         { label: '金额/比例', prop: 'lessonFee', width: 120, formatter: e => this.amountText(e) },
         { label: '生效时间', prop: 'effectiveTime', width: 160, formatter: e => e.effectiveTime ? this.parseTime(e.effectiveTime) : '立即生效' },
@@ -107,6 +93,7 @@ export default {
         { type: 'input', label: '规则名称', width: 320, prop: 'ruleName' },
         { type: 'select', label: '教练', width: 320, prop: 'coachId', options: [] },
         { type: 'select', label: '适用门店', width: 320, prop: 'storeIds', multiple: true, options: [], placeholder: '留空=全部门店' },
+        { type: 'select', label: '适用课程', width: 320, prop: 'productIds', multiple: true, options: [], placeholder: '留空=全部课程' },
         { type: 'radio',
           label: '规则类型',
           prop: 'ruleType',
@@ -146,7 +133,7 @@ export default {
   mounted () {
     this.getData()
     this.getStoreList()
-    this.getCoachList()
+    this.getRuleOptions()
   },
   methods: {
     blankForm () {
@@ -207,9 +194,9 @@ export default {
       this.searchForm[this.searchIndex(this.searchForm, '适用门店')].options = opts
       this.formCols[this.labIndex(this.formCols, '适用门店')].options = opts
     },
-    async getCoachList () {
-      var res = await this.apis.schedule_coachList({ page: 1, limit: 999 })
-      var list = (res.page && res.page.list) || []
+    async getRuleOptions () {
+      var res = await this.apis.commission_options()
+      var list = res.coaches || []
       var map = {}
       var opts = list.map(function (item) {
         map[item.id] = item.coachName
@@ -217,6 +204,14 @@ export default {
       })
       this.coachMap = map
       this.formCols[this.labIndex(this.formCols, '教练')].options = opts
+      var products = res.products || []
+      var productMap = {}
+      var productOpts = products.map(function (item) {
+        productMap[item.id] = item.productName
+        return { value: item.id, label: item.productName }
+      })
+      this.productMap = productMap
+      this.formCols[this.labIndex(this.formCols, '适用课程')].options = productOpts
     },
     onRuleTypeChange () {
       // 切类型时清掉另一类型的值，避免残留提交
@@ -257,7 +252,10 @@ export default {
             return
           }
         }
-        this.$confirm('将按「门店 × 课程」组合生成多条规则，确定保存？', '提示', {
+        var message = this.formData.id
+          ? '确定保存当前单条分成规则的修改？'
+          : '将按「门店 × 课程」组合生成多条规则，确定保存？'
+        this.$confirm(message, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'info'
@@ -268,6 +266,14 @@ export default {
     },
     async submit () {
       var data = Object.assign({}, this.formData)
+      if (data.id) {
+        if (data.storeIds.length > 1 || data.productIds.length > 1) {
+          this.$message.error('编辑单条规则时，门店和课程最多各选一个；多组合请使用新增')
+          return
+        }
+        data.storeId = data.storeIds.length ? data.storeIds[0] : 0
+        data.productId = data.productIds.length ? data.productIds[0] : 0
+      }
       if (data.ruleType === 1) {
         data.lessonFee = Number(data.lessonFee)
         data.commissionRate = null
@@ -316,53 +322,3 @@ export default {
   }
 }
 </script>
-
-<style scoped lang="scss">
-.page-head {
-  margin-bottom: 16px;
-}
-.page-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
-}
-.page-desc {
-  margin-top: 4px;
-  font-size: 13px;
-  color: #909399;
-}
-.rule-tip {
-  margin-bottom: 16px;
-  padding: 12px 16px;
-  background: #f4f4f5;
-  border-left: 4px solid #909399;
-  border-radius: 4px;
-}
-.rule-tip-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #606266;
-  margin-bottom: 6px;
-}
-.rule-tip-body {
-  font-size: 13px;
-  color: #606266;
-}
-.rule-tip-body .lv {
-  display: inline-block;
-  margin: 0 4px 0 12px;
-  padding: 0 6px;
-  background: #409eff;
-  color: #fff;
-  border-radius: 3px;
-  font-size: 12px;
-}
-.rule-tip-body .lv:first-child {
-  margin-left: 0;
-}
-.rule-tip-foot {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #909399;
-}
-</style>

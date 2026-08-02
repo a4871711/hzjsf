@@ -29,11 +29,11 @@ public class SysCoachScheduleController extends AbstractController {
     @Autowired
     private SysPtCoachService sysPtCoachService;
 
-    /** 左侧教练列表（含是否有排班筛选由前端按 list 结果判断） */
+    /** 左侧教练列表（门店与是否有排班均在 SQL 内筛选并统计） */
     @RequestMapping("/coachList")
     @RequiresPermissions("sys:schedule:coachList")
     public R coachList(@RequestParam Map<String, Object> params) {
-        params.put("storeIds", ShiroUtils.getUserEntity().getStoreIds());
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
         Query query = new Query(params);
         List<PtCoachEntity> list = sysPtCoachService.queryList(query);
         int total = sysPtCoachService.queryTotal(query);
@@ -45,6 +45,7 @@ public class SysCoachScheduleController extends AbstractController {
     @RequestMapping("/list")
     @RequiresPermissions("sys:schedule:list")
     public R list(@RequestParam Map<String, Object> params) {
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
         Query query = new Query(params);
         List<PtCoachScheduleEntity> list = sysCoachScheduleService.queryList(query);
         int total = sysCoachScheduleService.queryTotal(query);

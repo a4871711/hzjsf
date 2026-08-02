@@ -177,6 +177,14 @@
                 <el-input v-model="form.validityDays" placeholder="天数，>0" />
               </el-form-item>
             </el-col>
+            <el-col :span="24">
+              <el-form-item label="提成结算方式" prop="settlementMode">
+                <el-radio-group v-model="form.settlementMode">
+                  <el-radio :label="1">按次结算（每节完成后，按实收单节金额计算）</el-radio>
+                  <el-radio :label="2">包月结算（支付成功后，按实收总金额计算）</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
             <el-col :span="12">
               <el-form-item label="是否支持退款" prop="refundType">
                 <el-radio-group v-model="form.refundType">
@@ -251,9 +259,10 @@
             </el-col>
             <el-col :span="24">
               <el-form-item label="指定教练">
-                <el-select v-model="form.coachIds" multiple filterable placeholder="留空=不限教练（符合条件的教练都可约）" style="width:100%;">
+                <el-select v-model="form.coachIds" multiple filterable :multiple-limit="form.settlementMode === 2 ? 1 : 0" :placeholder="form.settlementMode === 2 ? '包月结算必须选择一名教练' : '留空=不限教练（符合条件的教练都可约）'" style="width:100%;">
                   <el-option v-for="op in coachOptions" :key="op.value" :label="op.label" :value="op.value" />
                 </el-select>
+                <span v-if="form.settlementMode === 2" class="tip">包月商品在支付成功时按实收总金额计算提成，教练归属固定为此处选择的一名。</span>
               </el-form-item>
             </el-col>
             <el-col :span="24">
@@ -393,6 +402,7 @@ export default {
   data () {
     return {
       tableLoading: false,
+      exporting: false,
       selection: [],
       // 下拉数据源
       typeOptions: [],
@@ -453,7 +463,7 @@ export default {
         { label: '商品名称', type: 'html', width: 180, html: (row) => this.nameHtml(row) },
         { label: '类型', type: 'tag', width: 90, prop: 'typeName', theme: () => 'primary', formatter: e => e.typeName || '-' },
         { label: '服务类型', type: 'tag', width: 90, prop: 'serviceType', theme: (row) => row.serviceType === 1 ? 'info' : 'warning', formatter: e => e.serviceType === 1 ? '一对一' : '一对多' },
-        // 适用门店 / 指定教练：后端 list 行未返回聚合名与 id，进「编辑」详情可见完整配置
+        // 列表暂保持精简展示；后端聚合名称用于导出，完整配置仍在编辑详情中查看。
         { label: '适用门店', width: 90, formatter: () => '详情查看' },
         { label: '指定教练', width: 90, formatter: () => '详情查看' },
         { label: '价格', type: 'html', width: 130, html: (row) => this.priceHtml(row) },
@@ -557,6 +567,7 @@ export default {
         durationMinutes: 60,
         validityLong: 0, // 前端辅助：0=按天数 1=长期(-1)
         validityDays: 365,
+        settlementMode: 1,
         refundType: 2,
         refundRule: '',
         visibleGroupsArr: [], // 前端辅助：提交时 join 成 visibleGroups 字符串
@@ -604,27 +615,31 @@ export default {
       return html
     },
     // ===== 列表 =====
+    buildListParams (page, limit) {
+      var params = {
+        productName: this.searchData.productName,
+        productTypeId: this.searchData.productTypeId,
+        serviceType: this.searchData.serviceType,
+        storeId: this.searchData.storeId,
+        coachId: this.searchData.coachId,
+        minPrice: this.searchData.minPrice,
+        maxPrice: this.searchData.maxPrice,
+        listingStatus: this.searchData.listingStatus
+      }
+      if (page !== undefined) params.page = page
+      if (limit !== undefined) params.limit = limit
+      var range = this.searchData.createTime || []
+      if (range.length === 2) {
+        // 后端 mapper 用 beginTime/endTime 过滤 created_at
+        params.beginTime = range[0] + ' 00:00:00'
+        params.endTime = range[1] + ' 23:59:59'
+      }
+      return params
+    },
     async getData () {
       this.tableLoading = true
       try {
-        var params = {
-          page: this.pagination.offset,
-          limit: this.pagination.limit,
-          productName: this.searchData.productName,
-          productTypeId: this.searchData.productTypeId,
-          serviceType: this.searchData.serviceType,
-          storeId: this.searchData.storeId,
-          coachId: this.searchData.coachId,
-          minPrice: this.searchData.minPrice,
-          maxPrice: this.searchData.maxPrice,
-          listingStatus: this.searchData.listingStatus
-        }
-        var range = this.searchData.createTime || []
-        if (range.length === 2) {
-          // 后端 mapper 用 beginTime/endTime 过滤 created_at
-          params.beginTime = range[0] + ' 00:00:00'
-          params.endTime = range[1] + ' 23:59:59'
-        }
+        var params = this.buildListParams(this.pagination.offset, this.pagination.limit)
         var res = await this.apis.ptProduct_list(params)
         var page = res.page || {}
         this.tableData = page.list || []
@@ -748,8 +763,16 @@ export default {
         form.validityLong = 0
         form.validityDays = (p.validityDays === 0 || p.validityDays) ? p.validityDays : 365
       }
-      // 可见人群字符串 -> 数组
-      form.visibleGroupsArr = p.visibleGroups ? String(p.visibleGroups).split(',').filter(function (x) { return x }) : []
+      // 可见人群：数据库字段是 JSON 数组；兼容早期逗号字符串，避免编辑历史数据时丢失选择。
+      form.visibleGroupsArr = []
+      if (p.visibleGroups) {
+        try {
+          var visibleGroups = JSON.parse(p.visibleGroups)
+          form.visibleGroupsArr = Array.isArray(visibleGroups) ? visibleGroups : []
+        } catch (e) {
+          form.visibleGroupsArr = String(p.visibleGroups).split(',').filter(function (x) { return x })
+        }
+      }
       form.id = p.id || ''
       this.form = form
     },
@@ -767,8 +790,8 @@ export default {
       delete data.visibleGroupsArr
       // 有效期
       data.validityDays = f.validityLong === 1 ? -1 : (f.validityDays === '' ? '' : Number(f.validityDays))
-      // 可见人群数组 -> 字符串（后端字段为 String）
-      data.visibleGroups = (f.visibleGroupsArr || []).join(',')
+      // visible_groups 是 MySQL JSON 字段，空选项也必须提交合法 JSON 数组 []，不能传空串。
+      data.visibleGroups = JSON.stringify(f.visibleGroupsArr || [])
       // 一对一强制单时段 1
       if (Number(f.serviceType) === 1) data.bookingCapacity = 1
       return data
@@ -806,6 +829,10 @@ export default {
         }
         if (f.refundType === 1 && !f.refundRule) {
           this.$message.error('支持退款时，请填写退款规则')
+          return
+        }
+        if (f.settlementMode === 2 && (!f.coachIds || f.coachIds.length !== 1)) {
+          this.$message.error('包月结算商品必须指定且只能指定一名教练')
           return
         }
         this.submit()
@@ -891,9 +918,44 @@ export default {
         }
       }).catch(() => {})
     },
-    exportData () {
-      // TODO: 导出接口未提供，先占位提示
-      this.$message.info('导出功能待接入')
+    async exportData () {
+      if (this.exporting) {
+        this.$message.warning('正在导出，请勿重复操作')
+        return
+      }
+      this.exporting = true
+      try {
+        var response = await this.apis.ptProduct_export(this.buildListParams())
+        var contentType = response.headers['content-type'] || ''
+        if (contentType.indexOf('application/json') !== -1) {
+          throw new Error('后端未返回 Excel 文件')
+        }
+        var disposition = response.headers['content-disposition'] || ''
+        var fileName = '私教商品列表.xlsx'
+        var utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(disposition)
+        var legacyMatch = /filename="?([^";]+)"?/i.exec(disposition)
+        if (utf8Match) {
+          fileName = decodeURIComponent(utf8Match[1])
+        } else if (legacyMatch) {
+          fileName = legacyMatch[1]
+        }
+        var blob = new Blob([response.data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        })
+        var downloadUrl = window.URL.createObjectURL(blob)
+        var link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(downloadUrl)
+        this.$message.success('导出成功')
+      } catch (error) {
+        this.$message.error('导出失败，请稍后重试')
+      } finally {
+        this.exporting = false
+      }
     }
   }
 }

@@ -12,7 +12,8 @@
         FROM pt_coach_comment c
         JOIN pt_private_appointment a ON a.id = c.appointment_id
         LEFT JOIN pt_coach co ON co.id = c.coach_id
-        LEFT JOIN store s ON s.storeId = a.store_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = a.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
     </sql>
 
     <sql id="Columns">

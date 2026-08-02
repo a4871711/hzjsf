@@ -925,6 +925,15 @@ export default {
 			params: $http.adornParams({ ...data })
 		});
 	},
+	// 私教教练-按当前筛选条件导出
+	ptCoach_export(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptCoach/export'),
+			method: 'get',
+			params: $http.adornParams({ ...data }),
+			responseType: 'blob'
+		});
+	},
 	// 私教教练-详情({id})
 	ptCoach_info(data) {
 		return $http({
@@ -1043,6 +1052,14 @@ export default {
 	commission_list(data) {
 		return $http({
 			url: $http.adornUrl('/sys/commission/list'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+	// 教练分成规则-教练/课程下拉（仅依赖分成列表权限）
+	commission_options(data) {
+		return $http({
+			url: $http.adornUrl('/sys/commission/options'),
 			method: 'get',
 			params: $http.adornParams({ ...data })
 		});
@@ -1215,6 +1232,15 @@ export default {
 			params: $http.adornParams({ ...data })
 		});
 	},
+	// 私教商品-按当前筛选条件导出
+	ptProduct_export(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptProduct/export'),
+			method: 'get',
+			params: $http.adornParams({ ...data }),
+			responseType: 'blob'
+		});
+	},
 	// 私教商品-详情({id})
 	ptProduct_info(data) {
 		return $http({
@@ -1361,6 +1387,30 @@ export default {
 			url: $http.adornUrl(`/sys/privateAppointment/info/${data.id}`),
 			method: 'get',
 			params: $http.adornParams({})
+		});
+	},
+	// 私教预约记录-代预约教练候选({keyword})
+	privateAppointment_coachOptions(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateAppointment/coachOptions'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+	// 私教预约记录-代预约会员候选({keyword,coachId?})
+	privateAppointment_memberOptions(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateAppointment/memberOptions'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+	// 私教预约记录-代预约商品候选({coachId,memberId?})
+	privateAppointment_productOptions(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateAppointment/productOptions'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
 		});
 	},
 	// 私教预约记录-完成核销({appointmentId})

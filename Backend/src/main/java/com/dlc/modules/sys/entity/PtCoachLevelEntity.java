@@ -27,6 +27,8 @@ public class PtCoachLevelEntity implements Serializable {
     private Date updatedAt;
     /** 是否删除：0否 1是 */
     private Integer deleted;
+    /** 非持久字段：当前等级关联的未删除教练数 */
+    private Integer coachCount;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -57,4 +59,7 @@ public class PtCoachLevelEntity implements Serializable {
 
     public Integer getDeleted() { return deleted; }
     public void setDeleted(Integer deleted) { this.deleted = deleted; }
+
+    public Integer getCoachCount() { return coachCount; }
+    public void setCoachCount(Integer coachCount) { this.coachCount = coachCount; }
 }

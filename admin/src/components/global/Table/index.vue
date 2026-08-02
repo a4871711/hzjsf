@@ -97,7 +97,7 @@
 								:icon="btn.icon"
 								@click="btn.handle(scope.row, scope.$index)"
 							>
-								{{ btn.label ? btn.label : scope.row[btn.des] }}
+								{{ typeof btn.label === 'function' ? btn.label(scope.row) : (btn.label || scope.row[btn.des]) }}
 							</el-button>
 							<el-dropdown v-if="item.dropListisShow ? item.dropListisShow(scope.row) : item.dropList ? true : false" @command="item.handleCommand" trigger="click">
 								<el-button icon="el-icon-setting" :size="item.dropSize || size" type="info" />

@@ -36,7 +36,7 @@ public class SysPrivateAppointmentController extends AbstractController {
     @RequiresPermissions("sys:privateAppointment:list")
     public R list(@RequestParam Map<String, Object> params) {
         // 门店数据隔离:非超管按所属门店过滤(超管 storeIds 为空则不过滤)
-        params.put("storeIds", ShiroUtils.getUserEntity().getStoreIds());
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
         Query query = new Query(params);
         List<Map<String, Object>> list = sysPrivateAppointmentService.queryList(query);
         int total = sysPrivateAppointmentService.queryTotal(query);
@@ -48,12 +48,59 @@ public class SysPrivateAppointmentController extends AbstractController {
     @RequiresPermissions("sys:privateAppointment:info")
     public R info(@PathVariable("id") Long id) {
         Map<String, Object> entity = sysPrivateAppointmentService.queryDetail(id,
-                ShiroUtils.getUserEntity().getStoreIds());
+                ShiroUtils.getUserEntity().getStoreAddrIds());
         if (entity == null) {
             // 不存在或不在管辖门店范围:统一 404
             return R.error(404, "预约记录不存在");
         }
         return R.ok().put("entity", entity);
+    }
+
+    /** 代预约教练候选:输入姓名/手机号/ID后远程搜索 */
+    @RequestMapping("/coachOptions")
+    @RequiresPermissions("sys:privateAppointment:coachBook")
+    public R coachOptions(@RequestParam(value = "keyword", required = false) String keyword) {
+        String value = trim(keyword);
+        if (value == null) {
+            return R.ok().put("list", java.util.Collections.emptyList());
+        }
+        return R.ok().put("list", sysPrivateAppointmentService.queryCoachOptions(
+                value, ShiroUtils.getUserEntity().getStoreAddrIds()));
+    }
+
+    /**
+     * 代预约会员候选:输入姓名/手机号/ID后远程搜索。
+     * coachId 非空时先校验教练门店权限,再仅返回该教练所属门店会员。
+     */
+    @RequestMapping("/memberOptions")
+    @RequiresPermissions("sys:privateAppointment:coachBook")
+    public R memberOptions(@RequestParam(value = "keyword", required = false) String keyword,
+                           @RequestParam(value = "coachId", required = false) Long coachId) {
+        String value = trim(keyword);
+        if (value == null) {
+            return R.ok().put("list", java.util.Collections.emptyList());
+        }
+        String storeIds = ShiroUtils.getUserEntity().getStoreAddrIds();
+        if (coachId != null && !sysPrivateAppointmentService.coachInScope(coachId, storeIds)) {
+            return R.ok().put("list", java.util.Collections.emptyList());
+        }
+        return R.ok().put("list", sysPrivateAppointmentService.queryMemberOptions(
+                value, storeIds, coachId));
+    }
+
+    /**
+     * 代预约商品候选:选择教练后加载;选择会员后进一步限定为会员当前可用权益商品。
+     */
+    @RequestMapping("/productOptions")
+    @RequiresPermissions("sys:privateAppointment:coachBook")
+    public R productOptions(@RequestParam("coachId") Long coachId,
+                            @RequestParam(value = "memberId", required = false) Long memberId) {
+        String storeIds = ShiroUtils.getUserEntity().getStoreAddrIds();
+        if (coachId == null || !sysPrivateAppointmentService.coachInScope(coachId, storeIds)) {
+            return R.ok().put("list", java.util.Collections.emptyList());
+        }
+        return R.ok().put("list", sysPrivateAppointmentService.queryProductOptions(
+                coachId, memberId, storeIds));
     }
 
     /** 完成核销:{appointmentId};仅已预约(1)可完成,已完成幂等返回成功不重复扣课 */
@@ -65,7 +112,7 @@ public class SysPrivateAppointmentController extends AbstractController {
             return R.error("缺少参数:appointmentId");
         }
         if (!sysPrivateAppointmentService.existsInScope(appointmentId,
-                ShiroUtils.getUserEntity().getStoreIds())) {
+                ShiroUtils.getUserEntity().getStoreAddrIds())) {
             return R.error(404, "预约记录不存在");
         }
         sysPrivateAppointmentService.finish(appointmentId, getUserId());
@@ -81,7 +128,7 @@ public class SysPrivateAppointmentController extends AbstractController {
             return R.error("缺少参数:appointmentId");
         }
         if (!sysPrivateAppointmentService.existsInScope(appointmentId,
-                ShiroUtils.getUserEntity().getStoreIds())) {
+                ShiroUtils.getUserEntity().getStoreAddrIds())) {
             return R.error(404, "预约记录不存在");
         }
         String cancelReason = params.get("cancelReason") == null ? null : params.get("cancelReason").toString();
@@ -107,7 +154,7 @@ public class SysPrivateAppointmentController extends AbstractController {
             return R.error("缺少参数:coachId/memberId/productId/appointmentDate/startTime/endTime");
         }
         // 越权校验:教练必须在管辖门店范围内,否则按不存在处理
-        if (!sysPrivateAppointmentService.coachInScope(coachId, ShiroUtils.getUserEntity().getStoreIds())) {
+        if (!sysPrivateAppointmentService.coachInScope(coachId, ShiroUtils.getUserEntity().getStoreAddrIds())) {
             return R.error(404, "教练不存在");
         }
         Map<String, Object> result = sysPrivateAppointmentService.coachBook(
@@ -120,5 +167,12 @@ public class SysPrivateAppointmentController extends AbstractController {
             return null;
         }
         return Long.valueOf(val.toString().trim());
+    }
+
+    private String trim(String val) {
+        if (val == null || val.trim().isEmpty()) {
+            return null;
+        }
+        return val.trim();
     }
 }

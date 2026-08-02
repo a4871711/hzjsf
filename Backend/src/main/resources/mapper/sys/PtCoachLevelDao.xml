@@ -7,14 +7,17 @@
     </select>
 
     <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachLevelEntity">
-        select * from pt_coach_level
+        select l.*,
+               (select count(1) from pt_coach c
+                 where c.deleted = 0 and c.coach_level = l.level_name) as coachCount
+        from pt_coach_level l
         <where>
-            deleted = 0
+            l.deleted = 0
             <if test="levelName != null and levelName != ''">
-                AND level_name LIKE concat('%',#{levelName},'%')
+                AND l.level_name LIKE concat('%',#{levelName},'%')
             </if>
             <if test="status != null and status != ''">
-                AND status = #{status}
+                AND l.status = #{status}
             </if>
         </where>
         <choose>
@@ -22,7 +25,7 @@
                 order by ${sidx} ${order}
             </when>
             <otherwise>
-                order by sort_no desc, id desc
+                order by l.sort_no desc, l.id desc
             </otherwise>
         </choose>
         <if test="offset != null and limit != null">
@@ -86,6 +89,14 @@
         from pt_coach_level
         where deleted = 0 and status = 1
         order by sort_no desc, id asc
+    </select>
+
+    <select id="queryDefault" resultType="com.dlc.modules.sys.entity.PtCoachLevelEntity">
+        select id, level_name, sort_no, is_default, status
+        from pt_coach_level
+        where deleted = 0 and status = 1 and is_default = 1
+        order by id asc
+        limit 1
     </select>
 
 </mapper>

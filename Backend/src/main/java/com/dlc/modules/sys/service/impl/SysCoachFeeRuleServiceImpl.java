@@ -80,17 +80,22 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
 
     @Override
     public void update(PtCoachFeeRuleEntity entity) {
+        if (entity.getId() == null) {
+            throw new RRException("缺少参数：id");
+        }
         PtCoachFeeRuleEntity old = ptCoachFeeRuleDao.queryObject(entity.getId());
         if (old == null) {
             throw new RRException("规则不存在");
         }
         // 单行编辑：以提交值与旧值合并后校验类型
         Integer ruleType = entity.getRuleType() != null ? entity.getRuleType() : old.getRuleType();
+        Long coachId = entity.getCoachId() != null ? entity.getCoachId() : old.getCoachId();
         Long storeId = entity.getStoreId() != null ? entity.getStoreId() : old.getStoreId();
         Long productId = entity.getProductId() != null ? entity.getProductId() : old.getProductId();
         entity.setRuleType(ruleType);
+        entity.setCoachId(coachId);
         validateType(entity);
-        if (ptCoachFeeRuleDao.countByUk(old.getCoachId(), productId, storeId, ruleType, entity.getId()) > 0) {
+        if (ptCoachFeeRuleDao.countByUk(coachId, productId, storeId, ruleType, entity.getId()) > 0) {
             throw new RRException("规则已存在（教练+门店+课程+类型重复）");
         }
         entity.setUpdatedAt(new Date());
@@ -104,6 +109,12 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
 
     @Override
     public void changeStatus(Long id, Integer status) {
+        if (id == null || (status == null || (status != 0 && status != 1))) {
+            throw new RRException("规则状态非法");
+        }
+        if (ptCoachFeeRuleDao.queryObject(id) == null) {
+            throw new RRException("规则不存在");
+        }
         PtCoachFeeRuleEntity u = new PtCoachFeeRuleEntity();
         u.setId(id);
         u.setStatus(status);

@@ -1,11 +1,15 @@
 package com.dlc.modules.sys.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.dlc.common.exception.RRException;
 import com.dlc.modules.api.dao.PtPrivateAppointmentDao;
 import com.dlc.modules.api.entity.PtPrivateAppointmentEntity;
 import com.dlc.modules.sys.dao.PtCoachDao;
+import com.dlc.modules.sys.dao.PtCoachLevelDao;
 import com.dlc.modules.sys.dao.PtCoachStoreRelDao;
 import com.dlc.modules.sys.entity.PtCoachEntity;
+import com.dlc.modules.sys.entity.PtCoachLevelEntity;
 import com.dlc.modules.sys.entity.PtCoachStoreRelEntity;
 import com.dlc.modules.sys.service.SysPtCoachService;
 import org.apache.commons.lang.StringUtils;
@@ -30,6 +34,8 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
     private PtCoachDao ptCoachDao;
     @Autowired
     private PtCoachStoreRelDao ptCoachStoreRelDao;
+    @Autowired
+    private PtCoachLevelDao ptCoachLevelDao;
     /** 跨模块注入 api dao(现有惯例,同 SysStoreServiceImpl 等):预约引用护栏 */
     @Autowired
     private PtPrivateAppointmentDao ptPrivateAppointmentDao;
@@ -57,13 +63,21 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
     @Override
     public void save(PtCoachEntity entity) {
         validateBase(entity);
+        normalizeCertificateUrls(entity);
         if (entity.getStoreIds() == null || entity.getStoreIds().isEmpty()) {
             throw new RRException("请至少选择一个所属门店");
         }
         if (ptCoachDao.countByMobile(entity.getMobile().trim(), null) > 0) {
             throw new RRException("手机号已被占用");
         }
+        entity.setCoachName(entity.getCoachName().trim());
         entity.setMobile(entity.getMobile().trim());
+        if (StringUtils.isBlank(entity.getCoachLevel())) {
+            PtCoachLevelEntity defaultLevel = ptCoachLevelDao.queryDefault();
+            if (defaultLevel != null) {
+                entity.setCoachLevel(defaultLevel.getLevelName());
+            }
+        }
         if (entity.getStatus() == null) { entity.setStatus(1); }
         if (entity.getSortNo() == null) { entity.setSortNo(0); }
         Date now = new Date();
@@ -87,12 +101,21 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
 
     @Override
     public void update(PtCoachEntity entity) {
+        if (entity.getId() == null) {
+            throw new RRException("缺少参数：id");
+        }
         PtCoachEntity old = ptCoachDao.queryObject(entity.getId());
         if (old == null || Integer.valueOf(1).equals(old.getDeleted())) {
             throw new RRException("教练不存在");
         }
         if (Integer.valueOf(3).equals(old.getStatus())) {
             throw new RRException("离职教练不可编辑");
+        }
+        if (entity.getCoachName() != null) {
+            if (StringUtils.isBlank(entity.getCoachName())) {
+                throw new RRException("教练姓名不能为空");
+            }
+            entity.setCoachName(entity.getCoachName().trim());
         }
         // 状态机：停用/离职必须填原因（以提交值优先，否则沿用旧值）
         Integer status = entity.getStatus() != null ? entity.getStatus() : old.getStatus();
@@ -102,9 +125,14 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
         }
         if (StringUtils.isNotBlank(entity.getMobile())) {
             entity.setMobile(entity.getMobile().trim());
+            validateMobile(entity.getMobile());
             if (ptCoachDao.countByMobile(entity.getMobile(), entity.getId()) > 0) {
                 throw new RRException("手机号已被占用");
             }
+        }
+        // 更新接口未携带该字段时保持原值；显式传空字符串时按清空证书处理。
+        if (entity.getCertificateUrls() != null) {
+            normalizeCertificateUrls(entity);
         }
         entity.setUpdatedAt(new Date());
         ptCoachDao.update(entity);
@@ -144,6 +172,13 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
 
     @Override
     public void changeStatus(Long id, Integer status, String disableReason) {
+        if (id == null || (status == null || (status != 1 && status != 2 && status != 3))) {
+            throw new RRException("教练状态非法");
+        }
+        PtCoachEntity old = ptCoachDao.queryObject(id);
+        if (old == null || Integer.valueOf(1).equals(old.getDeleted())) {
+            throw new RRException("教练不存在");
+        }
         if ((Integer.valueOf(2).equals(status) || Integer.valueOf(3).equals(status))
                 && StringUtils.isBlank(disableReason)) {
             throw new RRException("停用或离职时必须填写原因");
@@ -162,6 +197,31 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
         }
         if (StringUtils.isBlank(e.getMobile())) {
             throw new RRException("手机号不能为空");
+        }
+        validateMobile(e.getMobile());
+    }
+
+    private void validateMobile(String mobile) {
+        if (!mobile.trim().matches("^1\\d{10}$")) {
+            throw new RRException("手机号格式不正确");
+        }
+    }
+
+    /**
+     * certificate_urls 是 MySQL JSON 字段，空字符串会被数据库判定为非法 JSON。
+     * 统一保存为 JSON 数组字符串，并在进入 Mapper 前返回可理解的业务错误。
+     */
+    private void normalizeCertificateUrls(PtCoachEntity entity) {
+        String certificateUrls = entity.getCertificateUrls();
+        if (StringUtils.isBlank(certificateUrls)) {
+            entity.setCertificateUrls("[]");
+            return;
+        }
+        try {
+            JSONArray urls = JSON.parseArray(certificateUrls);
+            entity.setCertificateUrls(urls == null ? "[]" : urls.toJSONString());
+        } catch (Exception e) {
+            throw new RRException("资格证书格式不正确");
         }
     }
 

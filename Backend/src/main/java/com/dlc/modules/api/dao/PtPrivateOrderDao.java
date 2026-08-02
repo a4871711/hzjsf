@@ -46,6 +46,9 @@ public interface PtPrivateOrderDao {
     /** 下单用商品查询:上架中(listing_status=1 且 deleted=0 且未到 unlisting_at),查不到=不可购买 */
     PtProduct selectProductForOrder(@Param("productId") Long productId);
 
+    /** 商品绑定教练；包月下单时必须恰好一名，用于将归属快照写入订单。 */
+    List<Long> queryProductCoachIds(@Param("productId") Long productId);
+
     /**
      * 拼团活动只读查价:仅返回上架中且在时间窗内的活动
      * (列表/下单实时判 now BETWEEN start AND end AND status=1,不建过期任务——详细文档总则0.10)

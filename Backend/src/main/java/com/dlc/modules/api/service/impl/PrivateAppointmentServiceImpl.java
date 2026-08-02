@@ -8,17 +8,23 @@ import com.dlc.common.utils.Query;
 import com.dlc.modules.api.dao.CoachApiDao;
 import com.dlc.modules.api.dao.PtMemberPrivateBenefitDao;
 import com.dlc.modules.api.dao.PtPrivateAppointmentDao;
+import com.dlc.modules.api.dao.PtPrivateOrderDao;
 import com.dlc.modules.api.dao.UserInfoMapper;
 import com.dlc.modules.api.entity.PtCoachOption;
 import com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity;
 import com.dlc.modules.api.entity.PtPrivateAppointmentEntity;
 import com.dlc.modules.api.entity.PtProduct;
+import com.dlc.modules.api.entity.PtPrivateOrderEntity;
 import com.dlc.modules.api.entity.UserInfo;
 import com.dlc.modules.api.service.CoachApiService;
 import com.dlc.modules.api.service.MemberPrivateBenefitService;
 import com.dlc.modules.api.service.PrivateAppointmentService;
 import com.dlc.modules.api.vo.PtAvailableSlotVo;
 import com.dlc.modules.api.vo.PtScheduleWindowVo;
+import com.dlc.modules.sys.entity.PtCoachFeeRuleEntity;
+import com.dlc.modules.sys.entity.SysCoachTradeDetailEntity;
+import com.dlc.modules.sys.service.SysCoachFeeRuleService;
+import com.dlc.modules.sys.service.SysCoachTradeDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -31,6 +37,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Date;
 
 /**
  * 私教预约全链路实现。落在 api.service.impl,命中事务切面(REQUIRED),一个业务方法一个事务。
@@ -59,6 +68,12 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     private CoachApiDao coachApiDao;
     @Autowired
     private UserInfoMapper userInfoMapper;
+    @Autowired
+    private PtPrivateOrderDao ptPrivateOrderDao;
+    @Autowired
+    private SysCoachFeeRuleService sysCoachFeeRuleService;
+    @Autowired
+    private SysCoachTradeDetailService sysCoachTradeDetailService;
 
     @Override
     public List<PtCoachOption> coaches(Long memberId, Long benefitId) {
@@ -160,6 +175,39 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         }
         // 冻结转已用(第11步,同事务)
         memberPrivateBenefitService.finish(apt.getBenefitId(), lessonOf(apt));
+        settlePerLessonCommission(apt);
+    }
+
+    /** 按次商品只在实际完成核销后结算：订单净实收 ÷ 总课时 × 提成比例。 */
+    private void settlePerLessonCommission(PtPrivateAppointmentEntity apt) {
+        PtPrivateOrderEntity order = ptPrivateOrderDao.queryObject(apt.getOrderId());
+        if (order == null || !Integer.valueOf(1).equals(order.getSettlementMode())
+                || apt.getCoachId() == null || order.getLessonCount() == null || order.getLessonCount() <= 0) {
+            return;
+        }
+        PtCoachFeeRuleEntity rule = sysCoachFeeRuleService.matchFeeRule(
+                apt.getCoachId(), order.getProductId(), order.getStoreId(), 2);
+        if (rule == null || rule.getCommissionRate() == null) {
+            return;
+        }
+        BigDecimal paid = order.getPaidAmount() == null ? BigDecimal.ZERO : order.getPaidAmount();
+        BigDecimal refunded = order.getRefundAmount() == null ? BigDecimal.ZERO : order.getRefundAmount();
+        BigDecimal lessonBase = paid.subtract(refunded)
+                .divide(new BigDecimal(order.getLessonCount()), 2, RoundingMode.HALF_UP);
+        BigDecimal commission = lessonBase.multiply(rule.getCommissionRate())
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        SysCoachTradeDetailEntity detail = new SysCoachTradeDetailEntity();
+        detail.setCoachId(apt.getCoachId());
+        detail.setTradeType(1);
+        detail.setMoney(commission);
+        detail.setOrigMoney(lessonBase);
+        detail.setPercent(rule.getCommissionRate().doubleValue());
+        detail.setTransactionNumber("PT_LESSON_" + apt.getId());
+        detail.setOrderNo(order.getOrderNo());
+        detail.setStatus(1);
+        detail.setTransactionTime(new Date());
+        detail.setCreateTime(new Date());
+        sysCoachTradeDetailService.save(detail);
     }
 
     @Override

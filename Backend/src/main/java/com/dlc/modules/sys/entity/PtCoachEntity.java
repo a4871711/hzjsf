@@ -40,6 +40,10 @@ public class PtCoachEntity implements Serializable {
     private List<Long> storeIds;
     /** 非持久字段：列表展示用门店名称（逗号拼接） */
     private String storeNames;
+    /** 非持久字段：列表展示用门店地址ID（逗号拼接，避免用门店名反推ID） */
+    private String storeIdCsv;
+    /** 非持久字段：排班页展示用排班段数量 */
+    private Integer scheduleCount;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -97,4 +101,10 @@ public class PtCoachEntity implements Serializable {
 
     public String getStoreNames() { return storeNames; }
     public void setStoreNames(String storeNames) { this.storeNames = storeNames; }
+
+    public String getStoreIdCsv() { return storeIdCsv; }
+    public void setStoreIdCsv(String storeIdCsv) { this.storeIdCsv = storeIdCsv; }
+
+    public Integer getScheduleCount() { return scheduleCount; }
+    public void setScheduleCount(Integer scheduleCount) { this.scheduleCount = scheduleCount; }
 }

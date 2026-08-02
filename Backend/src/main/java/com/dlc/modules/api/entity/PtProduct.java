@@ -35,6 +35,8 @@ public class PtProduct implements Serializable {
     private Integer durationMinutes;
     /** 有效期天数；-1 表示长期 */
     private Integer validityDays;
+    /** 提成结算方式：1按次 2包月 */
+    private Integer settlementMode;
     /** 退款方式：1支持 2不支持 3人工审核 */
     private Integer refundType;
     private String refundRule;
@@ -113,6 +115,9 @@ public class PtProduct implements Serializable {
 
     public Integer getValidityDays() { return validityDays; }
     public void setValidityDays(Integer validityDays) { this.validityDays = validityDays; }
+
+    public Integer getSettlementMode() { return settlementMode; }
+    public void setSettlementMode(Integer settlementMode) { this.settlementMode = settlementMode; }
 
     public Integer getRefundType() { return refundType; }
     public void setRefundType(Integer refundType) { this.refundType = refundType; }

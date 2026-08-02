@@ -54,6 +54,21 @@ public class SysPrivateAppointmentServiceImpl implements SysPrivateAppointmentSe
     }
 
     @Override
+    public List<Map<String, Object>> queryCoachOptions(String keyword, String storeIds) {
+        return sysPrivateAppointmentDao.queryCoachOptions(keyword, storeIds);
+    }
+
+    @Override
+    public List<Map<String, Object>> queryMemberOptions(String keyword, String storeIds, Long coachId) {
+        return sysPrivateAppointmentDao.queryMemberOptions(keyword, storeIds, coachId);
+    }
+
+    @Override
+    public List<Map<String, Object>> queryProductOptions(Long coachId, Long memberId, String storeIds) {
+        return sysPrivateAppointmentDao.queryProductOptions(coachId, memberId, storeIds);
+    }
+
+    @Override
     public void finish(Long appointmentId, Long operatorId) {
         privateAppointmentService.finishAppointment(appointmentId, operatorId);
     }

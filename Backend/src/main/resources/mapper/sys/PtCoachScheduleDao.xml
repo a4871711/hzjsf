@@ -7,7 +7,10 @@
         DATE_FORMAT(sc.start_time,'%H:%i') as startTime,
         DATE_FORMAT(sc.end_time,'%H:%i') as endTime,
         sc.is_enabled, sc.created_by, sc.created_at, sc.updated_by, sc.updated_at,
-        (select storeName from store where storeId = sc.store_id) as storeName
+        (select s.storeName
+           from store_address sa
+           left join store s on s.storeId = sa.storeId
+          where sa.storeAddrId = sc.store_id) as storeName
     </sql>
 
     <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtCoachScheduleEntity">

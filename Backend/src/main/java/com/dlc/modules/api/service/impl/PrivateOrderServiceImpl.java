@@ -23,6 +23,10 @@ import com.dlc.modules.api.service.PtInstallmentService;
 import com.dlc.modules.api.service.PtMemberWalletService;
 import com.dlc.modules.api.service.WxPayService;
 import com.dlc.modules.api.vo.UserInfoVo;
+import com.dlc.modules.sys.entity.PtCoachFeeRuleEntity;
+import com.dlc.modules.sys.entity.SysCoachTradeDetailEntity;
+import com.dlc.modules.sys.service.SysCoachFeeRuleService;
+import com.dlc.modules.sys.service.SysCoachTradeDetailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +39,7 @@ import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 /**
  * 私教订单 Service 实现。
@@ -75,6 +80,10 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
     private PtInstallmentService ptInstallmentService;
     @Autowired
     private GroupToPrivateScanService groupToPrivateScanService;
+    @Autowired
+    private SysCoachFeeRuleService sysCoachFeeRuleService;
+    @Autowired
+    private SysCoachTradeDetailService sysCoachTradeDetailService;
 
     @Override
     public Map<String, Object> quote(UserInfoVo user, Long productId, Long storeId,
@@ -242,6 +251,9 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         if (ptPrivateOrderDao.settleOrder(order.getId(), scale(wallet)) == 0) {
             throw new RRException("私教订单状态推进失败,orderNo=" + orderNo);
         }
+
+        // 包月不等上课核销：支付成功即按订单实收总金额计算销售提成。
+        settleMonthlyCommission(order, scale(wallet));
 
         // 幂等闸2:建权益,activate 内部按 order_id 查重;课时/有效期一律取订单快照,不回查商品
         memberPrivateBenefitService.activate(order.getId(), order.getMemberId(), order.getProductId(),
@@ -515,6 +527,16 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         order.setProductTypeName(product.getTypeName());
         order.setServiceType(product.getServiceType());
         order.setStoreId(storeId);
+        int settlementMode = Integer.valueOf(2).equals(product.getSettlementMode()) ? 2 : 1;
+        order.setSettlementMode(settlementMode);
+        if (settlementMode == 2) {
+            List<Long> coachIds = ptPrivateOrderDao.queryProductCoachIds(product.getId());
+            if (coachIds.size() != 1) {
+                throw new RRException("包月结算商品必须指定且只能指定一名教练");
+            }
+            // 订单记录归属教练快照，后续改商品配置不会改写既有佣金归属。
+            order.setCoachId(coachIds.get(0));
+        }
         // 课时/时长/有效期快照:激活权益(第13步)一律取订单快照,不回查商品
         order.setLessonCount(product.getLessonCount());
         order.setDurationMinutes(product.getDurationMinutes());
@@ -549,6 +571,32 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
     /** 金额统一两位小数,HALF_UP */
     private BigDecimal scale(BigDecimal amount) {
         return (amount == null ? BigDecimal.ZERO : amount).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** 包月商品按订单实收总额计算；规则为空时不产生提成明细。 */
+    private void settleMonthlyCommission(PtPrivateOrderEntity order, BigDecimal paidAmount) {
+        if (!Integer.valueOf(2).equals(order.getSettlementMode()) || order.getCoachId() == null) {
+            return;
+        }
+        PtCoachFeeRuleEntity rule = sysCoachFeeRuleService.matchFeeRule(
+                order.getCoachId(), order.getProductId(), order.getStoreId(), 2);
+        if (rule == null || rule.getCommissionRate() == null) {
+            return;
+        }
+        BigDecimal commission = paidAmount.multiply(rule.getCommissionRate())
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        SysCoachTradeDetailEntity detail = new SysCoachTradeDetailEntity();
+        detail.setCoachId(order.getCoachId());
+        detail.setTradeType(1);
+        detail.setMoney(commission);
+        detail.setOrigMoney(paidAmount);
+        detail.setPercent(rule.getCommissionRate().doubleValue());
+        detail.setTransactionNumber("PT_MONTH_" + order.getId());
+        detail.setOrderNo(order.getOrderNo());
+        detail.setStatus(1);
+        detail.setTransactionTime(new Date());
+        detail.setCreateTime(new Date());
+        sysCoachTradeDetailService.save(detail);
     }
 
     private int nvl(Integer val) {

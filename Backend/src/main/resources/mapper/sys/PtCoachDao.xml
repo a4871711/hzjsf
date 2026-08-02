@@ -8,9 +8,17 @@
 
     <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachEntity">
         select c.*,
-            (select group_concat(s.storeName)
-               from pt_coach_store_rel r left join store s on s.storeId = r.store_id
-              where r.coach_id = c.id) as storeNames
+            (select group_concat(s.storeName order by r.store_id)
+               from pt_coach_store_rel r
+               left join store_address sa on sa.storeAddrId = r.store_id
+               left join store s on s.storeId = sa.storeId
+              where r.coach_id = c.id) as storeNames,
+            (select group_concat(r.store_id order by r.store_id)
+               from pt_coach_store_rel r
+              where r.coach_id = c.id) as storeIdCsv,
+            (select count(1)
+               from pt_coach_schedule sc
+              where sc.coach_id = c.id) as scheduleCount
         from pt_coach c
         <where>
             c.deleted = 0
@@ -26,11 +34,22 @@
             <if test="coachLevel != null and coachLevel != ''">
                 AND c.coach_level = #{coachLevel}
             </if>
+            <if test="storeId != null and storeId != ''">
+                AND EXISTS (select 1 from pt_coach_store_rel r
+                            where r.coach_id = c.id and r.store_id = #{storeId})
+            </if>
+            <if test="hasSchedule != null and hasSchedule != ''">
+                AND (
+                    (#{hasSchedule} = 1 AND EXISTS (select 1 from pt_coach_schedule sc where sc.coach_id = c.id))
+                    OR
+                    (#{hasSchedule} = 0 AND NOT EXISTS (select 1 from pt_coach_schedule sc where sc.coach_id = c.id))
+                )
+            </if>
             <if test="beginTime != null and beginTime != ''">
                 AND c.created_at &gt;= #{beginTime}
             </if>
             <if test="endTime != null and endTime != ''">
-                AND c.created_at &lt;= #{endTime}
+                AND c.created_at &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)
             </if>
             <if test="storeIds != null and storeIds != ''">
                 AND c.id IN (select coach_id from pt_coach_store_rel where store_id in (${storeIds}))
@@ -65,11 +84,22 @@
             <if test="coachLevel != null and coachLevel != ''">
                 AND c.coach_level = #{coachLevel}
             </if>
+            <if test="storeId != null and storeId != ''">
+                AND EXISTS (select 1 from pt_coach_store_rel r
+                            where r.coach_id = c.id and r.store_id = #{storeId})
+            </if>
+            <if test="hasSchedule != null and hasSchedule != ''">
+                AND (
+                    (#{hasSchedule} = 1 AND EXISTS (select 1 from pt_coach_schedule sc where sc.coach_id = c.id))
+                    OR
+                    (#{hasSchedule} = 0 AND NOT EXISTS (select 1 from pt_coach_schedule sc where sc.coach_id = c.id))
+                )
+            </if>
             <if test="beginTime != null and beginTime != ''">
                 AND c.created_at &gt;= #{beginTime}
             </if>
             <if test="endTime != null and endTime != ''">
-                AND c.created_at &lt;= #{endTime}
+                AND c.created_at &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)
             </if>
             <if test="storeIds != null and storeIds != ''">
                 AND c.id IN (select coach_id from pt_coach_store_rel where store_id in (${storeIds}))

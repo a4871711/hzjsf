@@ -54,6 +54,9 @@ public class SysCoachLevelServiceImpl implements SysCoachLevelService {
         if (entity.getSortNo() == null) { entity.setSortNo(0); }
         if (entity.getStatus() == null) { entity.setStatus(1); }
         boolean wantDefault = Integer.valueOf(1).equals(entity.getIsDefault());
+        if (wantDefault && !Integer.valueOf(1).equals(entity.getStatus())) {
+            throw new RRException("默认等级必须处于启用状态");
+        }
         entity.setIsDefault(0);
         Date now = new Date();
         if (entity.getCreatedAt() == null) { entity.setCreatedAt(now); }
@@ -86,6 +89,10 @@ public class SysCoachLevelServiceImpl implements SysCoachLevelService {
             }
         }
         boolean wantDefault = Integer.valueOf(1).equals(entity.getIsDefault());
+        Integer targetStatus = entity.getStatus() != null ? entity.getStatus() : old.getStatus();
+        if (wantDefault && !Integer.valueOf(1).equals(targetStatus)) {
+            throw new RRException("默认等级必须处于启用状态");
+        }
         if (wantDefault) {
             ptCoachLevelDao.clearAllDefault();
         }
@@ -110,6 +117,16 @@ public class SysCoachLevelServiceImpl implements SysCoachLevelService {
 
     @Override
     public void changeStatus(Long id, Integer status) {
+        if (id == null || (status == null || (status != 0 && status != 1))) {
+            throw new RRException("等级状态非法");
+        }
+        PtCoachLevelEntity old = ptCoachLevelDao.queryObject(id);
+        if (old == null || Integer.valueOf(1).equals(old.getDeleted())) {
+            throw new RRException("等级不存在");
+        }
+        if (status == 0 && Integer.valueOf(1).equals(old.getIsDefault())) {
+            throw new RRException("默认等级不可停用，请先设置其他默认等级");
+        }
         PtCoachLevelEntity u = new PtCoachLevelEntity();
         u.setId(id);
         u.setStatus(status);

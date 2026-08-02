@@ -47,6 +47,7 @@ CREATE TABLE `pt_product` (
   `lesson_count` INT NOT NULL COMMENT '课时数量',
   `duration_minutes` INT NOT NULL COMMENT '单次服务时长（分钟）',
   `validity_days` INT NOT NULL COMMENT '有效期天数；长期可约定为-1',
+  `settlement_mode` TINYINT NOT NULL DEFAULT 1 COMMENT '提成结算方式：1按次 2包月',
   `refund_type` TINYINT NOT NULL DEFAULT 2 COMMENT '退款方式：1支持 2不支持 3人工审核',
   `refund_rule` VARCHAR(500) DEFAULT NULL COMMENT '退款规则说明',
   `visible_groups` TEXT DEFAULT NULL COMMENT '可见人群，例如 member,new_user,student',
@@ -177,4 +178,3 @@ CREATE TABLE `pt_member_group_benefit_flow` (
   KEY `idx_pt_member_group_benefit_flow_benefit_id` (`benefit_id`),
   KEY `idx_pt_member_group_benefit_flow_member_id` (`member_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='会员附赠团课权益流水表';
-

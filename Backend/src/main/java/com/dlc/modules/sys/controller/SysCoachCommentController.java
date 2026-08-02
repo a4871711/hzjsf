@@ -41,7 +41,7 @@ public class SysCoachCommentController extends AbstractController {
     @RequiresPermissions("sys:coachComment:list")
     public R list(@RequestParam Map<String, Object> params) {
         // 门店数据隔离：非超管按所属门店过滤（超管 storeIds 为空则不过滤）
-        params.put("storeIds", ShiroUtils.getUserEntity().getStoreIds());
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
         Query query = new Query(params);
         PageUtils page = sysCoachCommentService.queryPage(query);
         return R.ok().put("page", page);
@@ -52,7 +52,7 @@ public class SysCoachCommentController extends AbstractController {
     @RequiresPermissions("sys:coachComment:info")
     public R info(@PathVariable("id") Long id) {
         PtCoachCommentEntity comment = sysCoachCommentService.queryDetail(id,
-                ShiroUtils.getUserEntity().getStoreIds());
+                ShiroUtils.getUserEntity().getStoreAddrIds());
         if (comment == null) {
             return R.error(404, "评价记录不存在");
         }
@@ -75,7 +75,7 @@ public class SysCoachCommentController extends AbstractController {
             return R.error("缺少参数：id");
         }
         if (!sysCoachCommentService.existsInScope(comment.getId(),
-                ShiroUtils.getUserEntity().getStoreIds())) {
+                ShiroUtils.getUserEntity().getStoreAddrIds())) {
             return R.error(404, "评价记录不存在");
         }
         sysCoachCommentService.update(comment);
@@ -89,7 +89,7 @@ public class SysCoachCommentController extends AbstractController {
         if (ids == null || ids.length == 0) {
             return R.error("缺少参数：ids");
         }
-        sysCoachCommentService.deleteBatch(ids, ShiroUtils.getUserEntity().getStoreIds());
+        sysCoachCommentService.deleteBatch(ids, ShiroUtils.getUserEntity().getStoreAddrIds());
         return R.ok();
     }
 
@@ -105,7 +105,7 @@ public class SysCoachCommentController extends AbstractController {
         if (replyContent == null || replyContent.isEmpty()) {
             return R.error("回复内容不能为空");
         }
-        if (!sysCoachCommentService.existsInScope(commentId, ShiroUtils.getUserEntity().getStoreIds())) {
+        if (!sysCoachCommentService.existsInScope(commentId, ShiroUtils.getUserEntity().getStoreAddrIds())) {
             return R.error(404, "评价记录不存在");
         }
         sysCoachCommentService.reply(commentId, replyContent, getUserId());
@@ -125,7 +125,7 @@ public class SysCoachCommentController extends AbstractController {
         if (handleStatus == null || (handleStatus != 1 && handleStatus != 2)) {
             return R.error("处理状态须为 1已跟进 或 2已忽略");
         }
-        if (!sysCoachCommentService.existsInScope(commentId, ShiroUtils.getUserEntity().getStoreIds())) {
+        if (!sysCoachCommentService.existsInScope(commentId, ShiroUtils.getUserEntity().getStoreAddrIds())) {
             return R.error(404, "评价记录不存在");
         }
         sysCoachCommentService.handle(commentId, handleStatus, handleRemark);

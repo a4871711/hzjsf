@@ -24,4 +24,7 @@ public interface PtCoachLevelDao extends BaseDao<PtCoachLevelEntity> {
 
     /** 启用状态等级下拉项（用于教练表单） */
     List<PtCoachLevelEntity> queryOptions();
+
+    /** 查询当前启用的默认等级；未配置时返回 null */
+    PtCoachLevelEntity queryDefault();
 }

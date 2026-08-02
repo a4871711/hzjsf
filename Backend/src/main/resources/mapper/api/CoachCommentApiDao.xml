@@ -43,7 +43,8 @@
         FROM pt_coach_comment c
         LEFT JOIN pt_private_appointment a ON a.id = c.appointment_id
         LEFT JOIN pt_coach co ON co.id = c.coach_id
-        LEFT JOIN store s ON s.storeId = a.store_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = a.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
         LEFT JOIN pt_coach_comment_reply r ON r.id = (
             SELECT r2.id FROM pt_coach_comment_reply r2
             WHERE r2.comment_id = c.id

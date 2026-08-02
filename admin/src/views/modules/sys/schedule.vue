@@ -69,16 +69,20 @@
       <template slot="timeRanges">
         <div class="tr-wrap">
           <div class="tr-row" v-for="(r, idx) in timeRanges" :key="idx">
-            <el-time-select
+            <el-time-picker
               placeholder="开始"
               v-model="r.startTime"
-              :picker-options="{ start: '00:00', step: '00:30', end: '23:30' }"
+              format="HH:mm"
+              value-format="HH:mm"
+              :clearable="false"
               style="width: 120px;" />
             <span class="tr-sep">至</span>
-            <el-time-select
+            <el-time-picker
               placeholder="结束"
               v-model="r.endTime"
-              :picker-options="{ start: '00:00', step: '00:30', end: '24:00', minTime: r.startTime }"
+              format="HH:mm"
+              value-format="HH:mm"
+              :clearable="false"
               style="width: 120px;" />
             <el-button type="text" icon="el-icon-remove-outline" class="tr-del" @click="removeRange(idx)" v-if="timeRanges.length > 1">删除</el-button>
           </div>
@@ -235,7 +239,11 @@ export default {
       if (!this.currentCoach) return
       this.scheduleLoading = true
       try {
-        var res = await this.apis.schedule_list({ coachId: this.currentCoach.id })
+        var res = await this.apis.schedule_list({
+          coachId: this.currentCoach.id,
+          page: 1,
+          limit: 999
+        })
         var page = res.page || {}
         this.scheduleList = page.list || []
       } finally {
@@ -276,6 +284,11 @@ export default {
     coachStoreOptions () {
       var self = this
       var ids = (this.currentCoach && this.currentCoach.storeIds) || []
+      if ((!ids || !ids.length) && this.currentCoach && this.currentCoach.storeIdCsv) {
+        ids = String(this.currentCoach.storeIdCsv).split(',').filter(function (id) { return id }).map(function (id) {
+          return Number(id)
+        })
+      }
       if (ids && ids.length) {
         return ids.map(function (id) { return { value: id, label: self.storeMap[id] || ('门店#' + id) } })
       }

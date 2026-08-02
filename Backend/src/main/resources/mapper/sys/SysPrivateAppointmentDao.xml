@@ -38,7 +38,8 @@
         LEFT JOIN user_info u ON u.userId = a.member_id
         LEFT JOIN pt_coach c ON c.id = a.coach_id
         LEFT JOIN pt_product p ON p.id = a.product_id
-        LEFT JOIN store s ON s.storeId = a.store_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = a.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
         LEFT JOIN pt_member_private_benefit b ON b.id = a.benefit_id
     </sql>
 
@@ -142,6 +143,134 @@
             AND EXISTS (SELECT 1 FROM pt_coach_store_rel r
                         WHERE r.coach_id = c.id AND r.store_id IN (${storeIds}))
         </if>
+    </select>
+
+    <!-- 代预约教练候选:只返回启用教练,同时复用预约模块的门店地址ID隔离 -->
+    <select id="queryCoachOptions" resultType="java.util.LinkedHashMap">
+        SELECT
+            c.id,
+            c.coach_name AS coachName,
+            c.mobile,
+            (SELECT GROUP_CONCAT(s.storeName ORDER BY r.store_id)
+               FROM pt_coach_store_rel r
+               LEFT JOIN store_address sa ON sa.storeAddrId = r.store_id
+               LEFT JOIN store s ON s.storeId = sa.storeId
+              WHERE r.coach_id = c.id) AS storeNames
+        FROM pt_coach c
+        WHERE c.deleted = 0
+          AND c.status = 1
+          AND (CAST(c.id AS CHAR) LIKE concat('%', #{keyword}, '%')
+               OR c.coach_name LIKE concat('%', #{keyword}, '%')
+               OR c.mobile LIKE concat('%', #{keyword}, '%'))
+        <if test="storeIds != null and storeIds != ''">
+            AND EXISTS (SELECT 1 FROM pt_coach_store_rel r
+                        WHERE r.coach_id = c.id AND r.store_id IN (${storeIds}))
+        </if>
+        ORDER BY c.sort_no DESC, c.id DESC
+        LIMIT 20
+    </select>
+
+    <!--
+      代预约会员候选:
+      1. 管理员只能搜索管辖门店会员;
+      2. 已选教练时,再限制会员当前门店必须属于该教练,提前减少提交后的匹配失败。
+    -->
+    <select id="queryMemberOptions" resultType="java.util.LinkedHashMap">
+        SELECT
+            u.userId AS id,
+            u.nickname,
+            u.phone,
+            u.nowStoreId AS storeId,
+            s.storeName
+        FROM user_info u
+        LEFT JOIN store_address sa ON sa.storeAddrId = u.nowStoreId
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE u.isDel = 0
+          AND (CAST(u.userId AS CHAR) LIKE concat('%', #{keyword}, '%')
+               OR u.nickname LIKE concat('%', #{keyword}, '%')
+               OR u.phone LIKE concat('%', #{keyword}, '%'))
+        <if test="storeIds != null and storeIds != ''">
+            AND u.nowStoreId IN (${storeIds})
+        </if>
+        <if test="coachId != null">
+            AND EXISTS (SELECT 1 FROM pt_coach_store_rel r
+                        WHERE r.coach_id = #{coachId} AND r.store_id = u.nowStoreId)
+        </if>
+        ORDER BY u.createdDate DESC, u.userId DESC
+        LIMIT 20
+    </select>
+
+    <!--
+      代预约商品候选:
+      1. 商品未指定教练时不限;已指定时必须包含当前教练;
+      2. 商品适用门店、教练所属门店、教练启用排班必须存在交集;
+      3. 未选择会员时只展示已上架商品;选择会员后沿用 coachBook 的可用权益口径,
+         已购商品即使下架也仍可预约。
+    -->
+    <select id="queryProductOptions" resultType="java.util.LinkedHashMap">
+        SELECT
+            p.id,
+            p.product_no AS productNo,
+            p.product_name AS productName,
+            p.duration_minutes AS durationMinutes
+        <if test="memberId != null">
+            , (SELECT SUM(b.remaining_lessons)
+                 FROM pt_member_private_benefit b
+                WHERE b.member_id = #{memberId}
+                  AND b.product_id = p.id
+                  AND b.status = 1
+                  AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())
+                  AND b.remaining_lessons &gt;= 1) AS remainingLessons
+        </if>
+        FROM pt_product p
+        WHERE p.deleted = 0
+          AND (
+                NOT EXISTS (SELECT 1 FROM pt_product_coach_rel pcr
+                            WHERE pcr.product_id = p.id)
+                OR EXISTS (SELECT 1 FROM pt_product_coach_rel pcr
+                           WHERE pcr.product_id = p.id AND pcr.coach_id = #{coachId})
+              )
+          AND EXISTS (
+                SELECT 1
+                FROM pt_product_store_rel psr
+                INNER JOIN pt_coach_store_rel csr
+                        ON csr.store_id = psr.store_id
+                       AND csr.coach_id = #{coachId}
+                INNER JOIN pt_coach_schedule sch
+                        ON sch.coach_id = csr.coach_id
+                       AND sch.store_id = csr.store_id
+                       AND sch.is_enabled = 1
+                WHERE psr.product_id = p.id
+                <if test="storeIds != null and storeIds != ''">
+                    AND psr.store_id IN (${storeIds})
+                </if>
+                <if test="memberId != null">
+                    AND psr.store_id = (
+                        SELECT u.nowStoreId
+                        FROM user_info u
+                        WHERE u.userId = #{memberId} AND u.isDel = 0
+                        LIMIT 1
+                    )
+                </if>
+              )
+        <choose>
+            <when test="memberId != null">
+                AND EXISTS (
+                    SELECT 1
+                    FROM pt_member_private_benefit b
+                    WHERE b.member_id = #{memberId}
+                      AND b.product_id = p.id
+                      AND b.status = 1
+                      AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())
+                      AND b.remaining_lessons &gt;= 1
+                )
+            </when>
+            <otherwise>
+                AND p.listing_status = 1
+            </otherwise>
+        </choose>
+        ORDER BY p.sort_no DESC, p.id DESC
+        LIMIT 50
     </select>
 
 </mapper>

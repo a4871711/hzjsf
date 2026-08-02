@@ -16,9 +16,10 @@
     </select>
 
     <select id="queryStoreNames" resultType="java.lang.String">
-        select group_concat(s.storeName)
+        select group_concat(s.storeName order by r.store_id)
         from pt_coach_store_rel r
-        left join store s on s.storeId = r.store_id
+        left join store_address sa on sa.storeAddrId = r.store_id
+        left join store s on s.storeId = sa.storeId
         where r.coach_id = #{value}
     </select>
 

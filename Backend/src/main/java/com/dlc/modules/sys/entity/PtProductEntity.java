@@ -36,6 +36,8 @@ public class PtProductEntity implements Serializable {
     private Integer durationMinutes;
     /** 有效期天数；长期=-1 */
     private Integer validityDays;
+    /** 提成结算方式：1按次（完成课时后结算） 2包月（支付成功后结算） */
+    private Integer settlementMode;
     /** 退款方式：1支持 2不支持 3人工审核 */
     private Integer refundType;
     private String refundRule;
@@ -75,6 +77,10 @@ public class PtProductEntity implements Serializable {
     private List<Long> coachIds;
     /** 展示用：商品类型名称 */
     private String typeName;
+    /** 展示/导出用：适用门店名称，多个门店以逗号分隔 */
+    private String storeNames;
+    /** 展示/导出用：指定教练名称，空表示不限教练 */
+    private String coachNames;
 
     /** 分期规则（pt_installment_rule，1:1，随商品表单提交） */
     private Integer installmentEnabled;
@@ -145,6 +151,9 @@ public class PtProductEntity implements Serializable {
 
     public Integer getValidityDays() { return validityDays; }
     public void setValidityDays(Integer validityDays) { this.validityDays = validityDays; }
+
+    public Integer getSettlementMode() { return settlementMode; }
+    public void setSettlementMode(Integer settlementMode) { this.settlementMode = settlementMode; }
 
     public Integer getRefundType() { return refundType; }
     public void setRefundType(Integer refundType) { this.refundType = refundType; }
@@ -223,6 +232,12 @@ public class PtProductEntity implements Serializable {
 
     public String getTypeName() { return typeName; }
     public void setTypeName(String typeName) { this.typeName = typeName; }
+
+    public String getStoreNames() { return storeNames; }
+    public void setStoreNames(String storeNames) { this.storeNames = storeNames; }
+
+    public String getCoachNames() { return coachNames; }
+    public void setCoachNames(String coachNames) { this.coachNames = coachNames; }
 
     public Integer getInstallmentEnabled() { return installmentEnabled; }
     public void setInstallmentEnabled(Integer installmentEnabled) { this.installmentEnabled = installmentEnabled; }

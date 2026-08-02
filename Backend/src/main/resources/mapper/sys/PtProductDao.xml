@@ -8,7 +8,17 @@
     </select>
 
     <select id="queryList" resultType="com.dlc.modules.sys.entity.PtProductEntity">
-        select p.*, (select type_name from pt_product_type where id = p.product_type_id) as typeName
+        select p.*,
+            (select type_name from pt_product_type where id = p.product_type_id) as typeName,
+            (select group_concat(s.storeName order by r.store_id)
+               from pt_product_store_rel r
+               left join store_address sa on sa.storeAddrId = r.store_id
+               left join store s on s.storeId = sa.storeId
+              where r.product_id = p.id) as storeNames,
+            (select group_concat(c.coach_name order by r.coach_id)
+               from pt_product_coach_rel r
+               left join pt_coach c on c.id = r.coach_id and c.deleted = 0
+              where r.product_id = p.id) as coachNames
         from pt_product p
         <where>
             p.deleted = 0
@@ -92,7 +102,7 @@
         (`product_no`, `product_name`, `product_subtitle`, `product_type_id`, `service_type`,
          `category_name`, `cover_url`, `product_intro`, `product_detail`, `target_desc`,
          `original_price`, `sale_price`, `member_price`, `new_user_price`,
-         `lesson_count`, `duration_minutes`, `validity_days`,
+         `lesson_count`, `duration_minutes`, `validity_days`, `settlement_mode`,
          `refund_type`, `refund_rule`, `visible_groups`, `purchase_limit`, `sale_stock`, `sold_count`,
          `booking_gap_minutes`, `booking_capacity`, `latest_booking_hours`, `latest_free_cancel_hours`,
          `no_show_deduct`, `coach_confirm_required`,
@@ -103,7 +113,7 @@
         (#{productNo}, #{productName}, #{productSubtitle}, #{productTypeId}, #{serviceType},
          #{categoryName}, #{coverUrl}, #{productIntro}, #{productDetail}, #{targetDesc},
          #{originalPrice}, #{salePrice}, #{memberPrice}, #{newUserPrice},
-         #{lessonCount}, #{durationMinutes}, #{validityDays},
+         #{lessonCount}, #{durationMinutes}, #{validityDays}, #{settlementMode},
          #{refundType}, #{refundRule}, #{visibleGroups}, #{purchaseLimit}, #{saleStock}, #{soldCount},
          #{bookingGapMinutes}, #{bookingCapacity}, #{latestBookingHours}, #{latestFreeCancelHours},
          #{noShowDeduct}, #{coachConfirmRequired},
@@ -131,6 +141,7 @@
             <if test="lessonCount != null">`lesson_count` = #{lessonCount},</if>
             <if test="durationMinutes != null">`duration_minutes` = #{durationMinutes},</if>
             <if test="validityDays != null">`validity_days` = #{validityDays},</if>
+            <if test="settlementMode != null">`settlement_mode` = #{settlementMode},</if>
             <if test="refundType != null">`refund_type` = #{refundType},</if>
             <if test="refundRule != null">`refund_rule` = #{refundRule},</if>
             <if test="visibleGroups != null">`visible_groups` = #{visibleGroups},</if>

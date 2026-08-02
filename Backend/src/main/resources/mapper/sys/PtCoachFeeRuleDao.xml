@@ -7,14 +7,28 @@
     </select>
 
     <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachFeeRuleEntity">
-        select f.*, (select coach_name from pt_coach where id = f.coach_id) as coachName
+        select f.*,
+               (select coach_name from pt_coach where id = f.coach_id) as coachName,
+               (select s.storeName
+                  from store_address sa
+                  left join store s on s.storeId = sa.storeId
+                 where sa.storeAddrId = f.store_id) as storeName,
+               (select product_name from pt_product where id = f.product_id) as productName
         from pt_coach_fee_rule f
         <where>
             <if test="coachId != null and coachId != ''">AND f.coach_id = #{coachId}</if>
+            <if test="coachName != null and coachName != ''">
+                AND EXISTS (select 1 from pt_coach c
+                            where c.id = f.coach_id
+                              and c.coach_name LIKE concat('%', #{coachName}, '%'))
+            </if>
             <if test="ruleType != null and ruleType != ''">AND f.rule_type = #{ruleType}</if>
             <if test="status != null and status != ''">AND f.status = #{status}</if>
             <if test="storeId != null and storeId != ''">AND f.store_id = #{storeId}</if>
             <if test="productId != null and productId != ''">AND f.product_id = #{productId}</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND (f.store_id = 0 OR f.store_id IN (${storeIds}))
+            </if>
         </where>
         <choose>
             <when test="sidx != null and sidx.trim() != ''">
@@ -33,10 +47,18 @@
         select count(*) from pt_coach_fee_rule f
         <where>
             <if test="coachId != null and coachId != ''">AND f.coach_id = #{coachId}</if>
+            <if test="coachName != null and coachName != ''">
+                AND EXISTS (select 1 from pt_coach c
+                            where c.id = f.coach_id
+                              and c.coach_name LIKE concat('%', #{coachName}, '%'))
+            </if>
             <if test="ruleType != null and ruleType != ''">AND f.rule_type = #{ruleType}</if>
             <if test="status != null and status != ''">AND f.status = #{status}</if>
             <if test="storeId != null and storeId != ''">AND f.store_id = #{storeId}</if>
             <if test="productId != null and productId != ''">AND f.product_id = #{productId}</if>
+            <if test="storeIds != null and storeIds != ''">
+                AND (f.store_id = 0 OR f.store_id IN (${storeIds}))
+            </if>
         </where>
     </select>
 
@@ -55,6 +77,7 @@
         update pt_coach_fee_rule
         <set>
             <if test="ruleName != null">`rule_name` = #{ruleName},</if>
+            <if test="coachId != null">`coach_id` = #{coachId},</if>
             <if test="ruleType != null">`rule_type` = #{ruleType},</if>
             <if test="lessonFee != null">`lesson_fee` = #{lessonFee},</if>
             <if test="commissionRate != null">`commission_rate` = #{commissionRate},</if>

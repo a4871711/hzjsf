@@ -35,6 +35,10 @@ public class PtPrivateOrderEntity implements Serializable {
     private Integer serviceType;
     /** 购买门店ID(门店隔离锚点) */
     private Long storeId;
+    /** 购买时结算方式快照：1按次 2包月 */
+    private Integer settlementMode;
+    /** 包月商品的归属教练快照；按次商品为空，取实际核销教练 */
+    private Long coachId;
     /** 购买课时数(快照) */
     private Integer lessonCount;
     /** 单次服务时长快照(分钟) */
@@ -113,6 +117,12 @@ public class PtPrivateOrderEntity implements Serializable {
 
     public Long getStoreId() { return storeId; }
     public void setStoreId(Long storeId) { this.storeId = storeId; }
+
+    public Integer getSettlementMode() { return settlementMode; }
+    public void setSettlementMode(Integer settlementMode) { this.settlementMode = settlementMode; }
+
+    public Long getCoachId() { return coachId; }
+    public void setCoachId(Long coachId) { this.coachId = coachId; }
 
     public Integer getLessonCount() { return lessonCount; }
     public void setLessonCount(Integer lessonCount) { this.lessonCount = lessonCount; }

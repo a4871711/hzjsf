@@ -8,7 +8,7 @@
 
     <sql id="Base_Column_List">
         id, order_no, member_id, member_name, member_mobile,
-        product_id, product_name, product_type_id, product_type_name, service_type, store_id,
+        product_id, product_name, product_type_id, product_type_name, service_type, store_id, settlement_mode, coach_id,
         lesson_count, duration_minutes, validity_days,
         original_amount, payable_amount, paid_amount, refund_amount, discount_amount,
         marketing_type, marketing_activity_id, marketing_activity_name,
@@ -37,7 +37,7 @@
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pt_private_order
             (order_no, member_id, member_name, member_mobile,
-             product_id, product_name, product_type_id, product_type_name, service_type, store_id,
+             product_id, product_name, product_type_id, product_type_name, service_type, store_id, settlement_mode, coach_id,
              lesson_count, duration_minutes, validity_days,
              original_amount, payable_amount, paid_amount, refund_amount, discount_amount,
              marketing_type, marketing_activity_id, marketing_activity_name,
@@ -45,7 +45,7 @@
              pay_method, pay_status, order_status, created_by)
         VALUES
             (#{orderNo}, #{memberId}, #{memberName}, #{memberMobile},
-             #{productId}, #{productName}, #{productTypeId}, #{productTypeName}, #{serviceType}, #{storeId},
+             #{productId}, #{productName}, #{productTypeId}, #{productTypeName}, #{serviceType}, #{storeId}, #{settlementMode}, #{coachId},
              #{lessonCount}, #{durationMinutes}, #{validityDays},
              #{originalAmount}, #{payableAmount}, #{paidAmount}, #{refundAmount}, #{discountAmount},
              #{marketingType}, #{marketingActivityId}, #{marketingActivityName},
@@ -80,11 +80,15 @@
         SELECT p.id, p.product_name, p.product_type_id,
                (SELECT type_name FROM pt_product_type WHERE id = p.product_type_id) AS typeName,
                p.service_type, p.original_price, p.sale_price, p.member_price, p.new_user_price,
-               p.lesson_count, p.duration_minutes, p.validity_days,
+               p.lesson_count, p.duration_minutes, p.validity_days, p.settlement_mode,
                p.purchase_limit, p.sale_stock, p.sold_count
         FROM pt_product p
         WHERE p.id = #{productId} AND p.deleted = 0 AND p.listing_status = 1
           AND (p.unlisting_at IS NULL OR p.unlisting_at &gt; NOW())
+    </select>
+
+    <select id="queryProductCoachIds" resultType="long">
+        SELECT coach_id FROM pt_product_coach_rel WHERE product_id = #{productId} ORDER BY coach_id
     </select>
 
     <!-- 活动实时判有效:status=1 且 now 在时间窗内(总则0.10:不建活动过期任务);查不到=活动不可用 -->

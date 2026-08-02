@@ -1,10 +1,5 @@
 <template>
   <div>
-    <!-- 顶部标题 + 副标题 -->
-    <div class="page-head">
-      <div class="page-title">教练管理</div>
-      <div class="page-desc">维护私教教练档案：基础信息、所属门店、等级与状态（停用/离职）。</div>
-    </div>
     <r-search ref="search" :searchData="searchData" :searchForm="searchForm" :searchHandle="searchHandle" />
     <r-table
       :isSelection="true"
@@ -27,11 +22,13 @@
           <el-table-column label="会员" prop="memberName" align="center" />
           <el-table-column label="商品" prop="productName" align="center" />
           <el-table-column label="门店" prop="storeName" align="center" />
-          <el-table-column label="预约日期" prop="apptDate" align="center" />
+          <el-table-column label="预约日期" prop="appointmentDate" align="center" />
           <el-table-column label="时段" align="center">
             <template slot-scope="scope">{{ scope.row.startTime }}<span v-if="scope.row.endTime"> - {{ scope.row.endTime }}</span></template>
           </el-table-column>
-          <el-table-column label="状态" prop="statusName" align="center" />
+          <el-table-column label="状态" align="center">
+            <template slot-scope="scope">{{ appointmentStatusText(scope.row.appointmentStatus) }}</template>
+          </el-table-column>
         </el-table>
         <div style="color:#909399;font-size:12px;margin-top:10px;">只读视图，核销/取消请在交易域操作。</div>
       </div>
@@ -45,9 +42,11 @@ export default {
   data () {
     return {
       tableLoading: false,
+      exporting: false,
       selection: [],
       // 门店下拉缓存
       storeOptions: [],
+      defaultCoachLevel: '',
       searchData: {
         coachName: '',
         mobile: '',
@@ -179,7 +178,7 @@ export default {
         coachLevel: '',
         storeIds: [],
         intro: '',
-        certificateUrls: '',
+        certificateUrls: '[]',
         sortNo: 0,
         status: 1,
         disableReason: ''
@@ -202,30 +201,43 @@ export default {
       return '<span style="display:inline-block;width:36px;height:36px;line-height:36px;border-radius:50%;background:#409eff;color:#fff;font-size:14px;">' + initial + '</span>'
     },
     storeTagsHtml (row) {
-      var names = row.storeNames
-      if (!names) return '<span style="color:#909399;">-</span>'
-      return String(names).split(',').filter(function (n) { return n }).map(function (n) {
+      var self = this
+      var ids = String(row.storeIdCsv || '').split(',').filter(function (id) { return id })
+      var names = ids.map(function (id) {
+        var hit = self.storeOptions.filter(function (op) { return String(op.value) === String(id) })[0]
+        return hit ? hit.label : ('门店#' + id)
+      })
+      if (!names.length && row.storeNames) names = [row.storeNames]
+      if (!names.length) return '<span style="color:#909399;">-</span>'
+      return names.map(function (n) {
         return '<span style="display:inline-block;margin:2px;padding:0 8px;line-height:22px;background:#ecf5ff;color:#409eff;border:1px solid #d9ecff;border-radius:4px;font-size:12px;">' + n + '</span>'
       }).join('')
     },
+    appointmentStatusText (status) {
+      return status === 1 ? '已预约' : status === 2 ? '已取消' : status === 3 ? '已完成' : status === 4 ? '爽约' : '-'
+    },
     // ===== 列表 =====
+    buildListParams (page, limit) {
+      var params = {
+        coachName: this.searchData.coachName,
+        mobile: this.searchData.mobile,
+        storeId: this.searchData.storeId,
+        status: this.searchData.status,
+        coachLevel: this.searchData.coachLevel
+      }
+      if (page !== undefined) params.page = page
+      if (limit !== undefined) params.limit = limit
+      var range = this.searchData.createTime || []
+      if (range.length === 2) {
+        params.beginTime = range[0]
+        params.endTime = range[1]
+      }
+      return params
+    },
     async getData () {
       this.tableLoading = true
       try {
-        var params = {
-          page: this.pagination.offset,
-          limit: this.pagination.limit,
-          coachName: this.searchData.coachName,
-          mobile: this.searchData.mobile,
-          storeId: this.searchData.storeId,
-          status: this.searchData.status,
-          coachLevel: this.searchData.coachLevel
-        }
-        var range = this.searchData.createTime || []
-        if (range.length === 2) {
-          params.createTimeStart = range[0]
-          params.createTimeEnd = range[1]
-        }
+        var params = this.buildListParams(this.pagination.offset, this.pagination.limit)
         var res = await this.apis.ptCoach_list(params)
         var page = res.page || {}
         this.tableData = page.list || []
@@ -260,10 +272,13 @@ export default {
       var res = await this.apis.coachLevel_options()
       var list = res.list || []
       // 兼容后端返回 {id,levelName} 或 {value,label}
+      var defaultLevel = ''
       var opts = list.map(function (r) {
         var name = r.levelName !== undefined ? r.levelName : r.label
+        if (r.isDefault === 1) defaultLevel = name
         return { value: name, label: name }
       })
+      this.defaultCoachLevel = defaultLevel
       this.searchForm[this.searchIndex(this.searchForm, '教练等级')].options = opts
       this.formCols[this.labIndex(this.formCols, '教练等级')].options = opts
     },
@@ -303,21 +318,28 @@ export default {
     // ===== 新增 / 编辑 =====
     openAdd () {
       this.formData = this.blankForm()
+      this.formData.coachLevel = this.defaultCoachLevel
       this.certFileList = []
       this.elFormVisible()
     },
-    elFormDetail (row) {
+    async elFormDetail (row) {
       if (row.status === 3) {
         this.$message.warning('离职教练不可编辑')
         return
       }
+      var res = await this.apis.ptCoach_info({ id: row.id })
+      var detail = res && res.coach
+      if (!detail) {
+        this.$message.error('获取教练详情失败')
+        return
+      }
       var form = this.blankForm()
       Object.keys(form).forEach(function (key) {
-        if (row[key] !== undefined && row[key] !== null) form[key] = row[key]
+        if (detail[key] !== undefined && detail[key] !== null) form[key] = detail[key]
       })
-      // storeIds：优先用行内数组；否则空
-      form.storeIds = Array.isArray(row.storeIds) ? row.storeIds.slice() : []
-      form.certificateUrls = row.certificateUrls || ''
+      // 列表接口只有门店名称，编辑时必须使用详情接口返回的门店 ID 才能正确回显。
+      form.storeIds = Array.isArray(detail.storeIds) ? detail.storeIds.slice() : []
+      form.certificateUrls = detail.certificateUrls || '[]'
       this.formData = form
       this.buildCertFileList()
       this.elFormVisible('编辑')
@@ -335,6 +357,8 @@ export default {
     },
     async submit () {
       var data = Object.assign({}, this.formData)
+      // MySQL 字段为 JSON；即使未上传证书，也必须提交合法的空数组，不能提交空字符串。
+      data.certificateUrls = JSON.stringify(this.certUrlArray())
       data.sortNo = data.sortNo === '' ? 0 : Number(data.sortNo)
       try {
         var res = !data.id
@@ -413,9 +437,44 @@ export default {
         }
       }).catch(() => {})
     },
-    exportData () {
-      // TODO: 导出接口未提供，先占位提示
-      this.$message.info('导出功能待接入')
+    async exportData () {
+      if (this.exporting) {
+        this.$message.warning('正在导出，请勿重复操作')
+        return
+      }
+      this.exporting = true
+      try {
+        var response = await this.apis.ptCoach_export(this.buildListParams())
+        var contentType = response.headers['content-type'] || ''
+        if (contentType.indexOf('application/json') !== -1) {
+          throw new Error('后端未返回 Excel 文件')
+        }
+        var disposition = response.headers['content-disposition'] || ''
+        var fileName = '教练列表.xlsx'
+        var utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(disposition)
+        var legacyMatch = /filename="?([^";]+)"?/i.exec(disposition)
+        if (utf8Match) {
+          fileName = decodeURIComponent(utf8Match[1])
+        } else if (legacyMatch) {
+          fileName = legacyMatch[1]
+        }
+        var blob = new Blob([response.data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        })
+        var downloadUrl = window.URL.createObjectURL(blob)
+        var link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(downloadUrl)
+        this.$message.success('导出成功')
+      } catch (error) {
+        this.$message.error('导出失败，请稍后重试')
+      } finally {
+        this.exporting = false
+      }
     },
     // ===== 预约只读抽屉 =====
     openAppt (row) {
@@ -433,19 +492,3 @@ export default {
   }
 }
 </script>
-
-<style scoped lang="scss">
-.page-head {
-  margin-bottom: 16px;
-}
-.page-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
-}
-.page-desc {
-  margin-top: 4px;
-  font-size: 13px;
-  color: #909399;
-}
-</style>

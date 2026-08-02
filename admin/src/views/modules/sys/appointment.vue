@@ -105,31 +105,87 @@
     <el-drawer title="教练代约课" :visible.sync="bookVisible" size="480px" :append-to-body="true">
       <div class="book-wrap">
         <el-alert type="info" :closable="false" show-icon
-          title="代约以 ID 录入，提交后由后端校验教练/会员/商品匹配、权益课时与时段容量。"
+          title="教练和会员可按姓名、手机号或 ID 搜索；提交后由后端校验商品匹配、权益课时与时段容量。"
           style="margin-bottom:16px" />
         <el-form :model="bookForm" label-width="100px" size="medium">
-          <el-form-item label="教练ID" required>
-            <el-input v-model="bookForm.coachId" placeholder="预约教练ID" style="width:260px"></el-input>
+          <el-form-item label="教练" required>
+            <el-select
+              v-model="bookForm.coachId"
+              filterable
+              remote
+              clearable
+              reserve-keyword
+              :remote-method="searchCoachOptions"
+              :loading="coachOptionLoading"
+              @change="onCoachChange"
+              placeholder="输入姓名、手机号或ID搜索"
+              style="width:320px">
+              <el-option
+                v-for="item in coachOptions"
+                :key="item.id"
+                :label="coachOptionLabel(item)"
+                :value="item.id">
+              </el-option>
+            </el-select>
           </el-form-item>
-          <el-form-item label="会员ID" required>
-            <el-input v-model="bookForm.memberId" placeholder="会员ID" style="width:260px"></el-input>
+          <el-form-item label="会员" required>
+            <el-select
+              v-model="bookForm.memberId"
+              filterable
+              remote
+              clearable
+              reserve-keyword
+              :remote-method="searchMemberOptions"
+              :loading="memberOptionLoading"
+              @change="onMemberChange"
+              placeholder="输入姓名、手机号或ID搜索"
+              style="width:320px">
+              <el-option
+                v-for="item in memberOptions"
+                :key="item.id"
+                :label="memberOptionLabel(item)"
+                :value="item.id">
+              </el-option>
+            </el-select>
           </el-form-item>
-          <el-form-item label="私教商品ID" required>
-            <el-input v-model="bookForm.productId" placeholder="私教商品ID" style="width:260px"></el-input>
+          <el-form-item label="私教商品" required>
+            <el-select
+              v-model="bookForm.productId"
+              filterable
+              clearable
+              :loading="productOptionLoading"
+              :disabled="!bookForm.coachId"
+              placeholder="选择教练后自动加载"
+              style="width:320px">
+              <el-option
+                v-for="item in productOptions"
+                :key="item.id"
+                :label="productOptionLabel(item)"
+                :value="item.id">
+              </el-option>
+            </el-select>
           </el-form-item>
           <el-form-item label="预约日期" required>
             <el-date-picker v-model="bookForm.appointmentDate" type="date" value-format="yyyy-MM-dd"
               placeholder="选择日期" style="width:260px"></el-date-picker>
           </el-form-item>
           <el-form-item label="开始时间" required>
-            <el-time-select v-model="bookForm.startTime"
-              :picker-options="{ start: '06:00', step: '00:15', end: '23:00' }"
-              placeholder="开始时间" style="width:125px"></el-time-select>
+            <el-time-picker
+              v-model="bookForm.startTime"
+              format="HH:mm"
+              value-format="HH:mm"
+              placeholder="开始时间"
+              style="width:160px">
+            </el-time-picker>
           </el-form-item>
           <el-form-item label="结束时间" required>
-            <el-time-select v-model="bookForm.endTime"
-              :picker-options="{ start: '06:00', step: '00:15', end: '23:59' }"
-              placeholder="结束时间" style="width:125px"></el-time-select>
+            <el-time-picker
+              v-model="bookForm.endTime"
+              format="HH:mm"
+              value-format="HH:mm"
+              placeholder="结束时间"
+              style="width:160px">
+            </el-time-picker>
           </el-form-item>
         </el-form>
         <div class="book-footer">
@@ -222,6 +278,15 @@ export default {
       cancelLoading: false,
       bookVisible: false,
       bookLoading: false,
+      coachOptions: [],
+      memberOptions: [],
+      productOptions: [],
+      coachOptionLoading: false,
+      memberOptionLoading: false,
+      productOptionLoading: false,
+      coachSearchSeq: 0,
+      memberSearchSeq: 0,
+      productSearchSeq: 0,
       bookForm: { coachId: '', memberId: '', productId: '', appointmentDate: '', startTime: '', endTime: '' },
     };
   },
@@ -317,7 +382,134 @@ export default {
     },
     openBook() {
       this.bookForm = { coachId: '', memberId: '', productId: '', appointmentDate: '', startTime: '', endTime: '' };
+      this.coachOptions = [];
+      this.memberOptions = [];
+      this.productOptions = [];
+      this.coachSearchSeq++;
+      this.memberSearchSeq++;
+      this.productSearchSeq++;
+      this.coachOptionLoading = false;
+      this.memberOptionLoading = false;
+      this.productOptionLoading = false;
       this.bookVisible = true;
+    },
+    coachOptionLabel(item) {
+      var mobile = item.mobile ? ' ' + item.mobile : '';
+      var stores = item.storeNames ? ' · ' + item.storeNames : '';
+      return (item.coachName || '未命名教练') + mobile + '（ID:' + item.id + '）' + stores;
+    },
+    memberOptionLabel(item) {
+      var phone = item.phone ? ' ' + item.phone : '';
+      var store = item.storeName ? ' · ' + item.storeName : '';
+      return (item.nickname || '未命名会员') + phone + '（ID:' + item.id + '）' + store;
+    },
+    productOptionLabel(item) {
+      var duration = item.durationMinutes ? ' · ' + item.durationMinutes + '分钟' : '';
+      var remaining = item.remainingLessons != null ? ' · 剩余' + item.remainingLessons + '课时' : '';
+      return (item.productName || '未命名商品') + '（ID:' + item.id + '）' + duration + remaining;
+    },
+    onCoachChange() {
+      // 会员候选受教练所属门店约束,换教练后必须重新搜索,避免保留不匹配会员。
+      this.bookForm.memberId = '';
+      this.bookForm.productId = '';
+      this.memberOptions = [];
+      this.productOptions = [];
+      this.memberSearchSeq++;
+      this.productSearchSeq++;
+      this.memberOptionLoading = false;
+      this.productOptionLoading = false;
+      this.loadProductOptions();
+    },
+    onMemberChange() {
+      // 选中会员后只保留其当前可用权益商品;清空会员则恢复教练可预约商品。
+      this.bookForm.productId = '';
+      this.productOptions = [];
+      this.productSearchSeq++;
+      this.productOptionLoading = false;
+      this.loadProductOptions();
+    },
+    async searchCoachOptions(keyword) {
+      var value = (keyword || '').trim();
+      var seq = ++this.coachSearchSeq;
+      if (!value) {
+        this.coachOptions = [];
+        this.coachOptionLoading = false;
+        return;
+      }
+      this.coachOptionLoading = true;
+      try {
+        var res = await this.apis.privateAppointment_coachOptions({ keyword: value });
+        if (seq === this.coachSearchSeq) {
+          this.coachOptions = (res && res.list) || [];
+        }
+      } catch (e) {
+        if (seq === this.coachSearchSeq) {
+          this.coachOptions = [];
+        }
+      } finally {
+        if (seq === this.coachSearchSeq) {
+          this.coachOptionLoading = false;
+        }
+      }
+    },
+    async searchMemberOptions(keyword) {
+      var value = (keyword || '').trim();
+      var seq = ++this.memberSearchSeq;
+      if (!value) {
+        this.memberOptions = [];
+        this.memberOptionLoading = false;
+        return;
+      }
+      this.memberOptionLoading = true;
+      try {
+        var res = await this.apis.privateAppointment_memberOptions({
+          keyword: value,
+          coachId: this.bookForm.coachId || ''
+        });
+        if (seq === this.memberSearchSeq) {
+          this.memberOptions = (res && res.list) || [];
+        }
+      } catch (e) {
+        if (seq === this.memberSearchSeq) {
+          this.memberOptions = [];
+        }
+      } finally {
+        if (seq === this.memberSearchSeq) {
+          this.memberOptionLoading = false;
+        }
+      }
+    },
+    async loadProductOptions() {
+      var coachId = this.bookForm.coachId;
+      var seq = ++this.productSearchSeq;
+      if (!coachId) {
+        this.bookForm.productId = '';
+        this.productOptions = [];
+        this.productOptionLoading = false;
+        return;
+      }
+      this.productOptionLoading = true;
+      try {
+        var res = await this.apis.privateAppointment_productOptions({
+          coachId: coachId,
+          memberId: this.bookForm.memberId || ''
+        });
+        if (seq === this.productSearchSeq) {
+          var options = (res && res.list) || [];
+          this.productOptions = options;
+          // 单一候选直接带入;多商品时由管理员明确选择。
+          this.bookForm.productId = options.length === 1 ? options[0].id : '';
+        }
+      } catch (e) {
+        if (seq === this.productSearchSeq) {
+          this.bookForm.productId = '';
+          this.productOptions = [];
+        }
+      } finally {
+        if (seq === this.productSearchSeq) {
+          this.productOptionLoading = false;
+        }
+      }
     },
     submitBook() {
       var f = this.bookForm;

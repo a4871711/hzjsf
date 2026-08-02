@@ -5,10 +5,14 @@ import com.dlc.common.utils.Query;
 import com.dlc.common.utils.R;
 import com.dlc.modules.sys.entity.PtCoachFeeRuleEntity;
 import com.dlc.modules.sys.service.SysCoachFeeRuleService;
+import com.dlc.modules.sys.service.SysPtCoachService;
+import com.dlc.modules.sys.service.SysPtProductService;
+import com.dlc.modules.sys.shiro.ShiroUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,15 +27,34 @@ public class SysCoachFeeRuleController extends AbstractController {
 
     @Autowired
     private SysCoachFeeRuleService sysCoachFeeRuleService;
+    @Autowired
+    private SysPtCoachService sysPtCoachService;
+    @Autowired
+    private SysPtProductService sysPtProductService;
 
     @RequestMapping("/list")
     @RequiresPermissions("sys:commission:list")
     public R list(@RequestParam Map<String, Object> params) {
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
         Query query = new Query(params);
         List<PtCoachFeeRuleEntity> list = sysCoachFeeRuleService.queryList(query);
         int total = sysCoachFeeRuleService.queryTotal(query);
         PageUtils pageUtil = new PageUtils(list, total, query.getLimit(), query.getPage());
         return R.ok().put("page", pageUtil);
+    }
+
+    /**
+     * 分成页专用下拉，避免依赖“教练排班”和“私教商品”菜单权限。
+     * 两类数据都按当前账号的门店地址范围过滤。
+     */
+    @RequestMapping("/options")
+    @RequiresPermissions("sys:commission:list")
+    public R options() {
+        Map<String, Object> params = new HashMap<>();
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
+        return R.ok()
+                .put("coaches", sysPtCoachService.queryList(params))
+                .put("products", sysPtProductService.queryList(params));
     }
 
     @RequestMapping("/info/{id}")

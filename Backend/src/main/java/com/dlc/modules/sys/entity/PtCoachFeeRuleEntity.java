@@ -41,6 +41,10 @@ public class PtCoachFeeRuleEntity implements Serializable {
     private List<Long> productIds;
     /** 非持久字段：列表展示用教练名 */
     private String coachName;
+    /** 非持久字段：列表展示用门店名 */
+    private String storeName;
+    /** 非持久字段：列表展示用课程名 */
+    private String productName;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -92,4 +96,10 @@ public class PtCoachFeeRuleEntity implements Serializable {
 
     public String getCoachName() { return coachName; }
     public void setCoachName(String coachName) { this.coachName = coachName; }
+
+    public String getStoreName() { return storeName; }
+    public void setStoreName(String storeName) { this.storeName = storeName; }
+
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
 }

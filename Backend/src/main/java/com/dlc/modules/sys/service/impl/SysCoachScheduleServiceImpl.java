@@ -64,6 +64,7 @@ public class SysCoachScheduleServiceImpl implements SysCoachScheduleService {
             }
             for (Integer weekday : entity.getWeekdays()) {
                 if (weekday == null) { continue; }
+                validateWeekday(weekday);
                 if (ptCoachScheduleDao.countOverlap(entity.getCoachId(), storeId, weekday,
                         entity.getStartTime(), entity.getEndTime(), null) > 0) {
                     throw new RRException("排班时间重叠：" + weekCn(weekday) + " " + entity.getStartTime() + "-" + entity.getEndTime());
@@ -101,6 +102,7 @@ public class SysCoachScheduleServiceImpl implements SysCoachScheduleService {
         String startTime = entity.getStartTime() != null ? entity.getStartTime() : old.getStartTime();
         String endTime = entity.getEndTime() != null ? entity.getEndTime() : old.getEndTime();
         validateTime(startTime, endTime);
+        validateWeekday(weekday);
         if (entity.getStoreId() != null && ptCoachScheduleDao.countCoachStore(coachId, storeId) == 0) {
             throw new RRException("所选门店不属于该教练的所属门店");
         }
@@ -149,6 +151,18 @@ public class SysCoachScheduleServiceImpl implements SysCoachScheduleService {
 
     @Override
     public void changeEnabled(Long id, Integer isEnabled) {
+        if (id == null || (isEnabled == null || (isEnabled != 0 && isEnabled != 1))) {
+            throw new RRException("排班启用状态非法");
+        }
+        PtCoachScheduleEntity old = ptCoachScheduleDao.queryObject(id);
+        if (old == null) {
+            throw new RRException("排班不存在");
+        }
+        // 停用段可能与其他启用段重叠；重新启用前必须再次执行重叠校验。
+        if (isEnabled == 1 && ptCoachScheduleDao.countOverlap(old.getCoachId(), old.getStoreId(),
+                old.getWeekday(), old.getStartTime(), old.getEndTime(), old.getId()) > 0) {
+            throw new RRException("该时间段与现有启用排班重叠，无法启用");
+        }
         PtCoachScheduleEntity u = new PtCoachScheduleEntity();
         u.setId(id);
         u.setIsEnabled(isEnabled);
@@ -160,9 +174,20 @@ public class SysCoachScheduleServiceImpl implements SysCoachScheduleService {
         if (StringUtils.isBlank(startTime) || StringUtils.isBlank(endTime)) {
             throw new RRException("请填写开始和结束时间");
         }
+        // 前端支持分钟级自定义时间，接口仍只接受规范的 24 小时制 HH:mm，避免脏值进入排班表。
+        if (!startTime.matches("^(?:[01]\\d|2[0-3]):[0-5]\\d$")
+                || !endTime.matches("^(?:[01]\\d|2[0-3]):[0-5]\\d$")) {
+            throw new RRException("时间格式必须为HH:mm");
+        }
         // HH:mm 零填充格式下字符串比较等价于时间比较
         if (endTime.compareTo(startTime) <= 0) {
             throw new RRException("结束时间必须晚于开始时间");
+        }
+    }
+
+    private void validateWeekday(Integer weekday) {
+        if (weekday == null || weekday < 1 || weekday > 7) {
+            throw new RRException("星期参数必须在1到7之间");
         }
     }
 
