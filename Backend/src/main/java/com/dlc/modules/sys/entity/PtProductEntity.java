@@ -49,6 +49,8 @@ public class PtProductEntity implements Serializable {
     private Integer soldCount;
     private Integer bookingGapMinutes;
     private Integer bookingCapacity;
+    /** 同一会员同一商品每日最多可预约课时数 */
+    private Integer dailyLessonLimit;
     private Integer latestBookingHours;
     private Integer latestFreeCancelHours;
     /** 爽约是否扣课：0否 1是 */
@@ -178,6 +180,9 @@ public class PtProductEntity implements Serializable {
 
     public Integer getBookingCapacity() { return bookingCapacity; }
     public void setBookingCapacity(Integer bookingCapacity) { this.bookingCapacity = bookingCapacity; }
+
+    public Integer getDailyLessonLimit() { return dailyLessonLimit; }
+    public void setDailyLessonLimit(Integer dailyLessonLimit) { this.dailyLessonLimit = dailyLessonLimit; }
 
     public Integer getLatestBookingHours() { return latestBookingHours; }
     public void setLatestBookingHours(Integer latestBookingHours) { this.latestBookingHours = latestBookingHours; }

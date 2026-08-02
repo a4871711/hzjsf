@@ -48,7 +48,8 @@ import java.util.Date;
  * - 路线A(主):book 事务内 lockCoachDay(FOR UPDATE 间隙锁)串行化同教练同日并发后再 COUNT 判满;
  *   idx_..._coach_time 是普通索引拦不了双约,故行锁不可省;
  * - 路线B(加固,仅一对一):INSERT 带 slot_key,撞 uk_pt_appt_slot 捕获 DuplicateKeyException 转 ERROR_SLOT_TAKEN。
- * 锁序约定:先锁预约表(教练日行) → 再锁权益行(freeze/cancel/finish 内部),全链路同序防死锁。
+ * 锁序约定:先锁会员行 → 再锁预约表(教练日行) → 再锁权益行(freeze/cancel/finish 内部),
+ * 保证同会员跨教练并发预约时，每日上限校验仍然串行可信。
  */
 @Service("privateAppointmentService")
 public class PrivateAppointmentServiceImpl implements PrivateAppointmentService {
@@ -299,7 +300,8 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     /* ==================== 私有主流程 ==================== */
 
     /**
-     * 预约主流程(单事务):时段合法性 → 路线A行锁 → 同一口径 COUNT 判余量 → INSERT 占位(路线B) → freeze。
+     * 预约主流程(单事务):时段合法性 → 会员行锁判每日上限 → 路线A预约行锁
+     * → 同一口径 COUNT 判余量 → INSERT 占位(路线B) → freeze。
      */
     private Map<String, Object> doBook(PtMemberPrivateBenefitEntity benefit, Long coachId, Long storeId,
                                        String date, String startTime, String endTime, Long createdBy) {
@@ -336,6 +338,19 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
 
         String normStart = reqStart.format(TIME_FMT);
         String normEnd = reqEnd.format(TIME_FMT);
+        int lessonCount = 1;
+
+        // 先锁会员行，串行化同会员跨教练/门店/权益的并发预约，防止同时突破每日上限。
+        userInfoMapper.lockUser(benefit.getMemberId());
+        int dailyUsedLessons = 0;
+        List<Integer> occupiedLessons = ptPrivateAppointmentDao.listMemberProductDayLessonsForUpdate(
+                benefit.getMemberId(), benefit.getProductId(), date);
+        for (Integer occupiedLesson : occupiedLessons) {
+            dailyUsedLessons += occupiedLesson == null ? 1 : occupiedLesson;
+        }
+        if (dailyUsedLessons + lessonCount > dailyLessonLimitOf(product)) {
+            throw new RRException(CodeAndMsg.ERROR_DAILY_LESSON_LIMIT);
+        }
 
         // 路线A(主):锁同教练同日行,串行化后 COUNT 才可信;间隙锁保证"当日无记录"时也能拦并发插入
         ptPrivateAppointmentDao.lockCoachDay(coachId, date);
@@ -361,7 +376,7 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         apt.setAppointmentDate(date);
         apt.setStartTime(normStart);
         apt.setEndTime(normEnd);
-        apt.setLessonCount(1);
+        apt.setLessonCount(lessonCount);
         apt.setAppointmentStatus(1);
         apt.setCreatedBy(createdBy);
         apt.setUpdatedBy(createdBy);
@@ -381,8 +396,8 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
             apt.setAppointmentNo(genAppointmentNo());
             ptPrivateAppointmentDao.save(apt);
         }
-        // 冻结课时(第11步,同事务;权益行锁在预约表锁之后取得,全链路同序)
-        memberPrivateBenefitService.freeze(benefit.getId(), 1);
+        // 冻结课时(第11步,同事务;权益行锁在会员行和预约表锁之后取得)
+        memberPrivateBenefitService.freeze(benefit.getId(), lessonCount);
 
         Map<String, Object> result = new HashMap<>();
         result.put("appointmentId", apt.getId());
@@ -438,6 +453,12 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
             return 1;
         }
         return product.getBookingCapacity() == null ? 1 : product.getBookingCapacity();
+    }
+
+    /** 历史商品或未迁移数据的空/异常值按 1 节处理，避免反制约定失效。 */
+    private int dailyLessonLimitOf(PtProduct product) {
+        return product.getDailyLessonLimit() == null || product.getDailyLessonLimit() < 1
+                ? 1 : product.getDailyLessonLimit();
     }
 
     private int latestBookingHoursOf(PtProduct product) {

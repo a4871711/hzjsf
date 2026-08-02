@@ -113,6 +113,10 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (old == null || Integer.valueOf(1).equals(old.getDeleted())) {
             throw new RRException("商品不存在");
         }
+        // 兼容旧调用方未提交新字段：编辑时保留原每日预约上限。
+        if (entity.getDailyLessonLimit() == null) {
+            entity.setDailyLessonLimit(old.getDailyLessonLimit());
+        }
         normalizeVisibleGroups(entity, true);
         validateBase(entity);
         applyDefaults(entity);
@@ -223,6 +227,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         copy.setSoldCount(0);
         copy.setBookingGapMinutes(src.getBookingGapMinutes());
         copy.setBookingCapacity(src.getBookingCapacity());
+        copy.setDailyLessonLimit(src.getDailyLessonLimit());
         copy.setLatestBookingHours(src.getLatestBookingHours());
         copy.setLatestFreeCancelHours(src.getLatestFreeCancelHours());
         copy.setNoShowDeduct(src.getNoShowDeduct());
@@ -349,6 +354,10 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (e.getValidityDays() == null || (e.getValidityDays() != -1 && e.getValidityDays() <= 0)) {
             throw new RRException("有效期不合法（长期请填 -1）");
         }
+        if (e.getDailyLessonLimit() != null
+                && (e.getDailyLessonLimit() < 1 || e.getDailyLessonLimit() > 99)) {
+            throw new RRException("每日预约上限必须为1-99节");
+        }
         if (Integer.valueOf(1).equals(e.getRefundType()) && StringUtils.isBlank(e.getRefundRule())) {
             throw new RRException("支持退款时必须填写退款规则");
         }
@@ -415,6 +424,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (e.getRecommendHome() == null) { e.setRecommendHome(0); }
         if (e.getRefundType() == null) { e.setRefundType(2); }
         if (e.getBookingGapMinutes() == null) { e.setBookingGapMinutes(0); }
+        if (e.getDailyLessonLimit() == null) { e.setDailyLessonLimit(1); }
         if (e.getLatestBookingHours() == null) { e.setLatestBookingHours(2); }
         if (e.getLatestFreeCancelHours() == null) { e.setLatestFreeCancelHours(2); }
         if (e.getNoShowDeduct() == null) { e.setNoShowDeduct(1); }

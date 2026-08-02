@@ -50,6 +50,11 @@ public interface PtPrivateAppointmentDao {
     int countMemberOverlap(@Param("memberId") Long memberId, @Param("appointmentDate") String appointmentDate,
                            @Param("startTime") String startTime, @Param("endTime") String endTime);
 
+    /** 锁定读取同会员同商品当日已占用课时：计已预约/已完成/爽约，取消不计 */
+    List<Integer> listMemberProductDayLessonsForUpdate(@Param("memberId") Long memberId,
+                                                       @Param("productId") Long productId,
+                                                       @Param("appointmentDate") String appointmentDate);
+
     /** 取消:1已预约→2已取消 + cancel_at + 置 slot_key=NULL 释放一对一占位;WHERE status=1 幂等,0行=已被处理 */
     int cancelAppointment(@Param("id") Long id, @Param("cancelReason") String cancelReason);
 

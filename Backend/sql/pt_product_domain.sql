@@ -79,6 +79,7 @@ CREATE TABLE `pt_product` (
   `sold_count` INT NOT NULL DEFAULT 0 COMMENT '已售数量',
   `booking_gap_minutes` INT NOT NULL DEFAULT 0 COMMENT '预约间隔（分钟）',
   `booking_capacity` INT NOT NULL DEFAULT 1 COMMENT '单时段可预约人数',
+  `daily_lesson_limit` INT NOT NULL DEFAULT 1 COMMENT '同一会员同一商品每日最多可预约课时数',
   `latest_booking_hours` INT NOT NULL DEFAULT 2 COMMENT '最晚可预约，单位小时',
   `latest_free_cancel_hours` INT NOT NULL DEFAULT 2 COMMENT '最晚无责取消，单位小时',
   `no_show_deduct` TINYINT NOT NULL DEFAULT 1 COMMENT '爽约是否扣课：0否 1是',

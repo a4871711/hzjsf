@@ -106,6 +106,7 @@ public enum CodeAndMsg {
     ERROR_REFUND_AMOUNT_ILLEGAL(-94,"退款金额不合法"),
     ERROR_COACH_UNAVAILABLE(-95,"该教练当前不可预约"),
     ERROR_APPOINTMENT_NOT_EXIST(-96,"预约记录不存在"),
+    ERROR_DAILY_LESSON_LIMIT(-97,"已达到该商品每日预约课时上限"),
     /* —— 资金域 -100 ~ -119 —— */
     ERROR_WALLET_NOT_EXIST(-100,"储值账户不存在"),
     ERROR_WALLET_FROZEN(-101,"储值账户已冻结"),

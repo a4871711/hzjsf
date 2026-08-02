@@ -127,6 +127,7 @@ CREATE TABLE `pt_private_appointment` (
   KEY `idx_pt_private_appointment_order_id` (`order_id`),
   KEY `idx_pt_private_appointment_benefit_id` (`benefit_id`),
   KEY `idx_pt_private_appointment_member_id` (`member_id`),
+  KEY `idx_pt_appt_member_product_date_status` (`member_id`, `product_id`, `appointment_date`, `appointment_status`),
   KEY `idx_pt_private_appointment_product_id` (`product_id`),
   KEY `idx_pt_private_appointment_coach_time` (`coach_id`, `appointment_date`, `start_time`, `end_time`),
   KEY `idx_pt_private_appointment_store_id` (`store_id`),

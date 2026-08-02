@@ -217,6 +217,14 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
+              <el-form-item label="每日预约上限" prop="dailyLessonLimit">
+                <el-input v-model="form.dailyLessonLimit" placeholder="默认 1，范围 1-99">
+                  <template slot="append">节/人</template>
+                </el-input>
+                <span class="tip">同一会员同一商品每天最多可预约的课时，取消后释放额度</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
               <el-form-item label="最晚可预约(小时)" prop="latestBookingHours">
                 <el-input v-model="form.latestBookingHours" placeholder="默认 2" />
               </el-form-item>
@@ -509,6 +517,9 @@ export default {
         durationMinutes: [
           { required: true, message: '请输入单节时长', trigger: 'blur' }
         ],
+        dailyLessonLimit: [
+          { required: true, message: '请输入每日预约上限', trigger: 'blur' }
+        ],
         storeIds: [
           { required: true, type: 'array', min: 1, message: '请至少选择一个适用门店', trigger: 'change' }
         ]
@@ -575,6 +586,7 @@ export default {
         saleStock: '',
         bookingGapMinutes: 0,
         bookingCapacity: 1,
+        dailyLessonLimit: 1,
         latestBookingHours: 2,
         latestFreeCancelHours: 2,
         noShowDeduct: 1,
@@ -801,6 +813,7 @@ export default {
       data.visibleGroups = JSON.stringify(f.visibleGroupsArr || [])
       // 一对一强制单时段 1
       if (Number(f.serviceType) === 1) data.bookingCapacity = 1
+      data.dailyLessonLimit = f.dailyLessonLimit === '' ? '' : Number(f.dailyLessonLimit)
       return data
     },
     submitForm () {
@@ -811,6 +824,11 @@ export default {
         }
         // 前端补充校验：分期/附赠开启时的必填与范围
         var f = this.form
+        var dailyLessonLimit = Number(f.dailyLessonLimit)
+        if (dailyLessonLimit % 1 !== 0 || dailyLessonLimit < 1 || dailyLessonLimit > 99) {
+          this.$message.error('每日预约上限必须为 1-99 之间的整数')
+          return
+        }
         if (f.installmentEnabled === 1) {
           var down = Number(f.installmentDownPaymentAmount)
           var cnt = Number(f.installmentCount)

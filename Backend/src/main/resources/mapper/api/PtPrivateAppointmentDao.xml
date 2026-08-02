@@ -76,6 +76,18 @@
           AND deleted = 0
     </select>
 
+    <!-- 锁定读取当前已提交行，避免 RR 隔离下普通聚合读取旧快照而突破每日上限 -->
+    <select id="listMemberProductDayLessonsForUpdate" resultType="int">
+        SELECT lesson_count
+        FROM pt_private_appointment
+        WHERE member_id = #{memberId}
+          AND product_id = #{productId}
+          AND appointment_date = #{appointmentDate}
+          AND appointment_status IN (1, 3, 4)
+          AND deleted = 0
+        FOR UPDATE
+    </select>
+
     <!-- 取消:置2 + 清 slot_key 释放一对一占位(NULL 不参与唯一约束,允许同点重约);status=1 幂等闸 -->
     <update id="cancelAppointment">
         UPDATE pt_private_appointment
@@ -172,7 +184,8 @@
     <select id="selectProductRule" resultType="com.dlc.modules.api.entity.PtProduct">
         SELECT p.id, p.product_name AS productName, p.service_type AS serviceType,
                p.duration_minutes AS durationMinutes, p.booking_gap_minutes AS bookingGapMinutes,
-               p.booking_capacity AS bookingCapacity, p.latest_booking_hours AS latestBookingHours,
+               p.booking_capacity AS bookingCapacity, p.daily_lesson_limit AS dailyLessonLimit,
+               p.latest_booking_hours AS latestBookingHours,
                p.latest_free_cancel_hours AS latestFreeCancelHours, p.no_show_deduct AS noShowDeduct
         FROM pt_product p
         WHERE p.id = #{productId} AND p.deleted = 0
