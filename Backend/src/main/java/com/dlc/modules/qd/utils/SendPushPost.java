@@ -223,7 +223,7 @@ public class SendPushPost {
 		BufferedReader in = null;
 		String result = "";
 		try {
-			logger.info("发送 POST 请求url：" + url+",参数："+param);
+			logger.info("发送 POST 请求url：" + maskSensitiveData(url)+",参数："+maskSensitiveData(param));
 			URL realUrl = new URL(url);
 			// 打开和URL之间的连接
 			URLConnection conn = realUrl.openConnection();
@@ -272,6 +272,14 @@ public class SendPushPost {
 			}
 		}
 		return result;
+	}
+
+	private static String maskSensitiveData(String data) {
+		if (data == null) {
+			return null;
+		}
+		String masked = data.replaceAll("(?i)(access_token|secret|password|code)=([^&\\s]+)", "$1=***");
+		return masked.replaceAll("(?i)(\\\"(?:access_token|secret|password|code)\\\"\\s*:\\s*\\\")[^\\\"]*(\\\")", "$1***$2");
 	}
 
 	public static void main(String[] args){

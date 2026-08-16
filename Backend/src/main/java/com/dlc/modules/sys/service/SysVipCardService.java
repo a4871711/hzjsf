@@ -29,6 +29,9 @@ public interface SysVipCardService {
     /** 该权益卡已产生的持有实例数(>0 表示已售出,不可删) */
     int benefitCount(Long vipCardId);
 
+    /** 统计该权益卡被私教商品权益价引用的数量。 */
+    int productPriceBindingCount(Long vipCardId);
+
     /** 上/下架 1上架 2下架 */
     int updateOnOffCard(Long vipCardId, Integer status);
 

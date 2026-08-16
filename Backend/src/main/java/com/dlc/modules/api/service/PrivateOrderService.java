@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * 私教订单 Service(移动端):试算 quote / 下单 create / 我的订单 / 订单详情。
  * 金额一律后端重算(不信前端),BigDecimal HALF_UP;
- * create 只建待支付单+占券+调微信统一下单,不收钱不扣库存(回调推进在第13步 updatePrivateOrder)。
+ * create 按支付方式处理：微信/分期建待支付单并调微信，储值在同一事务内扣款并推进订单。
  *
  * @author claude
  */
@@ -28,16 +28,37 @@ public interface PrivateOrderService {
     /**
      * 下单(单事务):校验上架/门店/可见人群/限购/库存 → 金额重算(口径与 quote 同一方法)
      * → 建 pt_private_order(order_status=0,pay_status=0,全量快照) → 券明细+mk_member_coupon 占用 CAS
-     * → 调微信统一下单。统一下单失败抛运行时异常整体回滚(订单与券占用一并回退)。
+     * → 微信全款/分期首付调微信统一下单，储值支付直接扣余额并结算。
+     * 任一资金步骤失败均抛运行时异常整体回滚(订单与券占用一并回退)。
      *
      * @return {orderNo, payableAmount, payParams} payParams 为小程序调起支付参数
      */
-    Map<String, Object> create(UserInfoVo user, Long productId, Long storeId,
+    Map<String, Object> create(UserInfoVo user, Long productId, Long storeId, Long coachId, Integer payMethod,
                                Long memberCouponId, Integer marketingType, Long marketingActivityId,
                                HttpServletRequest request);
 
+    /** 本人待支付微信/分期订单重新获取支付参数，不重复建单、不重复占券 */
+    Map<String, Object> repay(UserInfoVo user, String orderNo, HttpServletRequest request);
+
+    /**
+     * 会员主动取消本人待支付订单。取消前先向微信查单并关单，避免支付与取消并发。
+     *
+     * @return true=已取消；false=微信已支付并完成本地确认，不能取消
+     */
+    boolean cancelUnpaid(Long userId, String orderNo);
+
+    /**
+     * 查询并同步本人私教订单的微信支付结果；客户端支付成功后以此结果为准。
+     *
+     * @return paid/orderStatus/payStatus/tradeState
+     */
+    Map<String, Object> confirmWechatPay(Long userId, String orderNo);
+
     /** 我的订单分页(params 需含 userId/page/limit,可选 orderStatus) */
     PageUtils myOrders(Map<String, Object> params);
+
+    /** 我的私教权益分页(params 需含 userId/page/limit，可选 status) */
+    PageUtils myBenefits(Map<String, Object> params);
 
     /** 订单详情(含券明细);非本人订单按不存在处理(ERROR_PT_ORDER_NOT_EXIST) */
     Map<String, Object> detail(Long userId, String orderNo);
@@ -46,7 +67,7 @@ public interface PrivateOrderService {
      * 支付成功回调核心(第13步,单事务,签名对齐既有回调分支 updateXxxOrder 调用约定)。
      * 流程:FOR UPDATE 锁订单行 → 幂等闸1 order_status=0 前置判断 → 记账 IncomePayDetail
      * → 幂等闸3 扣库存条件 UPDATE(活动单加扣活动表) → 券核销 3使用中→1已使用
-     * → 支付方式分支【一次性微信=结清 / 储值·分期=桩,第19/20步接线】
+     * → 支付方式分支【一次性微信/储值=结清 / 分期首付=部分支付并生成分期计划】
      * → 幂等闸2 按 order_id 建权益(activate) → 附赠团课权益发放 → 团课转私教留桩(第22步)。
      * 微信可能重复回调:重复回调/异常单号返回 0 不抛错,回调链正常应答避免无限重试。
      *
@@ -64,7 +85,7 @@ public interface PrivateOrderService {
      * → 冲减权益课时(refundLessons 缺省=剩余课时全冲,refundDeduct 只冲 remaining,不可冲到冻结/已用)
      * → 订单落退款(全额退→order_status=4/pay_status=3,部分退保持原状态) → 写退款流水(payType=9)
      * → 渠道退款放事务末:微信(1)走现有 wxRefund 通道,受理失败抛异常整体回滚;
-     *   储值(3)/分期(4)【桩】第19/20步接线前直接拒绝。
+     *   储值(3)回补储值余额；分期(4)退款仍按现有规则拒绝，等待独立分期退款方案。
      * 注意:本类属 api 包,改动须重启 Tomcat 才生效。
      *
      * @param orderId       私教订单ID

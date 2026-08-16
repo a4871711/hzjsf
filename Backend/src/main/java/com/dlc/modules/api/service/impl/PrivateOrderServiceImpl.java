@@ -6,9 +6,12 @@ import com.dlc.common.utils.ConfigConstant;
 import com.dlc.common.utils.OrderNoGenerator;
 import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
+import com.dlc.modules.api.dao.CoachApiDao;
 import com.dlc.modules.api.dao.PtMemberPrivateBenefitDao;
+import com.dlc.modules.api.dao.PtInstallmentRuleApiDao;
 import com.dlc.modules.api.dao.PtPrivateOrderCouponRelDao;
 import com.dlc.modules.api.dao.PtPrivateOrderDao;
+import com.dlc.modules.api.entity.PtInstallmentRuleEntity;
 import com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity;
 import com.dlc.modules.api.entity.PtPrivateOrderCouponRelEntity;
 import com.dlc.modules.api.entity.PtPrivateOrderEntity;
@@ -25,6 +28,7 @@ import com.dlc.modules.api.service.WxPayService;
 import com.dlc.modules.api.vo.UserInfoVo;
 import com.dlc.modules.sys.entity.PtCoachFeeRuleEntity;
 import com.dlc.modules.sys.entity.SysCoachTradeDetailEntity;
+import com.dlc.modules.sys.dao.PtCoachMonthlyCommissionRuleDao;
 import com.dlc.modules.sys.service.SysCoachFeeRuleService;
 import com.dlc.modules.sys.service.SysCoachTradeDetailService;
 import org.slf4j.Logger;
@@ -55,11 +59,17 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
     private static final int MARKETING_GROUP_BUY = 1;
     /** 营销类型:限时秒杀 */
     private static final int MARKETING_FLASH_SALE = 2;
+    /** 微信 V2 规定统一下单后至少等待5分钟才能关单。 */
+    private static final long WECHAT_CLOSE_MIN_INTERVAL_MILLIS = 5L * 60L * 1000L;
 
     private Logger log = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private PtPrivateOrderDao ptPrivateOrderDao;
+    @Autowired
+    private CoachApiDao coachApiDao;
+    @Autowired
+    private PtInstallmentRuleApiDao ptInstallmentRuleApiDao;
     @Autowired
     private PtPrivateOrderCouponRelDao ptPrivateOrderCouponRelDao;
     @Autowired
@@ -84,27 +94,41 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
     private SysCoachFeeRuleService sysCoachFeeRuleService;
     @Autowired
     private SysCoachTradeDetailService sysCoachTradeDetailService;
+    @Autowired
+    private PtCoachMonthlyCommissionRuleDao ptCoachMonthlyCommissionRuleDao;
 
     @Override
     public Map<String, Object> quote(UserInfoVo user, Long productId, Long storeId,
                                      Long memberCouponId, Integer marketingType, Long marketingActivityId) {
         PriceResult priced = checkAndPrice(user, productId, storeId, memberCouponId, marketingType, marketingActivityId);
-        return priced.toMap();
+        Map<String, Object> result = priced.toMap();
+        result.putAll(buildInstallmentOption(priced.product, priced.payableAmount));
+        return result;
     }
 
     @Override
-    public Map<String, Object> create(UserInfoVo user, Long productId, Long storeId,
+    public Map<String, Object> create(UserInfoVo user, Long productId, Long storeId, Long coachId, Integer payMethod,
                                       Long memberCouponId, Integer marketingType, Long marketingActivityId,
                                       HttpServletRequest request) {
+        int selectedPayMethod = payMethod == null ? 1 : payMethod;
+        if (selectedPayMethod != 1 && selectedPayMethod != 3 && selectedPayMethod != 4) {
+            throw new RRException("不支持的支付方式");
+        }
         // 1. 校验 + 金额重算(与 quote 完全同一口径,不信前端金额)
         PriceResult priced = checkAndPrice(user, productId, storeId, memberCouponId, marketingType, marketingActivityId);
-        // 微信统一下单要求 total_fee>0;真实券抵扣(第18步)接入后若出现0元单,支付链路届时一并裁定
         if (priced.payableAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RRException("应付金额异常,无法发起支付");
         }
+        if (coachId == null || coachApiDao.countBookableCoach(productId, storeId, coachId) == 0) {
+            throw new RRException("所选教练当前无法在该门店服务此课程");
+        }
+        Map<String, Object> installmentOption = buildInstallmentOption(priced.product, priced.payableAmount);
+        if (selectedPayMethod == 4 && !Boolean.TRUE.equals(installmentOption.get("installmentAvailable"))) {
+            throw new RRException("当前商品不支持分期付款");
+        }
 
         // 2. 订单号:PT + yyyyMMddHHmmss+随机 + 末位后缀 b(§0.6.1 仲裁,严禁复用旧私教课的"4")
-        PtPrivateOrderEntity order = buildOrder(user, storeId, priced);
+        PtPrivateOrderEntity order = buildOrder(user, storeId, coachId, selectedPayMethod, priced);
         order.setOrderNo(genOrderNo());
         try {
             ptPrivateOrderDao.save(order);
@@ -130,13 +154,29 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             ptPrivateOrderCouponRelDao.save(rel);
         }
 
-        // 4. 微信统一下单(复用现有通用方法 doPay,回调走 /api/wx/proPayNotify,第13步接后缀 b 分支)
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("orderNo", order.getOrderNo());
+        result.put("payableAmount", priced.payableAmount);
+        result.put("payMethod", selectedPayMethod);
+
+        // 4a. 储值支付不经过第三方收银台；余额扣减与订单结算在同一事务内完成。
+        if (selectedPayMethod == 3) {
+            updatePrivateOrder(order.getOrderNo(), priced.payableAmount, null, ConfigConstant.BLPAY);
+            result.put("paymentAmount", priced.payableAmount);
+            result.put("paid", true);
+            return result;
+        }
+
+        // 4b. 微信支付全款；分期支付仅收商品配置的首付款，回调后生成分期计划。
+        BigDecimal paymentAmount = selectedPayMethod == 4
+                ? (BigDecimal) installmentOption.get("installmentDownPaymentAmount")
+                : priced.payableAmount;
         Map<String, Object> payParams;
         try {
             Map<String, Object> product = new HashMap<String, Object>();
             product.put("orderNo", order.getOrderNo());
             product.put("body", "矢历运动");
-            product.put("totalFee", priced.payableAmount.toPlainString());
+            product.put("totalFee", paymentAmount.toPlainString());
             product.put("openId", user.getOpenId());
             payParams = wxPayService.doPay(product, request);
         } catch (Exception e) {
@@ -145,11 +185,178 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             throw new RRException(e.getMessage() == null ? "微信统一下单失败" : e.getMessage());
         }
 
+        result.put("paymentAmount", paymentAmount);
+        result.put("payParams", payParams);
+        result.put("paid", false);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> repay(UserInfoVo user, String orderNo, HttpServletRequest request) {
+        if (user == null || orderNo == null || orderNo.trim().isEmpty()) {
+            throw new RRException(CodeAndMsg.ERROR_LACK_PARAM);
+        }
+        PtPrivateOrderEntity order = ptPrivateOrderDao.selectByOrderNo(orderNo.trim());
+        if (order == null || !user.getUserId().equals(order.getMemberId())) {
+            throw new RRException(CodeAndMsg.ERROR_PT_ORDER_NOT_EXIST);
+        }
+        if (!Integer.valueOf(0).equals(order.getOrderStatus())) {
+            throw new RRException("仅待支付订单可继续支付");
+        }
+        int payMethod = order.getPayMethod() == null ? 1 : order.getPayMethod();
+        if (payMethod != 1 && payMethod != 4) {
+            throw new RRException("该支付方式不支持继续支付");
+        }
+
+        // 回调可能延迟或丢失：重新拉起收银台前先主动查单，微信已支付则直接补做本地幂等结算。
+        Map<String, Object> paymentState = confirmWechatPay(user.getUserId(), order.getOrderNo());
+        if (Boolean.TRUE.equals(paymentState.get("paid"))) {
+            Map<String, Object> paidResult = new HashMap<String, Object>();
+            paidResult.put("orderNo", order.getOrderNo());
+            paidResult.put("payableAmount", order.getPayableAmount());
+            paidResult.put("paid", true);
+            return paidResult;
+        }
+
+        BigDecimal paymentAmount = order.getPayableAmount();
+        if (payMethod == 4) {
+            Map<String, Object> option = buildInstallmentOptionForOrder(order);
+            if (!Boolean.TRUE.equals(option.get("installmentAvailable"))) {
+                throw new RRException("该订单的分期配置已失效，请联系客服");
+            }
+            paymentAmount = (BigDecimal) option.get("installmentDownPaymentAmount");
+        }
+        Map<String, Object> product = new HashMap<String, Object>();
+        product.put("orderNo", order.getOrderNo());
+        product.put("body", "矢历运动");
+        product.put("totalFee", paymentAmount.toPlainString());
+        product.put("openId", user.getOpenId());
+        Map<String, Object> payParams;
+        try {
+            payParams = wxPayService.doPay(product, request);
+        } catch (Exception e) {
+            throw new RRException(e.getMessage() == null ? "微信统一下单失败" : e.getMessage());
+        }
         Map<String, Object> result = new HashMap<String, Object>();
         result.put("orderNo", order.getOrderNo());
-        result.put("payableAmount", priced.payableAmount);
+        result.put("payableAmount", order.getPayableAmount());
+        result.put("paymentAmount", paymentAmount);
+        result.put("payMethod", payMethod);
         result.put("payParams", payParams);
+        result.put("paid", false);
         return result;
+    }
+
+    @Override
+    public boolean cancelUnpaid(Long userId, String orderNo) {
+        if (userId == null || orderNo == null || orderNo.trim().isEmpty()) {
+            throw new RRException(CodeAndMsg.ERROR_LACK_PARAM);
+        }
+        String normalizedOrderNo = orderNo.trim();
+        PtPrivateOrderEntity snapshot = ptPrivateOrderDao.selectByOrderNo(normalizedOrderNo);
+        if (snapshot == null || !userId.equals(snapshot.getMemberId())) {
+            throw new RRException(CodeAndMsg.ERROR_PT_ORDER_NOT_EXIST);
+        }
+        if (Integer.valueOf(3).equals(snapshot.getOrderStatus())) {
+            return true;
+        }
+        if (!Integer.valueOf(0).equals(snapshot.getOrderStatus())) {
+            throw new RRException("仅待支付订单可取消");
+        }
+
+        // 先查微信真实状态。若已支付则补结算并拒绝取消；若未支付则必须先关微信订单，杜绝关单后的继续扣款。
+        Map<String, String> queryResult = wxPayService.queryPayOrder(normalizedOrderNo);
+        if ("SUCCESS".equals(queryResult.get("result_code"))) {
+            String tradeState = queryResult.get("trade_state");
+            if ("SUCCESS".equals(tradeState)) {
+                settleWechatPayment(queryResult);
+                return false;
+            }
+            if ("USERPAYING".equals(tradeState)) {
+                throw new RRException("微信正在处理支付，请稍后刷新订单再取消");
+            }
+            if (!"CLOSED".equals(tradeState) && !"REVOKED".equals(tradeState)
+                    && !"REFUND".equals(tradeState)) {
+                if (snapshot.getCreatedAt() != null
+                        && System.currentTimeMillis() - snapshot.getCreatedAt().getTime()
+                        < WECHAT_CLOSE_MIN_INTERVAL_MILLIS) {
+                    throw new RRException("订单创建未满5分钟，微信暂不允许关单，请稍后再取消");
+                }
+                Map<String, String> closeResult = wxPayService.closePayOrder(normalizedOrderNo);
+                if (!"SUCCESS".equals(closeResult.get("result_code"))) {
+                    String errCode = closeResult.get("err_code");
+                    if ("ORDERPAID".equals(errCode)) {
+                        Map<String, String> paidResult = wxPayService.queryPayOrder(normalizedOrderNo);
+                        if ("SUCCESS".equals(paidResult.get("result_code"))
+                                && "SUCCESS".equals(paidResult.get("trade_state"))) {
+                            settleWechatPayment(paidResult);
+                            return false;
+                        }
+                        throw new RRException("微信支付结果确认中，请稍后刷新订单");
+                    }
+                    if (!"ORDERCLOSED".equals(errCode)) {
+                        throw new RRException("微信订单关闭失败" + errorCodeSuffix(errCode));
+                    }
+                }
+            }
+        } else if (!"ORDERNOTEXIST".equals(queryResult.get("err_code"))) {
+            throw new RRException("微信支付状态查询失败" + errorCodeSuffix(queryResult.get("err_code")));
+        }
+
+        // 微信已确认未支付且已关闭，再锁本地订单并取消；与异步回调持有同一订单行锁。
+        PtPrivateOrderEntity order = ptPrivateOrderDao.selectByOrderNoForUpdate(normalizedOrderNo);
+        if (order == null || !userId.equals(order.getMemberId())) {
+            throw new RRException(CodeAndMsg.ERROR_PT_ORDER_NOT_EXIST);
+        }
+        if (Integer.valueOf(3).equals(order.getOrderStatus())) {
+            return true;
+        }
+        if (!Integer.valueOf(0).equals(order.getOrderStatus())) {
+            throw new RRException("仅待支付订单可取消");
+        }
+        if (ptPrivateOrderDao.cancelTimeoutOrder(order.getId()) == 0) {
+            throw new RRException("订单状态已变更，请刷新后重试");
+        }
+        if (order.getMemberCouponId() != null) {
+            // 券释放自带 used_order_id 条件，只会释放本单占用的券。
+            ptPrivateOrderCouponRelDao.releaseMemberCoupon(order.getMemberCouponId(), order.getId());
+        }
+        return true;
+    }
+
+    @Override
+    public Map<String, Object> confirmWechatPay(Long userId, String orderNo) {
+        if (userId == null || orderNo == null || orderNo.trim().isEmpty()) {
+            throw new RRException(CodeAndMsg.ERROR_LACK_PARAM);
+        }
+        String normalizedOrderNo = orderNo.trim();
+        PtPrivateOrderEntity order = ptPrivateOrderDao.selectByOrderNo(normalizedOrderNo);
+        if (order == null || !userId.equals(order.getMemberId())) {
+            throw new RRException(CodeAndMsg.ERROR_PT_ORDER_NOT_EXIST);
+        }
+        if (!Integer.valueOf(0).equals(order.getOrderStatus())) {
+            return buildPaymentState(order, null);
+        }
+
+        Map<String, String> queryResult = wxPayService.queryPayOrder(normalizedOrderNo);
+        if (!"SUCCESS".equals(queryResult.get("result_code"))) {
+            String errCode = queryResult.get("err_code");
+            if ("ORDERNOTEXIST".equals(errCode)) {
+                return buildPaymentState(order, "NOTPAY");
+            }
+            throw new RRException("微信支付状态查询失败" + errorCodeSuffix(errCode));
+        }
+
+        String tradeState = queryResult.get("trade_state");
+        if ("SUCCESS".equals(tradeState)) {
+            settleWechatPayment(queryResult);
+            PtPrivateOrderEntity refreshed = ptPrivateOrderDao.selectByOrderNo(normalizedOrderNo);
+            if (refreshed == null || !isPaid(refreshed)) {
+                throw new RRException("微信已支付，但本地订单确认失败，请联系客服");
+            }
+            return buildPaymentState(refreshed, tradeState);
+        }
+        return buildPaymentState(order, tradeState);
     }
 
     @Override
@@ -157,6 +364,14 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         Query query = new Query(params);
         List<PtPrivateOrderEntity> list = ptPrivateOrderDao.queryMyOrders(query);
         int total = ptPrivateOrderDao.countMyOrders(query);
+        return new PageUtils(list, total, query.getLimit(), query.getPage());
+    }
+
+    @Override
+    public PageUtils myBenefits(Map<String, Object> params) {
+        Query query = new Query(params);
+        List<Map<String, Object>> list = ptMemberPrivateBenefitDao.queryMyBenefits(query);
+        int total = ptMemberPrivateBenefitDao.countMyBenefits(query);
         return new PageUtils(list, total, query.getLimit(), query.getPage());
     }
 
@@ -205,20 +420,34 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             // 首付期直接入账、首付激活全部课时,订单转"首付已付(order_status=1)/部分支付(pay_status=1)"。
             // 记账放在闸1之后同事务(重复回调闸1已挡);后续期由 payBill→installmentBillCallback(后缀a)逐期入账。
             // 不 fall through 一次性结算块(避免误把分期单结清 order_status=2 并二次激活)。
-            BigDecimal downPaid = wallet != null ? wallet : order.getPayableAmount();
+            if (!ConfigConstant.WXPAY.equals(payType) || transactionId == null || transactionId.trim().isEmpty()
+                    || wallet == null) {
+                throw new RRException("私教分期首付渠道参数异常,orderNo=" + orderNo);
+            }
+            BigDecimal downPaid = wallet;
             incomePayDetailService.saveIncomePayDetail(orderNo, transactionId, scale(downPaid), payType);
             ptInstallmentService.createInstallmentPlan(order, downPaid);
-            return 1;
+            wallet = scale(downPaid);
         }
 
-        // ---- 一次性支付(本期 create 只产 pay_method=1 微信;支付宝回调走同一口径) ----
-        if (wallet != null && order.getPayableAmount() != null
-                && wallet.compareTo(order.getPayableAmount()) != 0) {
-            // 实收与应付不一致:以回调实收为准记账并留痕,不阻断(金额重算在下单侧已收口)
-            log.warn("私教订单回调:实收{}与应付{}不一致 orderNo={}", wallet, order.getPayableAmount(), orderNo);
+        // ---- 一次性支付(本期 create 只产 pay_method=1 微信) ----
+        if (payMethod == 1) {
+            if (!ConfigConstant.WXPAY.equals(payType) || transactionId == null || transactionId.trim().isEmpty()) {
+                throw new RRException("私教订单微信支付渠道参数异常,orderNo=" + orderNo);
+            }
+            if (wallet == null || order.getPayableAmount() == null
+                    || scale(wallet).compareTo(scale(order.getPayableAmount())) != 0) {
+                // 金额不一致绝不能发权益或记账；抛异常让微信重试并保留人工核查入口。
+                log.error("私教订单微信实收与应付不一致 orderNo={},actual={},expected={}",
+                        orderNo, wallet, order.getPayableAmount());
+                throw new RRException("微信支付金额与订单应付金额不一致,orderNo=" + orderNo);
+            }
+            wallet = scale(wallet);
         }
         // 记账:放在闸1之后同事务,重复回调不会重复写流水(回调链对后缀b跳过统一记账,照VIP后缀6/7现状)
-        incomePayDetailService.saveIncomePayDetail(orderNo, transactionId, wallet, payType);
+        if (payMethod != 4) {
+            incomePayDetailService.saveIncomePayDetail(orderNo, transactionId, wallet, payType);
+        }
 
         // 幂等闸3:扣库存累计已售,条件 UPDATE 终态护栏;影响0行=售罄,抛异常整体回滚(极少见,人工退款处理)
         if (ptPrivateOrderDao.increaseProductSoldCount(order.getProductId()) == 0) {
@@ -246,18 +475,19 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             }
         }
 
-        // 状态推进:0待支付→2已结清(一次性),pay_status=2,写实收/支付/结清时间;
-        // WHERE order_status=0 与闸1同口径双保险(持有行锁,0行=逻辑异常,回滚)
-        if (ptPrivateOrderDao.settleOrder(order.getId(), scale(wallet)) == 0) {
-            throw new RRException("私教订单状态推进失败,orderNo=" + orderNo);
+        if (payMethod != 4) {
+            // 一次性支付推进到已结清；分期订单已由 createInstallmentPlan 推进到首付已付/部分支付。
+            if (ptPrivateOrderDao.settleOrder(order.getId(), scale(wallet)) == 0) {
+                throw new RRException("私教订单状态推进失败,orderNo=" + orderNo);
+            }
+
+            // 整单提成由规则类型决定：一次性支付成功后按订单实收金额结算给订单归属教练。
+            settleWholeOrderCommission(order, scale(wallet));
+
+            // 分期首付的权益已在 createInstallmentPlan 内激活；一次性支付在此激活。
+            memberPrivateBenefitService.activate(order.getId(), order.getMemberId(), order.getProductId(),
+                    order.getStoreId(), order.getLessonCount(), order.getValidityDays());
         }
-
-        // 整单提成由规则类型决定：支付成功后按订单实收金额结算给订单归属教练。
-        settleWholeOrderCommission(order, scale(wallet));
-
-        // 幂等闸2:建权益,activate 内部按 order_id 查重;课时/有效期一律取订单快照,不回查商品
-        memberPrivateBenefitService.activate(order.getId(), order.getMemberId(), order.getProductId(),
-                order.getStoreId(), order.getLessonCount(), order.getValidityDays());
 
         // 附赠团课权益发放(商品配置 pt_product_group_benefit 启用时,一单只发一次)
         grantGroupBenefit(order);
@@ -435,9 +665,16 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
 
         PriceResult priced = new PriceResult();
         priced.product = product;
-        // 基础价口径(本期):原样取 sale_price;会员价(member_price)/新人价(new_user_price)的
-        // 身份判定规则需求未定义,与第10步商品域同口径不臆造,规则明确后在此替换取价分支
+        // 活动价不叠加权益价；普通购买按会员有效 VIP 权益匹配，命中多张时 SQL 取最低权益价。
         priced.originalAmount = scale(product.getSalePrice());
+        if (mkType == MARKETING_NONE) {
+            Map<String, Object> benefitPrice = ptPrivateOrderDao.selectBestBenefitPrice(user.getUserId(), productId);
+            if (benefitPrice != null) {
+                priced.benefitVipCardId = ((Number) benefitPrice.get("vipCardId")).longValue();
+                priced.benefitPrice = scale((BigDecimal) benefitPrice.get("benefitPrice"));
+                priced.originalAmount = priced.benefitPrice;
+            }
+        }
         priced.marketingType = mkType;
         priced.activityDiscountAmount = BigDecimal.ZERO;
         priced.couponDiscountAmount = BigDecimal.ZERO;
@@ -514,8 +751,54 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
 
     /* ==================== 内部工具 ==================== */
 
-    /** 组装待支付订单实体:全量快照,order_status=0,pay_status=0,pay_method=1微信(本步仅微信) */
-    private PtPrivateOrderEntity buildOrder(UserInfoVo user, Long storeId, PriceResult priced) {
+    /** 使用已经验签的微信查单结果补做本地结算，回调与主动查单复用同一幂等入口。 */
+    private void settleWechatPayment(Map<String, String> queryResult) {
+        String orderNo = queryResult.get("out_trade_no");
+        String transactionId = queryResult.get("transaction_id");
+        String totalFee = queryResult.get("total_fee");
+        if (orderNo == null || orderNo.trim().isEmpty()
+                || transactionId == null || transactionId.trim().isEmpty()
+                || totalFee == null || totalFee.trim().isEmpty()) {
+            throw new RRException("微信支付查询结果缺少结算参数");
+        }
+        BigDecimal totalFeeFen;
+        try {
+            totalFeeFen = new BigDecimal(totalFee);
+        } catch (NumberFormatException e) {
+            throw new RRException("微信支付查询金额格式错误", e);
+        }
+        if (totalFeeFen.scale() > 0 || totalFeeFen.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RRException("微信支付查询金额格式错误");
+        }
+        BigDecimal paidAmount = totalFeeFen.movePointLeft(2).setScale(2);
+        updatePrivateOrder(orderNo, paidAmount, transactionId, ConfigConstant.WXPAY);
+    }
+
+    /** 前端只消费本地最终状态；tradeState 用于展示微信侧仍在处理/未支付等中间态。 */
+    private Map<String, Object> buildPaymentState(PtPrivateOrderEntity order, String tradeState) {
+        Map<String, Object> result = new HashMap<String, Object>();
+        boolean paid = isPaid(order);
+        result.put("orderNo", order.getOrderNo());
+        result.put("paid", paid);
+        result.put("orderStatus", order.getOrderStatus());
+        result.put("payStatus", order.getPayStatus());
+        result.put("tradeState", tradeState == null ? (paid ? "SUCCESS" : "LOCAL") : tradeState);
+        return result;
+    }
+
+    private boolean isPaid(PtPrivateOrderEntity order) {
+        return order != null
+                && (Integer.valueOf(1).equals(order.getOrderStatus()) || Integer.valueOf(2).equals(order.getOrderStatus()))
+                && (Integer.valueOf(1).equals(order.getPayStatus()) || Integer.valueOf(2).equals(order.getPayStatus()));
+    }
+
+    private String errorCodeSuffix(String errCode) {
+        return errCode == null || errCode.trim().isEmpty() ? "" : "（" + errCode + "）";
+    }
+
+    /** 组装待支付订单实体：教练与支付方式均按确认订单页选择写入快照。 */
+    private PtPrivateOrderEntity buildOrder(UserInfoVo user, Long storeId, Long coachId,
+                                            Integer payMethod, PriceResult priced) {
         PtProduct product = priced.product;
         PtPrivateOrderEntity order = new PtPrivateOrderEntity();
         order.setMemberId(user.getUserId());
@@ -527,15 +810,13 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         order.setProductTypeName(product.getTypeName());
         order.setServiceType(product.getServiceType());
         order.setStoreId(storeId);
-        List<Long> coachIds = ptPrivateOrderDao.queryProductCoachIds(product.getId());
-        if (coachIds.size() == 1) {
-            // 商品只有一名指定教练时记录订单归属；多教练商品不能擅自把整单提成归给其中一人。
-            order.setCoachId(coachIds.get(0));
-        }
+        order.setCoachId(coachId);
         // 课时/时长/有效期快照:激活权益(第13步)一律取订单快照,不回查商品
         order.setLessonCount(product.getLessonCount());
         order.setDurationMinutes(product.getDurationMinutes());
         order.setValidityDays(product.getValidityDays());
+        order.setBenefitVipCardId(priced.benefitVipCardId);
+        order.setBenefitPrice(priced.benefitPrice);
         order.setOriginalAmount(priced.originalAmount);
         order.setPayableAmount(priced.payableAmount);
         order.setPaidAmount(BigDecimal.ZERO);
@@ -551,11 +832,41 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             order.setCouponName((String) priced.memberCoupon.get("couponName"));
         }
         order.setCouponDiscountAmount(priced.couponDiscountAmount);
-        order.setPayMethod(1);
+        order.setPayMethod(payMethod);
         order.setPayStatus(0);
         order.setOrderStatus(0);
         order.setCreatedBy(user.getUserId());
         return order;
+    }
+
+    /** 返回确认订单页可直接展示的分期配置；配置不完整时只关闭分期选项，不影响其他支付方式。 */
+    private Map<String, Object> buildInstallmentOption(PtProduct product, BigDecimal totalAmount) {
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("installmentAvailable", false);
+        if (product == null || product.getId() == null) {
+            return result;
+        }
+        PtInstallmentRuleEntity rule = ptInstallmentRuleApiDao.selectByProductId(product.getId());
+        BigDecimal total = scale(totalAmount);
+        BigDecimal down = rule == null ? BigDecimal.ZERO : scale(rule.getDownPaymentAmount());
+        if (rule == null || !Integer.valueOf(1).equals(rule.getIsEnabled())
+                || !Integer.valueOf(1).equals(rule.getStatus())
+                || rule.getInstallmentCount() == null || rule.getInstallmentCount() < 2
+                || rule.getInstallmentIntervalMonths() == null || rule.getInstallmentIntervalMonths() < 1
+                || down.compareTo(BigDecimal.ZERO) <= 0 || down.compareTo(total) >= 0) {
+            return result;
+        }
+        result.put("installmentAvailable", true);
+        result.put("installmentDownPaymentAmount", down);
+        result.put("installmentCount", rule.getInstallmentCount());
+        result.put("installmentIntervalMonths", rule.getInstallmentIntervalMonths());
+        return result;
+    }
+
+    /** 历史待支付订单继续支付时按订单总额重新读取同一商品分期规则。 */
+    private Map<String, Object> buildInstallmentOptionForOrder(PtPrivateOrderEntity order) {
+        PtProduct product = ptPrivateOrderDao.selectProductForOrder(order.getProductId());
+        return buildInstallmentOption(product, order.getPayableAmount());
     }
 
     /** 订单号:PT + yyyyMMddHHmmss+随机 + 后缀 b(回调按末位分发,§0.6.1) */
@@ -570,6 +881,10 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
 
     /** 支付成功后匹配整单提成规则；没有唯一订单归属教练或规则时不产生提成明细。 */
     private void settleWholeOrderCommission(PtPrivateOrderEntity order, BigDecimal paidAmount) {
+        // 包月课程按实际授课教练逐节结算，不使用普通整单/课时分成规则。
+        if (ptCoachMonthlyCommissionRuleDao.countMonthlyProduct(order.getProductId()) > 0) {
+            return;
+        }
         if (order.getCoachId() == null) {
             log.warn("私教订单未绑定唯一归属教练，跳过整单提成 orderNo={},productId={}",
                     order.getOrderNo(), order.getProductId());
@@ -613,6 +928,8 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         PtProduct product;
         /** 基础价快照(本期口径=sale_price) */
         BigDecimal originalAmount;
+        Long benefitVipCardId;
+        BigDecimal benefitPrice;
         BigDecimal payableAmount;
         BigDecimal couponDiscountAmount;
         BigDecimal activityDiscountAmount;
@@ -627,6 +944,8 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             map.put("productId", product.getId());
             map.put("productName", product.getProductName());
             map.put("originalAmount", originalAmount);
+            map.put("benefitVipCardId", benefitVipCardId);
+            map.put("benefitPrice", benefitPrice);
             map.put("payableAmount", payableAmount);
             map.put("couponDiscountAmount", couponDiscountAmount);
             map.put("activityDiscountAmount", activityDiscountAmount);

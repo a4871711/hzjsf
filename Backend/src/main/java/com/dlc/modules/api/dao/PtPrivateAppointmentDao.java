@@ -61,6 +61,10 @@ public interface PtPrivateAppointmentDao {
     /** 完成核销:1已预约→3已完成 + finish_at;WHERE status=1 幂等,0行=已被处理 */
     int finishAppointment(@Param("id") Long id, @Param("operatorId") Long operatorId);
 
+    /** 订单下当前教练累计已完成课时，包月提成判断标准内/超节课时使用。 */
+    int sumFinishedLessonsByOrderAndCoach(@Param("orderId") Long orderId,
+                                          @Param("coachId") Long coachId);
+
     /** 本人预约分页列表(联表回填商品/教练/门店名) */
     List<PtPrivateAppointmentEntity> queryMyList(Query query);
 
@@ -84,6 +88,9 @@ public interface PtPrivateAppointmentDao {
     /** 教练最近预约(后台教练详情只读抽屉用,联表回填会员/商品/门店名),按上课时间倒序取 limit 条 */
     List<PtPrivateAppointmentEntity> queryRecentByCoach(@Param("coachId") Long coachId,
                                                         @Param("limit") Integer limit);
+
+    /** 教练首页今日私教课程，包含已预约、已取消、已完成和爽约，按开始时间升序展示 */
+    List<PtPrivateAppointmentEntity> queryTodayByCoach(@Param("coachId") Long coachId);
 
     /* ==================== 第5/7步护栏回填(sys 侧删除/改排班引用校验) ==================== */
 

@@ -45,6 +45,12 @@ public interface PrivateAppointmentService {
     /** 本人预约分页列表,params 需含 userId/page/limit,可选 status */
     PageUtils myList(Map<String, Object> params);
 
+    /**
+     * 手机端教练工作台：根据登录 userId 反查显式绑定的正常教练，
+     * 返回教练首页三项统计和今日私教课程；不接受前端 coachId，防止查看其他教练数据。
+     */
+    Map<String, Object> coachWorkbench(Long userId);
+
     /* ==================== 以下供 sys 后台(第15步)委托调用,api 端不暴露 ==================== */
 
     /**

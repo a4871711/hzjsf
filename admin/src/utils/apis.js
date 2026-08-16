@@ -979,15 +979,40 @@ export default {
 		});
 	},
 	// 私教教练-最近预约只读({id})
-	ptCoach_appointments(data) {
+		ptCoach_appointments(data) {
 		return $http({
 			url: $http.adornUrl(`/sys/ptCoach/appointments/${data.id}`),
 			method: 'get',
 			params: $http.adornParams({})
 		});
-	},
+		},
+		// 私教教练-绑定会员候选({keyword})
+		ptCoach_memberOptions(data) {
+			return $http({
+				url: $http.adornUrl('/sys/ptCoach/memberOptions'),
+				method: 'get',
+				params: $http.adornParams({ ...data })
+			});
+		},
+		// 私教教练-绑定/解绑手机端会员账号({coachId,userId?})
+			ptCoach_bindMember(data) {
+				return $http({
+				url: $http.adornUrl('/sys/ptCoach/bindMember'),
+				method: 'post',
+				contentType: 'json',
+				data: $http.adornData({ ...data }, false, 'json')
+				});
+			},
+			// 私教教练-包月课程提成配置候选
+			ptCoach_monthlyProductOptions() {
+				return $http({
+					url: $http.adornUrl('/sys/ptCoach/monthlyProductOptions'),
+					method: 'get',
+					params: $http.adornParams({})
+				});
+			},
 
-	// 教练等级-列表
+			// 教练等级-列表
 	coachLevel_list(data) {
 		return $http({
 			url: $http.adornUrl('/sys/coachLevel/list'),
@@ -1368,6 +1393,14 @@ export default {
 	ptProduct_groupClassOptions(data) {
 		return $http({
 			url: $http.adornUrl('/sys/ptProduct/groupClassOptions'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+	// 私教商品-权益价可绑定的VIP权益卡下拉项
+	ptProduct_benefitCardOptions(data) {
+		return $http({
+			url: $http.adornUrl('/sys/ptProduct/benefitCardOptions'),
 			method: 'get',
 			params: $http.adornParams({ ...data })
 		});

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtProductBenefitPriceDao">
+
+    <select id="queryByProductId" resultType="com.dlc.modules.sys.entity.PtProductBenefitPriceEntity">
+        SELECT r.id, r.product_id AS productId, r.vip_card_id AS vipCardId,
+               c.card_name AS cardName, r.benefit_price AS benefitPrice,
+               r.created_at AS createdAt, r.updated_at AS updatedAt
+        FROM pt_product_benefit_price r
+        INNER JOIN vip_benefit_card c ON c.vip_card_id = r.vip_card_id
+        WHERE r.product_id = #{productId}
+        ORDER BY r.id ASC
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtProductBenefitPriceEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_product_benefit_price
+            (product_id, vip_card_id, benefit_price, created_at, updated_at)
+        VALUES
+            (#{productId}, #{vipCardId}, #{benefitPrice}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <delete id="deleteByProductId">
+        DELETE FROM pt_product_benefit_price WHERE product_id = #{productId}
+    </delete>
+</mapper>

@@ -3,11 +3,17 @@
 		<view class="my-top">
 			<!-- 会员 -->
 			<view class="login-box2" v-if="isVip && isLogin">
-				<view class="hdimg flex">
-					<image :src="userInfo.headImgUrl || '/static/image/my_img.png'" alt="" class="img" />
-					<view class="flex_col">
-						<text class="font_size_32">{{userInfo.nickname}}</text>
-						<text class="font_size_22 clr_h user-id" @click="copyUserId">会员ID：{{userInfo.userId}}</text>
+				<view class="identity-row flex_s">
+					<view class="hdimg flex">
+						<image :src="userInfo.headImgUrl || '/static/image/my_img.png'" alt="" class="img" />
+						<view class="flex_col">
+							<text class="font_size_32">{{userInfo.nickname}}</text>
+							<text class="font_size_22 clr_h user-id" @click="copyUserId">会员ID：{{userInfo.userId}}</text>
+						</view>
+					</view>
+					<view class="coach-switch" v-if="isCoach" @click="switchToCoach">
+						<text class="coach-switch-symbol">⇄</text>
+						<text>切换</text>
 					</view>
 				</view>
 
@@ -47,7 +53,11 @@
 					<text class="font_size_32" v-else>未登录</text>
 				</view>
 
-				<view class="btn-01 flex_1" v-if="isLogin"
+				<view class="coach-switch" v-if="isCoach" @click="switchToCoach">
+					<text class="coach-switch-symbol">⇄</text>
+					<text>切换</text>
+				</view>
+				<view class="btn-01 flex_1" v-else-if="isLogin"
 					@click="config.path('/pagesA/card_renewal/card_renewal?openVip=1')">去开通
 				</view>
 				<view class="btn" v-else>
@@ -58,7 +68,7 @@
 		</view>
 
 		<view class="item-box">
-			<view class="item flex_s" @click="handleEvents(item.url)" v-for="(item,index) in serviceList" :key="index">
+			<view class="item flex_s" @click="handleEvents(item.url)" v-for="item in serviceList" :key="item.id">
 				<view class="flex">
 					<image :src="item.icon_img" alt="" class="img" />
 					<text>{{item.title}}</text>
@@ -80,6 +90,9 @@
 	import {
 		getOpenDoorQR
 	} from '@/api/my.js'
+	import {
+		getPrivateCoachWorkbench
+	} from '@/api/private-training.js'
 	import tip from '@/components/tip.vue';
 	export default {
 		components: {
@@ -90,13 +103,37 @@
 				isLogin: false,
 				isVip: false,
 				show: false,
-				phone: '',
-				userInfo: null,
-				serviceList: [{
+					phone: '',
+					userInfo: null,
+					serviceList: [{
 						id: 1,
 						url: '/pagesA/card_record/card_record',
 						title: '购卡记录',
+							icon_img: '/static/image/my_icon01.png'
+						},
+					{
+						id: 8,
+						url: '/pagesA/private_order/private_order',
+						title: '私教订单',
 						icon_img: '/static/image/my_icon01.png'
+					},
+					{
+						id: 9,
+						url: '/pagesA/private_benefit/private_benefit',
+						title: '私教权益',
+						icon_img: '/static/image/my_icon02.png'
+					},
+					{
+						id: 10,
+						url: '/pagesA/private_appointment/private_appointment',
+						title: '私教预约',
+						icon_img: '/static/image/my_icon03.png'
+					},
+					{
+						id: 11,
+						url: '/pagesA/private_comment/private_comment',
+						title: '教练评价',
+						icon_img: '/static/image/my_icon04.png'
 					},
 					{
 						id: 6,
@@ -135,9 +172,10 @@
 						icon_img: '/static/image/my_icon05.png'
 					}
 				],
-				latitude: this.$store.state.latilongi.latitude,
-				longitude: this.$store.state.latilongi.longitude,
-				vipInfo: {}, //vip信息
+					latitude: this.$store.state.latilongi.latitude,
+					longitude: this.$store.state.latilongi.longitude,
+					isCoach: false,
+					vipInfo: {}, //vip信息
 			}
 		},
 		onReady() {
@@ -155,16 +193,36 @@
 				this.getUserVipInfo(); //判断是不是会员
 				this.isLogin = true;
 				await this.common.getUserInfo(this);
-				this.userInfo = this.$store.state.userinfo;
-				this.userInfo.nickname = this.$store.state.userinfo.nickname || "SL" + this.$store.state.userinfo.phone
-					.toString().slice(-4)
-			} else {
-				this.isLogin = false;
+					this.userInfo = this.$store.state.userinfo;
+					this.userInfo.nickname = this.$store.state.userinfo.nickname || "SL" + this.$store.state.userinfo.phone
+						.toString().slice(-4)
+					await this.loadCoachIdentity();
+				} else {
+					this.isLogin = false;
+					this.isCoach = false;
 				this.userInfo = null;
 			}
 
 		},
 		methods: {
+			switchToCoach() {
+				if (!this.isCoach) {
+					this.config.Toast('当前账号未绑定教练身份');
+					return;
+				}
+				uni.navigateTo({
+					url: '/pagesA/private_coach_workbench/private_coach_workbench'
+				});
+			},
+			async loadCoachIdentity() {
+				try {
+					const res = await getPrivateCoachWorkbench();
+					this.isCoach = !!(res.data && res.data.isCoach);
+				} catch (e) {
+					// 身份识别失败不影响会员中心主流程，只隐藏教练入口。
+					this.isCoach = false;
+				}
+			},
 			getPhoneNumber(e) {
 				console.log(e.detail.code) // 动态令牌
 				console.log(e.detail.errMsg) // 回调信息（成功失败都会返回）
@@ -231,6 +289,10 @@
 		background: #F4F4F4;
 
 		.my-top {
+			.identity-row {
+				width: 100%;
+			}
+
 			.login-box {
 				padding-top: 40rpx;
 				width: 88%;
@@ -313,6 +375,28 @@
 				font-weight: 500;
 				font-size: 28rpx;
 				color: #FFFFFF;
+			}
+
+			.coach-switch {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				flex-shrink: 0;
+				height: 56rpx;
+				padding: 0 22rpx;
+				margin-left: 20rpx;
+				border: 1rpx solid rgba(255, 110, 32, .35);
+				border-radius: 30rpx;
+				background: rgba(255, 255, 255, .72);
+				color: #FF6E20;
+				font-size: 22rpx;
+				font-weight: bold;
+
+				.coach-switch-symbol {
+					margin-right: 8rpx;
+					font-size: 28rpx;
+					line-height: 1;
+				}
 			}
 		}
 

@@ -2,6 +2,7 @@ package com.dlc.modules.api.entity;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * 私教商品（会员端浏览用只读投影，字段为对外展示子集，不含后台管理字段）。
@@ -21,6 +22,7 @@ public class PtProduct implements Serializable {
     private String typeName;
     /** 服务类型：1一对一 2一对多 */
     private Integer serviceType;
+    private Long categoryId;
     private String categoryName;
     private String coverUrl;
     private String productIntro;
@@ -41,6 +43,10 @@ public class PtProduct implements Serializable {
     private Integer purchaseLimit;
     private Integer saleStock;
     private Integer soldCount;
+    /** 当前商品可使用的门店名称，列表展示用 */
+    private String storeNames;
+    /** 配置了未来上架时间时，列表展示但禁止购买 */
+    private Date listingAt;
     private Integer bookingGapMinutes;
     private Integer bookingCapacity;
     /** 同一会员同一商品每日最多可预约课时数 */
@@ -79,6 +85,9 @@ public class PtProduct implements Serializable {
 
     public Integer getServiceType() { return serviceType; }
     public void setServiceType(Integer serviceType) { this.serviceType = serviceType; }
+
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
 
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
@@ -130,6 +139,12 @@ public class PtProduct implements Serializable {
 
     public Integer getSoldCount() { return soldCount; }
     public void setSoldCount(Integer soldCount) { this.soldCount = soldCount; }
+
+    public String getStoreNames() { return storeNames; }
+    public void setStoreNames(String storeNames) { this.storeNames = storeNames; }
+
+    public Date getListingAt() { return listingAt; }
+    public void setListingAt(Date listingAt) { this.listingAt = listingAt; }
 
     public Integer getBookingGapMinutes() { return bookingGapMinutes; }
     public void setBookingGapMinutes(Integer bookingGapMinutes) { this.bookingGapMinutes = bookingGapMinutes; }

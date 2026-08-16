@@ -46,6 +46,10 @@ public interface PtPrivateOrderDao {
     /** 下单用商品查询:上架中(listing_status=1 且 deleted=0 且未到 unlisting_at),查不到=不可购买 */
     PtProduct selectProductForOrder(@Param("productId") Long productId);
 
+    /** 当前会员持有的有效 VIP 权益中，该商品可命中的最低权益价及对应权益卡。 */
+    Map<String, Object> selectBestBenefitPrice(@Param("memberId") Long memberId,
+                                               @Param("productId") Long productId);
+
     /** 商品绑定教练；包月下单时必须恰好一名，用于将归属快照写入订单。 */
     List<Long> queryProductCoachIds(@Param("productId") Long productId);
 

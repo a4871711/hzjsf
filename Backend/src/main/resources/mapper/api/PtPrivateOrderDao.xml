@@ -9,7 +9,7 @@
     <sql id="Base_Column_List">
         id, order_no, member_id, member_name, member_mobile,
         product_id, product_name, product_type_id, product_type_name, service_type, store_id, coach_id,
-        lesson_count, duration_minutes, validity_days,
+        lesson_count, duration_minutes, validity_days, benefit_vip_card_id, benefit_price,
         original_amount, payable_amount, paid_amount, refund_amount, discount_amount,
         marketing_type, marketing_activity_id, marketing_activity_name,
         coupon_id, member_coupon_id, coupon_name, coupon_discount_amount,
@@ -38,7 +38,7 @@
         INSERT INTO pt_private_order
             (order_no, member_id, member_name, member_mobile,
              product_id, product_name, product_type_id, product_type_name, service_type, store_id, coach_id,
-             lesson_count, duration_minutes, validity_days,
+             lesson_count, duration_minutes, validity_days, benefit_vip_card_id, benefit_price,
              original_amount, payable_amount, paid_amount, refund_amount, discount_amount,
              marketing_type, marketing_activity_id, marketing_activity_name,
              coupon_id, member_coupon_id, coupon_name, coupon_discount_amount,
@@ -46,7 +46,7 @@
         VALUES
             (#{orderNo}, #{memberId}, #{memberName}, #{memberMobile},
              #{productId}, #{productName}, #{productTypeId}, #{productTypeName}, #{serviceType}, #{storeId}, #{coachId},
-             #{lessonCount}, #{durationMinutes}, #{validityDays},
+             #{lessonCount}, #{durationMinutes}, #{validityDays}, #{benefitVipCardId}, #{benefitPrice},
              #{originalAmount}, #{payableAmount}, #{paidAmount}, #{refundAmount}, #{discountAmount},
              #{marketingType}, #{marketingActivityId}, #{marketingActivityName},
              #{couponId}, #{memberCouponId}, #{couponName}, #{couponDiscountAmount},
@@ -59,6 +59,23 @@
         FROM pt_private_order
         WHERE member_id = #{memberId} AND product_id = #{productId}
           AND order_status IN (0, 1, 2) AND deleted = 0
+    </select>
+
+    <!-- 一个会员可同时持有多张有效 VIP 权益；同一商品命中多张时按权益价最低、关系ID最小确定唯一结果。 -->
+    <select id="selectBestBenefitPrice" resultType="java.util.HashMap">
+        SELECT r.vip_card_id AS vipCardId, r.benefit_price AS benefitPrice
+        FROM pt_product_benefit_price r
+        WHERE r.product_id = #{productId}
+          AND EXISTS (
+              SELECT 1
+              FROM vip_benefit b
+              WHERE b.user_id = #{memberId}
+                AND b.vip_card_id = r.vip_card_id
+                AND b.status = 0
+                AND (b.expire_time IS NULL OR b.expire_time &gt; NOW())
+          )
+        ORDER BY r.benefit_price ASC, r.id ASC
+        LIMIT 1
     </select>
 
     <select id="countMemberActivityOrders" resultType="int">
@@ -84,6 +101,7 @@
                p.purchase_limit, p.sale_stock, p.sold_count
         FROM pt_product p
         WHERE p.id = #{productId} AND p.deleted = 0 AND p.listing_status = 1
+          AND (p.listing_at IS NULL OR p.listing_at &lt;= NOW())
           AND (p.unlisting_at IS NULL OR p.unlisting_at &gt; NOW())
     </select>
 

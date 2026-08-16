@@ -5,39 +5,90 @@
     <sql id="listCols">
         p.id, p.product_no, p.product_name, p.product_subtitle, p.product_type_id,
         (select type_name from pt_product_type where id = p.product_type_id) as typeName,
-        p.service_type, p.category_name, p.cover_url, p.product_intro, p.target_desc,
+        p.service_type, p.category_id, p.category_name, p.cover_url, p.product_intro, p.target_desc,
         p.original_price, p.sale_price, p.member_price, p.new_user_price,
         p.lesson_count, p.duration_minutes, p.validity_days,
         p.refund_type, p.refund_rule, p.purchase_limit, p.sale_stock, p.sold_count,
-        p.booking_gap_minutes, p.booking_capacity, p.latest_booking_hours, p.latest_free_cancel_hours,
+        p.listing_at,
+        p.booking_gap_minutes, p.booking_capacity, p.daily_lesson_limit,
+        p.latest_booking_hours, p.latest_free_cancel_hours,
         p.no_show_deduct, p.coach_confirm_required, p.sort_no, p.recommend_private, p.recommend_home,
         (select is_enabled from pt_installment_rule where product_id = p.id) as installmentEnabled,
         (select is_enabled from pt_product_group_benefit where product_id = p.id) as groupBenefitEnabled,
         (select gift_count from pt_product_group_benefit where product_id = p.id) as groupBenefitGiftCount,
-        (select validity_days from pt_product_group_benefit where product_id = p.id) as groupBenefitValidityDays
+        (select validity_days from pt_product_group_benefit where product_id = p.id) as groupBenefitValidityDays,
+        (select group_concat(distinct coalesce(s.storeName, sa.storeName) order by sa.storeAddrId separator '、')
+           from pt_product_store_rel r
+           inner join store_address sa on sa.storeAddrId = r.store_id and sa.status = 1
+           inner join store s on s.storeId = sa.storeId and s.status = 1
+          where r.product_id = p.id) as storeNames
+    </sql>
+
+    <sql id="listWhere">
+        p.deleted = 0 and p.listing_status = 1
+        and (p.unlisting_at is null or p.unlisting_at &gt; now())
+        <if test="keyword != null and keyword != ''">
+            AND (p.product_name LIKE concat('%', #{keyword}, '%')
+              OR p.product_subtitle LIKE concat('%', #{keyword}, '%')
+              OR p.category_name LIKE concat('%', #{keyword}, '%'))
+        </if>
+        <choose>
+            <when test="courseKind == 'private'">
+                AND p.product_type_id NOT IN (
+                    SELECT id FROM pt_product_type
+                    WHERE deleted = 0 AND type_name IN ('体验服务', '团课')
+                )
+            </when>
+            <when test="courseKind == 'group'">
+                AND p.product_type_id IN (
+                    SELECT id FROM pt_product_type
+                    WHERE deleted = 0 AND type_name = '团课'
+                )
+            </when>
+            <when test="courseKind == 'experience'">
+                AND p.product_type_id IN (
+                    SELECT id FROM pt_product_type
+                    WHERE deleted = 0 AND type_name = '体验服务'
+                )
+            </when>
+        </choose>
+        <if test="productTypeId != null and productTypeId != ''">
+            AND p.product_type_id = #{productTypeId}
+        </if>
+        <if test="categoryId != null and categoryId != ''">
+            AND p.category_id = #{categoryId}
+        </if>
+        <if test="serviceType != null and serviceType != ''">
+            AND p.service_type = #{serviceType}
+        </if>
+        <if test="minPrice != null and minPrice != ''">
+            AND p.sale_price &gt;= #{minPrice}
+        </if>
+        <if test="maxPrice != null and maxPrice != ''">
+            AND p.sale_price &lt;= #{maxPrice}
+        </if>
+        <if test="storeId != null and storeId != ''">
+            AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
+        </if>
     </sql>
 
     <select id="queryObject" resultType="com.dlc.modules.api.entity.PtProduct">
         select <include refid="listCols"/>, p.product_detail
         from pt_product p
         where p.id = #{value} and p.deleted = 0 and p.listing_status = 1
+          and (p.unlisting_at is null or p.unlisting_at &gt; now())
     </select>
 
     <select id="queryList" resultType="com.dlc.modules.api.entity.PtProduct">
         select <include refid="listCols"/>
         from pt_product p
-        where p.deleted = 0 and p.listing_status = 1
-          and (p.unlisting_at is null or p.unlisting_at &gt; now())
-        <if test="productTypeId != null and productTypeId != ''">
-            AND p.product_type_id = #{productTypeId}
-        </if>
-        <if test="serviceType != null and serviceType != ''">
-            AND p.service_type = #{serviceType}
-        </if>
-        <if test="storeId != null and storeId != ''">
-            AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
-        </if>
-        order by p.sort_no desc, p.id desc
+        where <include refid="listWhere"/>
+        <choose>
+            <when test="sort == 'priceAsc'">order by p.sale_price asc, p.id desc</when>
+            <when test="sort == 'priceDesc'">order by p.sale_price desc, p.id desc</when>
+            <when test="sort == 'newest'">order by p.id desc</when>
+            <otherwise>order by p.sort_no desc, p.id desc</otherwise>
+        </choose>
         <if test="offset != null and limit != null">
             limit #{offset}, #{limit}
         </if>
@@ -45,17 +96,33 @@
 
     <select id="queryTotal" resultType="int">
         select count(*) from pt_product p
-        where p.deleted = 0 and p.listing_status = 1
-          and (p.unlisting_at is null or p.unlisting_at &gt; now())
-        <if test="productTypeId != null and productTypeId != ''">
-            AND p.product_type_id = #{productTypeId}
-        </if>
-        <if test="serviceType != null and serviceType != ''">
-            AND p.service_type = #{serviceType}
-        </if>
-        <if test="storeId != null and storeId != ''">
-            AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
-        </if>
+        where <include refid="listWhere"/>
+    </select>
+
+    <select id="queryCategories" resultType="java.util.HashMap">
+        SELECT id, category_name AS categoryName
+        FROM pt_product_category
+        WHERE deleted = 0 AND status = 1
+        ORDER BY sort_no DESC, id ASC
+    </select>
+
+    <!--
+        pt_product_store_rel.store_id 保存的是 store_address.storeAddrId，不是 store.storeId。
+        前端必须将这里的 storeId 原样传给下单/预约接口，否则会被门店适用性校验拒绝。
+    -->
+    <select id="queryStores" resultType="java.util.HashMap">
+        SELECT sa.storeAddrId AS storeId,
+               sa.storeId AS parentStoreId,
+               COALESCE(s.storeName, sa.storeName) AS storeName,
+               sa.storeAddrDetail AS storeAddress,
+               sa.phone AS phone,
+               s.hours AS businessHours,
+               s.storeImgUrl AS storeImage
+        FROM pt_product_store_rel r
+        INNER JOIN store_address sa ON sa.storeAddrId = r.store_id AND sa.status = 1
+        INNER JOIN store s ON s.storeId = sa.storeId AND s.status = 1
+        WHERE r.product_id = #{value}
+        ORDER BY r.store_id ASC
     </select>
 
 </mapper>

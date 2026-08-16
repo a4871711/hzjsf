@@ -6,6 +6,7 @@ import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
 import com.dlc.common.utils.R;
 import com.dlc.modules.sys.entity.PtCoachEntity;
+import com.dlc.modules.sys.entity.PtCoachMonthlyCommissionRuleEntity;
 import com.dlc.modules.sys.service.SysPtCoachService;
 import com.dlc.modules.sys.shiro.ShiroUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -61,7 +62,7 @@ public class SysPtCoachController extends AbstractController {
         params.remove("order");
 
         List<PtCoachEntity> list = sysPtCoachService.queryList(params);
-        String[] titles = {"编号", "姓名", "手机", "所属门店", "等级", "状态", "排序", "创建时间"};
+        String[] titles = {"编号", "姓名", "手机", "绑定会员ID", "绑定会员", "所属门店", "等级", "状态", "排序", "创建时间"};
         String[][] values = buildExportValues(list);
         String fileName = "教练列表_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".xlsx";
         XSSFWorkbook workbook = ExportExcel.getXSSFWorkbook("教练列表", titles, values);
@@ -77,6 +78,8 @@ public class SysPtCoachController extends AbstractController {
     @RequestMapping("/save")
     @RequiresPermissions("sys:ptCoach:save")
     public R save(@RequestBody PtCoachEntity coach) {
+        // 教练资料保存不接受账号绑定，绑定必须走 bindMember 的门店权限校验。
+        coach.setUserId(null);
         coach.setCreatedBy(getUserId());
         coach.setUpdatedBy(getUserId());
         sysPtCoachService.save(coach);
@@ -86,6 +89,7 @@ public class SysPtCoachController extends AbstractController {
     @RequestMapping("/update")
     @RequiresPermissions("sys:ptCoach:update")
     public R update(@RequestBody PtCoachEntity coach) {
+        coach.setUserId(null);
         coach.setUpdatedBy(getUserId());
         sysPtCoachService.update(coach);
         return R.ok();
@@ -105,6 +109,28 @@ public class SysPtCoachController extends AbstractController {
         return R.ok();
     }
 
+    /** 绑定会员候选：按会员ID、昵称或手机号搜索，限当前管理员门店范围。 */
+    @RequestMapping("/memberOptions")
+    @RequiresPermissions("sys:ptCoach:update")
+    public R memberOptions(@RequestParam(value = "keyword", required = false) String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return R.ok().put("list", java.util.Collections.emptyList());
+        }
+        return R.ok().put("list", sysPtCoachService.queryMemberOptions(
+                keyword.trim(), ShiroUtils.getUserEntity().getStoreAddrIds()));
+    }
+
+    /** userId 传 null 表示解绑；手机端教练身份只认此显式绑定。 */
+    @RequestMapping("/bindMember")
+    @RequiresPermissions("sys:ptCoach:update")
+    public R bindMember(@RequestBody Map<String, Object> params) {
+        Long coachId = parseNullableLong(params.get("coachId"));
+        Long userId = parseNullableLong(params.get("userId"));
+        sysPtCoachService.bindMember(coachId, userId, getUserId(),
+                ShiroUtils.getUserEntity().getStoreAddrIds());
+        return R.ok();
+    }
+
     /**
      * 教练预约只读抽屉(第14步回填):该教练最近预约,含会员/商品/门店名。
      */
@@ -114,21 +140,42 @@ public class SysPtCoachController extends AbstractController {
         return R.ok().put("list", sysPtCoachService.queryRecentAppointments(id));
     }
 
+    /** 教练新增/编辑中的包月课程候选，包含已下架课程以保证历史配置可回显。 */
+    @RequestMapping("/monthlyProductOptions")
+    @RequiresPermissions("sys:ptCoach:list")
+    public R monthlyProductOptions() {
+        List<PtCoachMonthlyCommissionRuleEntity> list = sysPtCoachService.queryMonthlyProductOptions();
+        return R.ok().put("list", list);
+    }
+
     private String[][] buildExportValues(List<PtCoachEntity> list) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String[][] values = new String[list.size()][8];
+        String[][] values = new String[list.size()][10];
         for (int i = 0; i < list.size(); i++) {
             PtCoachEntity coach = list.get(i);
             values[i][0] = valueOf(coach.getCoachNo());
             values[i][1] = valueOf(coach.getCoachName());
             values[i][2] = valueOf(coach.getMobile());
-            values[i][3] = valueOf(coach.getStoreNames());
-            values[i][4] = valueOf(coach.getCoachLevel());
-            values[i][5] = statusText(coach.getStatus());
-            values[i][6] = coach.getSortNo() == null ? "" : String.valueOf(coach.getSortNo());
-            values[i][7] = coach.getCreatedAt() == null ? "" : dateFormat.format(coach.getCreatedAt());
+            values[i][3] = coach.getUserId() == null ? "" : String.valueOf(coach.getUserId());
+            values[i][4] = valueOf(coach.getBoundMemberName());
+            values[i][5] = valueOf(coach.getStoreNames());
+            values[i][6] = valueOf(coach.getCoachLevel());
+            values[i][7] = statusText(coach.getStatus());
+            values[i][8] = coach.getSortNo() == null ? "" : String.valueOf(coach.getSortNo());
+            values[i][9] = coach.getCreatedAt() == null ? "" : dateFormat.format(coach.getCreatedAt());
         }
         return values;
+    }
+
+    private Long parseNullableLong(Object value) {
+        if (value == null || value.toString().trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value.toString().trim());
+        } catch (NumberFormatException e) {
+            throw new RRException("参数格式错误");
+        }
     }
 
     private String valueOf(String value) {

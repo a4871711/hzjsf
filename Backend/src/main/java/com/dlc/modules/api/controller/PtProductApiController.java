@@ -55,4 +55,28 @@ public class PtProductApiController extends BaseController {
         }
         return R.reOk(product);
     }
+
+    /**
+     * 用户端商品分类筛选项，仅返回后台启用且未删除的分类。
+     */
+    @RequestMapping("/categories")
+    public R categories() {
+        return R.reOk(ptProductApiService.queryCategories());
+    }
+
+    /**
+     * 商品适用门店。storeId 为门店地址 ID(storeAddrId),
+     * 与私教下单、排班和预约链路的门店口径保持一致。
+     */
+    @RequestMapping("/stores")
+    public R stores(Long id) {
+        if (id == null) {
+            return R.reError("商品ID不能为空");
+        }
+        PtProduct product = ptProductApiService.queryObject(id);
+        if (product == null) {
+            return R.reError("商品不存在或已下架");
+        }
+        return R.reOk(ptProductApiService.queryStores(id));
+    }
 }

@@ -14,11 +14,29 @@
         inner join pt_coach_schedule sch on sch.coach_id = c.id and sch.store_id = csr.store_id and sch.is_enabled = 1
         where c.status = 1 and c.deleted = 0
           and csr.store_id in (select store_id from pt_product_store_rel where product_id = #{productId})
+          <if test="storeId != null">
+              and csr.store_id = #{storeId}
+          </if>
           and (
                 not exists (select 1 from pt_product_coach_rel where product_id = #{productId})
                 or c.id in (select coach_id from pt_product_coach_rel where product_id = #{productId})
               )
         order by c.sort_no desc, c.id asc
+    </select>
+
+    <select id="countBookableCoach" resultType="int">
+        select count(distinct c.id)
+        from pt_coach c
+        inner join pt_coach_store_rel csr on csr.coach_id = c.id and csr.store_id = #{storeId}
+        inner join pt_coach_schedule sch on sch.coach_id = c.id
+            and sch.store_id = csr.store_id and sch.is_enabled = 1
+        where c.id = #{coachId}
+          and c.status = 1 and c.deleted = 0
+          and csr.store_id in (select store_id from pt_product_store_rel where product_id = #{productId})
+          and (
+                not exists (select 1 from pt_product_coach_rel where product_id = #{productId})
+                or c.id in (select coach_id from pt_product_coach_rel where product_id = #{productId})
+              )
     </select>
 
     <select id="queryEnabledSchedule" resultType="com.dlc.modules.api.vo.PtScheduleWindowVo">
@@ -34,6 +52,116 @@
 
     <select id="queryCoachStoreIds" resultType="java.lang.Long">
         select store_id from pt_coach_store_rel where coach_id = #{value}
+    </select>
+
+    <select id="queryCoachStores" resultType="java.util.LinkedHashMap">
+        select r.store_id as storeId, s.storeName as storeName
+        from pt_coach_store_rel r
+        left join store_address sa on sa.storeAddrId = r.store_id
+        left join store s on s.storeId = sa.storeId
+        where r.coach_id = #{value}
+        order by r.store_id asc
+    </select>
+
+    <!-- 手机端教练身份只认后台显式 user_id 绑定，不按手机号猜测匹配。 -->
+    <select id="queryBoundCoachByUserId" resultType="java.util.LinkedHashMap">
+        select c.id, c.coach_no as coachNo, c.coach_name as coachName, c.mobile,
+               c.user_id as userId, c.avatar_url as avatarUrl, c.coach_level as coachLevel,
+               c.intro, c.status,
+               (select group_concat(s.storeName order by r.store_id)
+                  from pt_coach_store_rel r
+                  left join store_address sa on sa.storeAddrId = r.store_id
+                  left join store s on s.storeId = sa.storeId
+                 where r.coach_id = c.id) as storeNames
+        from pt_coach c
+        where c.user_id = #{userId} and c.status = 1 and c.deleted = 0
+        limit 1
+    </select>
+
+    <!--
+        教练首页只展示当前需求确认的三项数据：
+        1. 本月已上课时按完成时间 finish_at 归月；
+        2. 待上课时只统计尚未开始且状态为已预约的课时；
+        3. 预计课时费读取完成核销时生成的普通 PT_LESSON_ 和包月 PT_MONTHLY_ 流水，避免规则后改导致历史金额漂移。
+    -->
+    <select id="queryCoachHomeStats" resultType="java.util.LinkedHashMap">
+        SELECT
+            IFNULL((
+                SELECT SUM(a.lesson_count)
+                FROM pt_private_appointment a
+                WHERE a.coach_id = #{coachId}
+                  AND a.appointment_status = 3
+                  AND a.deleted = 0
+                  AND a.finish_at &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                  AND a.finish_at &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
+            ), 0) AS monthFinishedLessons,
+            IFNULL((
+                SELECT SUM(a.lesson_count)
+                FROM pt_private_appointment a
+                WHERE a.coach_id = #{coachId}
+                  AND a.appointment_status = 1
+                  AND a.deleted = 0
+                  AND TIMESTAMP(a.appointment_date, a.start_time) &gt;= NOW()
+            ), 0) AS pendingLessons,
+            ROUND(IFNULL((
+                SELECT SUM(d.money)
+                FROM coach_trade_detail d
+                WHERE d.coachId = #{coachId}
+                  AND d.tradeType = 1
+                  AND d.status = 1
+                  AND d.transactionNumber REGEXP '^PT_(LESSON|MONTHLY)_'
+                  AND d.transactionTime &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                  AND d.transactionTime &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
+            ), 0), 2) AS expectedLessonFee
+    </select>
+
+    <!--
+        coach_trade_detail 同时承载旧 coach 域和新 pt_coach 私教域；
+        手机教练端必须限定 PT_LESSON_ / PT_MONTHLY_ / PT_SALE_，防止两个主表 ID 相同导致串账。
+    -->
+    <select id="queryCoachIncomeSummary" resultType="java.util.LinkedHashMap">
+        SELECT
+            ROUND(IFNULL(SUM(CASE WHEN status = 1 AND tradeType = 1 THEN money
+                                  WHEN status = 1 AND tradeType = 2 THEN -money ELSE 0 END), 0), 2) AS totalIncome,
+            ROUND(IFNULL(SUM(CASE WHEN status = 1
+                                      AND transactionTime &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                                      AND transactionTime &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
+                                  THEN CASE WHEN tradeType = 2 THEN -money ELSE money END ELSE 0 END), 0), 2) AS monthIncome,
+            ROUND(IFNULL(SUM(CASE WHEN status = 1 AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY)_'
+                                      AND transactionTime &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                                      AND transactionTime &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
+                                  THEN CASE WHEN tradeType = 2 THEN -money ELSE money END ELSE 0 END), 0), 2) AS monthLessonIncome,
+            ROUND(IFNULL(SUM(CASE WHEN status = 1 AND transactionNumber REGEXP '^PT_SALE_'
+                                      AND transactionTime &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                                      AND transactionTime &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
+                                  THEN CASE WHEN tradeType = 2 THEN -money ELSE money END ELSE 0 END), 0), 2) AS monthSaleIncome
+        FROM coach_trade_detail
+        WHERE coachId = #{coachId}
+          AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY|SALE)_'
+    </select>
+
+    <select id="queryCoachIncomeList" resultType="java.util.LinkedHashMap">
+        SELECT id, tradeType,
+               CASE WHEN tradeType = 2 THEN -money ELSE money END AS amount,
+               origMoney, percent, transactionNumber, orderNo, status,
+               DATE_FORMAT(COALESCE(transactionTime, createTime), '%Y-%m-%d %H:%i:%s') AS transactionTime,
+               CASE WHEN transactionNumber REGEXP '^PT_(LESSON|MONTHLY)_' THEN 'lesson' ELSE 'sale' END AS incomeType
+        FROM coach_trade_detail
+        WHERE coachId = #{coachId}
+          AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY|SALE)_'
+        <if test="type == 'lesson'">AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY)_'</if>
+        <if test="type == 'sale'">AND transactionNumber REGEXP '^PT_SALE_'</if>
+        ORDER BY COALESCE(transactionTime, createTime) DESC, id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countCoachIncome" resultType="int">
+        SELECT COUNT(1)
+        FROM coach_trade_detail
+        WHERE coachId = #{coachId}
+          AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY|SALE)_'
+        <if test="type == 'lesson'">AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY)_'</if>
+        <if test="type == 'sale'">AND transactionNumber REGEXP '^PT_SALE_'</if>
     </select>
 
 </mapper>

@@ -343,8 +343,10 @@
 				if (!item) return;
 				const bizType = Number(item.bizType);
 				if (bizType === 1) {
-					// 私教:会员端购买页未起步,占位
-					this.config.Toast('敬请期待');
+					let url = '/pagesA/private_course_detail/private_course_detail?id=' + item.productId +
+						'&marketingType=2&marketingActivityId=' + item.activityId;
+					if (this.myStore && this.myStore.storeAddrId) url += '&storeId=' + this.myStore.storeAddrId;
+					uni.navigateTo({ url });
 					return;
 				}
 				if (bizType !== 2 && bizType !== 3) {
@@ -459,9 +461,12 @@
 					that.config.Toast('发起支付失败');
 				});
 			},
-			// 更多秒杀:暂无独立列表页,占位
+			// 秒杀中的私教商品可在私教课程页继续浏览
 			onFlashMore() {
-				this.config.Toast('更多秒杀活动敬请期待');
+				this.goPrivateCourses();
+			},
+			goPrivateCourses() {
+				uni.switchTab({ url: '/pages/private_course/private_course' });
 			},
 			// 教练列表
 			getCoachList(storeId) {

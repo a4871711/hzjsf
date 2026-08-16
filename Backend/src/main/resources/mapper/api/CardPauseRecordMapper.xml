@@ -145,10 +145,10 @@
         LIMIT 1
     </select>
 
-    <!-- 付费停卡生效:待支付(10)/已关闭未支付(3,迟到回调仍认账)→0 生效,命中0行=已处理 -->
+    <!-- 付费停卡生效:支付时间与次日0点的计划开始时间分开保存,命中0行=已处理 -->
     <update id="activateByPayOrderNo">
         UPDATE card_pause_record
-        SET status = 0, start_time = #{now}, end_time = #{endTime},
+        SET status = 0, start_time = #{startTime}, end_time = #{endTime},
             pay_time = #{now}, transaction_id = #{transactionId}
         WHERE pause_id = #{pauseId} AND status IN (10, 3)
     </update>
@@ -208,10 +208,11 @@
         WHERE co.cardOrderId = #{cardOrderId}
     </update>
 
-    <!-- 列表带派生列 displayStatus:生效中但已到计划结束时间 → 99已完成(到期零动作,库里仍是0) -->
+    <!-- 列表派生状态:status=0 且尚未到开始时间→11待生效;已到结束时间→99已完成 -->
     <select id="selectMyList" resultType="com.dlc.modules.api.entity.CardPauseRecord" parameterType="map">
         SELECT <include refid="Base_Column_List"/>,
-               CASE WHEN status = 0 AND end_time IS NOT NULL AND end_time &lt;= NOW()
+               CASE WHEN status = 0 AND start_time &gt; NOW() THEN 11
+                    WHEN status = 0 AND end_time IS NOT NULL AND end_time &lt;= NOW()
                     THEN 99 ELSE status END AS displayStatus
         FROM card_pause_record
         <where>

@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 私教商品会员端只读浏览 Dao
@@ -21,4 +22,8 @@ public interface PtProductApiDao {
     List<PtProduct> queryList(Query query);
 
     int queryTotal(Query query);
+
+    List<Map<String, Object>> queryCategories();
+
+    List<Map<String, Object>> queryStores(Long productId);
 }

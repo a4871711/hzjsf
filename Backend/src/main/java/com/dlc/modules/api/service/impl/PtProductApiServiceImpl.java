@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 私教商品会员端只读浏览 Service 实现
@@ -33,5 +34,15 @@ public class PtProductApiServiceImpl implements PtProductApiService {
     @Override
     public int queryTotal(Query query) {
         return ptProductApiDao.queryTotal(query);
+    }
+
+    @Override
+    public List<Map<String, Object>> queryCategories() {
+        return ptProductApiDao.queryCategories();
+    }
+
+    @Override
+    public List<Map<String, Object>> queryStores(Long productId) {
+        return ptProductApiDao.queryStores(productId);
     }
 }

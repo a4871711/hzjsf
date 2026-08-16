@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.sys.dao.PtCoachMonthlyCommissionRuleDao">
+
+    <sql id="RuleColumns">
+        r.id,
+        r.coach_id AS coachId,
+        r.product_id AS productId,
+        r.standard_lesson_count AS standardLessonCount,
+        r.commission_rate AS commissionRate,
+        r.below_standard_lesson_fee AS belowStandardLessonFee,
+        r.created_at AS createdAt,
+        r.updated_at AS updatedAt,
+        p.product_name AS productName,
+        p.sale_price AS salePrice,
+        p.lesson_count AS productLessonCount,
+        p.listing_status AS listingStatus
+    </sql>
+
+    <select id="queryByCoachId" resultType="com.dlc.modules.sys.entity.PtCoachMonthlyCommissionRuleEntity">
+        SELECT <include refid="RuleColumns"/>
+        FROM pt_coach_monthly_commission_rule r
+        INNER JOIN pt_product p ON p.id = r.product_id
+        WHERE r.coach_id = #{coachId}
+        ORDER BY r.id ASC
+    </select>
+
+    <select id="queryByCoachAndProduct" resultType="com.dlc.modules.sys.entity.PtCoachMonthlyCommissionRuleEntity">
+        SELECT <include refid="RuleColumns"/>
+        FROM pt_coach_monthly_commission_rule r
+        INNER JOIN pt_product p ON p.id = r.product_id
+        WHERE r.coach_id = #{coachId} AND r.product_id = #{productId}
+        LIMIT 1
+    </select>
+
+    <!-- 系统初始化数据固定 id=3 为包月服务；上下架课程均返回，以支持历史配置回显。 -->
+    <select id="queryMonthlyProductOptions" resultType="com.dlc.modules.sys.entity.PtCoachMonthlyCommissionRuleEntity">
+        SELECT p.id AS productId,
+               p.product_name AS productName,
+               p.sale_price AS salePrice,
+               p.lesson_count AS productLessonCount,
+               p.listing_status AS listingStatus
+        FROM pt_product p
+        WHERE p.deleted = 0 AND p.product_type_id = 3
+        ORDER BY p.listing_status DESC, p.sort_no DESC, p.id DESC
+    </select>
+
+    <select id="countMonthlyProduct" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_product
+        WHERE id = #{productId} AND deleted = 0 AND product_type_id = 3
+    </select>
+
+    <select id="countByProduct" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_coach_monthly_commission_rule
+        WHERE product_id = #{productId}
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachMonthlyCommissionRuleEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_coach_monthly_commission_rule
+            (coach_id, product_id, standard_lesson_count, commission_rate, below_standard_lesson_fee,
+             created_at, updated_at)
+        VALUES
+            (#{coachId}, #{productId}, #{standardLessonCount}, #{commissionRate}, #{belowStandardLessonFee},
+             #{createdAt}, #{updatedAt})
+    </insert>
+
+    <delete id="deleteByCoachId">
+        DELETE FROM pt_coach_monthly_commission_rule WHERE coach_id = #{coachId}
+    </delete>
+
+</mapper>

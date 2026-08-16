@@ -42,23 +42,58 @@ public class PrivateOrderController extends BaseController {
     }
 
     /**
-     * 下单(不收钱不扣库存):校验+金额重算+建待支付单+券占用+微信统一下单。
-     * 返回 {orderNo, payableAmount, payParams},前端用 payParams 直接调起小程序支付。
+     * 下单：校验+金额重算+建订单+券占用；微信/分期返回 payParams，储值在本次请求内完成结算。
      */
     @RequestMapping("/create")
-    public R create(Long productId, Long storeId, Integer quantity, Integer payMethod, Long memberCouponId,
-                    Integer marketingType, Long marketingActivityId, HttpServletRequest request) {
+    public R create(Long productId, Long storeId, Long coachId, Integer quantity, Integer payMethod,
+                    Long memberCouponId, Integer marketingType, Long marketingActivityId,
+                    HttpServletRequest request) {
         R check = checkOrderParams(productId, storeId, quantity);
         if (check != null) {
             return check;
         }
-        // 本步只接微信统一下单;储值(3)第19步、分期(4)第20步、支付宝(2)按需接入
-        if (payMethod != null && payMethod != 1) {
-            return R.reError("当前仅支持微信支付");
+        if (coachId == null) {
+            return R.reError("请选择教练");
+        }
+        int selectedPayMethod = payMethod == null ? 1 : payMethod;
+        // 私教确认订单只开放微信、储值和分期；支付宝不属于本业务支付方式。
+        if (selectedPayMethod != 1 && selectedPayMethod != 3 && selectedPayMethod != 4) {
+            return R.reError("不支持的支付方式");
         }
         UserInfoVo user = getUserVo(request);
-        return R.reOk(privateOrderService.create(user, productId, storeId,
+        return R.reOk(privateOrderService.create(user, productId, storeId, coachId, selectedPayMethod,
                 memberCouponId, marketingType, marketingActivityId, request));
+    }
+
+    /** 待支付订单继续支付：复用原订单号和金额快照，不重复建单/占券 */
+    @RequestMapping("/repay")
+    public R repay(String orderNo, HttpServletRequest request) {
+        if (orderNo == null || orderNo.trim().isEmpty()) {
+            return R.reError("缺少参数 orderNo");
+        }
+        UserInfoVo user = getUserVo(request);
+        return R.reOk(privateOrderService.repay(user, orderNo.trim(), request));
+    }
+
+    /** 主动取消本人待支付订单，同事务释放占用券 */
+    @RequestMapping("/cancel")
+    public R cancel(String orderNo, HttpServletRequest request) {
+        if (orderNo == null || orderNo.trim().isEmpty()) {
+            return R.reError("缺少参数 orderNo");
+        }
+        if (!privateOrderService.cancelUnpaid(getUserId(request), orderNo.trim())) {
+            return R.reError("微信已支付，订单已自动确认，不能取消");
+        }
+        return R.reOk();
+    }
+
+    /** 客户端支付返回后主动向微信查单，并以服务端验签结果补偿异步回调 */
+    @RequestMapping("/confirmWechatPay")
+    public R confirmWechatPay(String orderNo, HttpServletRequest request) {
+        if (orderNo == null || orderNo.trim().isEmpty()) {
+            return R.reError("缺少参数 orderNo");
+        }
+        return R.reOk(privateOrderService.confirmWechatPay(getUserId(request), orderNo.trim()));
     }
 
     /** 我的订单分页,可选 orderStatus 过滤(0待支付/1首付已付/2已结清/3已取消/4已退款) */
@@ -70,6 +105,15 @@ public class PrivateOrderController extends BaseController {
         params.put("page", String.valueOf(toPositiveInt(params.get("page"), 1)));
         params.put("limit", String.valueOf(toPositiveInt(params.get("limit"), 10)));
         return R.reOk(privateOrderService.myOrders(params));
+    }
+
+    /** 我的私教权益分页，可选 status(1生效中/2已用完/3已过期/4已退款) */
+    @RequestMapping("/myBenefits")
+    public R myBenefits(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        params.put("userId", getUserId(request));
+        params.put("page", String.valueOf(toPositiveInt(params.get("page"), 1)));
+        params.put("limit", String.valueOf(toPositiveInt(params.get("limit"), 10)));
+        return R.reOk(privateOrderService.myBenefits(params));
     }
 
     /** 订单详情(含券明细);非本人订单按不存在返回 */

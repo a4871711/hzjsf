@@ -36,6 +36,53 @@
         LIMIT 1
     </select>
 
+    <!-- 会员端权益账本：课时四态仍以权益表为唯一真相，商品/门店只用于展示。 -->
+    <select id="queryMyBenefits" resultType="java.util.HashMap">
+        SELECT b.id AS benefitId,
+               b.benefit_no AS benefitNo,
+               b.order_id AS orderId,
+               o.order_no AS orderNo,
+               b.product_id AS productId,
+               b.store_id AS storeId,
+               COALESCE(p.product_name, o.product_name) AS productName,
+               p.cover_url AS coverUrl,
+               p.service_type AS serviceType,
+               p.duration_minutes AS durationMinutes,
+               p.daily_lesson_limit AS dailyLessonLimit,
+               COALESCE(s.storeName, sa.storeName) AS storeName,
+               b.total_lessons AS totalLessons,
+               b.used_lessons AS usedLessons,
+               b.frozen_lessons AS frozenLessons,
+               b.remaining_lessons AS remainingLessons,
+               b.effective_at AS effectiveAt,
+               b.expire_at AS expireAt,
+               b.status AS status,
+               b.created_at AS createdAt
+        FROM pt_member_private_benefit b
+        LEFT JOIN pt_private_order o ON o.id = b.order_id
+        LEFT JOIN pt_product p ON p.id = b.product_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = b.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE b.member_id = #{userId}
+        <if test="status != null and status != ''">
+            AND b.status = #{status}
+        </if>
+        ORDER BY (b.status = 1 AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())) DESC,
+                 b.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countMyBenefits" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_member_private_benefit b
+        WHERE b.member_id = #{userId}
+        <if test="status != null and status != ''">
+            AND b.status = #{status}
+        </if>
+    </select>
+
     <!-- 支付回调建权益;created_at/updated_at 由 DDL 默认值维护 -->
     <insert id="save" parameterType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity"
             useGeneratedKeys="true" keyProperty="id">

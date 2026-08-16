@@ -12,6 +12,7 @@ package com.dlc.modules.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.aliyun.oss.common.utils.HttpUtil;
+import com.dlc.common.exception.RRException;
 import com.dlc.common.utils.CommonUtil;
 import com.dlc.common.utils.ConfigConstant;
 import com.dlc.common.utils.HttpRequest;
@@ -35,6 +36,7 @@ import com.dlc.modules.api.vo.PapPayApplyVo;
 import com.dlc.modules.api.vo.UserInfoVo;
 import com.dlc.modules.qd.utils.MyConfig;
 import com.dlc.modules.qd.utils.WxPayUtils;
+import com.github.wxpay.sdk.WXPayUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jdom.JDOMException;
@@ -49,6 +51,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -79,7 +83,7 @@ public class WxPayServiceImpl implements WxPayService {
     //订单退款
     private static final String PAPORDERFUND_URL = "https://api.mch.weixin.qq.com/secapi/pay/refund";
     //小程序支付回调
-    private static final String NOTIFY_PROPAY_URL = "http://shilijsf.shilisports.com/api/wx/proPayNotify";
+    private static final String NOTIFY_PROPAY_URL = "https://shilijsf.shilisports.com/api/wx/proPayNotify";
     //协议模板id
     private static final String PLAN_ID_209 = "190490";
     //协议模板id
@@ -498,114 +502,210 @@ public class WxPayServiceImpl implements WxPayService {
 	 * 基础参数
 	 * @param packageParams
 	 */
-	private void commonParams(SortedMap<Object, Object> packageParams) {
+	private void commonParams(SortedMap<Object, Object> packageParams, MyConfig config) {
+		String currTime = PayCommonUtil.getCurrTime();
+		String strTime = currTime.substring(8);
+		String strRandom = PayCommonUtil.buildRandom(4) + "";
+		String nonceStr = strTime + strRandom;
+		packageParams.put("appid", config.getProAppID());
+		packageParams.put("mch_id", config.getMchID());
+		packageParams.put("nonce_str", nonceStr);
+	}
+
+    @Override
+	public Map<String,Object> doPay(Map<String, Object> product, HttpServletRequest request) throws Exception {
+		if (product == null || request == null) {
+			throw new Exception("微信支付参数缺失");
+		}
+		String orderNo = valueOf(product.get("orderNo"));
+		String openId = valueOf(product.get("openId"));
+		String body = valueOf(product.get("body"));
+		if (!isValidWechatOrderNo(orderNo)) {
+			throw new Exception("微信支付订单号不合法");
+		}
+		if (StringUtils.isBlank(openId)) {
+			throw new Exception("会员微信身份缺失，请重新登录后再试");
+		}
+		if (StringUtils.isBlank(body)) {
+			body = "矢历运动";
+		}
+		BigDecimal totalFee = CommonUtil.tryToBigDecimal(valueOf(product.get("totalFee")));
+		if (totalFee.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new Exception("微信支付金额必须大于0元");
+		}
+		String amount;
 		try {
-			MyConfig config = new MyConfig();
-			String currTime = PayCommonUtil.getCurrTime();
-			String strTime = currTime.substring(8);
-			String strRandom = PayCommonUtil.buildRandom(4) + "";
-			String nonce_str = strTime + strRandom;
-			packageParams.put("appid", config.getProAppID());
-			packageParams.put("mch_id", config.getMchID());
-			packageParams.put("nonce_str", nonce_str);
+			amount = totalFee.movePointRight(2).setScale(0, RoundingMode.UNNECESSARY).toPlainString();
+		} catch (ArithmeticException e) {
+			throw new Exception("微信支付金额最多保留两位小数");
+		}
+
+		MyConfig config = new MyConfig();
+		SortedMap<Object, Object> packageParams = new TreeMap<Object, Object>();
+		commonParams(packageParams, config);
+		packageParams.put("body", body);
+		packageParams.put("out_trade_no", orderNo);
+		packageParams.put("total_fee", amount);
+		packageParams.put("spbill_create_ip", clientIp(request));
+		packageParams.put("notify_url", NOTIFY_PROPAY_URL);
+		packageParams.put("trade_type", "JSAPI");
+		packageParams.put("openid", openId);
+		packageParams.put("sign", PayCommonUtil.createSign("UTF-8", packageParams, config.getKey()));
+
+		Map<String, String> responseMap;
+		try {
+			String requestXml = PayCommonUtil.getRequestXml(packageParams);
+			String responseXml = HttpRequest.postDataSSL(MyConfig.UNIFIED_ORDER_URL, requestXml);
+			responseMap = WxPayUtils.doXMLParse(responseXml);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("微信统一下单请求异常 orderNo={}", orderNo, e);
+			throw new Exception("微信统一下单请求失败，请稍后重试", e);
+		}
+		validateSignedWechatResponse(responseMap, config, "微信统一下单");
+		if (!"SUCCESS".equals(responseMap.get("result_code"))) {
+			String errCode = responseMap.get("err_code");
+			log.warn("微信统一下单业务失败 orderNo={},errCode={}", orderNo, errCode);
+			if ("ORDERPAID".equals(errCode)) {
+				throw new Exception("该订单已支付，请刷新支付状态");
+			}
+			throw new Exception("微信统一下单失败" + errorCodeSuffix(errCode));
+		}
+		String prepayId = responseMap.get("prepay_id");
+		if (StringUtils.isBlank(prepayId)) {
+			throw new Exception("微信统一下单未返回 prepay_id");
+		}
+
+		String packages = "prepay_id=" + prepayId;
+		String timestamp = PayCommonUtil.getTimestamp();
+		String nonceStr = packageParams.get("nonce_str").toString();
+		SortedMap<Object, Object> finalPackage = new TreeMap<Object, Object>();
+		finalPackage.put("appId", config.getProAppID());
+		finalPackage.put("timeStamp", timestamp);
+		finalPackage.put("nonceStr", nonceStr);
+		finalPackage.put("package", packages);
+		finalPackage.put("signType", "MD5");
+		String paySign = PayCommonUtil.createSign("UTF-8", finalPackage, config.getKey());
+
+		Map<String,Object> result = new HashMap<String, Object>();
+		result.put("appId", config.getProAppID());
+		result.put("nonceStr", nonceStr);
+		result.put("signType", "MD5");
+		result.put("package", packages);
+		result.put("paySign", paySign);
+		result.put("timeStamp", timestamp);
+		log.info("微信统一下单成功 orderNo={}", orderNo);
+		return result;
+	}
+
+	@Override
+	public Map<String, String> queryPayOrder(String outTradeNo) {
+		return requestPayOrder(MyConfig.CHECK_ORDER_URL, outTradeNo, "微信支付订单查询");
+	}
+
+	@Override
+	public Map<String, String> closePayOrder(String outTradeNo) {
+		return requestPayOrder(MyConfig.CLOSE_ORDER_URL, outTradeNo, "微信支付订单关闭");
+	}
+
+	@Override
+	public int updateCardOrderPay(String orderNo, BigDecimal amount, String transactionId) {
+		try {
+			int rows = cardOrderService.updateCardOrder(orderNo, amount, transactionId, ConfigConstant.WXPAY, 0);
+			if (rows > 0) {
+				incomePayDetailService.saveIncomePayDetail(orderNo, transactionId, amount, ConfigConstant.WXPAY);
+			}
+			return rows;
+		} catch (ParseException e) {
+			throw new RRException("健身卡支付订单处理失败,orderNo=" + orderNo, e);
 		}
 	}
-    
-    @Override
-	public Map<String,Object> doPay(Map<String, Object> product, HttpServletRequest request) throws Exception{
-    	Map map = null;
-		String amount = CommonUtil.tryToBigDecimal(String.valueOf(product.get("totalFee"))).multiply(new BigDecimal("100")).setScale(0).toPlainString();
-		//String amount = "1"; //测试金额
-		String notify_url =  NOTIFY_PROPAY_URL;//回调接口
-		String trade_type = "JSAPI";// 交易类型H5支付 也可以是小程序支付参数
-		SortedMap<Object, Object> packageParams = new TreeMap<Object, Object>();
-		commonParams(packageParams);
-		packageParams.put("body",String.valueOf(product.get("body")));// 商品描述
-		packageParams.put("out_trade_no", String.valueOf(product.get("orderNo")));// 商户订单号
-		packageParams.put("total_fee", amount);// 总金额
-		packageParams.put("spbill_create_ip", IPUtils.getIpAddr(request));// 发起人IP地址
-		packageParams.put("notify_url", notify_url);// 回调地址
-		packageParams.put("trade_type", trade_type);// 交易类型
-		packageParams.put("openid", String.valueOf(product.get("openId")));//用户openID			
 
-		String key = "";
+	/**
+	 * 普通支付查单/关单共用请求。响应必须先验签、再校验 appid/mch_id，业务层才可使用。
+	 */
+	private Map<String, String> requestPayOrder(String url, String outTradeNo, String action) {
+		if (!isValidWechatOrderNo(outTradeNo)) {
+			throw new RRException("微信支付订单号不合法");
+		}
 		try {
-	    	MyConfig config = new MyConfig();
-	    	key = config.getKey();
-			String sign = PayCommonUtil.createSign("UTF-8", packageParams, key);
-			packageParams.put("sign", sign);// 签名
-			log.info("支付参数===="+packageParams);
-			String requestXML = PayCommonUtil.getRequestXml(packageParams);
-			String resXml = HttpRequest.postDataSSL("https://api.mch.weixin.qq.com/pay/unifiedorder", requestXML);
-			log.info("支付XML====="+resXml);
-		
-			map = WxPayUtils.doXMLParse(resXml);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		log.info("支付返回参数===="+map);
-		String returnCode = map.get("return_code").toString();
-		String returnMsg =  map.get("return_msg").toString();
-		Map<String,Object> res = new HashMap<>();
-		if("SUCCESS".equals(returnCode)){
-			String resultCode = (String) map.get("result_code");
-			String errCodeDes = (String) map.get("err_code_des");
-			if("SUCCESS".equals(resultCode)){
-				//获取预支付交易会话标识
-				String prepay_id = (String) map.get("prepay_id");
-				String prepay_id2 = "prepay_id=" + prepay_id;
-				String packages = prepay_id2;
-				SortedMap<Object, Object> finalpackage = new TreeMap<>();
-				String timestamp = PayCommonUtil.getTimestamp();
-				String nonceStr = packageParams.get("nonce_str").toString();
-				finalpackage.put("appId",  String.valueOf(packageParams.get("appid")));
-				finalpackage.put("timeStamp", timestamp);
-				finalpackage.put("nonceStr", nonceStr);
-				finalpackage.put("package", packages);
-				finalpackage.put("signType", "MD5");
-				//这里很重要  参数一定要正确 狗日的腾讯 参数到这里就成大写了
-				//可能报错信息(支付验证签名失败 get_brand_wcpay_request:fail)
-				String sign = PayCommonUtil.createSign("UTF-8", finalpackage,key);
-				log.info("finalpackage====="+finalpackage);
-
-				res.put("appId",String.valueOf(packageParams.get("appid")));
-				res.put("nonceStr",nonceStr);
-				res.put("signType","MD5");
-				res.put("package",packages);
-				res.put("paySign",sign);
-				res.put("timeStamp",timestamp);
-				log.info("支付结果参数====="+res);
-
-
-				return res;
-			}else{
-				log.info("订单号:{}错误信息:{}",String.valueOf(product.get("orderNo")),errCodeDes);
-				throw new Exception("该订单已支付");
+			MyConfig config = new MyConfig();
+			SortedMap<Object, Object> params = new TreeMap<Object, Object>();
+			commonParams(params, config);
+			params.put("out_trade_no", outTradeNo);
+			params.put("sign", PayCommonUtil.createSign("UTF-8", params, config.getKey()));
+			String responseXml = HttpRequest.postDataSSL(url, PayCommonUtil.getRequestXml(params));
+			Map<String, String> responseMap = WxPayUtils.doXMLParse(responseXml);
+			validateSignedWechatResponse(responseMap, config, action);
+			String responseOrderNo = responseMap.get("out_trade_no");
+			if (StringUtils.isNotBlank(responseOrderNo) && !outTradeNo.equals(responseOrderNo)) {
+				throw new RRException(action + "返回订单号不一致");
 			}
-		}else{
-			log.info("订单号:{}错误信息:{}",String.valueOf(product.get("orderNo")),returnMsg);
-			throw new Exception("支付发生错误");
+			log.info("{}完成 orderNo={},resultCode={},tradeState={}", action, outTradeNo,
+					responseMap.get("result_code"), responseMap.get("trade_state"));
+			return responseMap;
+		} catch (RRException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("{}异常 orderNo={}", action, outTradeNo, e);
+			throw new RRException(action + "失败，请稍后重试", e);
 		}
+	}
+
+	/** 微信 V2 响应验签及商户身份校验，防止伪造或串商户响应进入资金链路。 */
+	private void validateSignedWechatResponse(Map<String, String> responseMap, MyConfig config, String action)
+			throws Exception {
+		if (responseMap == null || responseMap.isEmpty()) {
+			throw new Exception(action + "返回为空");
+		}
+		if (!"SUCCESS".equals(responseMap.get("return_code"))) {
+			throw new Exception(action + "通信失败");
+		}
+		if (!WXPayUtil.isSignatureValid(responseMap, config.getKey())) {
+			throw new Exception(action + "响应验签失败");
+		}
+		if (!config.getProAppID().equals(responseMap.get("appid"))
+				|| !config.getMchID().equals(responseMap.get("mch_id"))) {
+			throw new Exception(action + "商户身份校验失败");
+		}
+	}
+
+	private String valueOf(Object value) {
+		return value == null ? null : String.valueOf(value).trim();
+	}
+
+	private boolean isValidWechatOrderNo(String orderNo) {
+		return StringUtils.isNotBlank(orderNo) && orderNo.matches("[0-9A-Za-z_@*|\\-]{6,32}");
+	}
+
+	/** 多级代理可能产生逗号分隔的 X-Forwarded-For，微信只接收单个终端IP。 */
+	private String clientIp(HttpServletRequest request) {
+		String ip = IPUtils.getIpAddr(request);
+		if (StringUtils.isBlank(ip)) {
+			return "127.0.0.1";
+		}
+		int comma = ip.indexOf(',');
+		return (comma > 0 ? ip.substring(0, comma) : ip).trim();
+	}
+
+	private String errorCodeSuffix(String errCode) {
+		return StringUtils.isBlank(errCode) ? "" : "（" + errCode + "）";
 	}
 
     @Override
     public Map<String, String> parseResult(HttpServletRequest request) throws IOException, JDOMException {
-
-        InputStream inStream;
-        inStream = request.getInputStream();
-        ByteArrayOutputStream outSteam = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int len;
-        while ((len = inStream.read(buffer)) != -1) {
-            outSteam.write(buffer, 0, len);
+        try (InputStream inStream = request.getInputStream();
+             ByteArrayOutputStream outSteam = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = inStream.read(buffer)) != -1) {
+                if (outSteam.size() + len > 64 * 1024) {
+                    throw new IOException("微信回调报文过大");
+                }
+                outSteam.write(buffer, 0, len);
+            }
+            String result = new String(outSteam.toByteArray(), "utf-8");
+            return WxPayUtils.doXMLParse(result);
         }
-        outSteam.close();
-        inStream.close();
-        String result = new String(outSteam.toByteArray(), "utf-8");
-        Map<String, String> map = WxPayUtils.doXMLParse(result);
-        return map;
 
     }
 

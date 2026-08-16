@@ -99,6 +99,8 @@ public class PtProductEntity implements Serializable {
     private Integer groupBenefitScopeType;
     /** 指定团课商品ID集合（scope_type=2 时必填） */
     private List<Long> groupProductIds;
+    /** 不同 VIP 权益卡对应的私教商品权益价，随商品表单一次性提交。 */
+    private List<PtProductBenefitPriceEntity> benefitPrices;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -273,4 +275,7 @@ public class PtProductEntity implements Serializable {
 
     public List<Long> getGroupProductIds() { return groupProductIds; }
     public void setGroupProductIds(List<Long> groupProductIds) { this.groupProductIds = groupProductIds; }
+
+    public List<PtProductBenefitPriceEntity> getBenefitPrices() { return benefitPrices; }
+    public void setBenefitPrices(List<PtProductBenefitPriceEntity> benefitPrices) { this.benefitPrices = benefitPrices; }
 }

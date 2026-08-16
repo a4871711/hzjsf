@@ -18,6 +18,8 @@ public class PtCoachEntity implements Serializable {
     private String coachNo;
     private String coachName;
     private String mobile;
+    /** 绑定的手机端会员账号 user_info.userId，一名教练最多绑定一个账号 */
+    private Long userId;
     /** 性别：1男 2女 0未知 */
     private Integer gender;
     private String avatarUrl;
@@ -44,6 +46,11 @@ public class PtCoachEntity implements Serializable {
     private String storeIdCsv;
     /** 非持久字段：排班页展示用排班段数量 */
     private Integer scheduleCount;
+    /** 非持久字段：已绑定会员昵称/手机号 */
+    private String boundMemberName;
+    private String boundMemberMobile;
+    /** 非持久字段：该教练的包月课程提成配置。 */
+    private List<PtCoachMonthlyCommissionRuleEntity> monthlyCommissionRules;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -56,6 +63,9 @@ public class PtCoachEntity implements Serializable {
 
     public String getMobile() { return mobile; }
     public void setMobile(String mobile) { this.mobile = mobile; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public Integer getGender() { return gender; }
     public void setGender(Integer gender) { this.gender = gender; }
@@ -107,4 +117,15 @@ public class PtCoachEntity implements Serializable {
 
     public Integer getScheduleCount() { return scheduleCount; }
     public void setScheduleCount(Integer scheduleCount) { this.scheduleCount = scheduleCount; }
+
+    public String getBoundMemberName() { return boundMemberName; }
+    public void setBoundMemberName(String boundMemberName) { this.boundMemberName = boundMemberName; }
+
+    public String getBoundMemberMobile() { return boundMemberMobile; }
+    public void setBoundMemberMobile(String boundMemberMobile) { this.boundMemberMobile = boundMemberMobile; }
+
+    public List<PtCoachMonthlyCommissionRuleEntity> getMonthlyCommissionRules() { return monthlyCommissionRules; }
+    public void setMonthlyCommissionRules(List<PtCoachMonthlyCommissionRuleEntity> monthlyCommissionRules) {
+        this.monthlyCommissionRules = monthlyCommissionRules;
+    }
 }

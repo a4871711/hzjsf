@@ -1,9 +1,13 @@
 package com.dlc.modules.api.dao;
 
+import com.dlc.common.utils.Query;
 import com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 会员私教权益课时账本 Dao(pt_member_private_benefit)。
@@ -22,6 +26,11 @@ public interface PtMemberPrivateBenefitDao {
 
     /** 按来源订单查权益(一单一权益,activate 幂等查重用) */
     PtMemberPrivateBenefitEntity selectByOrderId(@Param("orderId") Long orderId);
+
+    /** 会员端私教权益分页，联出商品、门店和预约规则供 App 展示 */
+    List<Map<String, Object>> queryMyBenefits(Query query);
+
+    int countMyBenefits(Query query);
 
     /** 新建权益(回填自增 id;benefit_no 撞唯一键由调用方重试) */
     int save(PtMemberPrivateBenefitEntity entity);

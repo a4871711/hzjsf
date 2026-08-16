@@ -10,11 +10,11 @@ import java.util.Map;
 
 /**
  * 停卡记录(card_pause_record)Mapper(移动端)
- * 定期停卡:免费(滚动30天1次,自选1~7天)立即生效并预顺延;付费(status=10待支付)回调成功后生效。
+ * 定期停卡:免费申请成功、付费回调成功后均从次日0点开始，并预顺延会员卡有效期。
  */
 public interface CardPauseRecordMapper {
 
-    /** 建停卡记录(免费直接 status=0 生效;付费 status=10 待支付) */
+    /** 建停卡记录(免费直接 status=0 排期;付费 status=10 待支付) */
     int insertSelective(CardPauseRecord record);
 
     /** 行锁被停的会员卡(并发串行化),只取校验所需字段(含 cardId 供查 fit_card.cardNature) */
@@ -51,10 +51,11 @@ public interface CardPauseRecordMapper {
     /** 按 pause_id 取记录(不加锁,cancel 先探 cardOrderId 以"卡→单"序加锁防死锁) */
     CardPauseRecord selectByPauseId(@Param("pauseId") Long pauseId);
 
-    /** 付费停卡生效:status(10待支付/3已关闭)→0,回填起止/支付时间/交易号;命中0行=已处理过 */
+    /** 付费停卡生效:status(10待支付/3已关闭)→0,分别回填计划起止、支付时间和交易号;命中0行=已处理过 */
     int activateByPayOrderNo(@Param("pauseId") Long pauseId,
-                             @Param("now") Date now,
+                             @Param("startTime") Date startTime,
                              @Param("endTime") Date endTime,
+                             @Param("now") Date now,
                              @Param("transactionId") String transactionId);
 
     /** 付费回调时卡失效/已被顶替:认账但不顺延,status(10/3)→2 已支付作废(actual_days=0);命中0行=已处理过 */

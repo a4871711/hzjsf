@@ -21,7 +21,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -443,71 +442,87 @@ public class WxPayController extends BaseController {
      * @throws Exception
      */
     @RequestMapping("/proPayNotify")
-    @Transactional
     public void proPayNotify(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        log.info("进入微信回调-----文章支付----------");
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("text/xml;charset=UTF-8");
         try {
             Map<String, String> map = wxPayService.parseResult(request);
-            //Map<String, String> map = null;
-            log.info("-----------微信回调数据: " + map);
-            if (map.get("return_code").equals("SUCCESS")) {
-                //获取订单
-                String orderNo = map.get("out_trade_no");
-                //获取微信订单号
-                String transaction_id = map.get("transaction_id");
-                
-                BigDecimal wallet = new BigDecimal(map.get("total_fee")).divide(new BigDecimal(100));
-                if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_CARD_BUY_TYPE)) {
-                    //VIP权益卡(后缀6):单事务记账+激活+sold_count自增,幂等(小程序支付走本回调)
-                    log.info("-------激活VIP权益卡(小程序回调)=========" );
-                    vipBenefitService.activateByOrderNo(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
-                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)) {
-                    //VIP转让服务费(后缀7):单事务记账+转让单10→20待审核,幂等(小程序支付走本回调)
-                    log.info("-------VIP转让服务费支付成功(小程序回调)=========" );
-                    vipTransferService.payFeeCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
-                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)) {
-                    //私教商品购买(后缀b):单事务记账+扣库存+券核销+结清+建权益,幂等三道闸
-                    //(第12步 create 用 doPay 下单,NOTIFY_PROPAY_URL 指向本回调,此分支为主链路;
-                    // 必须先于兜底 else,否则私教单会错进 updateCardOrder 旧卡逻辑)
-                    log.info("-------更新私教商品购买订单(小程序回调)=========" );
-                    privateOrderService.updatePrivateOrder(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
-                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)) {
-                    //储值充值(后缀8):单事务记账+行锁加余额+写充值流水,两道幂等闸(先查流水+out_order_no唯一键)
-                    //必须先于兜底 else,否则充值单会错进 updateCardOrder 旧卡逻辑
-                    log.info("-------储值充值到账(小程序回调)=========" );
-                    ptMemberWalletService.walletRechargeCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
-                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)) {
-                    //分期首付独立单(后缀9,防御性):单事务记账+首付账单入账+计划推进+订单转部分支付+激活权益,幂等
-                    //必须先于兜底 else,否则会错进 updateCardOrder 旧卡逻辑
-                    log.info("-------分期首付到账(小程序回调)=========" );
-                    ptInstallmentService.installmentDownCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
-                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_BILL_TYPE)) {
-                    //分期后续期(后缀a):单事务记账+账单入账(pay_order_no行锁+status条件)+计划推进/结清,幂等
-                    //必须先于兜底 else,否则会错进 updateCardOrder 旧卡逻辑
-                    log.info("-------分期后续期到账(小程序回调)=========" );
-                    ptInstallmentService.installmentBillCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
-                } else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.CARD_PAUSE_FEE_TYPE)) {
-                    //付费停卡费(后缀c):单事务记账+停卡生效+预顺延有效期,幂等
-                    //必须先于兜底 else,否则停卡费单会错进 updateCardOrder 旧卡逻辑
-                    log.info("-------付费停卡费支付成功(小程序回调)=========" );
-                    cardPauseService.payCallback(orderNo, wallet, transaction_id, ConfigConstant.WXPAY);
-                } else {
-                    //更新健身卡订单
-                    log.info("-------微信代扣更新健身卡订单=========" );
-                    int res = cardOrderService.updateCardOrder(orderNo, wallet, transaction_id, ConfigConstant.WXPAY, 0);
-                    if (res > 0) {
-                        log.info("=========添加收支明细==========");
-                        incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,ConfigConstant.WXPAY);
-                    }
-                }
-
-                response.getWriter().print("SUCCESS");
+            if (map == null || map.isEmpty()) {
+                response.getWriter().print(setWechatXml("FAIL", "参数格式校验错误"));
                 return;
             }
+            if (!"SUCCESS".equals(map.get("return_code")) || !"SUCCESS".equals(map.get("result_code"))) {
+                log.warn("微信支付回调状态失败 returnCode={},resultCode={},errCode={}",
+                        map.get("return_code"), map.get("result_code"), map.get("err_code"));
+                response.getWriter().print(setWechatXml("FAIL", "支付结果失败"));
+                return;
+            }
+
+            MyConfig config = new MyConfig();
+            if (!WXPayUtil.isSignatureValid(map, config.getKey())) {
+                log.warn("微信支付回调验签失败 outTradeNo={}", map.get("out_trade_no"));
+                response.getWriter().print(setWechatXml("FAIL", "签名失败"));
+                return;
+            }
+            if (!config.getProAppID().equals(map.get("appid")) || !config.getMchID().equals(map.get("mch_id"))) {
+                log.warn("微信支付回调商户身份不匹配 outTradeNo={}", map.get("out_trade_no"));
+                response.getWriter().print(setWechatXml("FAIL", "商户身份校验失败"));
+                return;
+            }
+
+            String orderNo = map.get("out_trade_no");
+            String transactionId = map.get("transaction_id");
+            String totalFee = map.get("total_fee");
+            if (StringUtils.isBlank(orderNo) || StringUtils.isBlank(transactionId)
+                    || StringUtils.isBlank(totalFee) || orderNo.length() > 32) {
+                response.getWriter().print(setWechatXml("FAIL", "支付参数缺失"));
+                return;
+            }
+            BigDecimal wallet;
+            try {
+                BigDecimal totalFeeFen = new BigDecimal(totalFee);
+                if (totalFeeFen.scale() > 0 || totalFeeFen.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new NumberFormatException("total_fee invalid");
+                }
+                wallet = totalFeeFen.movePointLeft(2).setScale(2);
+            } catch (RuntimeException e) {
+                response.getWriter().print(setWechatXml("FAIL", "支付金额格式错误"));
+                return;
+            }
+
+            String orderType = orderNo.substring(orderNo.length() - 1);
+            log.info("收到已验签微信支付回调 orderNo={}", orderNo);
+            if (ConfigConstant.VIP_CARD_BUY_TYPE.equals(orderType)) {
+                log.info("-------激活VIP权益卡(小程序回调)=========" );
+                vipBenefitService.activateByOrderNo(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
+            } else if (ConfigConstant.VIP_TRANSFER_FEE_TYPE.equals(orderType)) {
+                log.info("-------VIP转让服务费支付成功(小程序回调)=========" );
+                vipTransferService.payFeeCallback(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
+            } else if (ConfigConstant.PT_PRIVATE_ORDER_TYPE.equals(orderType)) {
+                // 私教购买必须先于兜底分支；金额校验、库存、券和权益均由单事务 Service 完成。
+                log.info("-------更新私教商品购买订单(小程序回调)=========" );
+                privateOrderService.updatePrivateOrder(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
+            } else if (ConfigConstant.WALLET_RECHARGE_TYPE.equals(orderType)) {
+                log.info("-------储值充值到账(小程序回调)=========" );
+                ptMemberWalletService.walletRechargeCallback(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
+            } else if (ConfigConstant.INSTALLMENT_DOWN_TYPE.equals(orderType)) {
+                log.info("-------分期首付到账(小程序回调)=========" );
+                ptInstallmentService.installmentDownCallback(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
+            } else if (ConfigConstant.INSTALLMENT_BILL_TYPE.equals(orderType)) {
+                log.info("-------分期后续期到账(小程序回调)=========" );
+                ptInstallmentService.installmentBillCallback(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
+            } else if (ConfigConstant.CARD_PAUSE_FEE_TYPE.equals(orderType)) {
+                log.info("-------付费停卡费支付成功(小程序回调)=========" );
+                cardPauseService.payCallback(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
+            } else {
+                log.info("-------微信代扣更新健身卡订单=========" );
+                wxPayService.updateCardOrderPay(orderNo, wallet, transactionId);
+            }
+
+            response.getWriter().print(setWechatXml("SUCCESS", "OK"));
         } catch (Exception e) {
-            log.info("回调通知异常-----------------", e);
-            response.getWriter().print("FAIL");
-            return;
+            log.error("微信支付回调处理异常", e);
+            response.getWriter().print(setWechatXml("FAIL", "业务处理失败"));
         }
     }
 

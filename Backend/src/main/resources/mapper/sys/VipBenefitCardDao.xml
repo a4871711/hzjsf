@@ -48,6 +48,12 @@
         WHERE vip_card_id = #{vipCardId}
     </select>
 
+    <select id="queryPriceOptions" resultType="com.dlc.modules.sys.entity.VipBenefitCardEntity">
+        SELECT vip_card_id, card_name, status
+        FROM vip_benefit_card
+        ORDER BY status ASC, created_date DESC, vip_card_id DESC
+    </select>
+
     <insert id="save" parameterType="com.dlc.modules.sys.entity.VipBenefitCardEntity"
             useGeneratedKeys="true" keyProperty="vipCardId">
         INSERT INTO vip_benefit_card
@@ -91,6 +97,10 @@
     <!-- 删除前拦截:统计该权益卡已产生的持有实例数 -->
     <select id="benefitCount" resultType="int" parameterType="long">
         SELECT COUNT(1) FROM vip_benefit WHERE vip_card_id = #{vipCardId}
+    </select>
+
+    <select id="productPriceBindingCount" resultType="int" parameterType="long">
+        SELECT COUNT(1) FROM pt_product_benefit_price WHERE vip_card_id = #{vipCardId}
     </select>
 
     <!-- 上/下架 -->

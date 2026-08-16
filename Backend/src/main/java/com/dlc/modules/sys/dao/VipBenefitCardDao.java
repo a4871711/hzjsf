@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * VIP 权益卡商品(vip_benefit_card)
  * 基础增删改查继承 BaseDao(对应 SQL 在 mapper/sys/VipBenefitCardDao.xml)。
@@ -16,10 +18,16 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VipBenefitCardDao extends BaseDao<VipBenefitCardEntity> {
 
+    /** 私教商品权益价配置使用的全部权益卡候选，包含下架卡以支持历史配置回显。 */
+    List<VipBenefitCardEntity> queryPriceOptions();
+
     /**
      * 统计该权益卡已产生的持有实例(vip_benefit)数量,用于删除前拦截已售出的卡
      */
     int benefitCount(Long vipCardId);
+
+    /** 统计该权益卡被多少个私教商品权益价配置引用。 */
+    int productPriceBindingCount(Long vipCardId);
 
     /**
      * 批量上/下架

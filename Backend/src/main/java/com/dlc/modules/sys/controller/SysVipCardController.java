@@ -93,6 +93,9 @@ public class SysVipCardController {
                 if (result > 0) {
                     return R.error("该权益卡已售出,不能删除");
                 }
+                if (sysVipCardService.productPriceBindingCount(vipCardId) > 0) {
+                    return R.error("该权益卡已被私教商品配置为权益价，请先解除绑定");
+                }
             }
         }
         sysVipCardService.deleteBatch(vipCardIds);

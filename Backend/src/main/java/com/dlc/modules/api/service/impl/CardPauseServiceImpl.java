@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,9 +36,9 @@ import java.util.Map;
  * 落在 api.service.impl,命中事务切面(默认 REQUIRED):apply 的行锁、payCallback 的生效+顺延+记账、cancel 的取消+扣回均在事务内。
  * 规则:
  * - 前提:有效权益会员 + 被停卡须为权益卡性质(fit_card.cardNature=1)、属本人、生效中(status=4)、未过期
- * - 免费:按用户滚动30天1次,每次自选1~7天,立即生效并预顺延 validityDate N 天,end_time=start+N,到期零动作
- * - 付费:免费额度用完后按权益卡绑定的 vip_pause_rule 选档(金额/天数以后端规则为准),微信支付回调成功才生效
- * - 提前取消:生效中且未到 end_time 可取消,usedDays=max(1,ceil),多顺延的天数扣回;付费不退款
+ * - 免费:按用户滚动30天1次,每次自选1~7天,申请成功后从次日0点开始,预顺延 validityDate N 天,end_time=start+N
+ * - 付费:免费额度用完后按权益卡绑定的 vip_pause_rule 选档(金额/天数以后端规则为准),支付成功后从次日0点开始
+ * - 提前取消:开始前取消实际天数为0;开始后按实际停卡天数计算,多顺延的天数扣回;付费不退款
  * - 存量兼容:end_time IS NULL 的旧开放式记录,取消走旧 resume 语义(按实际天数顺延,status→1)
  */
 @Service("cardPauseService")
@@ -66,6 +67,36 @@ public class CardPauseServiceImpl implements CardPauseService {
     private static final long FREE_QUOTA_PERIOD_MS = 30L * 24 * 60 * 60 * 1000;
     /** 一天毫秒数(实际天数 ceil 用) */
     private static final double DAY_MS = 86400000.0;
+
+    /**
+     * 计算业务上的次日零点。使用服务端默认时区，与项目现有 Date/MySQL NOW() 口径保持一致。
+     */
+    private Date nextDayStart(Date baseTime) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(baseTime);
+        calendar.add(Calendar.DAY_OF_MONTH, 1);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    /** 按自然日顺延，避免直接累加毫秒导致零点边界漂移。 */
+    private Date addNaturalDays(Date baseTime, int days) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(baseTime);
+        calendar.add(Calendar.DAY_OF_MONTH, days);
+        return calendar.getTime();
+    }
+
+    /** 开始前取消为0天；开始后不足24小时按1天计算。 */
+    private int calculateUsedDays(Date startTime, Date now) {
+        if (startTime == null || now == null || !now.after(startTime)) {
+            return 0;
+        }
+        return (int) Math.ceil((now.getTime() - startTime.getTime()) / DAY_MS);
+    }
 
     // ====================== 停卡预检 ======================
 
@@ -230,7 +261,7 @@ public class CardPauseServiceImpl implements CardPauseService {
         throw new RRException(CodeAndMsg.ERROR_LACK_PARAM);
     }
 
-    /** 免费停卡:滚动30天1次,自选1~7天,立即生效并预顺延有效期 */
+    /** 免费停卡:滚动30天1次,自选1~7天,申请成功后从次日0点开始并预顺延有效期 */
     private Map<String, Object> applyFree(Long userId, Long cardOrderId, Integer pauseDays) {
         // 免费停卡权益校验:该会员权益卡未开通免费停卡则拒绝(仅能付费停卡)
         if (!isFreePauseEntitled(userId)) {
@@ -247,18 +278,19 @@ public class CardPauseServiceImpl implements CardPauseService {
         if (lastFree != null && lastFree.getTime() + FREE_QUOTA_PERIOD_MS > now.getTime()) {
             throw new RRException(CodeAndMsg.ERROR_PAUSE_FREE_QUOTA_USED);
         }
-        Date endTime = new Date(now.getTime() + (long) pauseDays * 24 * 60 * 60 * 1000);
+        Date startTime = nextDayStart(now);
+        Date endTime = addNaturalDays(startTime, pauseDays);
         CardPauseRecord record = new CardPauseRecord();
         record.setUserId(userId);
         record.setCardOrderId(cardOrderId);
         record.setPauseType(0);
         record.setAmount(BigDecimal.ZERO);
         record.setPauseDays(pauseDays);
-        record.setStartTime(now);
+        record.setStartTime(startTime);
         record.setEndTime(endTime);
         record.setStatus(0);
         cardPauseRecordMapper.insertSelective(record);
-        // 立即生效:预顺延会员卡有效期 N 天,到期零动作
+        // 预顺延会员卡有效期 N 天；入场 SQL 按 start_time 判断，申请当天仍可正常入场
         cardPauseRecordMapper.extendCardValidity(cardOrderId, pauseDays);
 
         Map<String, Object> data = new LinkedHashMap<String, Object>();
@@ -371,9 +403,10 @@ public class CardPauseServiceImpl implements CardPauseService {
                     orderNo, cardOk, otherActive);
             return 1;
         }
-        Date endTime = new Date(now.getTime() + (long) record.getPauseDays() * 24 * 60 * 60 * 1000);
-        // 幂等生效:status IN (10,3)→0(弃付关闭后的迟到回调仍认账);命中0行=并发已处理
-        int rows = cardPauseRecordMapper.activateByPayOrderNo(record.getPauseId(), now, endTime, transactionId);
+        Date startTime = nextDayStart(now);
+        Date endTime = addNaturalDays(startTime, record.getPauseDays());
+        // 幂等生效:status IN (10,3)→0；支付时间记 now，停卡从次日0点开始
+        int rows = cardPauseRecordMapper.activateByPayOrderNo(record.getPauseId(), startTime, endTime, now, transactionId);
         if (rows == 0) {
             return 0;
         }
@@ -418,8 +451,8 @@ public class CardPauseServiceImpl implements CardPauseService {
         if (!record.getEndTime().after(now)) {
             throw new RRException(CodeAndMsg.ERROR_PAUSE_STATE);
         }
-        // 实际使用天数不足一天按一天算;多顺延的部分扣回(付费停卡不退款)
-        int usedDays = Math.max(1, (int) Math.ceil((now.getTime() - record.getStartTime().getTime()) / DAY_MS));
+        // 开始前取消按0天；开始后不足一天按一天，多顺延的部分扣回(付费停卡不退款)
+        int usedDays = calculateUsedDays(record.getStartTime(), now);
         int refundDays = (record.getPauseDays() == null ? 0 : record.getPauseDays()) - usedDays;
         // 幂等取消:status=0 且未到 end_time 才命中,并发/重复取消命中0行直接返回
         int rows = cardPauseRecordMapper.cancelPause(pauseId, now, usedDays);

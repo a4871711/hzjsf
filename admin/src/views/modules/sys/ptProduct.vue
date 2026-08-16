@@ -126,11 +126,25 @@
                 </el-input>
               </el-form-item>
             </el-col>
-            <el-col :span="12">
-              <el-form-item label="会员优惠价" prop="memberPrice">
-                <el-input v-model="form.memberPrice" placeholder="选填">
-                  <template slot="prepend">¥</template>
-                </el-input>
+            <el-col :span="24">
+              <el-form-item label="权益价">
+                <div class="benefit-price-list">
+                  <div class="benefit-price-row" v-for="(item, index) in form.benefitPrices" :key="item.rowKey">
+                    <el-select v-model="item.vipCardId" filterable placeholder="选择 VIP 权益卡" class="benefit-card-select">
+                      <el-option
+                        v-for="op in availableBenefitCardOptions(item.vipCardId)"
+                        :key="op.value"
+                        :label="op.label"
+                        :value="op.value" />
+                    </el-select>
+                    <el-input v-model="item.benefitPrice" placeholder="对应权益价" class="benefit-price-input">
+                      <template slot="prepend">¥</template>
+                    </el-input>
+                    <el-button type="text" class="benefit-price-delete" @click="removeBenefitPrice(index)">删除</el-button>
+                  </div>
+                  <el-button size="mini" type="primary" plain icon="el-icon-plus" @click="addBenefitPrice">添加权益价</el-button>
+                  <span class="tip">可绑定多个 VIP 权益卡；会员同时命中多张时，自动取最低权益价</span>
+                </div>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -343,7 +357,7 @@
               <el-col :span="24" v-if="form.groupBenefitScopeType === 2">
                 <el-form-item label="指定团课商品" prop="groupProductIds">
                   <el-select v-model="form.groupProductIds" multiple filterable placeholder="范围=指定时必选" style="width:100%;">
-                    <el-option v-for="op in groupClassOptions" :key="op.value" :label="op.label" :value="op.value" />
+                    <el-option v-for="op in availableGroupProductOptions" :key="op.value" :label="op.label" :value="op.value" />
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -412,6 +426,8 @@ export default {
       storeOptions: [],
       coachOptions: [],
       groupClassOptions: [],
+      benefitCardOptions: [],
+      benefitPriceRowSeq: 0,
       // id -> name 映射（列表展示用）
       typeMap: {},
       searchData: {
@@ -542,6 +558,12 @@ export default {
         { label: '均价', value: '¥' + avg.toFixed(2), unit: '', color: '#67c23a' },
         { label: '已上架数', value: listedNum, unit: '个', color: '#f56c6c' }
       ]
+    },
+    availableGroupProductOptions () {
+      var currentId = Number(this.form.id)
+      return this.groupClassOptions.filter(function (item) {
+        return !currentId || Number(item.value) !== currentId
+      })
     }
   },
   mounted () {
@@ -551,6 +573,7 @@ export default {
     this.getStoreList()
     this.getCoachList()
     this.getGroupClassList()
+    this.getBenefitCardOptions()
   },
   activated () {
     // 从分类管理页切回商品页时刷新下拉，无需整页刷新。
@@ -573,7 +596,8 @@ export default {
         targetDesc: '',
         originalPrice: '',
         salePrice: '',
-        memberPrice: '',
+        memberPrice: '', // 历史字段保留兼容，新配置使用 benefitPrices
+        benefitPrices: [],
         newUserPrice: '',
         lessonCount: '',
         durationMinutes: 60,
@@ -712,10 +736,37 @@ export default {
     async getGroupClassList () {
       var res = await this.apis.ptProduct_groupClassOptions()
       var list = res.list || []
-      // 团课实体：id + className
+      // 指定团课改为关联新私教商品中的一对多商品。
       this.groupClassOptions = list.map(function (item) {
-        return { value: item.id, label: item.className || ('团课#' + item.id) }
+        var statusText = item.listingStatus === 1 ? '已上架' : '未上架'
+        return { value: item.id, label: item.productName + '（' + statusText + '）' }
       })
+    },
+    async getBenefitCardOptions () {
+      var res = await this.apis.ptProduct_benefitCardOptions()
+      var list = res.list || []
+      this.benefitCardOptions = list.map(function (item) {
+        var statusText = Number(item.status) === 1 ? '已上架' : '已下架'
+        return { value: item.vipCardId, label: item.cardName + '（' + statusText + '）' }
+      })
+    },
+    availableBenefitCardOptions (currentId) {
+      var selected = {}
+      ;(this.form.benefitPrices || []).forEach(function (item) {
+        if (item.vipCardId !== '' && item.vipCardId !== null && item.vipCardId !== undefined) {
+          selected[String(item.vipCardId)] = true
+        }
+      })
+      return this.benefitCardOptions.filter(function (item) {
+        return String(item.value) === String(currentId) || !selected[String(item.value)]
+      })
+    },
+    addBenefitPrice () {
+      this.benefitPriceRowSeq++
+      this.form.benefitPrices.push({ rowKey: 'new-' + this.benefitPriceRowSeq, vipCardId: '', benefitPrice: '' })
+    },
+    removeBenefitPrice (index) {
+      this.form.benefitPrices.splice(index, 1)
     },
     // ===== 服务类型 / 有效期联动 =====
     onServiceTypeChange (val) {
@@ -774,6 +825,15 @@ export default {
       form.storeIds = Array.isArray(p.storeIds) ? p.storeIds.slice() : []
       form.coachIds = Array.isArray(p.coachIds) ? p.coachIds.slice() : []
       form.groupProductIds = Array.isArray(p.groupProductIds) ? p.groupProductIds.slice() : []
+      var vm = this
+      form.benefitPrices = Array.isArray(p.benefitPrices) ? p.benefitPrices.map(function (item) {
+        vm.benefitPriceRowSeq++
+        return {
+          rowKey: item.id ? ('saved-' + item.id) : ('edit-' + vm.benefitPriceRowSeq),
+          vipCardId: item.vipCardId,
+          benefitPrice: item.benefitPrice
+        }
+      }) : []
       // 有效期：-1 -> 长期
       if (p.validityDays === -1) {
         form.validityLong = 1
@@ -814,6 +874,13 @@ export default {
       // 一对一强制单时段 1
       if (Number(f.serviceType) === 1) data.bookingCapacity = 1
       data.dailyLessonLimit = f.dailyLessonLimit === '' ? '' : Number(f.dailyLessonLimit)
+      data.memberPrice = null
+      data.benefitPrices = (f.benefitPrices || []).map(function (item) {
+        return {
+          vipCardId: item.vipCardId === '' ? null : Number(item.vipCardId),
+          benefitPrice: item.benefitPrice === '' ? null : Number(item.benefitPrice)
+        }
+      })
       return data
     },
     submitForm () {
@@ -824,6 +891,24 @@ export default {
         }
         // 前端补充校验：分期/附赠开启时的必填与范围
         var f = this.form
+        var benefitCardIds = {}
+        for (var benefitIndex = 0; benefitIndex < f.benefitPrices.length; benefitIndex++) {
+          var benefitItem = f.benefitPrices[benefitIndex]
+          var benefitPrice = Number(benefitItem.benefitPrice)
+          if (!benefitItem.vipCardId || benefitItem.benefitPrice === '' || !isFinite(benefitPrice) || benefitPrice < 0) {
+            this.$message.error('请完整填写每一条 VIP 权益卡和对应权益价，权益价不能小于0')
+            return
+          }
+          if (benefitPrice > Number(f.salePrice)) {
+            this.$message.error('权益价不能高于商品售价')
+            return
+          }
+          if (benefitCardIds[String(benefitItem.vipCardId)]) {
+            this.$message.error('同一 VIP 权益卡不能重复配置权益价')
+            return
+          }
+          benefitCardIds[String(benefitItem.vipCardId)] = true
+        }
         var dailyLessonLimit = Number(f.dailyLessonLimit)
         if (dailyLessonLimit % 1 !== 0 || dailyLessonLimit < 1 || dailyLessonLimit > 99) {
           this.$message.error('每日预约上限必须为 1-99 之间的整数')
@@ -1041,6 +1126,25 @@ export default {
   margin-left: 10px;
   font-size: 12px;
   color: #909399;
+}
+.benefit-price-list {
+  width: 100%;
+}
+.benefit-price-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.benefit-card-select {
+  width: 340px;
+  margin-right: 10px;
+}
+.benefit-price-input {
+  width: 220px;
+  margin-right: 10px;
+}
+.benefit-price-delete {
+  color: #f56c6c;
 }
 .cover-uploader {
   ::v-deep .el-upload {

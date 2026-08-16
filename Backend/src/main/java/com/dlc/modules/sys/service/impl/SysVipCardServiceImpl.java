@@ -73,6 +73,11 @@ public class SysVipCardServiceImpl implements SysVipCardService {
     }
 
     @Override
+    public int productPriceBindingCount(Long vipCardId) {
+        return vipBenefitCardDao.productPriceBindingCount(vipCardId);
+    }
+
+    @Override
     public int updateOnOffCard(Long vipCardId, Integer status) {
         return vipBenefitCardDao.updateOnOffCard(vipCardId, status);
     }

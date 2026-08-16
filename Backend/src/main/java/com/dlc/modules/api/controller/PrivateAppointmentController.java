@@ -87,6 +87,13 @@ public class PrivateAppointmentController extends BaseController {
         return R.reOk(privateAppointmentService.myList(params));
     }
 
+    /** 手机端教练首页；教练ID由登录 token 反查，不允许前端指定。 */
+    @RequestMapping("/coachWorkbench")
+    public R coachWorkbench(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        return R.reOk(privateAppointmentService.coachWorkbench(userId));
+    }
+
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }

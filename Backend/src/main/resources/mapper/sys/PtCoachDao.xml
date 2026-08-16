@@ -3,11 +3,14 @@
 <mapper namespace="com.dlc.modules.sys.dao.PtCoachDao">
 
     <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtCoachEntity">
-        select * from pt_coach where id = #{value}
+        select c.*, u.nickname as boundMemberName, u.phone as boundMemberMobile
+        from pt_coach c
+        left join user_info u on u.userId = c.user_id and u.isDel = 0
+        where c.id = #{value}
     </select>
 
     <select id="queryList" resultType="com.dlc.modules.sys.entity.PtCoachEntity">
-        select c.*,
+        select c.*, u.nickname as boundMemberName, u.phone as boundMemberMobile,
             (select group_concat(s.storeName order by r.store_id)
                from pt_coach_store_rel r
                left join store_address sa on sa.storeAddrId = r.store_id
@@ -20,6 +23,7 @@
                from pt_coach_schedule sc
               where sc.coach_id = c.id) as scheduleCount
         from pt_coach c
+        left join user_info u on u.userId = c.user_id and u.isDel = 0
         <where>
             c.deleted = 0
             <if test="coachName != null and coachName != ''">
@@ -109,11 +113,11 @@
 
     <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachEntity" useGeneratedKeys="true" keyProperty="id">
         insert into pt_coach
-        (`coach_no`, `coach_name`, `mobile`, `gender`, `avatar_url`, `coach_level`, `intro`,
+        (`coach_no`, `coach_name`, `mobile`, `user_id`, `gender`, `avatar_url`, `coach_level`, `intro`,
          `certificate_urls`, `status`, `disable_reason`, `sort_no`,
          `created_by`, `created_at`, `updated_by`, `updated_at`)
         values
-        (#{coachNo}, #{coachName}, #{mobile}, #{gender}, #{avatarUrl}, #{coachLevel}, #{intro},
+        (#{coachNo}, #{coachName}, #{mobile}, #{userId}, #{gender}, #{avatarUrl}, #{coachLevel}, #{intro},
          #{certificateUrls}, #{status}, #{disableReason}, #{sortNo},
          #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
     </insert>
@@ -123,6 +127,7 @@
         <set>
             <if test="coachName != null">`coach_name` = #{coachName},</if>
             <if test="mobile != null">`mobile` = #{mobile},</if>
+            <if test="userId != null">`user_id` = #{userId},</if>
             <if test="gender != null">`gender` = #{gender},</if>
             <if test="avatarUrl != null">`avatar_url` = #{avatarUrl},</if>
             <if test="coachLevel != null">`coach_level` = #{coachLevel},</if>
@@ -150,6 +155,51 @@
         where deleted = 0 and mobile = #{mobile}
         <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
     </select>
+
+    <select id="countByUserId" resultType="int">
+        select count(*) from pt_coach
+        where deleted = 0 and user_id = #{userId}
+        <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
+    </select>
+
+    <select id="countCoachInScope" resultType="int">
+        select count(*) from pt_coach c
+        where c.id = #{coachId} and c.deleted = 0
+        <if test="storeIds != null and storeIds != ''">
+            and exists (select 1 from pt_coach_store_rel r
+                        where r.coach_id = c.id and r.store_id in (${storeIds}))
+        </if>
+    </select>
+
+    <select id="countMemberInScope" resultType="int">
+        select count(*) from user_info u
+        where u.userId = #{userId} and u.isDel = 0
+        <if test="storeIds != null and storeIds != ''">
+            and u.nowStoreId in (${storeIds})
+        </if>
+    </select>
+
+    <select id="queryMemberOptions" resultType="java.util.LinkedHashMap">
+        select u.userId as id, u.nickname, u.phone, u.nowStoreId as storeId, s.storeName
+        from user_info u
+        left join store_address sa on sa.storeAddrId = u.nowStoreId
+        left join store s on s.storeId = sa.storeId
+        where u.isDel = 0
+          and (cast(u.userId as char) like concat('%', #{keyword}, '%')
+               or u.nickname like concat('%', #{keyword}, '%')
+               or u.phone like concat('%', #{keyword}, '%'))
+        <if test="storeIds != null and storeIds != ''">
+            and u.nowStoreId in (${storeIds})
+        </if>
+        order by u.createdDate desc, u.userId desc
+        limit 20
+    </select>
+
+    <update id="updateMemberBinding">
+        update pt_coach
+        set user_id = #{userId}, updated_by = #{updatedBy}, updated_at = now()
+        where id = #{coachId} and deleted = 0
+    </update>
 
     <select id="countByLevelName" resultType="int">
         select count(*) from pt_coach where deleted = 0 and coach_level = #{levelName}

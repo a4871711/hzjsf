@@ -6,7 +6,7 @@ import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
 import com.dlc.common.utils.R;
 import com.dlc.modules.sys.entity.PtProductEntity;
-import com.dlc.modules.sys.entity.TeamClassEntity;
+import com.dlc.modules.sys.entity.VipBenefitCardEntity;
 import com.dlc.modules.sys.service.SysPtProductService;
 import com.dlc.modules.sys.shiro.ShiroUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -119,10 +119,18 @@ public class SysPtProductController extends AbstractController {
         return R.ok();
     }
 
-    /** 指定团课商品下拉项（供附赠团课权益配置使用，无需单独按钮权限） */
+    /** 指定团课商品下拉项：返回未删除的一对多私教商品。 */
     @RequestMapping("/groupClassOptions")
     public R groupClassOptions() {
-        List<TeamClassEntity> list = sysPtProductService.groupClassOptions();
+        List<PtProductEntity> list = sysPtProductService.groupClassOptions();
+        return R.ok().put("list", list);
+    }
+
+    /** 权益价绑定下拉：包含已下架权益卡，以便历史商品编辑时仍能正常回显。 */
+    @RequestMapping("/benefitCardOptions")
+    @RequiresPermissions("sys:ptproduct:list")
+    public R benefitCardOptions() {
+        List<VipBenefitCardEntity> list = sysPtProductService.benefitCardOptions();
         return R.ok().put("list", list);
     }
 

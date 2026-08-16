@@ -1,7 +1,7 @@
 package com.dlc.modules.sys.service;
 
 import com.dlc.modules.sys.entity.PtProductEntity;
-import com.dlc.modules.sys.entity.TeamClassEntity;
+import com.dlc.modules.sys.entity.VipBenefitCardEntity;
 
 import java.util.List;
 import java.util.Map;
@@ -33,6 +33,9 @@ public interface SysPtProductService {
     /** 深拷贝主表 + 5 子表，新 product_no、listing_status=0、sold_count=0、名称加「-副本」 */
     void copy(Long id);
 
-    /** 供商品表单选择的团课商品下拉（最佳可用实现：读现有 team_class） */
-    List<TeamClassEntity> groupClassOptions();
+    /** 供商品表单选择的团课商品下拉，来源为一对多私教商品。 */
+    List<PtProductEntity> groupClassOptions();
+
+    /** 私教商品权益价可绑定的 VIP 权益卡候选。 */
+    List<VipBenefitCardEntity> benefitCardOptions();
 }

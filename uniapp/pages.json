@@ -10,6 +10,14 @@
 			}
 		},
 		{
+			"path": "pages/private_course/private_course",
+			"style": {
+				"navigationBarTitleText": "课程",
+				"navigationBarBackgroundColor": "#FFFFFF",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
 			"path": "pages/shop/shop",
 			"style": {
 				"navigationBarTitleText": "矢历门店",
@@ -41,6 +49,11 @@
 			"iconPath": "static/tabBer/homeCat.png",
 			"selectedIconPath": "static/tabBer/home.png",
 			"text": "首页"
+		}, {
+			"pagePath": "pages/private_course/private_course",
+			"iconPath": "static/tabBer/courseCat.png",
+			"selectedIconPath": "static/tabBer/course.png",
+			"text": "课程"
 		}, {
 			"pagePath": "pages/shop/shop",
 			"iconPath": "static/tabBer/shopCat.png",
@@ -171,6 +184,92 @@
 					"path": "vip_transfer_list/vip_transfer_list",
 					"style": {
 						"navigationBarTitleText": "我的转让"
+					}
+				},
+				{
+					"path": "private_course_detail/private_course_detail",
+					"style": {
+						"navigationBarTitleText": "课程详情"
+					}
+				},
+				{
+					"path": "private_order_confirm/private_order_confirm",
+					"style": {
+						"navigationBarTitleText": "确认订单"
+					}
+				},
+				{
+					"path": "private_order/private_order",
+					"style": {
+						"navigationBarTitleText": "私教订单",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
+					"path": "private_order_detail/private_order_detail",
+					"style": {
+						"navigationBarTitleText": "订单详情"
+					}
+				},
+				{
+					"path": "private_benefit/private_benefit",
+					"style": {
+						"navigationBarTitleText": "私教权益",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
+					"path": "private_booking/private_booking",
+					"style": {
+						"navigationBarTitleText": "预约私教课"
+					}
+				},
+				{
+					"path": "private_appointment/private_appointment",
+					"style": {
+						"navigationBarTitleText": "私教预约",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
+					"path": "private_comment/private_comment",
+					"style": {
+						"navigationBarTitleText": "教练评价",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
+					"path": "private_coach_workbench/private_coach_workbench",
+					"style": {
+						"navigationBarTitleText": "教练端",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
+					"path": "private_coach_schedule/private_coach_schedule",
+					"style": {
+						"navigationBarTitleText": "教练日程",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
+					"path": "private_coach_mine/private_coach_mine",
+					"style": {
+						"navigationBarTitleText": "我的",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
+					"path": "private_coach_profile/private_coach_profile",
+					"style": {
+						"navigationBarTitleText": "个人资料"
+					}
+				},
+				{
+					"path": "private_coach_income/private_coach_income",
+					"style": {
+						"navigationBarTitleText": "收入明细",
+						"enablePullDownRefresh": true
 					}
 				}
 		]

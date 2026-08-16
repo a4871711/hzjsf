@@ -13,7 +13,7 @@ import java.util.List;
 public interface CoachApiService {
 
     /** 需求 8.3 交集：返回该商品当前可预约的教练列表 */
-    List<PtCoachOption> listByProduct(Long productId);
+    List<PtCoachOption> listByProduct(Long productId, Long storeId);
 
     /**
      * 需求 5.4 时段生成规则：按教练在该门店该日期对应星期的启用排班窗口，

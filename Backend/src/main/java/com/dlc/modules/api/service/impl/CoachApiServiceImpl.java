@@ -38,12 +38,15 @@ public class CoachApiServiceImpl implements CoachApiService {
     private PtPrivateAppointmentDao ptPrivateAppointmentDao;
 
     @Override
-    public List<PtCoachOption> listByProduct(Long productId) {
+    public List<PtCoachOption> listByProduct(Long productId, Long storeId) {
         PtProduct product = ptProductApiDao.queryObject(productId);
         if (product == null) {
             throw new RRException("商品不存在或已下架");
         }
-        return coachApiDao.queryBookableCoaches(productId);
+        if (storeId != null && !coachApiDao.queryProductStoreIds(productId).contains(storeId)) {
+            throw new RRException("该门店不在商品适用门店范围内");
+        }
+        return coachApiDao.queryBookableCoaches(productId, storeId);
     }
 
     @Override
@@ -61,7 +64,7 @@ public class CoachApiServiceImpl implements CoachApiService {
             throw new RRException("该教练不属于所选门店");
         }
         boolean coachBookable = false;
-        for (PtCoachOption c : coachApiDao.queryBookableCoaches(productId)) {
+        for (PtCoachOption c : coachApiDao.queryBookableCoaches(productId, storeId)) {
             if (c.getId().equals(coachId)) {
                 coachBookable = true;
                 break;

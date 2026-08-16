@@ -1,7 +1,7 @@
 package com.dlc.modules.sys.dao;
 
 import com.dlc.modules.sys.entity.PtProductGroupBenefitEntity;
-import com.dlc.modules.sys.entity.TeamClassEntity;
+import com.dlc.modules.sys.entity.PtProductEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 
@@ -20,6 +20,6 @@ public interface PtProductGroupBenefitDao extends BaseDao<PtProductGroupBenefitE
 
     int deleteByProductId(Long productId);
 
-    /** 「指定团课商品」下拉项，读现有 team_class（本域不重建团课基础数据） */
-    List<TeamClassEntity> queryTeamClassOptions();
+    /** 「指定团课商品」下拉项，读取未删除的一对多私教商品。 */
+    List<PtProductEntity> queryGroupProductOptions();
 }

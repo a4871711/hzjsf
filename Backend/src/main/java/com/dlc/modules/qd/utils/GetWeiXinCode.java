@@ -23,6 +23,10 @@ import javax.servlet.http.HttpServletRequest;
 @Component
 public class GetWeiXinCode {
 
+    private static final String STABLE_ACCESS_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/stable_token";
+    private static final String ACCESS_TOKEN_CACHE_SUFFIX = "gxzjj_accessToken";
+    private static final int ACCESS_TOKEN_EXPIRE_MARGIN_SECONDS = 300;
+
     private static RedisUtils redisUtils;
 
     private static Logger logger = LoggerFactory.getLogger(GetWeiXinCode.class);
@@ -89,17 +93,41 @@ public class GetWeiXinCode {
     }
 
     public static String getAccessToken(String appid, String secret) {
-        String accessToken = redisUtils.get(appid + "gxzjj_accessToken");
-        if ((StringUtils.isEmpty(accessToken)) || ("NULL".equals(accessToken.toUpperCase()))) {
-            String accessTokenUrl = GetWeiXinCode.getAccessTokenUrl(appid, secret);
-            String result = SendPushPost.sendGet(accessTokenUrl);
-            JSONObject httpRequest = JSONObject.parseObject(result);
-            accessToken = (String) httpRequest.get("access_token");
-            Integer expiresIn = (Integer) httpRequest.get("expires_in");
-            logger.info("wocaonima++++++++++++++++" + result);
-            redisUtils.set(appid + "gxzjj_accessToken", accessToken, expiresIn);
-            return accessToken;
+        return getStableAccessToken(appid, secret, false);
+    }
+
+    /**
+     * 使用稳定接口获取微信 access_token。缓存提前五分钟失效，避免临界时间继续使用旧 Token。
+     */
+    private static synchronized String getStableAccessToken(String appid, String secret, boolean forceRefresh) {
+        String cacheKey = appid + ACCESS_TOKEN_CACHE_SUFFIX;
+        if (!forceRefresh) {
+            String cachedToken = redisUtils.get(cacheKey);
+            if (StringUtils.hasText(cachedToken) && !"NULL".equalsIgnoreCase(cachedToken)) {
+                return cachedToken;
+            }
         }
+
+        JSONObject request = new JSONObject();
+        request.put("grant_type", "client_credential");
+        request.put("appid", appid);
+        request.put("secret", secret);
+        request.put("force_refresh", forceRefresh);
+
+        String result = SendPushPost.sendPost(STABLE_ACCESS_TOKEN_URL, request.toJSONString(), true);
+        JSONObject response = JSONObject.parseObject(result);
+        String accessToken = response == null ? null : response.getString("access_token");
+        if (!StringUtils.hasText(accessToken)) {
+            Integer errCode = response == null ? null : response.getInteger("errcode");
+            String errMsg = response == null ? "empty response" : response.getString("errmsg");
+            logger.error("获取微信稳定 access_token 失败，errcode={}, errmsg={}", errCode, errMsg);
+            throw new IllegalStateException("获取微信 access_token 失败");
+        }
+
+        Integer expiresIn = response.getInteger("expires_in");
+        int cacheSeconds = expiresIn == null ? 6600 : Math.max(60, expiresIn - ACCESS_TOKEN_EXPIRE_MARGIN_SECONDS);
+        redisUtils.set(cacheKey, accessToken, cacheSeconds);
+        logger.info("微信稳定 access_token 已刷新，forceRefresh={}，缓存有效期={}秒", forceRefresh, cacheSeconds);
         return accessToken;
     }
 
@@ -198,14 +226,31 @@ public class GetWeiXinCode {
      * @return
      */
     public static JSONObject getUserPhoneNumber(String code) {
-    	String access_token = getAccessToken(ConfigConstant.PRO_WECHAT_APPID, ConfigConstant.PRO_WECHAT_APPSECRET);
-    	String url = getUserPhoneNumberUrl(access_token);
-    	JSONObject param = new JSONObject();
+        String accessToken = getAccessToken(ConfigConstant.PRO_WECHAT_APPID, ConfigConstant.PRO_WECHAT_APPSECRET);
+        JSONObject param = new JSONObject();
         param.put("code", code);
+        JSONObject result = requestUserPhoneNumber(accessToken, param);
+        if (isAccessTokenInvalid(result)) {
+            logger.warn("微信手机号授权 Token 已失效，强制刷新后重试一次，errcode={}", result.getInteger("errcode"));
+            accessToken = getStableAccessToken(ConfigConstant.PRO_WECHAT_APPID, ConfigConstant.PRO_WECHAT_APPSECRET, true);
+            result = requestUserPhoneNumber(accessToken, param);
+        }
+        logger.info("微信授权获取用户手机结果，errcode={}", result == null ? null : result.getInteger("errcode"));
+        return result;
+    }
+
+    private static JSONObject requestUserPhoneNumber(String accessToken, JSONObject param) {
+        String url = getUserPhoneNumberUrl(accessToken);
         String result = SendPushPost.sendPost(url, param.toJSONString(), true);
-        JSONObject jsonObject = JSONObject.parseObject(result);
-        logger.info("微信授权获取  用户手机:"+result);
-    	return jsonObject;
+        return JSONObject.parseObject(result);
+    }
+
+    private static boolean isAccessTokenInvalid(JSONObject result) {
+        if (result == null) {
+            return false;
+        }
+        int errCode = result.getIntValue("errcode");
+        return errCode == 40001 || errCode == 40014 || errCode == 42001;
     }
 
     /**
@@ -222,4 +267,4 @@ public class GetWeiXinCode {
         return wxObj;
     }
 
-} 
+}

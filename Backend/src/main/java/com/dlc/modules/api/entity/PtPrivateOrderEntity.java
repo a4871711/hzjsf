@@ -43,7 +43,11 @@ public class PtPrivateOrderEntity implements Serializable {
     private Integer durationMinutes;
     /** 有效期天数快照;-1 长期 */
     private Integer validityDays;
-    /** 原价金额(本期口径=下单时 sale_price 基础价快照) */
+    /** 下单时命中的 VIP 权益卡；普通价/活动价订单为空。 */
+    private Long benefitVipCardId;
+    /** 下单时命中的权益价；普通价/活动价订单为空。 */
+    private BigDecimal benefitPrice;
+    /** 原价金额（普通单可为命中的权益价，活动单为 sale_price）。 */
     private BigDecimal originalAmount;
     /** 应付金额(后端重算,不信前端) */
     private BigDecimal payableAmount;
@@ -127,6 +131,12 @@ public class PtPrivateOrderEntity implements Serializable {
 
     public Integer getValidityDays() { return validityDays; }
     public void setValidityDays(Integer validityDays) { this.validityDays = validityDays; }
+
+    public Long getBenefitVipCardId() { return benefitVipCardId; }
+    public void setBenefitVipCardId(Long benefitVipCardId) { this.benefitVipCardId = benefitVipCardId; }
+
+    public BigDecimal getBenefitPrice() { return benefitPrice; }
+    public void setBenefitPrice(BigDecimal benefitPrice) { this.benefitPrice = benefitPrice; }
 
     public BigDecimal getOriginalAmount() { return originalAmount; }
     public void setOriginalAmount(BigDecimal originalAmount) { this.originalAmount = originalAmount; }

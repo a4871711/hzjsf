@@ -83,13 +83,12 @@ public class PtInstallmentServiceImpl implements PtInstallmentService {
             log.info("分期计划已存在,幂等跳过 orderId={}", order.getId());
             return;
         }
-        // 读商品分期规则(只读引用),未启用/规则停用则不生成(异常配置,记日志不抛,避免卡死首付回调)
+        // 读商品分期规则。首付已经到账时若规则失效必须整体回滚，不能留下收款成功却没有分期计划的订单。
         PtInstallmentRuleEntity rule = ptInstallmentRuleApiDao.selectByProductId(order.getProductId());
         if (rule == null || rule.getIsEnabled() == null || rule.getIsEnabled() != 1
                 || rule.getStatus() == null || rule.getStatus() != 1
-                || rule.getInstallmentCount() == null || rule.getInstallmentCount() < 1) {
-            log.warn("分期规则缺失/未启用,跳过建计划 orderId={},productId={}", order.getId(), order.getProductId());
-            return;
+                || rule.getInstallmentCount() == null || rule.getInstallmentCount() < 2) {
+            throw new RRException("分期规则缺失或已停用,orderId=" + order.getId());
         }
 
         BigDecimal total = scale(order.getPayableAmount());
@@ -97,6 +96,10 @@ public class PtInstallmentServiceImpl implements PtInstallmentService {
         int cnt = rule.getInstallmentCount();
         int intervalMonths = rule.getInstallmentIntervalMonths() == null ? 1 : rule.getInstallmentIntervalMonths();
         BigDecimal firstPaid = scale(paidAmount);
+        if (down.compareTo(BigDecimal.ZERO) <= 0 || down.compareTo(total) >= 0
+                || firstPaid.compareTo(down) != 0) {
+            throw new RRException("分期首付金额与商品配置不一致,orderId=" + order.getId());
+        }
 
         // 1) 建计划(uk_order_id 兜底并发):首付即入账,已付=首付,当前期=2,激活时间=now,进行中
         Date now = new Date();

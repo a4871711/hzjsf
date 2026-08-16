@@ -33,8 +33,11 @@
         delete from pt_product_group_benefit where product_id = #{value}
     </delete>
 
-    <select id="queryTeamClassOptions" resultType="com.dlc.modules.sys.entity.TeamClassEntity">
-        select teamClassId, teamClassName from team_class order by teamClassId desc
+    <select id="queryGroupProductOptions" resultType="com.dlc.modules.sys.entity.PtProductEntity">
+        select id, product_no, product_name, service_type, listing_status, sort_no
+        from pt_product
+        where deleted = 0 and service_type = 2
+        order by sort_no desc, id desc
     </select>
 
 </mapper>

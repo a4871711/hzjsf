@@ -55,6 +55,9 @@
         o.lesson_count          AS lessonCount,
         o.duration_minutes      AS durationMinutes,
         o.validity_days         AS validityDays,
+        o.benefit_vip_card_id   AS benefitVipCardId,
+        vc.card_name            AS benefitCardName,
+        o.benefit_price         AS benefitPrice,
         o.original_amount       AS originalAmount,
         o.payable_amount        AS payableAmount,
         o.paid_amount           AS paidAmount,
@@ -86,6 +89,7 @@
         SELECT <include refid="Columns"/>
         FROM pt_private_order o
         LEFT JOIN store s ON s.storeId = o.store_id
+        LEFT JOIN vip_benefit_card vc ON vc.vip_card_id = o.benefit_vip_card_id
         LEFT JOIN pt_member_private_benefit b ON b.order_id = o.id
         <include refid="Filter"/>
         ORDER BY o.created_at DESC, o.id DESC
@@ -105,6 +109,7 @@
         SELECT <include refid="Columns"/>
         FROM pt_private_order o
         LEFT JOIN store s ON s.storeId = o.store_id
+        LEFT JOIN vip_benefit_card vc ON vc.vip_card_id = o.benefit_vip_card_id
         LEFT JOIN pt_member_private_benefit b ON b.order_id = o.id
         WHERE o.id = #{id} AND o.deleted = 0
         <if test="storeIds != null and storeIds != ''">

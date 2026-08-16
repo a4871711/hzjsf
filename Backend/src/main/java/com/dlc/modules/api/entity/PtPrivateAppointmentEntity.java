@@ -55,6 +55,8 @@ public class PtPrivateAppointmentEntity implements Serializable {
     private String storeName;
     private String memberName;
     private String memberMobile;
+    /** 下单时购买课时数快照，仅供教练首页展示“几节课包” */
+    private Integer packageLessonCount;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -136,4 +138,7 @@ public class PtPrivateAppointmentEntity implements Serializable {
 
     public String getMemberMobile() { return memberMobile; }
     public void setMemberMobile(String memberMobile) { this.memberMobile = memberMobile; }
+
+    public Integer getPackageLessonCount() { return packageLessonCount; }
+    public void setPackageLessonCount(Integer packageLessonCount) { this.packageLessonCount = packageLessonCount; }
 }

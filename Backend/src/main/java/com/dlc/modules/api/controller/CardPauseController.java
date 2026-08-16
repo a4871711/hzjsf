@@ -12,7 +12,7 @@ import java.util.Map;
 
 /**
  * 会员自助停卡(移动端,需登录)
- * 定期停卡:precheck 预检(免费额度/付费档位)、apply 申请(免费立即生效/付费返回支付单)、
+ * 定期停卡:precheck 预检(免费额度/付费档位)、apply 申请(免费次日0点开始/付费返回支付单)、
  * cancel 提前取消(按未用天数扣回顺延)、list 我的记录
  */
 @RestController

@@ -19,6 +19,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 私教商品 Service 实现。一次表单事务内维护主表 + 适用门店/指定教练关联 + 分期规则(1:1) +
@@ -46,6 +48,10 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     @Autowired
     private PtProductGroupBenefitRelDao ptProductGroupBenefitRelDao;
     @Autowired
+    private PtProductBenefitPriceDao ptProductBenefitPriceDao;
+    @Autowired
+    private VipBenefitCardDao vipBenefitCardDao;
+    @Autowired
     private PtCoachDao ptCoachDao;
     @Autowired
     private PtCoachScheduleDao ptCoachScheduleDao;
@@ -54,6 +60,8 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     private PtPrivateOrderDao ptPrivateOrderDao;
     @Autowired
     private PtMemberPrivateBenefitDao ptMemberPrivateBenefitDao;
+    @Autowired
+    private PtCoachMonthlyCommissionRuleDao ptCoachMonthlyCommissionRuleDao;
 
     @Override
     public PtProductEntity queryObject(Long id) {
@@ -101,6 +109,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         }
         saveStoreRels(entity.getId(), entity.getStoreIds());
         saveCoachRels(entity.getId(), entity.getCoachIds());
+        saveBenefitPrices(entity.getId(), entity.getBenefitPrices(), now);
         upsertSubConfigs(entity.getId(), entity, entity.getCreatedBy(), now);
         if (Integer.valueOf(1).equals(entity.getListingStatus())) {
             checkCanList(entity.getId());
@@ -112,6 +121,11 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         PtProductEntity old = ptProductDao.queryObject(entity.getId());
         if (old == null || Integer.valueOf(1).equals(old.getDeleted())) {
             throw new RRException("商品不存在");
+        }
+        if (entity.getProductTypeId() != null
+                && !Long.valueOf(3L).equals(entity.getProductTypeId())
+                && ptCoachMonthlyCommissionRuleDao.countByProduct(entity.getId()) > 0) {
+            throw new RRException("该包月课程已配置教练提成，请先在教练管理中解除配置");
         }
         // 兼容旧调用方未提交新字段：编辑时保留原每日预约上限。
         if (entity.getDailyLessonLimit() == null) {
@@ -127,6 +141,11 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         saveStoreRels(entity.getId(), entity.getStoreIds());
         ptProductCoachRelDao.deleteByProductId(entity.getId());
         saveCoachRels(entity.getId(), entity.getCoachIds());
+        // 旧调用方未提交 benefitPrices 时保留原配置；新表单会明确提交 [] 表示清空。
+        if (entity.getBenefitPrices() != null) {
+            ptProductBenefitPriceDao.deleteByProductId(entity.getId());
+            saveBenefitPrices(entity.getId(), entity.getBenefitPrices(), now);
+        }
         upsertSubConfigs(entity.getId(), entity, entity.getUpdatedBy(), now);
         if (Integer.valueOf(1).equals(entity.getListingStatus())) {
             checkCanList(entity.getId());
@@ -138,6 +157,11 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         // 第14步回填：存在交易引用(pt_private_order / pt_member_private_benefit)的商品不可删除——
         // 订单与权益是会员资产/账务凭证,商品行须保留供快照回溯(下架用 offCard,不要删)。
         for (Long id : ids) {
+            if (ptCoachMonthlyCommissionRuleDao.countByProduct(id) > 0) {
+                PtProductEntity product = ptProductDao.queryObject(id);
+                String productName = product == null ? String.valueOf(id) : product.getProductName();
+                throw new RRException("商品[" + productName + "]已配置教练包月提成，请先解除配置");
+            }
             if (ptPrivateOrderDao.countByProduct(id) > 0
                     || ptMemberPrivateBenefitDao.countByProduct(id) > 0) {
                 throw new RRException("商品[" + id + "]已产生购买订单或会员权益，不可删除，请改用下架");
@@ -146,6 +170,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         for (Long id : ids) {
             ptProductStoreRelDao.deleteByProductId(id);
             ptProductCoachRelDao.deleteByProductId(id);
+            ptProductBenefitPriceDao.deleteByProductId(id);
             ptInstallmentRuleDao.deleteByProductId(id);
             PtProductGroupBenefitEntity gb = ptProductGroupBenefitDao.queryByProductId(id);
             if (gb != null) {
@@ -200,6 +225,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         PtInstallmentRuleEntity ir = ptInstallmentRuleDao.queryByProductId(id);
         PtProductGroupBenefitEntity gb = ptProductGroupBenefitDao.queryByProductId(id);
         List<Long> groupProductIds = gb == null ? null : ptProductGroupBenefitRelDao.queryGroupProductIds(gb.getId());
+        List<PtProductBenefitPriceEntity> benefitPrices = ptProductBenefitPriceDao.queryByProductId(id);
 
         Date now = new Date();
         PtProductEntity copy = new PtProductEntity();
@@ -254,6 +280,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         }
         saveStoreRels(copy.getId(), storeIds);
         saveCoachRels(copy.getId(), coachIds);
+        saveBenefitPrices(copy.getId(), benefitPrices, now);
 
         if (ir != null) {
             PtInstallmentRuleEntity newIr = new PtInstallmentRuleEntity();
@@ -296,8 +323,13 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     }
 
     @Override
-    public List<TeamClassEntity> groupClassOptions() {
-        return ptProductGroupBenefitDao.queryTeamClassOptions();
+    public List<PtProductEntity> groupClassOptions() {
+        return ptProductGroupBenefitDao.queryGroupProductOptions();
+    }
+
+    @Override
+    public List<VipBenefitCardEntity> benefitCardOptions() {
+        return vipBenefitCardDao.queryPriceOptions();
     }
 
     /* ============ 私有辅助方法 ============ */
@@ -305,6 +337,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     private void fillSubConfigs(PtProductEntity p) {
         p.setStoreIds(ptProductStoreRelDao.queryStoreIds(p.getId()));
         p.setCoachIds(ptProductCoachRelDao.queryCoachIds(p.getId()));
+        p.setBenefitPrices(ptProductBenefitPriceDao.queryByProductId(p.getId()));
         PtInstallmentRuleEntity ir = ptInstallmentRuleDao.queryByProductId(p.getId());
         if (ir != null) {
             p.setInstallmentEnabled(ir.getIsEnabled());
@@ -348,6 +381,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (e.getSalePrice() == null || e.getSalePrice().compareTo(BigDecimal.ZERO) < 0) {
             throw new RRException("售价不合法");
         }
+        validateBenefitPrices(e.getBenefitPrices(), e.getSalePrice());
         if (e.getLessonCount() == null || e.getLessonCount() <= 0) {
             throw new RRException("课时数量必须大于0");
         }
@@ -383,6 +417,21 @@ public class SysPtProductServiceImpl implements SysPtProductService {
                     && (e.getGroupProductIds() == null || e.getGroupProductIds().isEmpty())) {
                 throw new RRException("适用范围为指定团课商品时必须选择至少一个团课");
             }
+            if (Integer.valueOf(2).equals(e.getGroupBenefitScopeType())) {
+                for (Long groupProductId : e.getGroupProductIds()) {
+                    if (groupProductId == null) {
+                        throw new RRException("指定团课商品不能为空");
+                    }
+                    if (e.getId() != null && e.getId().equals(groupProductId)) {
+                        throw new RRException("指定团课商品不能选择当前商品自身");
+                    }
+                    PtProductEntity groupProduct = ptProductDao.queryObject(groupProductId);
+                    if (groupProduct == null || Integer.valueOf(1).equals(groupProduct.getDeleted())
+                            || !Integer.valueOf(2).equals(groupProduct.getServiceType())) {
+                        throw new RRException("指定团课商品不存在或不是一对多商品");
+                    }
+                }
+            }
         }
         if (e.getCoachIds() != null) {
             for (Long coachId : e.getCoachIds()) {
@@ -394,6 +443,50 @@ public class SysPtProductServiceImpl implements SysPtProductService {
                     throw new RRException("指定教练已停用/离职：" + coach.getCoachName());
                 }
             }
+        }
+    }
+
+    /**
+     * 权益价必须逐张绑定有效的 VIP 权益卡；同一卡不可重复，价格不能为负且不能高于普通售价。
+     * 允许绑定已下架卡以兼容历史配置和临时下架场景，会员只有持有正常未过期权益时才会命中。
+     */
+    private void validateBenefitPrices(List<PtProductBenefitPriceEntity> prices, BigDecimal salePrice) {
+        if (prices == null || prices.isEmpty()) {
+            return;
+        }
+        Set<Long> cardIds = new HashSet<Long>();
+        for (PtProductBenefitPriceEntity price : prices) {
+            if (price == null || price.getVipCardId() == null) {
+                throw new RRException("请选择权益价对应的 VIP 权益卡");
+            }
+            if (!cardIds.add(price.getVipCardId())) {
+                throw new RRException("同一 VIP 权益卡不能重复配置权益价");
+            }
+            VipBenefitCardEntity card = vipBenefitCardDao.queryObject(price.getVipCardId());
+            if (card == null) {
+                throw new RRException("绑定的 VIP 权益卡不存在");
+            }
+            if (price.getBenefitPrice() == null || price.getBenefitPrice().compareTo(BigDecimal.ZERO) < 0) {
+                throw new RRException("权益价不能小于0");
+            }
+            if (price.getBenefitPrice().compareTo(salePrice) > 0) {
+                throw new RRException("权益价不能高于商品售价");
+            }
+        }
+    }
+
+    private void saveBenefitPrices(Long productId, List<PtProductBenefitPriceEntity> prices, Date now) {
+        if (prices == null) {
+            return;
+        }
+        for (PtProductBenefitPriceEntity source : prices) {
+            PtProductBenefitPriceEntity rel = new PtProductBenefitPriceEntity();
+            rel.setProductId(productId);
+            rel.setVipCardId(source.getVipCardId());
+            rel.setBenefitPrice(source.getBenefitPrice());
+            rel.setCreatedAt(now);
+            rel.setUpdatedAt(now);
+            ptProductBenefitPriceDao.save(rel);
         }
     }
 

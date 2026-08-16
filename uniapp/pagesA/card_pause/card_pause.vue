@@ -37,7 +37,7 @@
 							{{ rec.pauseType === 1 ? ('付费¥' + formatPrice(rec.amount)) : '免费' }}
 						</text>
 					</view>
-					<text class="cp-rec__tag" :class="{ 'is-on': rec.displayStatus === 0, 'is-wait': rec.displayStatus === 10, 'is-gray': rec.displayStatus !== 0 && rec.displayStatus !== 10 }">{{ statusText(rec.displayStatus) }}</text>
+					<text class="cp-rec__tag" :class="{ 'is-on': rec.displayStatus === 0, 'is-wait': rec.displayStatus === 10 || rec.displayStatus === 11, 'is-gray': rec.displayStatus !== 0 && rec.displayStatus !== 10 && rec.displayStatus !== 11 }">{{ statusText(rec.displayStatus) }}</text>
 				</view>
 				<view class="cp-rec__line" v-if="rec.pauseDays != null">
 					<text class="cp-rec__label">停卡天数</text>
@@ -59,13 +59,13 @@
 					<text class="cp-rec__label">实际停卡天数</text>
 					<text class="cp-rec__val">{{ rec.actualDays }} 天</text>
 				</view>
-				<view v-if="rec.displayStatus === 0" class="cp-rec__btn" :data-idx="idx" @click="onCancel">恢复停卡</view>
+				<view v-if="rec.displayStatus === 0 || rec.displayStatus === 11" class="cp-rec__btn" :data-idx="idx" @click="onCancel">{{ rec.displayStatus === 11 ? '取消申请' : '恢复停卡' }}</view>
 			</view>
 			<view v-else-if="loaded" class="cp-tip">还没有停卡记录</view>
 		</view>
 
 		<view class="cp-note">
-			规则：付费停卡，付费不可退，停卡立即生效，停卡期间不可入场，到期自动恢复，也可以手动点击“恢复停卡”，提前结束，按照实际停卡天数顺延有效期。
+			规则：停卡从申请成功或支付成功后的次日0点开始，停卡期间不可入场；到期自动恢复，也可以提前取消或恢复，按照实际停卡天数顺延有效期，付费停卡费用不退。
 		</view>
 
 		<!-- 申请停卡弹层 -->
@@ -107,7 +107,7 @@
 			</view>
 			<view class="cp-pop__none" v-else-if="noneTip">{{ noneTip }}</view>
 
-			<view class="cp-pop__hint">停卡立即生效、停卡期间不可入场；到期自动恢复，也可手动提前结束，按照实际停卡天数顺延有效期。</view>
+			<view class="cp-pop__hint">停卡从申请成功或支付成功后的次日0点开始，停卡期间不可入场；到期自动恢复，也可提前取消或恢复。</view>
 
 			<view class="cp-pop__btn" :class="{ 'is-disabled': submitting || !canSubmit }" @click="onSubmit">
 				{{ submitting ? '提交中...' : (pauseMode === 'paid' ? '确认并支付' : '确认停卡') }}
@@ -331,7 +331,7 @@
 				}).then(() => {
 					that.submitting = false;
 					that.showApply = false;
-					that.config.Toast('停卡成功，已生效');
+					that.config.Toast('申请成功，将于次日0点生效');
 					that.loadRecords();
 					that.loadPrecheck();
 				}).catch((e) => {
@@ -353,7 +353,7 @@
 						// 兜底:后端未要求支付则视为直接生效
 						that.submitting = false;
 						that.showApply = false;
-						that.config.Toast('停卡成功，已生效');
+						that.config.Toast('申请成功，将于次日0点生效');
 						that.loadRecords();
 						that.loadPrecheck();
 						return;
@@ -373,7 +373,7 @@
 								timeStamp: r.params.timeStamp,
 								success: () => {
 									that.showApply = false;
-									that.config.Toast('支付成功，停卡生效中');
+									that.config.Toast('支付成功，将于次日0点生效');
 									// 支付回调异步落库,延时刷新
 									setTimeout(() => {
 										that.loadRecords();
@@ -402,10 +402,13 @@
 				if (this.submitting) return;
 				const rec = this.records[Number(e.currentTarget.dataset.idx)];
 				if (!rec) return;
+				const pending = rec.displayStatus === 11;
 				const that = this;
 				uni.showModal({
-					title: '恢复停卡',
-					content: '确认恢复本次停卡？恢复后停卡结束、卡立即可用，按实际已停天数顺延有效期，付费停卡费用不退还。',
+					title: pending ? '取消申请' : '恢复停卡',
+					content: pending
+						? '确认取消本次停卡申请？尚未开始停卡，已顺延的天数将全部扣回，付费停卡费用不退还。'
+						: '确认恢复本次停卡？恢复后卡立即可用，按实际已停天数顺延有效期，付费停卡费用不退还。',
 					success: (r) => {
 						if (!r.confirm) return;
 						that.submitting = true;
@@ -413,7 +416,7 @@
 							pauseId: rec.pauseId
 						}).then(() => {
 							that.submitting = false;
-							that.config.Toast('已恢复，卡可正常使用');
+							that.config.Toast(pending ? '已取消停卡申请' : '已恢复，卡可正常使用');
 							that.loadRecords();
 							that.loadPrecheck();
 						}).catch((e) => {
@@ -436,6 +439,7 @@
 			statusText(displayStatus) {
 				const map = {
 					10: '待支付',
+					11: '待生效',
 					0: '停卡中',
 					99: '已结束',
 					1: '已恢复',

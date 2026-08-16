@@ -102,6 +102,16 @@
         WHERE id = #{id} AND appointment_status = 1
     </update>
 
+    <select id="sumFinishedLessonsByOrderAndCoach" resultType="int">
+        SELECT IFNULL(SUM(lesson_count), 0)
+        FROM pt_private_appointment
+        WHERE order_id = #{orderId}
+          AND coach_id = #{coachId}
+          AND appointment_status = 3
+          AND deleted = 0
+        FOR UPDATE
+    </select>
+
     <select id="queryMyList" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
         SELECT a.id, a.appointment_no, a.order_id, a.benefit_id, a.member_id, a.product_id,
                a.coach_id, a.store_id,
@@ -156,6 +166,29 @@
         WHERE a.coach_id = #{coachId} AND a.deleted = 0
         ORDER BY a.appointment_date DESC, a.start_time DESC, a.id DESC
         LIMIT #{limit}
+    </select>
+
+    <!-- 教练首页今日课程：仅新私教域预约，不混入旧团课数据。 -->
+    <select id="queryTodayByCoach" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT a.id, a.appointment_no, a.benefit_id, a.member_id, a.product_id, a.coach_id, a.store_id,
+               DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointmentDate,
+               DATE_FORMAT(a.start_time, '%H:%i') AS startTime,
+               DATE_FORMAT(a.end_time, '%H:%i') AS endTime,
+               a.lesson_count, a.appointment_status, a.cancel_reason, a.cancel_at, a.finish_at, a.created_at,
+               u.nickname AS memberName,
+               u.phone AS memberMobile,
+               o.product_name AS productName,
+               o.lesson_count AS packageLessonCount,
+               s.storeName AS storeName
+        FROM pt_private_appointment a
+        LEFT JOIN user_info u ON u.userId = a.member_id
+        LEFT JOIN pt_private_order o ON o.id = a.order_id AND o.deleted = 0
+        LEFT JOIN store_address sa ON sa.storeAddrId = a.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE a.coach_id = #{coachId}
+          AND a.appointment_date = CURDATE()
+          AND a.deleted = 0
+        ORDER BY a.start_time ASC, a.id ASC
     </select>
 
     <!-- 教练该星期可用排班窗口:与 CoachApiDao.queryBookableCoaches 交集口径一致(互指注释,改一处须同改) -->

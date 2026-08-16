@@ -96,6 +96,15 @@ public interface WxPayService {
 
 	Map<String, Object> doPay(Map<String, Object> product, HttpServletRequest request) throws Exception;
 
+    /** 查询普通微信支付订单（JSAPI），返回值已完成微信响应验签和商户身份校验 */
+    Map<String, String> queryPayOrder(String outTradeNo);
+
+    /** 关闭普通微信支付订单（JSAPI），返回值已完成微信响应验签和商户身份校验 */
+    Map<String, String> closePayOrder(String outTradeNo);
+
+    /** 旧健身卡订单支付回调：订单推进与收支流水保持在同一事务 */
+    int updateCardOrderPay(String orderNo, BigDecimal amount, String transactionId);
+
 	Map<String, String> parseResult(HttpServletRequest request) throws IOException, JDOMException;
 
 }

@@ -22,7 +22,9 @@ import com.dlc.modules.api.service.PrivateAppointmentService;
 import com.dlc.modules.api.vo.PtAvailableSlotVo;
 import com.dlc.modules.api.vo.PtScheduleWindowVo;
 import com.dlc.modules.sys.entity.PtCoachFeeRuleEntity;
+import com.dlc.modules.sys.entity.PtCoachMonthlyCommissionRuleEntity;
 import com.dlc.modules.sys.entity.SysCoachTradeDetailEntity;
+import com.dlc.modules.sys.dao.PtCoachMonthlyCommissionRuleDao;
 import com.dlc.modules.sys.service.SysCoachFeeRuleService;
 import com.dlc.modules.sys.service.SysCoachTradeDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +74,8 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     @Autowired
     private PtPrivateOrderDao ptPrivateOrderDao;
     @Autowired
+    private PtCoachMonthlyCommissionRuleDao ptCoachMonthlyCommissionRuleDao;
+    @Autowired
     private SysCoachFeeRuleService sysCoachFeeRuleService;
     @Autowired
     private SysCoachTradeDetailService sysCoachTradeDetailService;
@@ -80,7 +84,7 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     public List<PtCoachOption> coaches(Long memberId, Long benefitId) {
         PtMemberPrivateBenefitEntity benefit = checkOwnBenefit(memberId, benefitId);
         // 复用第10步 8.3 交集:商品指定教练 ∩ 门店 ∩ status=1 ∩ 有启用排班
-        return coachApiService.listByProduct(benefit.getProductId());
+        return coachApiService.listByProduct(benefit.getProductId(), benefit.getStoreId());
     }
 
     @Override
@@ -155,6 +159,30 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     }
 
     @Override
+    public Map<String, Object> coachWorkbench(Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> coach = coachApiDao.queryBoundCoachByUserId(userId);
+        if (coach == null) {
+            result.put("isCoach", false);
+            result.put("coach", null);
+            result.put("stats", java.util.Collections.emptyMap());
+            result.put("todayAppointments", java.util.Collections.emptyList());
+            result.put("appointments", java.util.Collections.emptyList());
+            return result;
+        }
+        // coachId 必须由 token 对应的 userId 反查得到，不信任客户端入参。
+        Long coachId = ((Number) coach.get("id")).longValue();
+        result.put("isCoach", true);
+        result.put("coach", coach);
+        result.put("stats", coachApiDao.queryCoachHomeStats(coachId));
+        List<PtPrivateAppointmentEntity> todayAppointments = ptPrivateAppointmentDao.queryTodayByCoach(coachId);
+        result.put("todayAppointments", todayAppointments);
+        // 保留旧字段，避免已接入 coachWorkbench 的调用方因响应字段消失而报错。
+        result.put("appointments", todayAppointments);
+        return result;
+    }
+
+    @Override
     public void finishAppointment(Long appointmentId, Long operatorId) {
         if (appointmentId == null) {
             throw new RRException(CodeAndMsg.ERROR_LACK_PARAM);
@@ -179,11 +207,19 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         settlePerLessonCommission(apt);
     }
 
-    /** 课程实际完成后，按“订单净实收/总课时×本次课时×提成比例”结算实际授课教练。 */
+    /**
+     * 课程实际完成后结算实际授课教练：包月课程只走教练包月配置，其他课程继续走普通分成规则。
+     */
     private void settlePerLessonCommission(PtPrivateAppointmentEntity apt) {
         PtPrivateOrderEntity order = ptPrivateOrderDao.queryObject(apt.getOrderId());
-        if (order == null || apt.getCoachId() == null
-                || order.getLessonCount() == null || order.getLessonCount() <= 0) {
+        if (order == null || apt.getCoachId() == null) {
+            return;
+        }
+        if (ptCoachMonthlyCommissionRuleDao.countMonthlyProduct(order.getProductId()) > 0) {
+            settleMonthlyCourseCommission(apt, order);
+            return;
+        }
+        if (order.getLessonCount() == null || order.getLessonCount() <= 0) {
             return;
         }
         PtCoachFeeRuleEntity rule = sysCoachFeeRuleService.matchFeeRule(
@@ -218,6 +254,79 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         detail.setPercent(percent);
         detail.setTransactionNumber("PT_LESSON_" + apt.getId());
         detail.setOrderNo(order.getOrderNo());
+        detail.setStatus(1);
+        detail.setTransactionTime(new Date());
+        detail.setCreateTime(new Date());
+        sysCoachTradeDetailService.save(detail);
+    }
+
+    /**
+     * 包月课程按当前教练在该订单下的累计完课数结算。
+     * 未达到标准：固定单节提成 × 本次课时；
+     * 达到标准：订单净实收 × 教练比例 ÷ 订单总课时 × 教练累计完课数。
+     * 达标当次按累计目标减去此前未达标提成进行补差，确保累计金额符合比例公式。
+     */
+    private void settleMonthlyCourseCommission(PtPrivateAppointmentEntity apt,
+                                               PtPrivateOrderEntity order) {
+        PtCoachMonthlyCommissionRuleEntity rule =
+                ptCoachMonthlyCommissionRuleDao.queryByCoachAndProduct(
+                        apt.getCoachId(), order.getProductId());
+        if (rule == null) {
+            return;
+        }
+
+        // 同一订单可能由多名教练并发核销。先锁订单，再统计当前教练已完成课时，保证各教练独立计算标准门槛。
+        PtPrivateOrderEntity lockedOrder = ptPrivateOrderDao.selectByIdForUpdate(order.getId());
+        if (lockedOrder == null) {
+            return;
+        }
+        int currentLessons = lessonOf(apt);
+        int totalFinishedLessons = ptPrivateAppointmentDao.sumFinishedLessonsByOrderAndCoach(
+                order.getId(), apt.getCoachId());
+        int finishedBefore = Math.max(0, totalFinishedLessons - currentLessons);
+        BigDecimal paidAmount = lockedOrder.getPaidAmount() == null
+                ? BigDecimal.ZERO : lockedOrder.getPaidAmount();
+        BigDecimal refundAmount = lockedOrder.getRefundAmount() == null
+                ? BigDecimal.ZERO : lockedOrder.getRefundAmount();
+        BigDecimal netAmount = paidAmount.subtract(refundAmount).max(BigDecimal.ZERO);
+        BigDecimal commission;
+        BigDecimal origMoney;
+        Double percent = null;
+        if (totalFinishedLessons < rule.getStandardLessonCount()) {
+            commission = rule.getBelowStandardLessonFee()
+                    .multiply(new BigDecimal(currentLessons));
+            origMoney = commission;
+        } else {
+            if (lockedOrder.getLessonCount() == null || lockedOrder.getLessonCount() <= 0) {
+                return;
+            }
+            BigDecimal coursePerLessonAmount = netAmount.divide(
+                    new BigDecimal(lockedOrder.getLessonCount()), 8, RoundingMode.HALF_UP);
+            BigDecimal percentPerLessonCommission = coursePerLessonAmount
+                    .multiply(rule.getCommissionRate())
+                    .divide(new BigDecimal("100"), 8, RoundingMode.HALF_UP);
+            BigDecimal cumulativeTarget = percentPerLessonCommission
+                    .multiply(new BigDecimal(totalFinishedLessons));
+            BigDecimal previousCommission = finishedBefore < rule.getStandardLessonCount()
+                    ? rule.getBelowStandardLessonFee().multiply(new BigDecimal(finishedBefore))
+                    : percentPerLessonCommission.multiply(new BigDecimal(finishedBefore));
+            commission = cumulativeTarget.subtract(previousCommission);
+            origMoney = coursePerLessonAmount.multiply(new BigDecimal(currentLessons));
+            percent = rule.getCommissionRate().doubleValue();
+        }
+        commission = commission.setScale(2, RoundingMode.HALF_UP);
+        if (commission.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+
+        SysCoachTradeDetailEntity detail = new SysCoachTradeDetailEntity();
+        detail.setCoachId(apt.getCoachId());
+        detail.setTradeType(1);
+        detail.setMoney(commission);
+        detail.setOrigMoney(origMoney.setScale(2, RoundingMode.HALF_UP));
+        detail.setPercent(percent);
+        detail.setTransactionNumber("PT_MONTHLY_" + apt.getId());
+        detail.setOrderNo(lockedOrder.getOrderNo());
         detail.setStatus(1);
         detail.setTransactionTime(new Date());
         detail.setCreateTime(new Date());

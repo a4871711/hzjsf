@@ -6,10 +6,10 @@ import java.util.Date;
 
 /**
  * 停卡记录(对应表 card_pause_record)
- * 定期停卡:免费(pause_type=0)自选1~7天立即生效并预顺延有效期;付费(pause_type=1)按规则档位建待支付单(status=10),
- * 微信支付回调成功后生效。end_time=计划恢复时间(start+pause_days),到期零动作;提前取消置 status=2 并按未用天数扣回顺延。
+ * 定期停卡:免费(pause_type=0)申请成功后从次日0点开始;付费(pause_type=1)按规则档位建待支付单(status=10),
+ * 微信支付成功后从次日0点开始。end_time=计划恢复时间(start+pause_days),到期零动作;提前取消置 status=2 并按未用天数扣回顺延。
  * 存量兼容:end_time IS NULL 的旧开放式记录,取消时走旧 resume 语义(按实际天数顺延,status→1)。
- * status:10待支付 / 0生效 / 1已恢复(仅存量历史) / 2已取消 / 3已关闭未支付
+ * status:10待支付 / 0已排期(开始前待生效、窗口内停卡中) / 1已恢复(仅存量历史) / 2已取消 / 3已关闭未支付
  */
 public class CardPauseRecord implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -42,12 +42,12 @@ public class CardPauseRecord implements Serializable {
     private Date cancelTime;
     /** 实际停卡天数(提前取消时回填) */
     private Integer actualDays;
-    /** 10待支付 0生效 1已恢复(仅存量历史) 2已取消 3已关闭未支付 */
+    /** 10待支付 0已排期 1已恢复(仅存量历史) 2已取消 3已关闭未支付 */
     private Integer status;
     /** 创建时间 */
     private Date createdDate;
 
-    /** 非表字段:列表展示状态(生效中但已到计划结束时间 → 99已完成,其余同 status) */
+    /** 非表字段:列表展示状态(11待生效、99已完成,其余同 status) */
     private Integer displayStatus;
 
     public Long getPauseId() {

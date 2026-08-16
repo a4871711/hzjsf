@@ -26,11 +26,11 @@ public class CoachApiController extends BaseController {
 
     /** 需求 8.3：某私教商品当前可预约的教练列表 */
     @RequestMapping("/listByProduct")
-    public R listByProduct(Long productId) {
+    public R listByProduct(Long productId, Long storeId) {
         if (productId == null) {
             return R.reError("商品ID不能为空");
         }
-        List<PtCoachOption> list = coachApiService.listByProduct(productId);
+        List<PtCoachOption> list = coachApiService.listByProduct(productId, storeId);
         return R.reOk(list);
     }
 
