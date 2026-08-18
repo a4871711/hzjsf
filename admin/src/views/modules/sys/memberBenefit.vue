@@ -56,7 +56,7 @@
         <div class="detail-section-title">权益信息</div>
         <el-row class="detail-row">
           <el-col :span="12"><span class="lab">权益编号</span>{{ detail.benefitNo || '—' }}</el-col>
-          <el-col :span="12"><span class="lab">权益状态</span><span v-html="statusTag(detail.status)"></span></el-col>
+          <el-col :span="12"><span class="lab">课程状态</span><span v-html="statusTag(detail.status)"></span></el-col>
         </el-row>
         <el-row class="detail-row">
           <el-col :span="12"><span class="lab">会员</span>{{ detail.memberName || '—' }}</el-col>
@@ -105,7 +105,7 @@ export default {
         { type: "input", placeholder: "会员姓名/手机号", prop: "memberKeyword", width: 200 },
         { type: "input", placeholder: "私教商品", prop: "productKeyword", width: 180 },
         { type: "select", placeholder: "所属门店", prop: "storeId", width: 180, options: [] },
-        { type: "select", placeholder: "权益状态", prop: "status", width: 160, options: [
+        { type: "select", placeholder: "课程状态", prop: "status", width: 160, options: [
           { value: 1, label: '生效中' },
           { value: 2, label: '已用完' },
           { value: 3, label: '已过期' },
@@ -117,7 +117,6 @@ export default {
       ],
       tableData: [],
       tableCols: [
-        { label: "权益编号", prop: "benefitNo", width: 180 },
         { label: "会员", prop: "memberName", formatter: e => (e.memberName || '') + ' ' + (e.memberMobile || '') },
         { label: "来源订单", prop: "orderNo", width: 170 },
         { label: "私教商品", prop: "productName" },
@@ -128,7 +127,7 @@ export default {
         { label: "剩余课时", prop: "remainingLessons", width: 90, type: "html", html: e => e.remainingLessons > 0 ? '<span style="color:#67C23A">' + e.remainingLessons + '</span>' : String(e.remainingLessons) },
         { label: "生效时间", prop: "effectiveAt", width: 160, formatter: e => e.effectiveAt || '—' },
         { label: "到期时间", prop: "expireAt", width: 160, formatter: e => e.expireAt || '长期' },
-        { label: "权益状态", prop: "status", width: 90, type: "html", html: e => this.statusTag(e.status) },
+        { label: "课程状态", prop: "status", width: 90, type: "html", html: e => this.statusTag(e.status) },
         {
           label: "操作",
           type: "button",
@@ -149,7 +148,7 @@ export default {
     this.getStoreList();
   },
   methods: {
-    // 权益状态:1生效中绿 / 2已用完灰 / 3已过期橙 / 4已退款红
+    // 课程状态:1生效中绿 / 2已用完灰 / 3已过期橙 / 4已退款红
     statusTag(status) {
       var map = {
         1: ['生效中', '#f0f9eb', '#67C23A', '#e1f3d8'],
