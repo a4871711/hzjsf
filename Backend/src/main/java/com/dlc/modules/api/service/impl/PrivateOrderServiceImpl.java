@@ -119,9 +119,7 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         if (priced.payableAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RRException("应付金额异常,无法发起支付");
         }
-        if (coachId == null || coachApiDao.countBookableCoach(productId, storeId, coachId) == 0) {
-            throw new RRException("所选教练当前无法在该门店服务此课程");
-        }
+        validateCoachSelection(productId, storeId, coachId);
         Map<String, Object> installmentOption = buildInstallmentOption(priced.product, priced.payableAmount);
         if (selectedPayMethod == 4 && !Boolean.TRUE.equals(installmentOption.get("installmentAvailable"))) {
             throw new RRException("当前商品不支持分期付款");
@@ -189,6 +187,18 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         result.put("payParams", payParams);
         result.put("paid", false);
         return result;
+    }
+
+    /**
+     * 教练可以在购买时暂不指定；如果会员已选择教练，仍必须校验其当前可服务商品和门店。
+     */
+    void validateCoachSelection(Long productId, Long storeId, Long coachId) {
+        if (coachId == null) {
+            return;
+        }
+        if (coachApiDao.countBookableCoach(productId, storeId, coachId) == 0) {
+            throw new RRException("所选教练当前无法在该门店服务此课程");
+        }
     }
 
     @Override

@@ -52,9 +52,7 @@ public class PrivateOrderController extends BaseController {
         if (check != null) {
             return check;
         }
-        if (coachId == null) {
-            return R.reError("请选择教练");
-        }
+        // 教练可暂不指定，会员后续预约具体课时时再选择实际服务教练。
         int selectedPayMethod = payMethod == null ? 1 : payMethod;
         // 私教确认订单只开放微信、储值和分期；支付宝不属于本业务支付方式。
         if (selectedPayMethod != 1 && selectedPayMethod != 3 && selectedPayMethod != 4) {
