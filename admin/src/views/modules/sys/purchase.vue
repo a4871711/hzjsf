@@ -126,6 +126,7 @@ export default {
   data() {
     return {
       tableLoading: false,
+      exporting: false,
       searchData: {
         orderNo: '',
         memberKeyword: '',
@@ -155,6 +156,7 @@ export default {
       searchHandle: [
         // 搜索时重置回第 1 页,避免翻页后再加筛选停在越界空页
         { label: "搜索", type: "primary", handle: e => { this.pagination.offset = 1; this.getData(); } },
+        { label: "导出", type: "primary", icon: "el-icon-download", handle: e => this.exportData() },
       ],
       tableData: [],
       tableCols: [
@@ -252,27 +254,73 @@ export default {
       var s = map[status] || ['—', '#f4f4f5', '#909399', '#e9e9eb'];
       return '<span style="padding:2px 8px;border-radius:3px;font-size:12px;background:' + s[1] + ';color:' + s[2] + ';border:1px solid ' + s[3] + '">' + s[0] + '</span>';
     },
+    buildListParams(page, limit) {
+      var dr = this.searchData.dateRange || [];
+      var params = {
+        orderNo: this.searchData.orderNo,
+        memberKeyword: this.searchData.memberKeyword,
+        storeId: this.searchData.storeId,
+        marketingType: this.searchData.marketingType,
+        orderStatus: this.searchData.orderStatus,
+        startTime: dr[0] || '',
+        endTime: dr[1] || ''
+      };
+      if (page !== undefined && page !== null) {
+        params.page = page;
+        params.limit = limit;
+      }
+      return params;
+    },
     async getData() {
       this.tableLoading = true;
       try {
-        // daterange 绑定为 [起, 止] 数组(清空为 null),拆成后端要的 startTime/endTime
-        var dr = this.searchData.dateRange || [];
-        var res = await this.apis.privateOrder_list({
-          page: this.pagination.offset,
-          limit: this.pagination.limit,
-          orderNo: this.searchData.orderNo,
-          memberKeyword: this.searchData.memberKeyword,
-          storeId: this.searchData.storeId,
-          marketingType: this.searchData.marketingType,
-          orderStatus: this.searchData.orderStatus,
-          startTime: dr[0] || '',
-          endTime: dr[1] || ''
-        });
+        var res = await this.apis.privateOrder_list(
+          this.buildListParams(this.pagination.offset, this.pagination.limit)
+        );
         var list = (res.page && res.page.list) || [];
         this.tableData = list;
         this.pagination.total = res.page ? res.page.totalCount : 0;
       } finally {
         this.tableLoading = false;
+      }
+    },
+    async exportData() {
+      if (this.exporting) {
+        this.$message.warning('正在导出，请勿重复操作');
+        return;
+      }
+      this.exporting = true;
+      try {
+        var response = await this.apis.privateOrder_export(this.buildListParams());
+        var contentType = response.headers['content-type'] || '';
+        if (contentType.indexOf('application/json') !== -1) {
+          throw new Error('后端未返回 Excel 文件');
+        }
+        var disposition = response.headers['content-disposition'] || '';
+        var fileName = '私教购买记录.xlsx';
+        var utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+        var legacyMatch = /filename="?([^";]+)"?/i.exec(disposition);
+        if (utf8Match) {
+          fileName = decodeURIComponent(utf8Match[1]);
+        } else if (legacyMatch) {
+          fileName = legacyMatch[1];
+        }
+        var blob = new Blob([response.data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        var downloadUrl = window.URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+        this.$message.success('导出成功');
+      } catch (error) {
+        this.$message.error('导出失败，请稍后重试');
+      } finally {
+        this.exporting = false;
       }
     },
     page() {

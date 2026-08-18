@@ -1432,6 +1432,15 @@ export default {
 			params: $http.adornParams({ ...data })
 		});
 	},
+	// 私教购买记录-按当前筛选条件导出全部数据
+	privateOrder_export(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateOrder/export'),
+			method: 'get',
+			params: $http.adornParams({ ...data }),
+			responseType: 'blob'
+		});
+	},
 	// 私教购买记录-详情({id})
 	privateOrder_info(data) {
 		return $http({
