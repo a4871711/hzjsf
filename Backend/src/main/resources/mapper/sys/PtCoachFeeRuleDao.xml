@@ -45,6 +45,10 @@
             <if test="storeIds != null and storeIds != ''">
                 AND (f.store_id = 0 OR f.store_id IN (${storeIds}))
             </if>
+            AND (f.product_id = 0 OR NOT EXISTS (
+                SELECT 1 FROM pt_product p
+                WHERE p.id = f.product_id AND p.deleted = 0 AND p.product_type_id = 3
+            ))
         </where>
         <choose>
             <when test="sidx != null and sidx.trim() != ''">
@@ -75,6 +79,10 @@
             <if test="storeIds != null and storeIds != ''">
                 AND (f.store_id = 0 OR f.store_id IN (${storeIds}))
             </if>
+            AND (f.product_id = 0 OR NOT EXISTS (
+                SELECT 1 FROM pt_product p
+                WHERE p.id = f.product_id AND p.deleted = 0 AND p.product_type_id = 3
+            ))
         </where>
     </select>
 

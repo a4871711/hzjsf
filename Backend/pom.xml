@@ -515,6 +515,11 @@
                     <source>${java-version}</source>
                     <target>${java-version}</target>
                     <encoding>UTF-8</encoding>
+                    <!-- 旧代码依赖 JDK 8 内置类，避免本地 Maven 编译时误判 javax/sun.misc 类不存在。 -->
+                    <compilerArgs>
+                        <arg>-bootclasspath</arg>
+                        <arg>${java.home}/lib/rt.jar:${java.home}/lib/jce.jar</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>

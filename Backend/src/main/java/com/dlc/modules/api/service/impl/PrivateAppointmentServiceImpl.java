@@ -283,38 +283,22 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         int currentLessons = lessonOf(apt);
         int totalFinishedLessons = ptPrivateAppointmentDao.sumFinishedLessonsByOrderAndCoach(
                 order.getId(), apt.getCoachId());
-        int finishedBefore = Math.max(0, totalFinishedLessons - currentLessons);
         BigDecimal paidAmount = lockedOrder.getPaidAmount() == null
                 ? BigDecimal.ZERO : lockedOrder.getPaidAmount();
         BigDecimal refundAmount = lockedOrder.getRefundAmount() == null
                 ? BigDecimal.ZERO : lockedOrder.getRefundAmount();
         BigDecimal netAmount = paidAmount.subtract(refundAmount).max(BigDecimal.ZERO);
-        BigDecimal commission;
-        BigDecimal origMoney;
-        Double percent = null;
-        if (totalFinishedLessons < rule.getStandardLessonCount()) {
-            commission = rule.getBelowStandardLessonFee()
-                    .multiply(new BigDecimal(currentLessons));
-            origMoney = commission;
-        } else {
-            if (lockedOrder.getLessonCount() == null || lockedOrder.getLessonCount() <= 0) {
-                return;
-            }
-            BigDecimal coursePerLessonAmount = netAmount.divide(
-                    new BigDecimal(lockedOrder.getLessonCount()), 8, RoundingMode.HALF_UP);
-            BigDecimal percentPerLessonCommission = coursePerLessonAmount
-                    .multiply(rule.getCommissionRate())
-                    .divide(new BigDecimal("100"), 8, RoundingMode.HALF_UP);
-            BigDecimal cumulativeTarget = percentPerLessonCommission
-                    .multiply(new BigDecimal(totalFinishedLessons));
-            BigDecimal previousCommission = finishedBefore < rule.getStandardLessonCount()
-                    ? rule.getBelowStandardLessonFee().multiply(new BigDecimal(finishedBefore))
-                    : percentPerLessonCommission.multiply(new BigDecimal(finishedBefore));
-            commission = cumulativeTarget.subtract(previousCommission);
-            origMoney = coursePerLessonAmount.multiply(new BigDecimal(currentLessons));
-            percent = rule.getCommissionRate().doubleValue();
+        int orderLessonCount = lockedOrder.getLessonCount() == null ? 0 : lockedOrder.getLessonCount();
+        if (totalFinishedLessons >= rule.getStandardLessonCount() && orderLessonCount <= 0) {
+            return;
         }
-        commission = commission.setScale(2, RoundingMode.HALF_UP);
+        MonthlyCommissionCalculator.Result calculation = MonthlyCommissionCalculator.calculate(
+                netAmount, orderLessonCount, currentLessons, totalFinishedLessons,
+                rule.getStandardLessonCount(), rule.getCommissionRate(),
+                rule.getBelowStandardLessonFee());
+        BigDecimal commission = calculation.getCommission();
+        BigDecimal origMoney = calculation.getOriginalAmount();
+        Double percent = calculation.getPercent();
         if (commission.compareTo(BigDecimal.ZERO) == 0) {
             return;
         }

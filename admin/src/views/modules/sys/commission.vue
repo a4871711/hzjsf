@@ -93,7 +93,7 @@ export default {
         { type: 'input', label: '规则名称', width: 320, prop: 'ruleName' },
         { type: 'select', label: '教练', width: 320, prop: 'coachId', options: [] },
         { type: 'select', label: '适用门店', width: 320, prop: 'storeIds', multiple: true, options: [], placeholder: '留空=全部门店' },
-        { type: 'select', label: '适用课程', width: 320, prop: 'productIds', multiple: true, options: [], placeholder: '留空=全部课程' },
+        { type: 'select', label: '适用课程', width: 320, prop: 'productIds', multiple: true, options: [], placeholder: '留空=全部非包月课程' },
         { type: 'radio',
           label: '提成方式',
           prop: 'ruleType',
@@ -210,7 +210,10 @@ export default {
       })
       this.coachMap = map
       this.formCols[this.labIndex(this.formCols, '教练')].options = opts
-      var products = res.products || []
+      // 包月课程由教练资料中的专用提成配置维护，普通规则页面不允许选择。
+      var products = (res.products || []).filter(function (item) {
+        return Number(item.productTypeId) !== 3
+      })
       var productMap = {}
       var productOpts = products.map(function (item) {
         productMap[item.id] = item.productName

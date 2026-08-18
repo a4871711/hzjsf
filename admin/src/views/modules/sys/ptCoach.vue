@@ -19,13 +19,13 @@
           <el-alert
             type="info"
             :closable="false"
-            title="仅适用于包月服务；教练未达到标准课节时按固定单节提成，达到标准后按课程价格、比例和实际完课数计算。"
+            title="仅适用于包月服务；每名教练独立累计完课数，未达到标准时按固定单节提成，达到标准后按订单净实收÷订单总课时×提成比例×该教练实际完课数计算。"
             class="monthly-rule-tip" />
           <div v-if="formData.monthlyCommissionRules.length" class="monthly-rule-header">
             <span class="monthly-course-col">课程</span>
             <span>标准课节</span>
             <span>提成比例(%)</span>
-            <span>小于标准单节提成</span>
+            <span>未达到标准时的单节提成</span>
             <span class="monthly-action-col">操作</span>
           </div>
           <div v-for="(rule, index) in formData.monthlyCommissionRules" :key="rule.rowKey" class="monthly-rule-row">
@@ -501,7 +501,7 @@ export default {
               return
             }
             if (!(Number(rule.belowStandardLessonFee) >= 0)) {
-              this.$message.error('小于标准时的单节提成不能小于0')
+              this.$message.error('未达到标准时的单节提成不能小于0')
               return
             }
             if (productIds[String(rule.productId)]) {

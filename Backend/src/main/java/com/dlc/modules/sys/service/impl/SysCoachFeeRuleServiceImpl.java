@@ -2,6 +2,7 @@ package com.dlc.modules.sys.service.impl;
 
 import com.dlc.common.exception.RRException;
 import com.dlc.modules.sys.dao.PtCoachFeeRuleDao;
+import com.dlc.modules.sys.dao.PtCoachMonthlyCommissionRuleDao;
 import com.dlc.modules.sys.entity.PtCoachFeeRuleEntity;
 import com.dlc.modules.sys.service.SysCoachFeeRuleService;
 import org.apache.commons.lang.StringUtils;
@@ -24,6 +25,8 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
 
     @Autowired
     private PtCoachFeeRuleDao ptCoachFeeRuleDao;
+    @Autowired
+    private PtCoachMonthlyCommissionRuleDao ptCoachMonthlyCommissionRuleDao;
 
     @Override
     public PtCoachFeeRuleEntity queryObject(Long id) {
@@ -58,6 +61,7 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
             for (Long productId : productIds) {
                 Long sid = storeId == null ? 0L : storeId;
                 Long pid = productId == null ? 0L : productId;
+                validateOrdinaryProduct(pid);
                 if (ptCoachFeeRuleDao.countByUk(entity.getCoachId(), pid, sid, entity.getRuleType(), null) > 0) {
                     throw new RRException("规则已存在（教练+门店+课程+类型重复）");
                 }
@@ -109,6 +113,7 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
             entity.setRuleName(old.getRuleName());
         }
         validateType(entity);
+        validateOrdinaryProduct(productId);
         if (ptCoachFeeRuleDao.countByUk(coachId, productId, storeId, ruleType, entity.getId()) > 0) {
             throw new RRException("规则已存在（教练+门店+课程+类型重复）");
         }
@@ -135,6 +140,7 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
         }
         ptCoachFeeRuleDao.lockCoachForUpdate(old.getCoachId());
         if (Integer.valueOf(1).equals(status)) {
+            validateOrdinaryProduct(old.getProductId());
             ensureOnlyOneEnabledType(old.getCoachId(), old.getProductId(), old.getStoreId(),
                     old.getRuleType(), old.getId());
         }
@@ -189,6 +195,16 @@ public class SysCoachFeeRuleServiceImpl implements SysCoachFeeRuleService {
         }
         // 新规则统一按比例结算，固定课时费字段仅保留用于读取历史数据。
         e.setLessonFee(BigDecimal.ZERO);
+    }
+
+    /** 普通提成规则不能直接绑定包月商品，包月商品必须走教练自己的包月配置。 */
+    private void validateOrdinaryProduct(Long productId) {
+        if (productId == null || productId <= 0) {
+            return;
+        }
+        if (ptCoachMonthlyCommissionRuleDao.countMonthlyProduct(productId) > 0) {
+            throw new RRException("普通提成规则不适用于包月课程，请在教练资料中配置包月课程提成");
+        }
     }
 
     private void ensureOnlyOneEnabledType(Long coachId, Long productId, Long storeId,

@@ -4,6 +4,7 @@ import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
 import com.dlc.common.utils.R;
 import com.dlc.modules.sys.entity.PtCoachFeeRuleEntity;
+import com.dlc.modules.sys.entity.PtProductEntity;
 import com.dlc.modules.sys.service.SysCoachFeeRuleService;
 import com.dlc.modules.sys.service.SysPtCoachService;
 import com.dlc.modules.sys.service.SysPtProductService;
@@ -52,9 +53,14 @@ public class SysCoachFeeRuleController extends AbstractController {
     public R options() {
         Map<String, Object> params = new HashMap<>();
         params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
+        List<PtProductEntity> products = sysPtProductService.queryList(params);
+        if (products != null) {
+            // 普通提成页面不展示包月商品，包月商品由教练资料中的专用配置维护。
+            products.removeIf(product -> Long.valueOf(3L).equals(product.getProductTypeId()));
+        }
         return R.ok()
                 .put("coaches", sysPtCoachService.queryList(params))
-                .put("products", sysPtProductService.queryList(params));
+                .put("products", products);
     }
 
     @RequestMapping("/info/{id}")
