@@ -15,22 +15,20 @@
 			</view>
 		</view>
 
-		<view class="section-title">选择教练 <text>* 必选</text></view>
+		<view class="section-title">选择教练 <text>（可选）</text></view>
 		<view class="coach-panel">
-			<scroll-view v-if="coaches.length" class="coach-scroll" scroll-x :show-scrollbar="false">
-				<view class="coach-list">
-					<view class="coach-item" v-for="coach in coaches" :key="coach.id" @click="selectCoach(coach)">
-						<view class="avatar-wrap" :class="{ selected: String(selectedCoachId) === String(coach.id) }">
-							<image v-if="coach.avatarUrl" class="coach-avatar" :src="coach.avatarUrl" mode="aspectFill"></image>
-							<text v-else>{{ coachInitial(coach.coachName) }}</text>
-							<view class="selected-mark" v-if="String(selectedCoachId) === String(coach.id)">✓</view>
-						</view>
-						<view class="coach-name" :class="{ active: String(selectedCoachId) === String(coach.id) }">{{ coach.coachName || '教练' }}</view>
-						<view class="coach-level">{{ coach.coachLevel || '专业教练' }}</view>
+			<picker :range="coachOptions" range-key="coachName" :value="coachIndex" @change="onCoachChange">
+				<view class="coach-picker-row clickable">
+					<view>
+						<view class="coach-picker-label">{{ selectedCoach ? (selectedCoach.coachName || '教练') : '不指定教练' }}</view>
+						<view class="coach-picker-tip">{{ selectedCoach ? (selectedCoach.coachLevel || '专业教练') : '可在预约课程时再选择教练' }}</view>
 					</view>
+					<text class="coach-picker-arrow">›</text>
 				</view>
-			</scroll-view>
-			<view class="empty-coach" v-else>{{ coachesLoaded ? '当前门店暂无可预约教练' : '教练加载中...' }}</view>
+			</picker>
+			<view class="empty-coach" v-if="coachLoadFailed">教练列表加载失败，可先不指定教练</view>
+			<view class="empty-coach" v-else-if="coachesLoaded && !coaches.length">当前门店暂无可预约教练，可先不指定</view>
+			<view class="empty-coach" v-else-if="!coachesLoaded">教练信息加载中...</view>
 		</view>
 
 		<view class="info-card">
@@ -123,6 +121,8 @@
 				storeIndex: 0,
 				coaches: [],
 				coachesLoaded: false,
+				coachLoadFailed: false,
+				coachIndex: 0,
 				selectedCoachId: '',
 				coupons: [],
 				couponIndex: 0,
@@ -137,6 +137,12 @@
 		computed: {
 			selectedStore() {
 				return this.stores[this.storeIndex] || null;
+			},
+			coachOptions() {
+				return [{ id: '', coachName: '不指定教练' }].concat(this.coaches);
+			},
+			selectedCoach() {
+				return this.coaches.find((item) => String(item.id) === String(this.selectedCoachId)) || null;
 			},
 			couponOptions() {
 				const count = this.coupons.length;
@@ -160,7 +166,7 @@
 					: this.payableAmount;
 			},
 			canSubmit() {
-				return !!this.selectedStore && !!this.selectedCoachId && this.coaches.length > 0;
+				return !!this.selectedStore;
 			}
 		},
 		onLoad(options) {
@@ -201,20 +207,22 @@
 			refreshStoreData(loadCoupons) {
 				if (!this.selectedStore) return Promise.resolve();
 				this.selectedCoachId = '';
+				this.coachIndex = 0;
 				return Promise.all([this.loadCoaches(), this.refreshPricing(loadCoupons)]);
 			},
 			loadCoaches() {
 				this.coachesLoaded = false;
+				this.coachLoadFailed = false;
 				return getProductBookableCoaches({
 					productId: this.productId,
 					storeId: this.selectedStore.storeId
 				}).then((res) => {
 					this.coaches = res.data || [];
 					this.coachesLoaded = true;
-				}).catch((e) => {
+				}).catch(() => {
 					this.coaches = [];
 					this.coachesLoaded = true;
-					throw e;
+					this.coachLoadFailed = true;
 				});
 			},
 			baseOrderParams(includeCoupon) {
@@ -267,8 +275,10 @@
 					this.config.Toast((err && err.message) || '价格试算失败');
 				});
 			},
-			selectCoach(coach) {
-				this.selectedCoachId = coach.id;
+			onCoachChange(e) {
+				this.coachIndex = Number(e.detail.value || 0);
+				const coach = this.coachOptions[this.coachIndex];
+				this.selectedCoachId = coach && coach.id ? coach.id : '';
 			},
 			selectPayMethod(method) {
 				if (method === 4 && !this.installmentAvailable) {
@@ -279,10 +289,6 @@
 			},
 			submitOrder() {
 				if (this.submitting) return;
-				if (!this.selectedCoachId) {
-					this.config.Toast('请选择教练');
-					return;
-				}
 				if (this.payMethod === 3) {
 					if (Number(this.wallet.status) !== 1) {
 						this.config.Toast('储值账户当前不可用');
@@ -299,7 +305,7 @@
 				}
 				this.submitting = true;
 				const params = this.baseOrderParams(true);
-				params.coachId = this.selectedCoachId;
+				if (this.selectedCoachId) params.coachId = this.selectedCoachId;
 				params.payMethod = this.payMethod;
 				createPrivateOrder(params).then((res) => {
 					const data = res.data || {};
@@ -349,9 +355,6 @@
 			delay(ms) {
 				return new Promise((resolve) => setTimeout(resolve, ms));
 			},
-			coachInitial(name) {
-				return String(name || '教').slice(0, 1);
-			},
 			serviceTypeText(value) {
 				return Number(value) === 2 ? '一对多' : '一对一';
 			},
@@ -388,18 +391,12 @@
 	.product-meta { color: #7d7f89; font-size: 24rpx; line-height: 36rpx; }
 	.section-title { margin: 44rpx 2rpx 20rpx; font-size: 32rpx; font-weight: 800; }
 	.section-title text { color: #ff5418; font-size: 23rpx; font-weight: 600; }
-	.coach-panel { min-height: 210rpx; padding: 26rpx 18rpx; }
-	.coach-scroll { width: 100%; white-space: nowrap; }
-	.coach-list { display: inline-flex; gap: 34rpx; padding: 0 10rpx; }
-	.coach-item { width: 126rpx; text-align: center; }
-	.avatar-wrap { position: relative; width: 100rpx; height: 100rpx; margin: 0 auto 14rpx; border: 6rpx solid transparent; border-radius: 50%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #ffeadb; color: #5e493e; font-size: 42rpx; font-weight: 800; }
-	.avatar-wrap.selected { border-color: #ff5418; background: #f1eaff; }
-	.coach-avatar { width: 88rpx; height: 88rpx; border-radius: 50%; }
-	.selected-mark { position: absolute; right: -8rpx; bottom: -2rpx; width: 34rpx; height: 34rpx; line-height: 34rpx; border-radius: 50%; color: #fff; background: #ff5418; font-size: 20rpx; }
-	.coach-name { overflow: hidden; text-overflow: ellipsis; font-size: 27rpx; font-weight: 700; }
-	.coach-name.active { color: #ff5418; }
-	.coach-level { margin-top: 6rpx; color: #999ba4; font-size: 21rpx; }
-	.empty-coach { padding: 54rpx 0; text-align: center; color: #999ba4; font-size: 25rpx; }
+	.coach-panel { min-height: 0; padding: 0 28rpx; }
+	.coach-picker-row { min-height: 118rpx; display: flex; align-items: center; justify-content: space-between; gap: 24rpx; }
+	.coach-picker-label { font-size: 29rpx; font-weight: 700; }
+	.coach-picker-tip { margin-top: 8rpx; color: #999ba4; font-size: 23rpx; }
+	.coach-picker-arrow { color: #a2a4ad; font-size: 42rpx; line-height: 1; }
+	.empty-coach { padding: 0 0 22rpx; color: #999ba4; font-size: 24rpx; }
 	.info-card, .price-card { margin-top: 24rpx; padding: 12rpx 28rpx; }
 	.info-row, .price-row { min-height: 86rpx; display: flex; align-items: center; justify-content: space-between; gap: 30rpx; border-bottom: 1rpx solid #ececf0; font-size: 27rpx; }
 	.row-label { color: #7c7e88; }
