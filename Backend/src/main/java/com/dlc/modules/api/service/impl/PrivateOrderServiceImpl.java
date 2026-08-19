@@ -496,7 +496,7 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
 
             // 分期首付的权益已在 createInstallmentPlan 内激活；一次性支付在此激活。
             memberPrivateBenefitService.activate(order.getId(), order.getMemberId(), order.getProductId(),
-                    order.getStoreId(), order.getLessonCount(), order.getValidityDays());
+                    order.getStoreId(), order.getCoachId(), order.getLessonCount(), order.getValidityDays());
         }
 
         // 附赠团课权益发放(商品配置 pt_product_group_benefit 启用时,一单只发一次)

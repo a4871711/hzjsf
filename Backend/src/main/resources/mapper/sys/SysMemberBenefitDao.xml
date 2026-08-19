@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!-- 会员私教权益后台查询(第15步,纯只读)。sys 目录 XML 热刷新,改完免重启。
+<!-- 会员私教权益后台查询与批量管理(第15步)。sys 目录 XML 热刷新,改完免重启。
      权益表无会员/商品快照列:会员名/手机联 user_info、商品名联 pt_product(当前名,商品改名后按新名展示)、
      来源订单号联 pt_private_order;时间列一律 DATE_FORMAT 格式化(惯例见 8c2b238)。 -->
 <mapper namespace="com.dlc.modules.sys.dao.SysMemberBenefitDao">
@@ -38,6 +38,7 @@
         LEFT JOIN pt_product p ON p.id = b.product_id
         LEFT JOIN store_address sa ON sa.storeAddrId = b.store_id
         LEFT JOIN store s ON s.storeId = sa.storeId
+        LEFT JOIN pt_coach c ON c.id = b.coach_id
     </sql>
 
     <sql id="Columns">
@@ -52,6 +53,8 @@
         p.product_name        AS productName,
         b.store_id            AS storeId,
         s.storeName           AS storeName,
+        b.coach_id            AS coachId,
+        c.coach_name          AS coachName,
         b.total_lessons       AS totalLessons,
         b.used_lessons        AS usedLessons,
         b.frozen_lessons      AS frozenLessons,
@@ -105,6 +108,31 @@
             1 = 1
             <include refid="CommonFilter"/>
         </where>
+    </select>
+
+    <!-- 服务人候选:只返回启用教练,并按教练-门店关系复用当前管理员门店隔离。 -->
+    <select id="queryCoachOptions" resultType="java.util.LinkedHashMap">
+        SELECT
+            c.id,
+            c.coach_name AS coachName,
+            c.mobile,
+            (SELECT GROUP_CONCAT(s2.storeName ORDER BY r2.store_id)
+               FROM pt_coach_store_rel r2
+               LEFT JOIN store_address sa2 ON sa2.storeAddrId = r2.store_id
+               LEFT JOIN store s2 ON s2.storeId = sa2.storeId
+              WHERE r2.coach_id = c.id) AS storeNames
+        FROM pt_coach c
+        WHERE c.deleted = 0
+          AND c.status = 1
+          AND (CAST(c.id AS CHAR) LIKE concat('%', #{keyword}, '%')
+               OR c.coach_name LIKE concat('%', #{keyword}, '%')
+               OR c.mobile LIKE concat('%', #{keyword}, '%'))
+        <if test="storeIds != null and storeIds != ''">
+            AND EXISTS (SELECT 1 FROM pt_coach_store_rel r
+                        WHERE r.coach_id = c.id AND r.store_id IN (${storeIds}))
+        </if>
+        ORDER BY c.sort_no DESC, c.id DESC
+        LIMIT 20
     </select>
 
     <!-- 详情:storeIds 过滤在 SQL 内收口,越权/不存在返回 null(controller 按 404 处理) -->
@@ -202,6 +230,41 @@
         <if test="storeAddrIds != null and storeAddrIds != ''">
             AND b.store_id IN (${storeAddrIds})
             AND target_sa.storeAddrId IN (${storeAddrIds})
+        </if>
+    </update>
+
+    <!-- 目标服务人必须有效,且与每条权益当前门店存在教练-门店关系。 -->
+    <select id="countCoachChangeableBenefits" resultType="int">
+        SELECT COUNT(DISTINCT b.id)
+        FROM pt_member_private_benefit b
+        INNER JOIN pt_coach c
+            ON c.id = #{coachId}
+           AND c.deleted = 0
+           AND c.status = 1
+        INNER JOIN pt_coach_store_rel csr
+            ON csr.coach_id = c.id
+           AND csr.store_id = b.store_id
+        WHERE b.id IN
+        <foreach collection="benefitIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND b.status IN (1, 2, 3)
+        <if test="storeAddrIds != null and storeAddrIds != ''">
+            AND b.store_id IN (${storeAddrIds})
+        </if>
+    </select>
+
+    <!-- 只修改权益当前所属服务人;空 coachId 用于明确清空服务人。 -->
+    <update id="updateCoachBatch">
+        UPDATE pt_member_private_benefit
+        SET coach_id = #{targetCoachId}
+        WHERE id IN
+        <foreach collection="benefitIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND status IN (1, 2, 3)
+        <if test="storeAddrIds != null and storeAddrIds != ''">
+            AND store_id IN (${storeAddrIds})
         </if>
     </update>
 

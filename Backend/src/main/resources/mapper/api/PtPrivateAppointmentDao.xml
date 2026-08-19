@@ -227,7 +227,7 @@
 
     <!-- 代约取可用权益:先到期先用(长期 NULL 最后用) -->
     <select id="selectUsableBenefit" resultType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity">
-        SELECT id, benefit_no, order_id, member_id, product_id, store_id,
+        SELECT id, benefit_no, order_id, member_id, product_id, store_id, coach_id,
                total_lessons, used_lessons, frozen_lessons, remaining_lessons,
                effective_at, expire_at, status, created_at, updated_at
         FROM pt_member_private_benefit

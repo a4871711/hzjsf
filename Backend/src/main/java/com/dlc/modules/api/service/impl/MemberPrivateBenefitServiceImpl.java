@@ -26,7 +26,8 @@ public class MemberPrivateBenefitServiceImpl implements MemberPrivateBenefitServ
 
     @Override
     public PtMemberPrivateBenefitEntity activate(Long orderId, Long memberId, Long productId,
-                                                 Long storeId, Integer lessonCount, Integer validityDays) {
+                                                 Long storeId, Long coachId,
+                                                 Integer lessonCount, Integer validityDays) {
         if (orderId == null || memberId == null || productId == null || storeId == null
                 || lessonCount == null || lessonCount <= 0
                 || validityDays == null || (validityDays != -1 && validityDays <= 0)) {
@@ -44,6 +45,7 @@ public class MemberPrivateBenefitServiceImpl implements MemberPrivateBenefitServ
         benefit.setMemberId(memberId);
         benefit.setProductId(productId);
         benefit.setStoreId(storeId);
+        benefit.setCoachId(coachId);
         benefit.setTotalLessons(lessonCount);
         benefit.setUsedLessons(0);
         benefit.setFrozenLessons(0);

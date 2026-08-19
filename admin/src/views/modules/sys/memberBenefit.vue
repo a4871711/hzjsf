@@ -2,7 +2,7 @@
   <div>
     <div class="page-head">
       <h2 class="page-title">会员私教权益</h2>
-      <p class="page-sub">会员已购私教课时账本查看；支持按每条权益原到期时间批量调整有效期和变更未来归属门店</p>
+      <p class="page-sub">会员已购私教课时账本查看；支持批量调整有效期、变更未来归属门店和所属服务人</p>
     </div>
 
     <!-- 顶部统计卡:取 list 返回的 stat -->
@@ -91,6 +91,38 @@
       </span>
     </el-dialog>
 
+    <el-dialog
+      title="批量变更服务人"
+      :visible.sync="coachDialog.show"
+      width="520px"
+      :close-on-click-modal="false">
+      <el-form label-width="100px">
+        <el-form-item label="所属服务人">
+          <el-select
+            v-model="coachDialog.coachId"
+            filterable
+            remote
+            clearable
+            reserve-keyword
+            :remote-method="searchCoachOptions"
+            :loading="coachOptionLoading"
+            placeholder="输入姓名、手机号或ID搜索；清空表示取消指定"
+            style="width: 350px">
+            <el-option
+              v-for="item in coachOptions"
+              :key="item.id"
+              :label="coachOptionLabel(item)"
+              :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <div class="dialog-tip">服务人必须在所选权益的当前所属门店任职；已有预约的实际授课教练不受影响。</div>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="coachDialog.show = false">取消</el-button>
+        <el-button type="primary" @click="submitCoach">确定</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 权益详情抽屉:课时四态 + 来源订单 -->
     <el-drawer title="权益详情" :visible.sync="detailVisible" size="560px" :append-to-body="true">
       <div class="detail-wrap" v-if="detail">
@@ -104,8 +136,9 @@
           <el-col :span="12"><span class="lab">手机号</span>{{ detail.memberMobile || '—' }}</el-col>
         </el-row>
         <el-row class="detail-row">
-          <el-col :span="12"><span class="lab">私教商品</span>{{ detail.productName || '—' }}</el-col>
-          <el-col :span="12"><span class="lab">所属门店</span>{{ detail.storeName || '—' }}</el-col>
+          <el-col :span="8"><span class="lab">私教商品</span>{{ detail.productName || '—' }}</el-col>
+          <el-col :span="8"><span class="lab">所属门店</span>{{ detail.storeName || '—' }}</el-col>
+          <el-col :span="8"><span class="lab">服务人</span>{{ detail.coachName || '未指定' }}</el-col>
         </el-row>
         <el-row class="detail-row">
           <el-col :span="24"><span class="lab">来源订单</span>{{ detail.orderNo || '—' }}</el-col>
@@ -161,7 +194,8 @@ export default {
       tableHandles: [
         { label: '批量增加有效期', type: 'primary', icon: 'el-icon-plus', handle: () => this.openValidityDialog('increase') },
         { label: '批量减少有效期', type: 'warning', icon: 'el-icon-minus', handle: () => this.openValidityDialog('decrease') },
-        { label: '批量变更门店', type: 'success', icon: 'el-icon-office-building', handle: () => this.openStoreDialog() }
+        { label: '批量变更门店', type: 'success', icon: 'el-icon-office-building', handle: () => this.openStoreDialog() },
+        { label: '批量变更服务人', type: 'info', icon: 'el-icon-user', handle: () => this.openCoachDialog() }
       ],
       tableData: [],
       tableCols: [
@@ -169,6 +203,7 @@ export default {
         { label: "来源订单", prop: "orderNo", width: 170 },
         { label: "私教商品", prop: "productName" },
         { label: "所属门店", prop: "storeName" },
+        { label: "所属服务人", prop: "coachName", width: 120, formatter: e => e.coachName || '未指定' },
         { label: "总课时", prop: "totalLessons", width: 80 },
         { label: "已用课时", prop: "usedLessons", width: 80 },
         { label: "冻结课时", prop: "frozenLessons", width: 90, type: "html", html: e => e.frozenLessons > 0 ? '<span style="color:#E6A23C">' + e.frozenLessons + '</span>' : String(e.frozenLessons) },
@@ -191,6 +226,10 @@ export default {
       detail: null,
       validityDialog: { show: false, operation: 'increase', days: 1 },
       storeDialog: { show: false, storeAddrId: '' },
+      coachDialog: { show: false, coachId: '' },
+      coachOptions: [],
+      coachOptionLoading: false,
+      coachSearchSeq: 0,
     };
   },
   mounted() {
@@ -313,6 +352,64 @@ export default {
       }).catch((e) => {
         if (e !== 'cancel' && e !== 'close') {
           this.$message.error('批量变更门店未完成');
+        }
+      });
+    },
+    openCoachDialog() {
+      if (!this.selectedBenefitIds()) return;
+      this.coachDialog.coachId = '';
+      this.coachOptions = [];
+      this.coachSearchSeq++;
+      this.coachOptionLoading = false;
+      this.coachDialog.show = true;
+    },
+    coachOptionLabel(item) {
+      var mobile = item.mobile ? ' ' + item.mobile : '';
+      var stores = item.storeNames ? ' · ' + item.storeNames : '';
+      return (item.coachName || '未命名教练') + mobile + '（ID:' + item.id + '）' + stores;
+    },
+    async searchCoachOptions(keyword) {
+      var value = (keyword || '').trim();
+      var seq = ++this.coachSearchSeq;
+      if (!value) {
+        this.coachOptions = [];
+        this.coachOptionLoading = false;
+        return;
+      }
+      this.coachOptionLoading = true;
+      try {
+        var res = await this.apis.memberBenefit_coachOptions({ keyword: value });
+        if (seq === this.coachSearchSeq) {
+          this.coachOptions = (res && res.list) || [];
+        }
+      } catch (e) {
+        if (seq === this.coachSearchSeq) {
+          this.coachOptions = [];
+        }
+      } finally {
+        if (seq === this.coachSearchSeq) {
+          this.coachOptionLoading = false;
+        }
+      }
+    },
+    submitCoach() {
+      var benefitIds = this.selectedBenefitIds();
+      if (!benefitIds) return;
+      var coachId = this.coachDialog.coachId || '';
+      var message = coachId ? '确认将选中权益的所属服务人变更为所选教练吗？' : '确认清空选中权益的所属服务人吗？';
+      this.$confirm(message, '批量变更服务人', { type: 'warning' }).then(async () => {
+        try {
+          await this.apis.memberBenefit_batchChangeCoach({ benefitIds: benefitIds, coachId: coachId });
+          this.$message.success('批量变更服务人成功');
+          this.coachDialog.show = false;
+          this.clearSelection();
+          this.getData();
+        } catch (e) {
+          this.$message.error((e && (e.msg || e.message)) || '批量变更服务人失败');
+        }
+      }).catch((e) => {
+        if (e !== 'cancel' && e !== 'close') {
+          this.$message.error('批量变更服务人未完成');
         }
       });
     },

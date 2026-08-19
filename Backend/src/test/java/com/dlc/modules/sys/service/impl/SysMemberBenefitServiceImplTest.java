@@ -63,12 +63,33 @@ public class SysMemberBenefitServiceImplTest {
         }
     }
 
+    @Test
+    public void shouldRejectCoachBatchWhenCoachDoesNotServeAllSelectedBenefitStores() throws Exception {
+        SysMemberBenefitServiceImpl service = serviceWithDao(2, 2, 0, 1);
+
+        try {
+            invoke(service, "batchChangeCoach",
+                    Arrays.asList(10L, 11L), 303L, "100,101");
+            fail("服务人未覆盖全部权益门店时必须整批拒绝");
+        } catch (InvocationTargetException expected) {
+            assertTrue(expected.getCause() instanceof RRException);
+            assertTrue(expected.getCause().getMessage().contains("服务人"));
+        }
+    }
+
     private SysMemberBenefitServiceImpl serviceWithDao(final int expireScopeCount,
                                                         final int storeScopeCount,
                                                         final int targetStoreScopeCount) throws Exception {
+        return serviceWithDao(expireScopeCount, storeScopeCount, targetStoreScopeCount, 0);
+    }
+
+    private SysMemberBenefitServiceImpl serviceWithDao(final int expireScopeCount,
+                                                        final int storeScopeCount,
+                                                        final int targetStoreScopeCount,
+                                                        final int coachScopeCount) throws Exception {
         SysMemberBenefitServiceImpl service = new SysMemberBenefitServiceImpl();
         setField(service, "sysMemberBenefitDao", proxy(SysMemberBenefitDao.class,
-                expireScopeCount, storeScopeCount, targetStoreScopeCount));
+                expireScopeCount, storeScopeCount, targetStoreScopeCount, coachScopeCount));
         return service;
     }
 
@@ -95,7 +116,8 @@ public class SysMemberBenefitServiceImplTest {
 
     @SuppressWarnings("unchecked")
     private <T> T proxy(Class<T> type, final int expireScopeCount,
-                        final int storeScopeCount, final int targetStoreScopeCount) {
+                        final int storeScopeCount, final int targetStoreScopeCount,
+                        final int coachScopeCount) {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) {
@@ -107,6 +129,9 @@ public class SysMemberBenefitServiceImplTest {
                 }
                 if ("countStoreAddressInScope".equals(method.getName())) {
                     return targetStoreScopeCount;
+                }
+                if ("countCoachChangeableBenefits".equals(method.getName())) {
+                    return coachScopeCount;
                 }
                 if (method.getReturnType() == int.class) {
                     return 0;

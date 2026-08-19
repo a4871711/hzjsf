@@ -16,8 +16,14 @@ public class SysMemberBenefitControllerPermissionTest {
                 .getDeclaredMethod("batchAdjustExpireDate", java.util.Map.class);
         Method changeStore = SysMemberBenefitController.class
                 .getDeclaredMethod("batchChangeStore", java.util.Map.class);
+        Method changeCoach = SysMemberBenefitController.class
+                .getDeclaredMethod("batchChangeCoach", java.util.Map.class);
+        Method coachOptions = SysMemberBenefitController.class
+                .getDeclaredMethod("coachOptions", String.class);
 
         assertNull(adjustExpireDate.getAnnotation(RequiresPermissions.class));
         assertNull(changeStore.getAnnotation(RequiresPermissions.class));
+        assertNull(changeCoach.getAnnotation(RequiresPermissions.class));
+        assertNull(coachOptions.getAnnotation(RequiresPermissions.class));
     }
 }

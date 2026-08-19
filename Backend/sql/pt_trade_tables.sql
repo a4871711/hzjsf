@@ -17,7 +17,7 @@ CREATE TABLE `pt_private_order` (
   `product_type_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '购买时商品类型ID快照',
   `product_type_name` VARCHAR(50) DEFAULT NULL COMMENT '购买时商品类型名称快照',
   `service_type` TINYINT NOT NULL COMMENT '服务类型：1一对一 2一对多',
-  `store_id` BIGINT UNSIGNED NOT NULL COMMENT '购买门店ID',
+  `store_id` BIGINT UNSIGNED NOT NULL COMMENT '初始购买门店ID；后台可调整未来归属门店',
   `coach_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '销售归属教练快照；商品仅指定一名教练时记录',
   `lesson_count` INT NOT NULL COMMENT '购买课时数',
   `duration_minutes` INT NOT NULL COMMENT '单次服务时长（分钟）',

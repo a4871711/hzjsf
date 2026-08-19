@@ -174,7 +174,7 @@ public class PtInstallmentServiceImpl implements PtInstallmentService {
 
         // 4) 首付激活权益(一次性激活全部课时,课时/有效期取订单快照);activate 内按 order_id 查重幂等
         memberPrivateBenefitService.activate(order.getId(), order.getMemberId(), order.getProductId(),
-                order.getStoreId(), order.getLessonCount(), order.getValidityDays());
+                order.getStoreId(), order.getCoachId(), order.getLessonCount(), order.getValidityDays());
 
         log.info("分期计划建立并首付激活 orderId={},planId={},total={},down={},cnt={}",
                 order.getId(), planId, total, down, cnt);
@@ -223,7 +223,7 @@ public class PtInstallmentServiceImpl implements PtInstallmentService {
         if (order != null) {
             ptPrivateOrderDao.markInstallmentPartPaid(order.getId(), scale(amount));
             memberPrivateBenefitService.activate(order.getId(), order.getMemberId(), order.getProductId(),
-                    order.getStoreId(), order.getLessonCount(), order.getValidityDays());
+                    order.getStoreId(), order.getCoachId(), order.getLessonCount(), order.getValidityDays());
         }
         log.info("分期首付独立回调入账并激活 orderNo={},planId={}", downOrderNo, plan.getId());
     }

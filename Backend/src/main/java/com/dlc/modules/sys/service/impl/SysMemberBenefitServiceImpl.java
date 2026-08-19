@@ -15,7 +15,7 @@ import java.util.Set;
 
 /**
  * 会员私教权益后台 Service 实现。
- * 课时字段不在后台动作中修改;批量动作只调整到期日和权益未来归属门店。
+ * 课时字段不在后台动作中修改;批量动作只调整到期日、权益未来归属门店和所属服务人。
  */
 @Service("sysMemberBenefitService")
 public class SysMemberBenefitServiceImpl implements SysMemberBenefitService {
@@ -36,6 +36,11 @@ public class SysMemberBenefitServiceImpl implements SysMemberBenefitService {
     @Override
     public Map<String, Object> queryStat(Map<String, Object> params) {
         return sysMemberBenefitDao.queryStat(params);
+    }
+
+    @Override
+    public List<Map<String, Object>> queryCoachOptions(String keyword, String storeIds) {
+        return sysMemberBenefitDao.queryCoachOptions(keyword, storeIds);
     }
 
     @Override
@@ -71,6 +76,29 @@ public class SysMemberBenefitServiceImpl implements SysMemberBenefitService {
         int updatedRows = sysMemberBenefitDao.updateStoreBatch(normalizedIds, targetStoreAddrId, storeAddrIds);
         if (updatedRows != normalizedIds.size()) {
             throw new RRException("批量变更门店失败，未修改任何不完整数据");
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchChangeCoach(List<Long> benefitIds, Long targetCoachId, String storeAddrIds) {
+        List<Long> normalizedIds = normalizeBenefitIds(benefitIds);
+        if (targetCoachId != null && targetCoachId <= 0) {
+            throw new RRException("目标服务人不合法");
+        }
+        if (sysMemberBenefitDao.countChangeableBenefits(normalizedIds, storeAddrIds)
+                != normalizedIds.size()) {
+            throw new RRException("所选权益中存在不存在、已退款或不在门店权限范围内的记录，批量操作已取消");
+        }
+        // 服务人必须同时属于每条权益当前门店;空值表示明确清空所属服务人。
+        if (targetCoachId != null
+                && sysMemberBenefitDao.countCoachChangeableBenefits(normalizedIds, targetCoachId, storeAddrIds)
+                != normalizedIds.size()) {
+            throw new RRException("目标服务人不存在、已停用或未覆盖所选权益的所属门店");
+        }
+        int updatedRows = sysMemberBenefitDao.updateCoachBatch(normalizedIds, targetCoachId, storeAddrIds);
+        if (updatedRows != normalizedIds.size()) {
+            throw new RRException("批量变更服务人失败，未修改任何不完整数据");
         }
     }
 

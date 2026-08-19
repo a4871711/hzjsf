@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * 会员私教权益(pt_member_private_benefit,第15步)。路径 /sys/memberBenefit。
- * 课时账本只能由下单/预约/退款链路驱动;后台动作只允许批量调整权益到期日和未来归属门店。
+ * 课时账本只能由下单/预约/退款链路驱动;后台动作只允许批量调整权益到期日、未来归属门店和所属服务人。
  * 门店隔离:storeAddrIds 为空(超管)不过滤;越权详情返 404。
  *
  * @author claude
@@ -56,6 +56,17 @@ public class SysMemberBenefitController extends AbstractController {
         return R.ok().put("entity", entity);
     }
 
+    /** 会员权益批量变更服务人候选;不新增权限,数据范围仍按当前管理员门店收口。 */
+    @RequestMapping("/coachOptions")
+    public R coachOptions(@RequestParam(value = "keyword", required = false) String keyword) {
+        String value = keyword == null ? "" : keyword.trim();
+        if (value.isEmpty()) {
+            return R.ok().put("list", java.util.Collections.emptyList());
+        }
+        return R.ok().put("list", sysMemberBenefitService.queryCoachOptions(value,
+                ShiroUtils.getUserEntity().getStoreAddrIds()));
+    }
+
     @RequestMapping("/batchAdjustExpireDate")
     public R batchAdjustExpireDate(@RequestBody Map<String, Object> params) {
         List<Long> benefitIds = parseLongList(params.get("benefitIds"));
@@ -77,6 +88,25 @@ public class SysMemberBenefitController extends AbstractController {
             return R.error("参数不合法:benefitIds/storeAddrId");
         }
         sysMemberBenefitService.batchChangeStore(benefitIds, targetStoreAddrId,
+                ShiroUtils.getUserEntity().getStoreAddrIds());
+        return R.ok();
+    }
+
+    @RequestMapping("/batchChangeCoach")
+    public R batchChangeCoach(@RequestBody Map<String, Object> params) {
+        List<Long> benefitIds = parseLongList(params.get("benefitIds"));
+        if (benefitIds == null || !params.containsKey("coachId")) {
+            return R.error("参数不合法:benefitIds/coachId");
+        }
+        Object coachValue = params.get("coachId");
+        Long targetCoachId = null;
+        if (coachValue != null && !coachValue.toString().trim().isEmpty()) {
+            targetCoachId = parseLong(coachValue);
+            if (targetCoachId == null) {
+                return R.error("参数不合法:coachId");
+            }
+        }
+        sysMemberBenefitService.batchChangeCoach(benefitIds, targetCoachId,
                 ShiroUtils.getUserEntity().getStoreAddrIds());
         return R.ok();
     }

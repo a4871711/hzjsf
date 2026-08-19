@@ -19,12 +19,14 @@ public interface MemberPrivateBenefitService {
      * @param memberId     会员ID
      * @param productId    私教商品ID
      * @param storeId      购买门店ID
+     * @param coachId      初始所属服务教练ID,可为空
      * @param lessonCount  购买课时数(订单快照)
      * @param validityDays 有效期天数(订单快照,-1 长期)
      * @return 新建或已存在的权益
      */
     PtMemberPrivateBenefitEntity activate(Long orderId, Long memberId, Long productId,
-                                          Long storeId, Integer lessonCount, Integer validityDays);
+                                          Long storeId, Long coachId,
+                                          Integer lessonCount, Integer validityDays);
 
     /** 预约冻结:remaining-=n,frozen+=n;须 status=1 且未过期且 remaining>=n */
     void freeze(Long benefitId, int n);

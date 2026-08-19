@@ -6,7 +6,7 @@
 <mapper namespace="com.dlc.modules.api.dao.PtMemberPrivateBenefitDao">
 
     <sql id="Base_Column_List">
-        id, benefit_no, order_id, member_id, product_id, store_id,
+        id, benefit_no, order_id, member_id, product_id, store_id, coach_id,
         total_lessons, used_lessons, frozen_lessons, remaining_lessons,
         effective_at, expire_at, status, created_at, updated_at
     </sql>
@@ -44,6 +44,8 @@
                o.order_no AS orderNo,
                b.product_id AS productId,
                b.store_id AS storeId,
+               b.coach_id AS coachId,
+               c.coach_name AS coachName,
                COALESCE(p.product_name, o.product_name) AS productName,
                p.cover_url AS coverUrl,
                p.service_type AS serviceType,
@@ -63,6 +65,7 @@
         LEFT JOIN pt_product p ON p.id = b.product_id
         LEFT JOIN store_address sa ON sa.storeAddrId = b.store_id
         LEFT JOIN store s ON s.storeId = sa.storeId
+        LEFT JOIN pt_coach c ON c.id = b.coach_id
         WHERE b.member_id = #{userId}
         <if test="status != null and status != ''">
             AND b.status = #{status}
@@ -87,11 +90,11 @@
     <insert id="save" parameterType="com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pt_member_private_benefit
-            (benefit_no, order_id, member_id, product_id, store_id,
+            (benefit_no, order_id, member_id, product_id, store_id, coach_id,
              total_lessons, used_lessons, frozen_lessons, remaining_lessons,
              effective_at, expire_at, status)
         VALUES
-            (#{benefitNo}, #{orderId}, #{memberId}, #{productId}, #{storeId},
+            (#{benefitNo}, #{orderId}, #{memberId}, #{productId}, #{storeId}, #{coachId},
              #{totalLessons}, #{usedLessons}, #{frozenLessons}, #{remainingLessons},
              #{effectiveAt}, #{expireAt}, #{status})
     </insert>

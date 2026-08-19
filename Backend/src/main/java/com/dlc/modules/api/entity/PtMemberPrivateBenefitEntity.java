@@ -21,6 +21,8 @@ public class PtMemberPrivateBenefitEntity implements Serializable {
     private Long productId;
     /** 购买门店ID */
     private Long storeId;
+    /** 当前所属服务教练ID;为空表示尚未指定 */
+    private Long coachId;
     /** 总课时 */
     private Integer totalLessons;
     /** 已用课时 */
@@ -55,6 +57,9 @@ public class PtMemberPrivateBenefitEntity implements Serializable {
 
     public Long getStoreId() { return storeId; }
     public void setStoreId(Long storeId) { this.storeId = storeId; }
+
+    public Long getCoachId() { return coachId; }
+    public void setCoachId(Long coachId) { this.coachId = coachId; }
 
     public Integer getTotalLessons() { return totalLessons; }
     public void setTotalLessons(Integer totalLessons) { this.totalLessons = totalLessons; }

@@ -1475,6 +1475,14 @@ export default {
 			params: $http.adornParams({})
 		});
 	},
+	// 会员私教权益-服务人候选({keyword})
+	memberBenefit_coachOptions(data) {
+		return $http({
+			url: $http.adornUrl('/sys/memberBenefit/coachOptions'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
 	// 会员私教权益-批量调整到期日({benefitIds,operation:increase|decrease,days})
 	memberBenefit_batchAdjustExpireDate(data) {
 		return $http({
@@ -1488,6 +1496,15 @@ export default {
 	memberBenefit_batchChangeStore(data) {
 		return $http({
 			url: $http.adornUrl('/sys/memberBenefit/batchChangeStore'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({ ...data }, false, 'json')
+		});
+	},
+	// 会员私教权益-批量变更所属服务人({benefitIds,coachId});coachId为空时清空
+	memberBenefit_batchChangeCoach(data) {
+		return $http({
+			url: $http.adornUrl('/sys/memberBenefit/batchChangeCoach'),
 			method: 'post',
 			contentType: 'json',
 			data: $http.adornData({ ...data }, false, 'json')
