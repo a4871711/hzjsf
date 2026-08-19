@@ -37,4 +37,3 @@ SELECT t.menu_id, '预约记录', 'modules/sys/appointment.html',
        1, 'fa fa-calendar-check-o', 10
 FROM (SELECT menu_id FROM sys_menu WHERE name='私教管理' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/appointment.html');
-

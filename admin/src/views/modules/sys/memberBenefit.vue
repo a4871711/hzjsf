@@ -2,7 +2,7 @@
   <div>
     <div class="page-head">
       <h2 class="page-title">会员私教权益</h2>
-      <p class="page-sub">会员已购私教课时账本查看（纯只读，课时变更仅由下单/预约/退款链路驱动）</p>
+      <p class="page-sub">会员已购私教课时账本查看；支持按每条权益原到期时间批量调整有效期和变更未来归属门店</p>
     </div>
 
     <!-- 顶部统计卡:取 list 返回的 stat -->
@@ -41,14 +41,55 @@
 
     <r-search ref="search" :searchData="searchData" :searchForm="searchForm" :searchHandle="searchHandle" />
     <r-table
-      :isSelection="false"
-      :isHandle="false"
+      ref="benefitTable"
+      :isSelection="true"
+      :isHandle="true"
       :isPagination="true"
       :tableData="tableData"
       :tableCols="tableCols"
       :tablePage="pagination"
       :loading="tableLoading"
+      :tableHandles="tableHandles"
+      @select="tableSelect"
+      @selectAll="tableSelect"
       @refresh="page()" />
+
+    <el-dialog
+      :title="validityDialog.operation === 'increase' ? '批量增加有效期' : '批量减少有效期'"
+      :visible.sync="validityDialog.show"
+      width="460px"
+      :close-on-click-modal="false">
+      <el-form label-width="100px">
+        <el-form-item label="调整天数">
+          <el-input-number v-model="validityDialog.days" :min="1" :max="36500" :step="1" controls-position="right" />
+          <span class="unit-text">天</span>
+        </el-form-item>
+        <div class="dialog-tip">将按每条选中权益当前的到期时间逐条增加或减少，不会统一改成同一个日期。</div>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="validityDialog.show = false">取消</el-button>
+        <el-button type="primary" @click="submitValidity">确定</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog
+      title="批量变更门店"
+      :visible.sync="storeDialog.show"
+      width="460px"
+      :close-on-click-modal="false">
+      <el-form label-width="100px">
+        <el-form-item label="目标门店">
+          <el-select v-model="storeDialog.storeAddrId" filterable clearable placeholder="请选择目标门店" style="width: 280px">
+            <el-option v-for="item in storeOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+        </el-form-item>
+        <div class="dialog-tip">只变更权益后续使用的门店，已有预约记录仍保留原上课门店。</div>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="storeDialog.show = false">取消</el-button>
+        <el-button type="primary" @click="submitStore">确定</el-button>
+      </span>
+    </el-dialog>
 
     <!-- 权益详情抽屉:课时四态 + 来源订单 -->
     <el-drawer title="权益详情" :visible.sync="detailVisible" size="560px" :append-to-body="true">
@@ -95,6 +136,8 @@ export default {
     return {
       tableLoading: false,
       stat: {},
+      selectList: [],
+      storeOptions: [],
       searchData: {
         memberKeyword: '',
         productKeyword: '',
@@ -114,6 +157,11 @@ export default {
       ],
       searchHandle: [
         { label: "搜索", type: "primary", handle: e => { this.pagination.offset = 1; this.getData(); } },
+      ],
+      tableHandles: [
+        { label: '批量增加有效期', type: 'primary', icon: 'el-icon-plus', handle: () => this.openValidityDialog('increase') },
+        { label: '批量减少有效期', type: 'warning', icon: 'el-icon-minus', handle: () => this.openValidityDialog('decrease') },
+        { label: '批量变更门店', type: 'success', icon: 'el-icon-office-building', handle: () => this.openStoreDialog() }
       ],
       tableData: [],
       tableCols: [
@@ -141,6 +189,8 @@ export default {
       pagination: { limit: 10, offset: 1, total: 1 },
       detailVisible: false,
       detail: null,
+      validityDialog: { show: false, operation: 'increase', days: 1 },
+      storeDialog: { show: false, storeAddrId: '' },
     };
   },
   mounted() {
@@ -186,7 +236,85 @@ export default {
       var res = await this.apis.store_list({ page: 1, limit: 999 });
       var list = (res.page && res.page.list) || [];
       var opts = list.map(function (item) { return { value: item.storeAddrId, label: item.storeName }; });
+      this.storeOptions = opts;
       this.searchForm[2].options = opts;
+    },
+    tableSelect(rows) {
+      this.selectList = rows || [];
+    },
+    selectedBenefitIds() {
+      if (!this.selectList.length) {
+        this.$message.warning('请至少选择一条权益');
+        return null;
+      }
+      return this.selectList.map(function (item) { return item.id; });
+    },
+    clearSelection() {
+      if (this.$refs.benefitTable) {
+        this.$refs.benefitTable.clearSelection();
+      }
+      this.selectList = [];
+    },
+    openValidityDialog(operation) {
+      if (!this.selectedBenefitIds()) return;
+      this.validityDialog.operation = operation;
+      this.validityDialog.days = 1;
+      this.validityDialog.show = true;
+    },
+    submitValidity() {
+      var benefitIds = this.selectedBenefitIds();
+      var days = Number(this.validityDialog.days);
+      if (!benefitIds || !Number.isInteger(days) || days <= 0) {
+        this.$message.warning('调整天数必须是大于 0 的整数');
+        return;
+      }
+      var operation = this.validityDialog.operation;
+      this.$confirm('将按每条权益当前到期时间逐条调整 ' + days + ' 天，确认继续吗？', '批量调整有效期', {
+        type: 'warning'
+      }).then(async () => {
+        try {
+          await this.apis.memberBenefit_batchAdjustExpireDate({ benefitIds: benefitIds, operation: operation, days: days });
+          this.$message.success('批量调整成功');
+          this.validityDialog.show = false;
+          this.clearSelection();
+          this.getData();
+        } catch (e) {
+          this.$message.error((e && (e.msg || e.message)) || '批量调整失败');
+        }
+      }).catch((e) => {
+        if (e !== 'cancel' && e !== 'close') {
+          this.$message.error('批量调整未完成');
+        }
+      });
+    },
+    openStoreDialog() {
+      if (!this.selectedBenefitIds()) return;
+      this.storeDialog.storeAddrId = '';
+      this.storeDialog.show = true;
+    },
+    submitStore() {
+      var benefitIds = this.selectedBenefitIds();
+      if (!benefitIds || !this.storeDialog.storeAddrId) {
+        this.$message.warning('请选择目标门店');
+        return;
+      }
+      this.$confirm('确认将选中权益的未来归属门店变更为所选门店吗？', '批量变更门店', {
+        type: 'warning'
+      }).then(async () => {
+        try {
+          await this.apis.memberBenefit_batchChangeStore({ benefitIds: benefitIds, storeAddrId: this.storeDialog.storeAddrId });
+          this.$message.success('批量变更成功');
+          this.storeDialog.show = false;
+          this.clearSelection();
+          this.getData();
+        } catch (e) {
+          this.$message.error((e && (e.msg || e.message)) || '批量变更门店失败');
+        }
+      }).catch((e) => {
+        if (e !== 'cancel' && e !== 'close') {
+          this.$message.error('批量变更门店未完成');
+        }
+      });
     },
     async openDetail(row) {
       this.detail = null;
@@ -206,6 +334,8 @@ export default {
 .stat-card { text-align: center; }
 .stat-num { font-size: 26px; font-weight: bold; line-height: 1.2; }
 .stat-label { color: #909399; font-size: 13px; margin-top: 6px; }
+.unit-text { margin-left: 8px; color: #606266; }
+.dialog-tip { color: #909399; font-size: 13px; line-height: 22px; padding-left: 100px; }
 .detail-wrap { padding: 0 20px 20px; }
 .detail-section-title { font-weight: bold; color: #303133; margin: 18px 0 10px; padding-left: 8px; border-left: 3px solid #409EFF; }
 .detail-row { line-height: 32px; color: #606266; }

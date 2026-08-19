@@ -36,7 +36,8 @@
         LEFT JOIN pt_private_order o ON o.id = b.order_id
         LEFT JOIN user_info u ON u.userId = b.member_id
         LEFT JOIN pt_product p ON p.id = b.product_id
-        LEFT JOIN store s ON s.storeId = b.store_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = b.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
     </sql>
 
     <sql id="Columns">
@@ -116,5 +117,92 @@
         </if>
         LIMIT 1
     </select>
+
+    <!-- 批量改到期日的前置校验:长期有效记录没有可偏移的 expire_at,退款记录不可改。 -->
+    <select id="countAdjustableBenefits" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_member_private_benefit b
+        WHERE b.id IN
+        <foreach collection="benefitIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND b.status IN (1, 2, 3)
+          AND b.expire_at IS NOT NULL
+        <if test="storeAddrIds != null and storeAddrIds != ''">
+            AND b.store_id IN (${storeAddrIds})
+        </if>
+    </select>
+
+    <!-- 每条记录都以自己的原 expire_at 为基准调整,不把批量记录改成同一个绝对日期。 -->
+    <update id="updateExpireDateBatch">
+        UPDATE pt_member_private_benefit
+        SET expire_at = DATE_ADD(expire_at, INTERVAL #{offsetDays} DAY),
+            status = CASE
+                WHEN status = 1
+                     AND DATE_ADD(expire_at, INTERVAL #{offsetDays} DAY) &lt;= NOW()
+                     AND frozen_lessons = 0 THEN 3
+                WHEN status = 3
+                     AND DATE_ADD(expire_at, INTERVAL #{offsetDays} DAY) &gt; NOW()
+                     AND remaining_lessons &gt; 0 THEN 1
+                ELSE status
+            END
+        WHERE id IN
+        <foreach collection="benefitIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND status IN (1, 2, 3)
+          AND expire_at IS NOT NULL
+        <if test="storeAddrIds != null and storeAddrIds != ''">
+            AND store_id IN (${storeAddrIds})
+        </if>
+    </update>
+
+    <!-- 批量变更门店的前置校验:退款权益不能再调整未来归属门店。 -->
+    <select id="countChangeableBenefits" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_member_private_benefit b
+        WHERE b.id IN
+        <foreach collection="benefitIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND b.status IN (1, 2, 3)
+        <if test="storeAddrIds != null and storeAddrIds != ''">
+            AND b.store_id IN (${storeAddrIds})
+        </if>
+    </select>
+
+    <!-- 目标门店按 store_address.storeAddrId 校验,权限字段与权益表 store_id 同口径。 -->
+    <select id="countStoreAddressInScope" resultType="int">
+        SELECT COUNT(1)
+        FROM store_address sa
+        INNER JOIN store s ON s.storeId = sa.storeId
+        WHERE sa.storeAddrId = #{storeAddrId}
+          AND sa.status = 1
+          AND s.status = 1
+        <if test="storeAddrIds != null and storeAddrIds != ''">
+            AND sa.storeAddrId IN (${storeAddrIds})
+        </if>
+    </select>
+
+    <!-- 只改权益未来使用门店;预约表已有 store_id 不在本动作中修改,保留历史事实。 -->
+    <update id="updateStoreBatch">
+        UPDATE pt_member_private_benefit b
+        INNER JOIN store_address target_sa
+            ON target_sa.storeAddrId = #{targetStoreAddrId}
+           AND target_sa.status = 1
+        INNER JOIN store target_s
+            ON target_s.storeId = target_sa.storeId
+           AND target_s.status = 1
+        SET b.store_id = target_sa.storeAddrId
+        WHERE b.id IN
+        <foreach collection="benefitIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND b.status IN (1, 2, 3)
+        <if test="storeAddrIds != null and storeAddrIds != ''">
+            AND b.store_id IN (${storeAddrIds})
+            AND target_sa.storeAddrId IN (${storeAddrIds})
+        </if>
+    </update>
 
 </mapper>

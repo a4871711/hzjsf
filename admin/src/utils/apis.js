@@ -1459,7 +1459,7 @@ export default {
 		});
 	},
 
-	// 会员私教权益-列表+统计(只读)
+	// 会员私教权益-列表+统计
 	memberBenefit_list(data) {
 		return $http({
 			url: $http.adornUrl('/sys/memberBenefit/list'),
@@ -1473,6 +1473,24 @@ export default {
 			url: $http.adornUrl(`/sys/memberBenefit/info/${data.id}`),
 			method: 'get',
 			params: $http.adornParams({})
+		});
+	},
+	// 会员私教权益-批量调整到期日({benefitIds,operation:increase|decrease,days})
+	memberBenefit_batchAdjustExpireDate(data) {
+		return $http({
+			url: $http.adornUrl('/sys/memberBenefit/batchAdjustExpireDate'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({ ...data }, false, 'json')
+		});
+	},
+	// 会员私教权益-批量变更未来归属门店({benefitIds,storeAddrId})
+	memberBenefit_batchChangeStore(data) {
+		return $http({
+			url: $http.adornUrl('/sys/memberBenefit/batchChangeStore'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({ ...data }, false, 'json')
 		});
 	},
 
