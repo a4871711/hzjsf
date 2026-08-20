@@ -49,13 +49,20 @@ public interface CoachApiDao {
     Map<String, Object> queryCoachHomeStats(@Param("coachId") Long coachId);
 
     /** 私教收入汇总；仅统计 PT_LESSON_ / PT_SALE_ 流水，避免混入旧 coach 域同 ID 数据 */
-    Map<String, Object> queryCoachIncomeSummary(@Param("coachId") Long coachId);
+    Map<String, Object> queryCoachIncomeSummary(@Param("coachId") Long coachId,
+                                                 @Param("monthStart") String monthStart,
+                                                 @Param("nextMonthStart") String nextMonthStart);
 
-    /** 私教收入明细分页；type=lesson/sale/null */
+    /** 私教收入明细分页；type=lesson/sale/null，按月份范围过滤。 */
     List<Map<String, Object>> queryCoachIncomeList(@Param("coachId") Long coachId,
                                                    @Param("type") String type,
+                                                   @Param("monthStart") String monthStart,
+                                                   @Param("nextMonthStart") String nextMonthStart,
                                                    @Param("offset") Integer offset,
                                                    @Param("limit") Integer limit);
 
-    int countCoachIncome(@Param("coachId") Long coachId, @Param("type") String type);
+    int countCoachIncome(@Param("coachId") Long coachId,
+                         @Param("type") String type,
+                         @Param("monthStart") String monthStart,
+                         @Param("nextMonthStart") String nextMonthStart);
 }

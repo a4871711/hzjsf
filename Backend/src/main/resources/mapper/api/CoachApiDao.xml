@@ -124,16 +124,16 @@
             ROUND(IFNULL(SUM(CASE WHEN status = 1 AND tradeType = 1 THEN money
                                   WHEN status = 1 AND tradeType = 2 THEN -money ELSE 0 END), 0), 2) AS totalIncome,
             ROUND(IFNULL(SUM(CASE WHEN status = 1
-                                      AND transactionTime &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
-                                      AND transactionTime &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
+                                      AND COALESCE(transactionTime, createTime) &gt;= #{monthStart}
+                                      AND COALESCE(transactionTime, createTime) &lt; #{nextMonthStart}
                                   THEN CASE WHEN tradeType = 2 THEN -money ELSE money END ELSE 0 END), 0), 2) AS monthIncome,
             ROUND(IFNULL(SUM(CASE WHEN status = 1 AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY)_'
-                                      AND transactionTime &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
-                                      AND transactionTime &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
+                                      AND COALESCE(transactionTime, createTime) &gt;= #{monthStart}
+                                      AND COALESCE(transactionTime, createTime) &lt; #{nextMonthStart}
                                   THEN CASE WHEN tradeType = 2 THEN -money ELSE money END ELSE 0 END), 0), 2) AS monthLessonIncome,
             ROUND(IFNULL(SUM(CASE WHEN status = 1 AND transactionNumber REGEXP '^PT_SALE_'
-                                      AND transactionTime &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
-                                      AND transactionTime &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
+                                      AND COALESCE(transactionTime, createTime) &gt;= #{monthStart}
+                                      AND COALESCE(transactionTime, createTime) &lt; #{nextMonthStart}
                                   THEN CASE WHEN tradeType = 2 THEN -money ELSE money END ELSE 0 END), 0), 2) AS monthSaleIncome
         FROM coach_trade_detail
         WHERE coachId = #{coachId}
@@ -149,6 +149,8 @@
         FROM coach_trade_detail
         WHERE coachId = #{coachId}
           AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY|SALE)_'
+          AND COALESCE(transactionTime, createTime) &gt;= #{monthStart}
+          AND COALESCE(transactionTime, createTime) &lt; #{nextMonthStart}
         <if test="type == 'lesson'">AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY)_'</if>
         <if test="type == 'sale'">AND transactionNumber REGEXP '^PT_SALE_'</if>
         ORDER BY COALESCE(transactionTime, createTime) DESC, id DESC
@@ -160,6 +162,8 @@
         FROM coach_trade_detail
         WHERE coachId = #{coachId}
           AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY|SALE)_'
+          AND COALESCE(transactionTime, createTime) &gt;= #{monthStart}
+          AND COALESCE(transactionTime, createTime) &lt; #{nextMonthStart}
         <if test="type == 'lesson'">AND transactionNumber REGEXP '^PT_(LESSON|MONTHLY)_'</if>
         <if test="type == 'sale'">AND transactionNumber REGEXP '^PT_SALE_'</if>
     </select>

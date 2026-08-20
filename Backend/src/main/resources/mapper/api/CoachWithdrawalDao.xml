@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.api.dao.CoachWithdrawalDao">
+
+    <select id="lockCoach" resultType="long">
+        SELECT id
+        FROM pt_coach
+        WHERE id = #{coachId} AND deleted = 0
+        FOR UPDATE
+    </select>
+
+    <select id="queryBalance" resultType="java.util.LinkedHashMap">
+        SELECT
+            ROUND(IFNULL((
+                SELECT SUM(CASE WHEN d.tradeType = 2 THEN -d.money ELSE d.money END)
+                FROM coach_trade_detail d
+                WHERE d.coachId = #{coachId}
+                  AND d.status = 1
+                  AND d.transactionNumber REGEXP '^PT_(LESSON|MONTHLY|SALE)_'
+            ), 0), 2) AS incomeTotal,
+            ROUND(IFNULL((
+                SELECT SUM(w.actual_settlement_amount)
+                FROM pt_coach_withdrawal w
+                WHERE w.coach_id = #{coachId} AND w.status = 2
+            ), 0), 2) AS settledAmount,
+            ROUND(IFNULL((
+                SELECT SUM(w.frozen_amount)
+                FROM pt_coach_withdrawal w
+                WHERE w.coach_id = #{coachId} AND w.status = 0
+            ), 0), 2) AS frozenAmount
+    </select>
+
+    <select id="queryCoachList" resultType="java.util.LinkedHashMap">
+        SELECT id, requested_amount AS requestedAmount, settlement_amount AS settlementAmount,
+               actual_settlement_amount AS actualSettlementAmount, frozen_amount AS frozenAmount,
+               account_name AS accountName, bank_name AS bankName, bank_card_no AS bankCardNo,
+               attachment_urls AS attachmentUrls, status, review_remark AS reviewRemark,
+               DATE_FORMAT(reviewed_at, '%Y-%m-%d %H:%i:%s') AS reviewedAt,
+               DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+        FROM pt_coach_withdrawal
+        WHERE coach_id = #{coachId}
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countCoachList" resultType="int">
+        SELECT COUNT(1) FROM pt_coach_withdrawal WHERE coach_id = #{coachId}
+    </select>
+
+    <insert id="save" parameterType="com.dlc.modules.api.entity.PtCoachWithdrawalEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_coach_withdrawal
+        (coach_id, requested_amount, settlement_amount, frozen_amount,
+         account_name, bank_name, bank_card_no, attachment_urls, status)
+        VALUES
+        (#{coachId}, #{requestedAmount}, #{settlementAmount}, #{frozenAmount},
+         #{accountName}, #{bankName}, #{bankCardNo}, '[]', 0)
+    </insert>
+
+    <select id="queryForUpdate" resultType="java.util.LinkedHashMap">
+        SELECT id, coach_id AS coachId, requested_amount AS requestedAmount,
+               settlement_amount AS settlementAmount, actual_settlement_amount AS actualSettlementAmount,
+               frozen_amount AS frozenAmount, status, attachment_urls AS attachmentUrls
+        FROM pt_coach_withdrawal
+        WHERE id = #{id} AND status = 0
+        FOR UPDATE
+    </select>
+
+    <select id="queryAdminList" resultType="java.util.LinkedHashMap">
+        SELECT w.id, w.coach_id AS coachId, c.coach_no AS coachNo, c.coach_name AS coachName,
+               c.mobile, w.requested_amount AS requestedAmount, w.settlement_amount AS settlementAmount,
+               w.actual_settlement_amount AS actualSettlementAmount, w.frozen_amount AS frozenAmount,
+               w.account_name AS accountName, w.bank_name AS bankName,
+               CONCAT('****', RIGHT(w.bank_card_no, 4)) AS bankCardNo,
+               w.attachment_urls AS attachmentUrls, w.status, w.review_remark AS reviewRemark,
+               DATE_FORMAT(w.reviewed_at, '%Y-%m-%d %H:%i:%s') AS reviewedAt,
+               DATE_FORMAT(w.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+        FROM pt_coach_withdrawal w
+        INNER JOIN pt_coach c ON c.id = w.coach_id AND c.deleted = 0
+        <where>
+            <if test="coachName != null and coachName != ''">
+                AND c.coach_name LIKE CONCAT('%', #{coachName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND w.status = #{status}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                AND w.created_at &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND w.created_at &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND EXISTS (SELECT 1 FROM pt_coach_store_rel r
+                            WHERE r.coach_id = w.coach_id AND r.store_id IN (${storeIds}))
+            </if>
+        </where>
+        ORDER BY w.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countAdminList" resultType="int">
+        SELECT COUNT(1)
+        FROM pt_coach_withdrawal w
+        INNER JOIN pt_coach c ON c.id = w.coach_id AND c.deleted = 0
+        <where>
+            <if test="coachName != null and coachName != ''">
+                AND c.coach_name LIKE CONCAT('%', #{coachName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND w.status = #{status}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                AND w.created_at &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND w.created_at &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND EXISTS (SELECT 1 FROM pt_coach_store_rel r
+                            WHERE r.coach_id = w.coach_id AND r.store_id IN (${storeIds}))
+            </if>
+        </where>
+    </select>
+
+    <select id="queryAdminObject" resultType="java.util.LinkedHashMap">
+        SELECT w.id, w.coach_id AS coachId, c.coach_no AS coachNo, c.coach_name AS coachName,
+               c.mobile, w.requested_amount AS requestedAmount, w.settlement_amount AS settlementAmount,
+               w.actual_settlement_amount AS actualSettlementAmount, w.frozen_amount AS frozenAmount,
+               w.account_name AS accountName, w.bank_name AS bankName, w.bank_card_no AS bankCardNo,
+               w.attachment_urls AS attachmentUrls, w.status, w.review_remark AS reviewRemark,
+               DATE_FORMAT(w.reviewed_at, '%Y-%m-%d %H:%i:%s') AS reviewedAt,
+               DATE_FORMAT(w.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+        FROM pt_coach_withdrawal w
+        INNER JOIN pt_coach c ON c.id = w.coach_id AND c.deleted = 0
+        WHERE w.id = #{id}
+        <if test="storeIds != null and storeIds != ''">
+            AND EXISTS (SELECT 1 FROM pt_coach_store_rel r
+                        WHERE r.coach_id = w.coach_id AND r.store_id IN (${storeIds}))
+        </if>
+    </select>
+
+    <update id="approve" parameterType="com.dlc.modules.api.entity.PtCoachWithdrawalEntity">
+        UPDATE pt_coach_withdrawal
+        SET settlement_amount = #{settlementAmount},
+            actual_settlement_amount = #{actualSettlementAmount},
+            frozen_amount = 0,
+            attachment_urls = #{attachmentUrls},
+            review_remark = #{reviewRemark},
+            reviewed_by = #{reviewedBy},
+            reviewed_at = NOW(),
+            status = 2
+        WHERE id = #{id} AND status = 0
+    </update>
+
+    <update id="reject" parameterType="com.dlc.modules.api.entity.PtCoachWithdrawalEntity">
+        UPDATE pt_coach_withdrawal
+        SET frozen_amount = 0,
+            attachment_urls = #{attachmentUrls},
+            review_remark = #{reviewRemark},
+            reviewed_by = #{reviewedBy},
+            reviewed_at = NOW(),
+            status = 1
+        WHERE id = #{id} AND status = 0
+    </update>
+</mapper>

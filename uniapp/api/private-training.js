@@ -137,6 +137,14 @@ export function getPrivateCoachIncomeList(params = {}) {
 	return post('/privateCoachCenter/incomeList', params, true);
 }
 
+export function getPrivateCoachWithdrawalList(params = {}) {
+	return post('/privateCoachCenter/withdrawalList', params, true);
+}
+
+export function applyPrivateCoachWithdrawal(params = {}) {
+	return post('/privateCoachCenter/withdrawalApply', params, true);
+}
+
 // 完课评价
 export function submitPrivateComment(params = {}) {
 	return post('/coachComment/submit', params, true);

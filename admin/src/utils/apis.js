@@ -1011,6 +1011,31 @@ export default {
 					params: $http.adornParams({})
 				});
 			},
+			// 私教教练提现-列表
+			ptCoachWithdrawal_list(data) {
+				return $http({
+					url: $http.adornUrl('/sys/ptCoachWithdrawal/list'),
+					method: 'get',
+					params: $http.adornParams({ ...data })
+				});
+			},
+			// 私教教练提现-详情({id})
+			ptCoachWithdrawal_info(data) {
+				return $http({
+					url: $http.adornUrl(`/sys/ptCoachWithdrawal/info/${data.id}`),
+					method: 'get',
+					params: $http.adornParams({})
+				});
+			},
+			// 私教教练提现-审核({id,status,settlementAmount,actualSettlementAmount,attachmentUrls,reviewRemark})
+			ptCoachWithdrawal_review(data) {
+				return $http({
+					url: $http.adornUrl('/sys/ptCoachWithdrawal/review'),
+					method: 'post',
+					contentType: 'json',
+					data: $http.adornData({ ...data }, false, 'json')
+				});
+			},
 
 			// 教练等级-列表
 	coachLevel_list(data) {
