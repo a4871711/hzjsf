@@ -38,14 +38,6 @@ SELECT t.menu_id, '团课转私教', 'modules/sys/groupToPrivate.html',
 FROM (SELECT menu_id FROM sys_menu WHERE name='私教运营' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/groupToPrivate.html');
 
--- 5) 「跨店结算规则」菜单 → 前端 views/modules/sys/crossStoreSettle.vue；perms 平铺 2 个按钮
-INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
-SELECT t.menu_id, '跨店结算规则', 'modules/sys/crossStoreSettle.html',
-       'sys:crossStoreSettle:info,sys:crossStoreSettle:save',
-       1, 'fa fa-balance-scale', 4
-FROM (SELECT menu_id FROM sys_menu WHERE name='私教运营' AND parent_id=0 ORDER BY menu_id DESC LIMIT 1) AS t
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu m WHERE m.url='modules/sys/crossStoreSettle.html');
-
 -- 6) 「异常预警中心」菜单 → 前端 views/modules/sys/exceptionWarning.vue；perms 平铺 5 个按钮
 INSERT INTO sys_menu (parent_id, name, url, perms, type, icon, order_num)
 SELECT t.menu_id, '异常预警中心', 'modules/sys/exceptionWarning.html',

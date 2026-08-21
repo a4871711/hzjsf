@@ -16,7 +16,6 @@ import java.util.Map;
  * 私教收入报表(第23步 §19)。路径 /sys/privateReport。纯统计查询,无写操作。
  * 权限统一 sys:privateReport:list;beginDate/endDate 必填;门店隔离 storeIds。
  * 口径见 mapper/sys/PtPrivateReportDao.xml(先按 appointment 行算单次收入再 SUM,成本命中课时费缺配=0 进异常分流)。
- * 跨店结算规则本期不落账,报表不按其拆分门店归属(§17.1/§17.3)。
  *
  * @author claude
  */

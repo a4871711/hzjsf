@@ -10,7 +10,6 @@
           缺配按课时提成规则视为 0 且该行进 abnormalList 异常分流。用标量子查询 LIMIT 1 保证每行仅 1 个成本值。
        4) o.lesson_count>0 强约束防除零(=0 进异常列表,不进正式汇总)。
        5) 毛利=收入-成本;毛利率=毛利/收入*100,收入=0 显示 0。金额一律 ROUND(...,2)。
-     跨店结算规则本期不落账:报表不按 pt_cross_store_settlement_rule 拆分门店归属(§17.1/§17.3)。
      门店表为既有 `store`(列 storeId/storeName),非 sys_store。 -->
 <mapper namespace="com.dlc.modules.sys.dao.PtPrivateReportDao">
 

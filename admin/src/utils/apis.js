@@ -2158,24 +2158,6 @@ export default {
 		});
 	},
 
-	// 跨店结算规则-取当前唯一规则
-	crossStoreSettle_info(data) {
-		return $http({
-			url: $http.adornUrl('/sys/crossStoreSettle/info'),
-			method: 'get',
-			params: $http.adornParams({ ...data })
-		});
-	},
-	// 跨店结算规则-保存(upsert)
-	crossStoreSettle_save(data) {
-		return $http({
-			url: $http.adornUrl('/sys/crossStoreSettle/save'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
-		});
-	},
-
 	// 私教收入报表-顶部汇总(beginDate/endDate 必填)
 	privateReport_summary(data) {
 		return $http({

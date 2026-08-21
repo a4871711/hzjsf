@@ -96,24 +96,6 @@ CREATE TABLE `pt_renewal_warning_record` (
   KEY `idx_renewal_warn_benefit_open` (`benefit_id`, `closed_at`) -- 【补充】
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='续费预警记录表';
 
-CREATE TABLE `pt_cross_store_settlement_rule` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `rule_name` VARCHAR(100) NOT NULL COMMENT '规则名称',
-  `cross_store_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用跨店结算：0否 1是',
-  `income_owner_type` TINYINT NOT NULL COMMENT '收入归属方式：1购买门店 2上课门店 3按比例分成',
-  `buy_store_ratio` DECIMAL(5,2) NOT NULL DEFAULT 100.00 COMMENT '购买门店分成比例',
-  `lesson_store_ratio` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '上课门店分成比例',
-  `coach_fee_owner_type` TINYINT NOT NULL DEFAULT 1 COMMENT '教练课时费归属：1授课教练',
-  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '规则状态：1启用 0停用',
-  `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
-  `created_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '创建人ID',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人ID',
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_pt_cross_store_settlement_rule_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='跨店结算规则表';
-
 CREATE TABLE `pt_exception_warning_rule` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `rule_name` VARCHAR(100) NOT NULL COMMENT '规则名称',
@@ -205,4 +187,3 @@ CREATE TABLE `pt_group_to_private_follow` (
   KEY `idx_pt_group_to_private_follow_lead_id` (`lead_id`),
   KEY `idx_pt_group_to_private_follow_member_id` (`member_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团课转私教跟进记录表';
-
