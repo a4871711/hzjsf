@@ -72,11 +72,6 @@ export function getUsablePrivateCoupons(params = {}) {
 	return post('/mkCoupon/usableForOrder', params, true);
 }
 
-// 私教专用储值账户（与旧提现钱包分开）
-export function getPrivateWalletAccount(params = {}) {
-	return post('/ptWallet/account', params, true);
-}
-
 // 私教预约
 export function getPrivateCoaches(params = {}) {
 	return post('/privateAppointment/coaches', params, true);

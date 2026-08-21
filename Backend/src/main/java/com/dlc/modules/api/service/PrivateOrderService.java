@@ -28,7 +28,7 @@ public interface PrivateOrderService {
     /**
      * 下单(单事务):校验上架/门店/可见人群/限购/库存 → 金额重算(口径与 quote 同一方法)
      * → 建 pt_private_order(order_status=0,pay_status=0,全量快照) → 券明细+mk_member_coupon 占用 CAS
-     * → 微信全款/分期首付调微信统一下单，储值支付直接扣余额并结算。
+     * → 微信全款/分期首付调微信统一下单。
      * 任一资金步骤失败均抛运行时异常整体回滚(订单与券占用一并回退)。
      *
      * @return {orderNo, payableAmount, payParams} payParams 为小程序调起支付参数
@@ -85,7 +85,7 @@ public interface PrivateOrderService {
      * → 冲减权益课时(refundLessons 缺省=剩余课时全冲,refundDeduct 只冲 remaining,不可冲到冻结/已用)
      * → 订单落退款(全额退→order_status=4/pay_status=3,部分退保持原状态) → 写退款流水(payType=9)
      * → 渠道退款放事务末:微信(1)走现有 wxRefund 通道,受理失败抛异常整体回滚;
-     *   储值(3)回补储值余额；分期(4)退款仍按现有规则拒绝，等待独立分期退款方案。
+     *   微信(1)原路退款；分期(4)退款仍按现有规则拒绝，等待独立分期退款方案。
      * 注意:本类属 api 包,改动须重启 Tomcat 才生效。
      *
      * @param orderId       私教订单ID

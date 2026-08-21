@@ -4,7 +4,6 @@ import com.dlc.common.utils.ConfigConstant;
 import com.dlc.modules.api.dao.*;
 import com.dlc.modules.api.entity.CardOrder;
 import com.dlc.modules.api.entity.IncomePayDetail;
-import com.dlc.modules.api.entity.PtMemberWalletFlowEntity;
 import com.dlc.modules.api.entity.PtPrivateOrderEntity;
 import com.dlc.modules.api.entity.UserInfo;
 import com.dlc.modules.api.entity.VipBenefit;
@@ -45,8 +44,6 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
     private VipBenefitTransferMapper vipBenefitTransferMapper;
     @Autowired
     private PtPrivateOrderDao ptPrivateOrderDao;
-    @Autowired
-    private PtMemberWalletFlowDao ptMemberWalletFlowDao;
     @Autowired
     private com.dlc.modules.api.dao.PtOrderInstallmentBillDao ptOrderInstallmentBillDao;
     @Autowired
@@ -129,17 +126,6 @@ public class IncomePayDetailServiceImpl implements IncomePayDetailService {
             if (ptOrder != null) {
                 ipd.setUserId(ptOrder.getMemberId());
                 ipd.setStoreId(ptOrder.getStoreId());
-            }
-        }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)){
-            //储值充值订单(后缀8,第19步):按充值单号反查 pt_member_wallet_flow 取 memberId(充值回调已先写流水),
-            //storeId 取会员当前门店(充值账户无门店维度,与其它会员维度收款同锚点)
-            //注:payType 由上方按末位"8"自动置为 8;8 在 income_pay_detail 语义为"积分兑换/支出侧",
-            //   储值充值属真实收款却会被现有收支列表(payType in 2,3,4,5,6,9,10,11,13)过滤掉、且被 countMoney 计入支出侧,
-            //   此为跨步(报表口径)问题,本步不擅改收入分类,保留 8 的自动映射并上抛决策(见交付说明)。
-            PtMemberWalletFlowEntity rechargeFlow = ptMemberWalletFlowDao.selectByOutOrderNo(orderNo);
-            if (rechargeFlow != null) {
-                ipd.setUserId(rechargeFlow.getMemberId());
-                ipd.setStoreId(userInfoMapper.queryStoreIdByUserId(rechargeFlow.getMemberId()));
             }
         }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)
                 || orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_BILL_TYPE)){

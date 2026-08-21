@@ -53,8 +53,6 @@ public class PayController extends BaseController{
     @Autowired
     private PrivateOrderService privateOrderService;
     @Autowired
-    private PtMemberWalletService ptMemberWalletService;
-    @Autowired
     private PtInstallmentService ptInstallmentService;
     @Autowired
     private com.dlc.modules.api.service.CardPauseService cardPauseService;
@@ -169,13 +167,12 @@ public class PayController extends BaseController{
                 //添加收支明细
                 int payType = ConfigConstant.WXPAY;
                 log.info("=========添加收支明细==========");
-                //VIP权益卡(后缀6)/转让服务费(后缀7)/私教商品(后缀b)/储值充值(后缀8)/分期首付(后缀9)/分期后续(后缀a)/停卡费(后缀c)
+                //VIP权益卡(后缀6)/转让服务费(后缀7)/私教商品(后缀b)/分期首付(后缀9)/分期后续(后缀a)/停卡费(后缀c)
                 //的记账在各自 service 内部单事务完成,此处跳过避免重复记账(后缀a/c非数字,若不跳过 Integer.valueOf 会抛异常)
                 String vipSuffix = orderNo.substring(orderNo.length()-1);
                 if (!vipSuffix.equals(ConfigConstant.VIP_CARD_BUY_TYPE)
                         && !vipSuffix.equals(ConfigConstant.VIP_TRANSFER_FEE_TYPE)
                         && !vipSuffix.equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)
-                        && !vipSuffix.equals(ConfigConstant.WALLET_RECHARGE_TYPE)
                         && !vipSuffix.equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)
                         && !vipSuffix.equals(ConfigConstant.INSTALLMENT_BILL_TYPE)
                         && !vipSuffix.equals(ConfigConstant.CARD_PAUSE_FEE_TYPE)) {
@@ -209,10 +206,6 @@ public class PayController extends BaseController{
                     //私教商品购买(单事务:记账+扣库存+券核销+结清+建权益,幂等三道闸)
                     log.info("-------更新私教商品购买订单=========================================" );
                     privateOrderService.updatePrivateOrder(orderNo,wallet,transaction_id,payType);
-                }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)){
-                    //储值充值(后缀8):单事务记账+行锁加余额+写充值流水,两道幂等闸(先查流水+out_order_no唯一键)
-                    log.info("-------储值充值到账=========================================" );
-                    ptMemberWalletService.walletRechargeCallback(orderNo,wallet,transaction_id,payType);
                 }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)){
                     //分期首付独立单(后缀9,防御性):单事务记账+首付账单入账+计划推进+订单转部分支付+激活权益,幂等
                     log.info("-------分期首付到账=========================================" );
@@ -275,10 +268,9 @@ public class PayController extends BaseController{
                     BigDecimal wallet = new BigDecimal(params.get("total_amount"));
                     //支付类型
                     int payType = ConfigConstant.ZFBPAY;
-                    //添加收支明细(私教商品后缀b/储值充值后缀8/分期首付后缀9/分期后续后缀a的记账在各自 service 单事务内完成,
+                    //添加收支明细(私教商品后缀b/分期首付后缀9/分期后续后缀a的记账在各自 service 单事务内完成,
                     //此处跳过避免重复记账;后缀a非数字,若不跳过 Integer.valueOf 会抛异常)
                     if (!orderNo.substring(orderNo.length()-1).equals(ConfigConstant.PT_PRIVATE_ORDER_TYPE)
-                            && !orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)
                             && !orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)
                             && !orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_BILL_TYPE)) {
                         incomePayDetailService.saveIncomePayDetail(orderNo,transaction_id,wallet,payType);
@@ -303,10 +295,6 @@ public class PayController extends BaseController{
                         //私教商品购买(单事务:记账+扣库存+券核销+结清+建权益,幂等三道闸)
                         log.info(">>开始支付宝回调更新私教商品购买订单=============================================");
                         privateOrderService.updatePrivateOrder(orderNo,wallet,transaction_id,payType);
-                    }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.WALLET_RECHARGE_TYPE)){
-                        //储值充值(后缀8):单事务记账+行锁加余额+写充值流水,两道幂等闸(充值当前走微信,支付宝分支为对齐三链留置)
-                        log.info(">>开始支付宝回调储值充值到账=============================================");
-                        ptMemberWalletService.walletRechargeCallback(orderNo,wallet,transaction_id,payType);
                     }else if (orderNo.substring(orderNo.length()-1).equals(ConfigConstant.INSTALLMENT_DOWN_TYPE)){
                         //分期首付独立单(后缀9,防御性):单事务记账+首付账单入账+计划推进+订单转部分支付+激活权益,幂等
                         log.info(">>开始支付宝回调分期首付到账=============================================");

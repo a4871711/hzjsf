@@ -108,9 +108,6 @@ public enum CodeAndMsg {
     ERROR_APPOINTMENT_NOT_EXIST(-96,"预约记录不存在"),
     ERROR_DAILY_LESSON_LIMIT(-97,"已达到该商品每日预约课时上限"),
     /* —— 资金域 -100 ~ -119 —— */
-    ERROR_WALLET_NOT_EXIST(-100,"储值账户不存在"),
-    ERROR_WALLET_FROZEN(-101,"储值账户已冻结"),
-    ERROR_WALLET_BALANCE_NOT_ENOUGH(-102,"储值余额不足"),
     ERROR_INSTALLMENT_PLAN_NOT_EXIST(-103,"分期计划不存在"),
     ERROR_INSTALLMENT_BILL_NOT_EXIST(-104,"分期账单不存在"),
     ERROR_INSTALLMENT_BILL_PAID(-105,"该期账单已支付"),

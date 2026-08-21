@@ -63,11 +63,6 @@
 				<view class="pay-copy"><view>微信支付 <text>推荐使用</text></view></view>
 				<view class="radio" :class="{ checked: payMethod === 1 }"><text v-if="payMethod === 1">✓</text></view>
 			</view>
-			<view class="payment-row" @click="selectPayMethod(3)">
-				<view class="pay-icon balance">储</view>
-				<view class="pay-copy"><view>储值支付 <text>余额 ¥{{ priceText(wallet.balanceAmount) }}</text></view></view>
-				<view class="radio" :class="{ checked: payMethod === 3 }"><text v-if="payMethod === 3">✓</text></view>
-			</view>
 			<view class="payment-row no-border" :class="{ disabled: !installmentAvailable }" @click="selectPayMethod(4)">
 				<view class="pay-icon installment">期</view>
 				<view class="pay-copy">
@@ -105,8 +100,7 @@
 		quotePrivateOrder,
 		createPrivateOrder,
 		confirmPrivateOrderWechatPay,
-		getUsablePrivateCoupons,
-		getPrivateWalletAccount
+		getUsablePrivateCoupons
 	} from '@/api/private-training.js'
 
 	export default {
@@ -127,7 +121,6 @@
 				coupons: [],
 				couponIndex: 0,
 				quote: {},
-				wallet: { balanceAmount: 0, status: 1 },
 				payMethod: 1,
 				loaded: false,
 				submitting: false,
@@ -185,12 +178,10 @@
 				uni.showLoading({ title: '加载中' });
 				Promise.all([
 					getPrivateProductDetail({ id: this.productId }),
-					getPrivateProductStores({ id: this.productId }),
-					getPrivateWalletAccount().catch(() => ({ data: { balanceAmount: 0, status: 0 } }))
+					getPrivateProductStores({ id: this.productId })
 				]).then((values) => {
 					this.product = values[0].data || {};
 					this.stores = values[1].data || [];
-					this.wallet = values[2].data || { balanceAmount: 0, status: 1 };
 					const preferred = String(this.preferredStoreId || '');
 					const index = this.stores.findIndex((item) => String(item.storeId) === preferred);
 					this.storeIndex = index >= 0 ? index : 0;
@@ -289,16 +280,6 @@
 			},
 			submitOrder() {
 				if (this.submitting) return;
-				if (this.payMethod === 3) {
-					if (Number(this.wallet.status) !== 1) {
-						this.config.Toast('储值账户当前不可用');
-						return;
-					}
-					if (Number(this.wallet.balanceAmount || 0) < Number(this.payableAmount || 0)) {
-						this.config.Toast('储值余额不足，请先充值或选择其他支付方式');
-						return;
-					}
-				}
 				if (this.payMethod === 4 && !this.installmentAvailable) {
 					this.config.Toast('当前商品不支持分期付款');
 					return;

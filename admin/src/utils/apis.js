@@ -1800,58 +1800,6 @@ export default {
 	},
 
 	// ===== 资金域 =====
-	// 会员储值账户-列表+统计
-	wallet_list(data) {
-		return $http({
-			url: $http.adornUrl('/sys/wallet/list'),
-			method: 'get',
-			params: $http.adornParams({ ...data })
-		});
-	},
-	// 会员储值账户-详情({id})
-	wallet_info(data) {
-		return $http({
-			url: $http.adornUrl(`/sys/wallet/info/${data.id}`),
-			method: 'get',
-			params: $http.adornParams({})
-		});
-	},
-	// 会员储值账户-后台人工充值({memberId,amount,remark?})
-	wallet_recharge(data) {
-		return $http({
-			url: $http.adornUrl('/sys/wallet/recharge'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
-		});
-	},
-	// 会员储值账户-冻结({memberId})
-	wallet_freeze(data) {
-		return $http({
-			url: $http.adornUrl('/sys/wallet/freeze'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
-		});
-	},
-	// 会员储值账户-解冻({memberId})
-	wallet_unfreeze(data) {
-		return $http({
-			url: $http.adornUrl('/sys/wallet/unfreeze'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
-		});
-	},
-	// 会员储值流水-列表(只读)
-	wallet_flowList(data) {
-		return $http({
-			url: $http.adornUrl('/sys/wallet/flowList'),
-			method: 'get',
-			params: $http.adornParams({ ...data })
-		});
-	},
-
 	// 私教分期计划-列表
 	installment_list(data) {
 		return $http({

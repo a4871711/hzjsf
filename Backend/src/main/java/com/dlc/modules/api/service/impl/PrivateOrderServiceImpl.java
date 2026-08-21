@@ -23,7 +23,6 @@ import com.dlc.modules.api.service.MkCouponService;
 import com.dlc.modules.api.service.PayService;
 import com.dlc.modules.api.service.PrivateOrderService;
 import com.dlc.modules.api.service.PtInstallmentService;
-import com.dlc.modules.api.service.PtMemberWalletService;
 import com.dlc.modules.api.service.WxPayService;
 import com.dlc.modules.api.vo.UserInfoVo;
 import com.dlc.modules.sys.entity.PtCoachFeeRuleEntity;
@@ -83,8 +82,6 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
     @Autowired
     private MemberPrivateBenefitService memberPrivateBenefitService;
     @Autowired
-    private PtMemberWalletService ptMemberWalletService;
-    @Autowired
     private MkCouponService mkCouponService;
     @Autowired
     private PtInstallmentService ptInstallmentService;
@@ -111,7 +108,7 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
                                       Long memberCouponId, Integer marketingType, Long marketingActivityId,
                                       HttpServletRequest request) {
         int selectedPayMethod = payMethod == null ? 1 : payMethod;
-        if (selectedPayMethod != 1 && selectedPayMethod != 3 && selectedPayMethod != 4) {
+        if (selectedPayMethod != 1 && selectedPayMethod != 4) {
             throw new RRException("不支持的支付方式");
         }
         // 1. 校验 + 金额重算(与 quote 完全同一口径,不信前端金额)
@@ -157,15 +154,7 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         result.put("payableAmount", priced.payableAmount);
         result.put("payMethod", selectedPayMethod);
 
-        // 4a. 储值支付不经过第三方收银台；余额扣减与订单结算在同一事务内完成。
-        if (selectedPayMethod == 3) {
-            updatePrivateOrder(order.getOrderNo(), priced.payableAmount, null, ConfigConstant.BLPAY);
-            result.put("paymentAmount", priced.payableAmount);
-            result.put("paid", true);
-            return result;
-        }
-
-        // 4b. 微信支付全款；分期支付仅收商品配置的首付款，回调后生成分期计划。
+        // 4. 微信支付全款；分期支付仅收商品配置的首付款，回调后生成分期计划。
         BigDecimal paymentAmount = selectedPayMethod == 4
                 ? (BigDecimal) installmentOption.get("installmentDownPaymentAmount")
                 : priced.payableAmount;
@@ -416,16 +405,7 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         }
 
         int payMethod = order.getPayMethod() == null ? 1 : order.getPayMethod();
-        if (payMethod == 3) {
-            // 储值支付(第19步接线):同事务先扣余额+写消费流水(资金侧),再 fall through 复用下方一次性结算
-            // (扣库存/券核销/结清/建权益),不写第二套结算口径。余额不足由 payByWallet 抛 -102 整单回滚。
-            // 储值不下微信单,故无 transaction_id;金额以订单应付快照为准,收支方式记 BLPAY(余额支付)。
-            ptMemberWalletService.payByWallet(orderNo, order.getId(), order.getMemberId(), order.getPayableAmount());
-            wallet = order.getPayableAmount();
-            transactionId = null;
-            payType = ConfigConstant.BLPAY;
-            // 不 return:继续走下方一次性结算块(记账后缀b→用途14、扣库存、券核销、settleOrder、建权益)
-        } else if (payMethod == 4) {
+        if (payMethod == 4) {
             // 分期支付(第20步接线):首付款已随主单(后缀b)到账,此刻在同事务内生成分期计划+全量账单,
             // 首付期直接入账、首付激活全部课时,订单转"首付已付(order_status=1)/部分支付(pay_status=1)"。
             // 记账放在闸1之后同事务(重复回调闸1已挡);后续期由 payBill→installmentBillCallback(后缀a)逐期入账。
@@ -538,8 +518,8 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             // 计划置已关闭、权益冲减),按详细文档§9一期留桩不接;后续单独接 installmentService.refund。
             throw new RRException("分期支付退款通道未接入,暂不支持退款");
         }
-        if (payMethod != 1 && payMethod != 3) {
-            // 支持:1微信(原路微信退)、3储值(原路回储值余额,第19步接线);支付宝(2)/其他(9)通道接入后在此扩展
+        if (payMethod != 1) {
+            // 仅支持微信原路退款；已下线的储值支付及支付宝/其他通道不再接入。
             throw new RRException("该支付方式退款通道未接入,暂不支持退款");
         }
         BigDecimal paid = scale(order.getPaidAmount());
@@ -569,21 +549,12 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             throw new RRException(CodeAndMsg.ERROR_PT_ORDER_STATUS);
         }
 
-        // 5. 退款流水:口径对齐 VIP 转让退款(payType=9,金额存正数,正负号由前台 moneyType CASE 决定);
-        //    收支方式按原支付渠道:微信→WXPAY,储值→BLPAY(余额支付)
-        int refundTradeType = payMethod == 3 ? ConfigConstant.BLPAY : ConfigConstant.WXPAY;
+        // 5. 退款流水:口径对齐 VIP 转让退款(payType=9,金额存正数,正负号由前台 moneyType CASE 决定)。
+        int refundTradeType = ConfigConstant.WXPAY;
         incomePayDetailService.savePtOrderRefund(order.getOrderNo(), amount,
                 order.getMemberId(), order.getStoreId(), refundTradeType);
 
         // 6. 渠道退款放事务末:受理失败抛异常,账本/订单/流水整体回滚可重试。
-        if (payMethod == 3) {
-            // 储值支付原路回退(第19步接线):同事务 changeBalance(+退款额,flowType=3退款)回补余额,
-            // 不冲减 total_consume(口径=历史发生额);out_order_no=R+订单号做幂等,不下微信单
-            ptMemberWalletService.walletRefund(order.getMemberId(), amount, order.getOrderNo(), orderId, operatorId);
-            log.info("私教订单储值退款受理成功 orderNo={},amount={},lessons={},operatorId={}",
-                    order.getOrderNo(), amount, lessons, operatorId);
-            return;
-        }
         //    微信原路退:out_refund_no=订单号R+累计退款分:同金额重试幂等(微信同退款单号只退一笔),且支持一单多次部分退款
         Map<String, Object> refundParams = new HashMap<String, Object>();
         refundParams.put("orderNo", order.getOrderNo());

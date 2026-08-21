@@ -57,8 +57,6 @@ public class WxPayController extends BaseController {
     @Autowired
     private PrivateOrderService privateOrderService;
     @Autowired
-    private PtMemberWalletService ptMemberWalletService;
-    @Autowired
     private PtInstallmentService ptInstallmentService;
     @Autowired
     private CardPauseService cardPauseService;
@@ -502,9 +500,6 @@ public class WxPayController extends BaseController {
                 // 私教购买必须先于兜底分支；金额校验、库存、券和权益均由单事务 Service 完成。
                 log.info("-------更新私教商品购买订单(小程序回调)=========" );
                 privateOrderService.updatePrivateOrder(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
-            } else if (ConfigConstant.WALLET_RECHARGE_TYPE.equals(orderType)) {
-                log.info("-------储值充值到账(小程序回调)=========" );
-                ptMemberWalletService.walletRechargeCallback(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
             } else if (ConfigConstant.INSTALLMENT_DOWN_TYPE.equals(orderType)) {
                 log.info("-------分期首付到账(小程序回调)=========" );
                 ptInstallmentService.installmentDownCallback(orderNo, wallet, transactionId, ConfigConstant.WXPAY);
