@@ -390,16 +390,6 @@
                 <el-date-picker v-model="form.unlistingAt" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="选填，到点自动下架" style="width:100%;" />
               </el-form-item>
             </el-col>
-            <el-col :span="12">
-              <el-form-item label="私教入口推荐">
-                <el-switch v-model="form.recommendPrivate" :active-value="1" :inactive-value="0" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="首页推荐">
-                <el-switch v-model="form.recommendHome" :active-value="1" :inactive-value="0" />
-              </el-form-item>
-            </el-col>
           </el-row>
         </el-form>
 
@@ -630,9 +620,7 @@ export default {
         listingStatus: 0,
         listingAt: '',
         unlistingAt: '',
-        sortNo: 0,
-        recommendPrivate: 0,
-        recommendHome: 0
+        sortNo: 0
       }
     },
     // ===== 列表展示辅助 =====

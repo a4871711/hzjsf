@@ -67,10 +67,6 @@ public class PtProductEntity implements Serializable {
     private Long updatedBy;
     private Date updatedAt;
     private Integer deleted;
-    /** 是否私教入口推荐：0否 1是 */
-    private Integer recommendPrivate;
-    /** 是否首页推荐：0否 1是 */
-    private Integer recommendHome;
 
     /* ============ 非持久字段：一次性提交/展示用 ============ */
     /** 适用门店ID集合 */
@@ -224,12 +220,6 @@ public class PtProductEntity implements Serializable {
 
     public Integer getDeleted() { return deleted; }
     public void setDeleted(Integer deleted) { this.deleted = deleted; }
-
-    public Integer getRecommendPrivate() { return recommendPrivate; }
-    public void setRecommendPrivate(Integer recommendPrivate) { this.recommendPrivate = recommendPrivate; }
-
-    public Integer getRecommendHome() { return recommendHome; }
-    public void setRecommendHome(Integer recommendHome) { this.recommendHome = recommendHome; }
 
     public List<Long> getStoreIds() { return storeIds; }
     public void setStoreIds(List<Long> storeIds) { this.storeIds = storeIds; }

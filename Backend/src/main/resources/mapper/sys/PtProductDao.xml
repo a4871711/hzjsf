@@ -107,7 +107,6 @@
          `booking_gap_minutes`, `booking_capacity`, `daily_lesson_limit`, `latest_booking_hours`, `latest_free_cancel_hours`,
          `no_show_deduct`, `coach_confirm_required`,
          `listing_status`, `listing_at`, `unlisting_at`, `sort_no`,
-         `recommend_private`, `recommend_home`,
          `created_by`, `created_at`, `updated_by`, `updated_at`)
         values
         (#{productNo}, #{productName}, #{productSubtitle}, #{productTypeId}, #{serviceType},
@@ -118,7 +117,6 @@
          #{bookingGapMinutes}, #{bookingCapacity}, #{dailyLessonLimit}, #{latestBookingHours}, #{latestFreeCancelHours},
          #{noShowDeduct}, #{coachConfirmRequired},
          #{listingStatus}, #{listingAt}, #{unlistingAt}, #{sortNo},
-         #{recommendPrivate}, #{recommendHome},
          #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
     </insert>
 
@@ -158,8 +156,6 @@
             <if test="listingAt != null">`listing_at` = #{listingAt},</if>
             <if test="unlistingAt != null">`unlisting_at` = #{unlistingAt},</if>
             <if test="sortNo != null">`sort_no` = #{sortNo},</if>
-            <if test="recommendPrivate != null">`recommend_private` = #{recommendPrivate},</if>
-            <if test="recommendHome != null">`recommend_home` = #{recommendHome},</if>
             <if test="updatedBy != null">`updated_by` = #{updatedBy},</if>
             <if test="updatedAt != null">`updated_at` = #{updatedAt},</if>
         </set>

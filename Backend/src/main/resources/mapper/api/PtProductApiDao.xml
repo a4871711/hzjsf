@@ -12,7 +12,7 @@
         p.listing_at,
         p.booking_gap_minutes, p.booking_capacity, p.daily_lesson_limit,
         p.latest_booking_hours, p.latest_free_cancel_hours,
-        p.no_show_deduct, p.coach_confirm_required, p.sort_no, p.recommend_private, p.recommend_home,
+        p.no_show_deduct, p.coach_confirm_required, p.sort_no,
         (select is_enabled from pt_installment_rule where product_id = p.id) as installmentEnabled,
         (select is_enabled from pt_product_group_benefit where product_id = p.id) as groupBenefitEnabled,
         (select gift_count from pt_product_group_benefit where product_id = p.id) as groupBenefitGiftCount,

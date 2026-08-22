@@ -260,8 +260,6 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         copy.setCoachConfirmRequired(src.getCoachConfirmRequired());
         copy.setListingStatus(0);
         copy.setSortNo(src.getSortNo());
-        copy.setRecommendPrivate(src.getRecommendPrivate());
-        copy.setRecommendHome(src.getRecommendHome());
         copy.setCreatedBy(src.getUpdatedBy());
         copy.setUpdatedBy(src.getUpdatedBy());
         copy.setCreatedAt(now);
@@ -513,8 +511,6 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (e.getSoldCount() == null) { e.setSoldCount(0); }
         if (e.getListingStatus() == null) { e.setListingStatus(0); }
         if (e.getSortNo() == null) { e.setSortNo(0); }
-        if (e.getRecommendPrivate() == null) { e.setRecommendPrivate(0); }
-        if (e.getRecommendHome() == null) { e.setRecommendHome(0); }
         if (e.getRefundType() == null) { e.setRefundType(2); }
         if (e.getBookingGapMinutes() == null) { e.setBookingGapMinutes(0); }
         if (e.getDailyLessonLimit() == null) { e.setDailyLessonLimit(1); }

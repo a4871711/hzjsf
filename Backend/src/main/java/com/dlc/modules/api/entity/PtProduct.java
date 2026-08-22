@@ -56,8 +56,6 @@ public class PtProduct implements Serializable {
     private Integer noShowDeduct;
     private Integer coachConfirmRequired;
     private Integer sortNo;
-    private Integer recommendPrivate;
-    private Integer recommendHome;
     /** 是否支持分期：0否 1是 */
     private Integer installmentEnabled;
     /** 是否赠送团课权益：0否 1是 */
@@ -169,12 +167,6 @@ public class PtProduct implements Serializable {
 
     public Integer getSortNo() { return sortNo; }
     public void setSortNo(Integer sortNo) { this.sortNo = sortNo; }
-
-    public Integer getRecommendPrivate() { return recommendPrivate; }
-    public void setRecommendPrivate(Integer recommendPrivate) { this.recommendPrivate = recommendPrivate; }
-
-    public Integer getRecommendHome() { return recommendHome; }
-    public void setRecommendHome(Integer recommendHome) { this.recommendHome = recommendHome; }
 
     public Integer getInstallmentEnabled() { return installmentEnabled; }
     public void setInstallmentEnabled(Integer installmentEnabled) { this.installmentEnabled = installmentEnabled; }
