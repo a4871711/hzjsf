@@ -1449,7 +1449,7 @@ export default {
 	},
 
 	// ===== 交易域 =====
-	// 私教购买记录-列表(只读)
+	// 私教购买记录-列表
 	privateOrder_list(data) {
 		return $http({
 			url: $http.adornUrl('/sys/privateOrder/list'),
@@ -1472,6 +1472,48 @@ export default {
 			url: $http.adornUrl(`/sys/privateOrder/info/${data.id}`),
 			method: 'get',
 			params: $http.adornParams({})
+		});
+	},
+	// 私教购买记录-后台建单会员候选
+	privateOrder_memberOptions(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateOrder/memberOptions'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+	// 私教购买记录-后台建单商品候选
+	privateOrder_productOptions(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateOrder/productOptions'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+	// 私教购买记录-后台建单教练候选
+	privateOrder_coachOptions(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateOrder/coachOptions'),
+			method: 'get',
+			params: $http.adornParams({ ...data })
+		});
+	},
+	// 私教购买记录-后台手工新增已结清订单
+	privateOrder_save(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateOrder/save'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({ ...data }, false, 'json')
+		});
+	},
+	// 私教购买记录-永久删除订单及本地关联数据
+	privateOrder_delete(data) {
+		return $http({
+			url: $http.adornUrl('/sys/privateOrder/delete'),
+			method: 'post',
+			contentType: 'json',
+			data: $http.adornData({ ...data }, false, 'json')
 		});
 	},
 	// 私教购买记录-退款({orderId,refundAmount,refundLessons?,remark?})
@@ -2016,93 +2058,6 @@ export default {
 			url: $http.adornUrl('/sys/exceptionWarning/stat'),
 			method: 'get',
 			params: $http.adornParams({ ...data })
-		});
-	},
-
-	// 团课转私教规则-列表
-	groupToPrivate_ruleList(data) {
-		return $http({
-			url: $http.adornUrl('/sys/groupToPrivate/ruleList'),
-			method: 'get',
-			params: $http.adornParams({ ...data })
-		});
-	},
-	// 团课转私教规则-详情({id})
-	groupToPrivate_ruleInfo(data) {
-		return $http({
-			url: $http.adornUrl(`/sys/groupToPrivate/ruleInfo/${data.id}`),
-			method: 'get',
-			params: $http.adornParams({})
-		});
-	},
-	// 团课转私教规则-新增
-	groupToPrivate_ruleSave(data) {
-		return $http({
-			url: $http.adornUrl('/sys/groupToPrivate/ruleSave'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
-		});
-	},
-	// 团课转私教规则-修改
-	groupToPrivate_ruleUpdate(data) {
-		return $http({
-			url: $http.adornUrl('/sys/groupToPrivate/ruleUpdate'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
-		});
-	},
-	// 团课转私教规则-删除(ids 数组)
-	groupToPrivate_ruleDelete(data) {
-		return $http({
-			url: $http.adornUrl('/sys/groupToPrivate/ruleDelete'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData(data, false, 'json')
-		});
-	},
-	// 团课转私教名单-列表
-	groupToPrivate_leadList(data) {
-		return $http({
-			url: $http.adornUrl('/sys/groupToPrivate/leadList'),
-			method: 'get',
-			params: $http.adornParams({ ...data })
-		});
-	},
-	// 团课转私教名单-详情({id})
-	groupToPrivate_leadInfo(data) {
-		return $http({
-			url: $http.adornUrl(`/sys/groupToPrivate/leadInfo/${data.id}`),
-			method: 'get',
-			params: $http.adornParams({})
-		});
-	},
-	// 团课转私教名单-发券({leadId,couponId})
-	groupToPrivate_sendCoupon(data) {
-		return $http({
-			url: $http.adornUrl('/sys/groupToPrivate/sendCoupon'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
-		});
-	},
-	// 团课转私教名单-跟进({leadId,followStatus,followRemark})
-	groupToPrivate_follow(data) {
-		return $http({
-			url: $http.adornUrl('/sys/groupToPrivate/follow'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
-		});
-	},
-	// 团课转私教名单-标记已转化({leadId})
-	groupToPrivate_markConverted(data) {
-		return $http({
-			url: $http.adornUrl('/sys/groupToPrivate/markConverted'),
-			method: 'post',
-			contentType: 'json',
-			data: $http.adornData({ ...data }, false, 'json')
 		});
 	},
 

@@ -1,5 +1,7 @@
 package com.dlc.modules.sys.dao;
 
+import com.dlc.modules.api.entity.PtPrivateOrderEntity;
+import com.dlc.modules.api.entity.PtProduct;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -8,9 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 私教购买记录后台 Dao(pt_private_order 只读查询,第15步)。
- * 退款写操作不在本 Dao:委托 api 侧 PrivateOrderService.refund(见 PtPrivateOrderDao)。
- * 对应 mapper/sys/SysPrivateOrderDao.xml(sys 目录热刷新,改 XML 免重启)。
+ * 私教购买记录后台 Dao。查询、后台手工建单及关联数据删除均在此收口。
+ * 退款仍委托 api 侧 PrivateOrderService.refund。
  *
  * @author claude
  */
@@ -31,4 +32,70 @@ public interface SysPrivateOrderDao {
 
     /** 门店范围内订单判存(退款前越权校验):0=不存在或不在管辖门店 → 404 */
     int countInScope(@Param("id") Long id, @Param("storeIds") String storeIds);
+
+    List<Map<String, Object>> queryMemberOptions(@Param("keyword") String keyword,
+                                                 @Param("storeIds") String storeIds);
+
+    List<Map<String, Object>> queryProductOptions(@Param("keyword") String keyword,
+                                                  @Param("storeId") Long storeId,
+                                                  @Param("storeIds") String storeIds);
+
+    List<Map<String, Object>> queryCoachOptions(@Param("keyword") String keyword,
+                                                @Param("productId") Long productId,
+                                                @Param("storeId") Long storeId,
+                                                @Param("storeIds") String storeIds);
+
+    Map<String, Object> queryMemberSnapshot(@Param("memberId") Long memberId,
+                                            @Param("storeIds") String storeIds);
+
+    PtProduct queryProductSnapshot(@Param("productId") Long productId,
+                                   @Param("storeId") Long storeId,
+                                   @Param("storeIds") String storeIds);
+
+    Long querySingleCoachId(@Param("productId") Long productId,
+                            @Param("storeId") Long storeId);
+
+    int countAvailableCoach(@Param("coachId") Long coachId,
+                            @Param("productId") Long productId,
+                            @Param("storeId") Long storeId);
+
+    int saveManualOrder(PtPrivateOrderEntity entity);
+
+    /** 锁内读取删除目标；门店越权与不存在统一返回 null。 */
+    PtPrivateOrderEntity queryOrderForDelete(@Param("id") Long id,
+                                             @Param("storeIds") String storeIds);
+
+    /** 锁定来源订单下的全部赠课子订单，删除来源订单时先清子订单。 */
+    List<PtPrivateOrderEntity> queryGiftOrdersForDelete(@Param("sourceOrderId") Long sourceOrderId);
+
+    int restoreSourceBenefitLessons(@Param("benefitId") Long benefitId,
+                                    @Param("lessonCount") Integer lessonCount);
+
+    int deleteAppointments(@Param("orderId") Long orderId);
+
+    int deleteCoachTradeDetails(@Param("orderNo") String orderNo);
+
+    int deleteMemberGroupBenefitFlows(@Param("orderId") Long orderId);
+
+    int deleteMemberGroupBenefits(@Param("orderId") Long orderId);
+
+    int restoreMemberCoupon(@Param("orderId") Long orderId);
+
+    int deleteCouponRel(@Param("orderId") Long orderId);
+
+    int deleteIncomeDetails(@Param("orderId") Long orderId, @Param("orderNo") String orderNo);
+
+    int deleteInstallmentBills(@Param("orderId") Long orderId);
+
+    int deleteInstallmentPlan(@Param("orderId") Long orderId);
+
+    int deletePrivateBenefit(@Param("orderId") Long orderId);
+
+    int decreaseProductSoldCount(@Param("productId") Long productId);
+
+    int decreaseGroupBuySoldCount(@Param("activityId") Long activityId);
+
+    int decreaseFlashSaleSoldCount(@Param("activityId") Long activityId);
+
+    int deleteOrder(@Param("id") Long id);
 }

@@ -27,9 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 私教购买记录(pt_private_order,第15步)。路径 /sys/privateOrder。
- * 后台不手工建/删订单:无 save/update/delete,仅列表/详情/退款。
- * 门店隔离:storeIds 为空(超管)不过滤;越权详情/退款一律按 404 处理,不暴露他店单据存在性。
+ * 私教购买记录后台接口。支持列表、详情、退款、手工建单和关联数据永久删除。
+ * 门店隔离统一使用 store_address.storeAddrId；越权操作不暴露其他门店单据。
  *
  * @author claude
  */
@@ -44,7 +43,7 @@ public class SysPrivateOrderController extends AbstractController {
     @RequiresPermissions("sys:privateOrder:list")
     public R list(@RequestParam Map<String, Object> params) {
         // 门店数据隔离:非超管按所属门店过滤(超管 storeIds 为空则不过滤)
-        params.put("storeIds", ShiroUtils.getUserEntity().getStoreIds());
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
         Query query = new Query(params);
         List<Map<String, Object>> list = sysPrivateOrderService.queryList(query);
         int total = sysPrivateOrderService.queryTotal(query);
@@ -59,7 +58,7 @@ public class SysPrivateOrderController extends AbstractController {
     @RequestMapping("/export")
     @RequiresPermissions("sys:privateOrder:list")
     public void export(@RequestParam Map<String, Object> params, HttpServletResponse response) {
-        params.put("storeIds", ShiroUtils.getUserEntity().getStoreIds());
+        params.put("storeIds", ShiroUtils.getUserEntity().getStoreAddrIds());
         prepareExportParams(params);
 
         List<Map<String, Object>> list = sysPrivateOrderService.queryList(params);
@@ -202,12 +201,70 @@ public class SysPrivateOrderController extends AbstractController {
     @RequiresPermissions("sys:privateOrder:info")
     public R info(@PathVariable("id") Long id) {
         Map<String, Object> entity = sysPrivateOrderService.queryDetail(id,
-                ShiroUtils.getUserEntity().getStoreIds());
+                ShiroUtils.getUserEntity().getStoreAddrIds());
         if (entity == null) {
             // 不存在或不在管辖门店范围:统一 404,不区分两种情况
             return R.error(404, "订单不存在");
         }
         return R.ok().put("entity", entity);
+    }
+
+    /** 后台建单会员候选：必须输入姓名、手机号或ID，避免一次返回全部会员。 */
+    @RequestMapping("/memberOptions")
+    @RequiresPermissions("sys:privateOrder:save")
+    public R memberOptions(@RequestParam(value = "keyword", required = false) String keyword) {
+        String value = trim(keyword);
+        if (value == null) {
+            return R.ok().put("list", java.util.Collections.emptyList());
+        }
+        return R.ok().put("list", sysPrivateOrderService.queryMemberOptions(
+                value, ShiroUtils.getUserEntity().getStoreAddrIds()));
+    }
+
+    /** 后台建单商品候选：按所选购买门店校验商品适用范围。 */
+    @RequestMapping("/productOptions")
+    @RequiresPermissions("sys:privateOrder:save")
+    public R productOptions(@RequestParam("storeId") Long storeId,
+                            @RequestParam(value = "keyword", required = false) String keyword) {
+        return R.ok().put("list", sysPrivateOrderService.queryProductOptions(
+                trim(keyword), storeId, ShiroUtils.getUserEntity().getStoreAddrIds()));
+    }
+
+    /** 后台建单销售教练候选：只返回商品、门店均匹配的正常教练。 */
+    @RequestMapping("/coachOptions")
+    @RequiresPermissions("sys:privateOrder:save")
+    public R coachOptions(@RequestParam("productId") Long productId,
+                          @RequestParam("storeId") Long storeId,
+                          @RequestParam(value = "keyword", required = false) String keyword) {
+        return R.ok().put("list", sysPrivateOrderService.queryCoachOptions(
+                trim(keyword), productId, storeId, ShiroUtils.getUserEntity().getStoreAddrIds()));
+    }
+
+    /** 后台手工新增已结清购买记录，并同步创建本地权益与交易关联数据。 */
+    @RequestMapping("/save")
+    @RequiresPermissions("sys:privateOrder:save")
+    public R save(@RequestBody Map<String, Object> params) {
+        String orderNo = sysPrivateOrderService.createManual(params, getUserId(),
+                ShiroUtils.getUserEntity().getStoreAddrIds());
+        return R.ok().put("orderNo", orderNo);
+    }
+
+    /**
+     * 永久删除订单及可定位的本地关联数据。
+     * 前端必须回传人工输入的订单号，Service 在订单行锁内再次严格比对。
+     */
+    @RequestMapping("/delete")
+    @RequiresPermissions("sys:privateOrder:delete")
+    public R delete(@RequestBody Map<String, Object> params) {
+        Long orderId = parseLong(params.get("orderId"));
+        String confirmOrderNo = params.get("confirmOrderNo") == null
+                ? null : params.get("confirmOrderNo").toString();
+        if (orderId == null || confirmOrderNo == null || confirmOrderNo.trim().isEmpty()) {
+            return R.error("缺少参数:orderId/confirmOrderNo");
+        }
+        sysPrivateOrderService.deleteCascade(orderId, confirmOrderNo, getUserId(),
+                ShiroUtils.getUserEntity().getStoreAddrIds());
+        return R.ok();
     }
 
     /**
@@ -230,11 +287,30 @@ public class SysPrivateOrderController extends AbstractController {
                 ? null : Integer.valueOf(params.get("refundLessons").toString());
         String remark = params.get("remark") == null ? null : params.get("remark").toString();
         // 越权校验:订单必须在管辖门店范围内,否则按不存在处理
-        if (!sysPrivateOrderService.existsInScope(orderId, ShiroUtils.getUserEntity().getStoreIds())) {
+        if (!sysPrivateOrderService.existsInScope(orderId, ShiroUtils.getUserEntity().getStoreAddrIds())) {
             return R.error(404, "订单不存在");
         }
         sysPrivateOrderService.refund(orderId, refundAmount, refundLessons, remark, getUserId());
         return R.ok();
+    }
+
+    private static String trim(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private static Long parseLong(Object value) {
+        if (value == null || value.toString().trim().isEmpty()) {
+            return null;
+        }
+        try {
+            long result = Long.parseLong(value.toString().trim());
+            return result > 0 ? result : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private void writeWorkbook(HttpServletResponse response, String fileName, XSSFWorkbook workbook) {

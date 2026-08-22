@@ -2,7 +2,7 @@
   <div>
     <div class="page-head">
       <h2 class="page-title">购买记录</h2>
-      <p class="page-sub">私教商品购买订单查看与退款（后台不手工建/删订单，仅查看+退款）</p>
+      <p class="page-sub">私教商品购买订单查看、后台手工新增、退款与关联数据删除</p>
     </div>
     <r-search ref="search" :searchData="searchData" :searchForm="searchForm" :searchHandle="searchHandle" />
     <r-table
@@ -15,6 +15,107 @@
       :loading="tableLoading"
       @refresh="page()" />
 
+    <!-- 后台手工建单：直接生成已结清订单，不发起第三方支付。 -->
+    <el-dialog title="新增购买记录" :visible.sync="createVisible" width="620px" :append-to-body="true">
+      <el-alert
+        title="该操作会直接生成已结清订单，并同步创建私教权益、销量、收支和提成等本地数据。"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="create-alert" />
+      <el-form ref="createForm" :model="createForm" :rules="createRules" label-width="110px" size="medium">
+        <el-form-item label="会员" prop="memberId">
+          <el-select
+            v-model="createForm.memberId"
+            filterable
+            remote
+            clearable
+            :remote-method="searchCreateMembers"
+            :loading="memberLoading"
+            placeholder="输入会员姓名、手机号或ID"
+            style="width:420px">
+            <el-option
+              v-for="item in memberOptions"
+              :key="item.id"
+              :label="(item.name || '未命名') + '（' + (item.mobile || '无手机号') + '）'"
+              :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="购买门店" prop="storeId">
+          <el-select
+            v-model="createForm.storeId"
+            filterable
+            clearable
+            placeholder="请选择购买门店"
+            style="width:420px"
+            @change="onCreateStoreChange">
+            <el-option v-for="item in storeOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="私教商品" prop="productId">
+          <el-select
+            v-model="createForm.productId"
+            filterable
+            remote
+            clearable
+            :disabled="!createForm.storeId"
+            :remote-method="searchCreateProducts"
+            :loading="productLoading"
+            placeholder="请先选择门店，再输入商品名称或ID"
+            style="width:420px"
+            @change="onCreateProductChange"
+            @visible-change="onCreateProductVisible">
+            <el-option
+              v-for="item in productOptions"
+              :key="item.id"
+              :label="item.productName + '（' + item.lessonCount + '课时，¥' + item.salePrice + '）'"
+              :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="销售教练">
+          <el-select
+            v-model="createForm.coachId"
+            filterable
+            remote
+            clearable
+            :disabled="!createForm.productId"
+            :remote-method="searchCreateCoaches"
+            :loading="coachLoading"
+            placeholder="选填；商品仅绑定一名可用教练时自动归属"
+            style="width:420px"
+            @visible-change="onCreateCoachVisible">
+            <el-option
+              v-for="item in coachOptions"
+              :key="item.id"
+              :label="item.coachName + (item.mobile ? '（' + item.mobile + '）' : '')"
+              :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="实付金额" prop="paidAmount">
+          <el-input v-model="createForm.paidAmount" placeholder="0至99999999.99，最多两位小数" style="width:420px">
+            <template slot="prepend">¥</template>
+          </el-input>
+        </el-form-item>
+        <el-form-item label="支付方式">
+          <el-input value="其他（后台录入，直接结清）" disabled style="width:420px" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input
+            v-model="createForm.remark"
+            type="textarea"
+            :rows="3"
+            maxlength="247"
+            show-word-limit
+            placeholder="选填，将自动标记为后台手工新增"
+            style="width:420px" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" :loading="createLoading" @click="submitCreate">确认新增</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 订单详情抽屉:双列字段 + 权益课时 + 券快照 -->
     <el-drawer title="订单详情" :visible.sync="detailVisible" size="640px" :append-to-body="true">
       <div class="detail-wrap" v-if="detail">
@@ -22,6 +123,10 @@
         <el-row class="detail-row">
           <el-col :span="12"><span class="lab">订单编号</span>{{ detail.orderNo || '—' }}</el-col>
           <el-col :span="12"><span class="lab">订单状态</span><span v-html="orderStatusTag(detail.orderStatus)"></span></el-col>
+        </el-row>
+        <el-row class="detail-row">
+          <el-col :span="12"><span class="lab">订单来源</span>{{ sourceText(detail.orderSource) }}</el-col>
+          <el-col :span="12"><span class="lab">备注</span>{{ detail.remark || '—' }}</el-col>
         </el-row>
         <el-row class="detail-row">
           <el-col :span="12"><span class="lab">会员</span>{{ detail.memberName || '—' }}</el-col>
@@ -156,11 +261,13 @@ export default {
       searchHandle: [
         // 搜索时重置回第 1 页,避免翻页后再加筛选停在越界空页
         { label: "搜索", type: "primary", handle: e => { this.pagination.offset = 1; this.getData(); } },
+        { label: "新增购买", type: "success", icon: "el-icon-plus", isShow: () => this.checkBtn('sys:privateOrder:save'), handle: e => this.openCreate() },
         { label: "导出", type: "primary", icon: "el-icon-download", handle: e => this.exportData() },
       ],
       tableData: [],
       tableCols: [
         { label: "订单编号", prop: "orderNo", width: 180 },
+        { label: "订单来源", prop: "orderSource", width: 90, formatter: e => this.sourceText(e.orderSource) },
         { label: "会员", prop: "memberName", formatter: e => (e.memberName || '') + ' ' + (e.memberMobile || '') },
         { label: "购买商品", prop: "productName" },
         { label: "服务类型", prop: "serviceType", width: 90, formatter: e => this.serviceTypeText(e.serviceType) },
@@ -176,7 +283,7 @@ export default {
         {
           label: "操作",
           type: "button",
-          width: 150,
+          width: 220,
           fixed: "right",
           btnList: [
             { label: "详情", type: "primary", size: "mini", handle: (row) => this.openDetail(row) },
@@ -184,10 +291,18 @@ export default {
               label: "退款",
               type: "danger",
               size: "mini",
-              isShow: () => this.checkBtn('sys:privateOrder:refund'),
+              isShow: (row) => this.checkBtn('sys:privateOrder:refund') && Number(row.orderSource) !== 1,
               // 仅 首付已付(1)/已结清(2) 可退;已退款/已取消/待支付禁用
               disabled: (row) => row.orderStatus != 1 && row.orderStatus != 2,
               handle: (row) => this.openRefund(row)
+            },
+            {
+              label: "删除",
+              type: "danger",
+              size: "mini",
+              isShow: () => this.checkBtn('sys:privateOrder:delete'),
+              disabled: (row) => this.deletingId === row.id,
+              handle: (row) => this.deleteOrder(row)
             },
           ]
         },
@@ -199,13 +314,41 @@ export default {
       refundRow: null,
       refundLoading: false,
       refundForm: { refundAmount: '', refundLessons: '', remark: '' },
+      createVisible: false,
+      createLoading: false,
+      memberLoading: false,
+      productLoading: false,
+      coachLoading: false,
+      memberOptions: [],
+      productOptions: [],
+      coachOptions: [],
+      storeOptions: [],
+      deletingId: null,
+      createForm: {
+        memberId: '',
+        storeId: '',
+        productId: '',
+        coachId: '',
+        paidAmount: '',
+        remark: ''
+      },
+      createRules: {
+        memberId: [{ required: true, message: '请选择会员', trigger: 'change' }],
+        storeId: [{ required: true, message: '请选择购买门店', trigger: 'change' }],
+        productId: [{ required: true, message: '请选择私教商品', trigger: 'change' }],
+        paidAmount: [{ required: true, message: '请输入实付金额', trigger: 'blur' }]
+      },
     };
   },
   computed: {
-    // 本单还可退金额 = 已付 - 已退
+    // 本单还可退金额 = 已付 - 已退 - 已赠课时按实付单价折算金额
     refundableAmount() {
       if (!this.refundRow) return 0;
-      var v = Number(this.refundRow.paidAmount || 0) - Number(this.refundRow.refundAmount || 0);
+      var paid = Number(this.refundRow.paidAmount || 0);
+      var totalLessons = Number(this.refundRow.lessonCount || 0);
+      var giftedLessons = Number(this.refundRow.giftedLessons || 0);
+      var giftedAmount = totalLessons > 0 ? Math.round((paid * giftedLessons / totalLessons) * 100) / 100 : 0;
+      var v = paid - Number(this.refundRow.refundAmount || 0) - giftedAmount;
       return v > 0 ? v : 0;
     }
   },
@@ -226,6 +369,9 @@ export default {
     payMethodText(m) {
       var map = { 1: '微信', 2: '支付宝', 3: '储值', 4: '分期', 9: '其他' };
       return map[m] || '—';
+    },
+    sourceText(source) {
+      return Number(source) === 1 ? '赠送' : '正常购买';
     },
     marketingText(t) {
       var map = { 0: '普通', 1: '拼团', 2: '秒杀' };
@@ -331,7 +477,126 @@ export default {
       var res = await this.apis.store_list({ page: 1, limit: 999 });
       var list = (res.page && res.page.list) || [];
       var opts = list.map(function (item) { return { value: item.storeAddrId, label: item.storeName }; });
+      this.storeOptions = opts;
       this.searchForm[2].options = opts;
+    },
+    openCreate() {
+      this.createForm = {
+        memberId: '',
+        storeId: '',
+        productId: '',
+        coachId: '',
+        paidAmount: '',
+        remark: ''
+      };
+      this.memberOptions = [];
+      this.productOptions = [];
+      this.coachOptions = [];
+      this.createVisible = true;
+      this.$nextTick(() => {
+        if (this.$refs.createForm) this.$refs.createForm.clearValidate();
+      });
+    },
+    async searchCreateMembers(keyword) {
+      var value = (keyword || '').trim();
+      if (!value) {
+        this.memberOptions = [];
+        return;
+      }
+      this.memberLoading = true;
+      try {
+        var res = await this.apis.privateOrder_memberOptions({ keyword: value });
+        this.memberOptions = (res && res.list) || [];
+      } finally {
+        this.memberLoading = false;
+      }
+    },
+    async searchCreateProducts(keyword) {
+      if (!this.createForm.storeId) {
+        this.productOptions = [];
+        return;
+      }
+      this.productLoading = true;
+      try {
+        var res = await this.apis.privateOrder_productOptions({
+          storeId: this.createForm.storeId,
+          keyword: (keyword || '').trim()
+        });
+        this.productOptions = (res && res.list) || [];
+      } finally {
+        this.productLoading = false;
+      }
+    },
+    async searchCreateCoaches(keyword) {
+      if (!this.createForm.storeId || !this.createForm.productId) {
+        this.coachOptions = [];
+        return;
+      }
+      this.coachLoading = true;
+      try {
+        var res = await this.apis.privateOrder_coachOptions({
+          storeId: this.createForm.storeId,
+          productId: this.createForm.productId,
+          keyword: (keyword || '').trim()
+        });
+        this.coachOptions = (res && res.list) || [];
+      } finally {
+        this.coachLoading = false;
+      }
+    },
+    onCreateStoreChange() {
+      this.createForm.productId = '';
+      this.createForm.coachId = '';
+      this.createForm.paidAmount = '';
+      this.productOptions = [];
+      this.coachOptions = [];
+      if (this.createForm.storeId) this.searchCreateProducts('');
+    },
+    onCreateProductChange(productId) {
+      this.createForm.coachId = '';
+      this.coachOptions = [];
+      var product = this.productOptions.find(function (item) { return item.id == productId; });
+      this.createForm.paidAmount = product && product.salePrice != null ? String(product.salePrice) : '';
+      if (productId) this.searchCreateCoaches('');
+    },
+    onCreateProductVisible(visible) {
+      if (visible && this.createForm.storeId && this.productOptions.length === 0) {
+        this.searchCreateProducts('');
+      }
+    },
+    onCreateCoachVisible(visible) {
+      if (visible && this.createForm.productId && this.coachOptions.length === 0) {
+        this.searchCreateCoaches('');
+      }
+    },
+    submitCreate() {
+      this.$refs.createForm.validate((valid) => {
+        if (!valid) return;
+        var amountText = String(this.createForm.paidAmount).trim();
+        if (!/^\d+(\.\d{1,2})?$/.test(amountText)
+            || Number(amountText) < 0 || Number(amountText) > 99999999.99) {
+          this.$message.warning('实付金额须为0至99999999.99，且最多两位小数');
+          return;
+        }
+        this.createLoading = true;
+        this.apis.privateOrder_save({
+          memberId: this.createForm.memberId,
+          storeId: this.createForm.storeId,
+          productId: this.createForm.productId,
+          coachId: this.createForm.coachId || null,
+          paidAmount: amountText,
+          remark: this.createForm.remark
+        }).then((res) => {
+          if (res && res.code === 0) {
+            this.$message.success('新增成功，订单号：' + res.orderNo);
+            this.createVisible = false;
+            this.pagination.offset = 1;
+            this.getData();
+          }
+        }).catch(() => { /* 失败提示由响应拦截器统一处理 */ }).then(() => {
+          this.createLoading = false;
+        });
+      });
     },
     async openDetail(row) {
       this.detail = null;
@@ -343,6 +608,32 @@ export default {
       this.refundRow = row;
       this.refundForm = { refundAmount: '', refundLessons: '', remark: '' };
       this.refundVisible = true;
+    },
+    deleteOrder(row) {
+      var externalTip = Number(row.payMethod) === 9
+        ? ''
+        : ' 注意：该操作只删除本系统数据，不会向微信、支付宝等支付渠道发起退款。';
+      var message = '将永久删除订单、权益、预约、优惠券占用、分期、流水、提成、赠课等可定位的本地关联数据。' +
+        externalTip + ' 请输入完整订单号确认：' + row.orderNo;
+      this.$prompt(message, '永久删除购买记录', {
+        confirmButtonText: '确认永久删除',
+        cancelButtonText: '取消',
+        inputPlaceholder: '请输入完整订单号',
+        inputValidator: (value) => value === row.orderNo || '订单号不一致'
+      }).then(({ value }) => {
+        this.deletingId = row.id;
+        return this.apis.privateOrder_delete({ orderId: row.id, confirmOrderNo: value });
+      }).then((res) => {
+        if (res && res.code === 0) {
+          this.$message.success('购买记录及本地关联数据已删除');
+          if (this.tableData.length === 1 && this.pagination.offset > 1) {
+            this.pagination.offset -= 1;
+          }
+          this.getData();
+        }
+      }).catch(() => { /* 用户取消或接口失败均不在此重复提示 */ }).then(() => {
+        this.deletingId = null;
+      });
     },
     submitRefund() {
       var amt = Number(this.refundForm.refundAmount);
@@ -390,4 +681,5 @@ export default {
 .text-danger { color: #F56C6C; }
 .refund-tip { background: #f5f7fa; padding: 10px 14px; border-radius: 4px; margin-bottom: 14px; line-height: 24px; font-size: 13px; }
 .refund-tip p { margin: 0; }
+.create-alert { margin-bottom: 18px; }
 </style>
