@@ -191,6 +191,70 @@
         ORDER BY a.start_time ASC, a.id ASC
     </select>
 
+    <sql id="Door_Appointment_Columns">
+        a.id, a.appointment_no, a.member_id, a.product_id, a.coach_id, a.store_id,
+        DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointmentDate,
+        DATE_FORMAT(a.start_time, '%H:%i') AS startTime,
+        DATE_FORMAT(a.end_time, '%H:%i') AS endTime,
+        a.appointment_status, p.product_name AS productName,
+        c.coach_name AS coachName, s.storeName AS storeName
+    </sql>
+
+    <select id="queryCurrentDoorAppointment" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT <include refid="Door_Appointment_Columns"/>
+        FROM pt_private_appointment a
+        LEFT JOIN pt_product p ON p.id = a.product_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = a.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE a.member_id = #{memberId} AND a.deleted = 0
+          AND a.appointment_status IN (1, 3)
+          AND DATE_SUB(TIMESTAMP(a.appointment_date, a.start_time), INTERVAL 30 MINUTE) &lt;= NOW()
+          AND NOW() &lt; DATE_ADD(TIMESTAMP(a.appointment_date, a.start_time), INTERVAL 120 MINUTE)
+        ORDER BY TIMESTAMP(a.appointment_date, a.start_time) ASC, a.id ASC
+        LIMIT 1
+    </select>
+
+    <select id="queryNextDoorAppointment" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT <include refid="Door_Appointment_Columns"/>
+        FROM pt_private_appointment a
+        LEFT JOIN pt_product p ON p.id = a.product_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = a.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE a.member_id = #{memberId} AND a.deleted = 0
+          AND a.appointment_status IN (1, 3)
+          AND DATE_SUB(TIMESTAMP(a.appointment_date, a.start_time), INTERVAL 30 MINUTE) &gt; NOW()
+        ORDER BY TIMESTAMP(a.appointment_date, a.start_time) ASC, a.id ASC
+        LIMIT 1
+    </select>
+
+    <select id="queryExpiredTodayDoorAppointment" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT <include refid="Door_Appointment_Columns"/>
+        FROM pt_private_appointment a
+        LEFT JOIN pt_product p ON p.id = a.product_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = a.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE a.member_id = #{memberId} AND a.deleted = 0
+          AND a.appointment_status IN (1, 3)
+          AND a.appointment_date = CURDATE()
+          AND DATE_ADD(TIMESTAMP(a.appointment_date, a.start_time), INTERVAL 120 MINUTE) &lt;= NOW()
+        ORDER BY TIMESTAMP(a.appointment_date, a.start_time) DESC, a.id DESC
+        LIMIT 1
+    </select>
+
+    <select id="queryDoorAppointmentById" resultType="com.dlc.modules.api.entity.PtPrivateAppointmentEntity">
+        SELECT <include refid="Door_Appointment_Columns"/>
+        FROM pt_private_appointment a
+        LEFT JOIN pt_product p ON p.id = a.product_id
+        LEFT JOIN pt_coach c ON c.id = a.coach_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = a.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE a.id = #{appointmentId} AND a.member_id = #{memberId} AND a.deleted = 0
+        LIMIT 1
+    </select>
+
     <!-- 教练该星期可用排班窗口:与 CoachApiDao.queryBookableCoaches 交集口径一致(互指注释,改一处须同改) -->
     <select id="querySchedules" resultType="com.dlc.modules.api.vo.PtScheduleWindowVo">
         SELECT sch.store_id AS storeId,
@@ -235,6 +299,7 @@
           AND status = 1
           AND (expire_at IS NULL OR expire_at &gt; NOW())
           AND remaining_lessons &gt;= 1
+          AND (coach_id IS NULL OR coach_id = #{coachId})
         ORDER BY (expire_at IS NULL) ASC, expire_at ASC, id ASC
         LIMIT 1
     </select>

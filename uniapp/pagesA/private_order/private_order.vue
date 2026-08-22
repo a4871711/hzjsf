@@ -9,14 +9,15 @@
 			<view class="card" v-for="item in list" :key="item.orderNo" @click="openDetail(item)">
 				<view class="head">
 					<text class="order-no">订单号 {{ item.orderNo }}</text>
+					<text class="source" v-if="Number(item.orderSource) === 1">赠送</text>
 					<text class="status" :class="item.statusClassName">{{ item.statusLabel }}</text>
 				</view>
 				<view class="course-name">{{ item.productName || '私教课程' }}</view>
 				<view class="meta">{{ serviceText(item.serviceType) }} · {{ item.lessonCount || 0 }}节 · {{ item.durationMinutes || 0 }}分钟/节</view>
 				<view class="time">下单时间：{{ formatTime(item.createdAt) }}</view>
 				<view class="foot">
-					<view class="amount"><text>应付</text> ¥{{ priceText(item.payableAmount) }}</view>
-					<view class="actions" v-if="Number(item.orderStatus) === 0">
+					<view class="amount"><text>{{ Number(item.orderSource) === 1 ? '赠送' : '应付' }}</text> ¥{{ priceText(item.payableAmount) }}</view>
+					<view class="actions" v-if="Number(item.orderSource) !== 1 && Number(item.orderStatus) === 0">
 						<view class="btn ghost" @click.stop="confirmCancel(item)">取消订单</view>
 						<view class="btn primary" @click.stop="continuePay(item)">继续支付</view>
 					</view>
@@ -91,7 +92,7 @@
 				getPrivateOrders(params).then((res) => {
 					const data = res.data || {};
 					const rows = (data.list || []).map((item) => Object.assign({}, item, {
-						statusLabel: this.statusText(item.orderStatus),
+						statusLabel: Number(item.orderSource) === 1 ? '赠送' : this.statusText(item.orderStatus),
 						statusClassName: this.statusClass(item.orderStatus)
 					}));
 					this.total = Number(data.totalCount || 0);
@@ -219,6 +220,7 @@
 	.head { display: flex; padding-bottom: 20rpx; border-bottom: 1rpx solid #EEE; align-items: center; }
 	.order-no { flex: 1; color: #999; font-size: 21rpx; }
 	.status { font-size: 24rpx; font-weight: 700; }
+	.source { margin-right: 14rpx; padding: 5rpx 13rpx; color: #E15B00; background: #FFF1E8; border-radius: 18rpx; font-size: 20rpx; font-weight: 700; }
 	.status.is-wait { color: #E15B00; }
 	.status.is-done { color: #2FA65A; }
 	.status.is-gray { color: #999; }

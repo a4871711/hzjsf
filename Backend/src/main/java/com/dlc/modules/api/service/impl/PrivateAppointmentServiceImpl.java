@@ -84,12 +84,25 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     public List<PtCoachOption> coaches(Long memberId, Long benefitId) {
         PtMemberPrivateBenefitEntity benefit = checkOwnBenefit(memberId, benefitId);
         // 复用第10步 8.3 交集:商品指定教练 ∩ 门店 ∩ status=1 ∩ 有启用排班
-        return coachApiService.listByProduct(benefit.getProductId(), benefit.getStoreId());
+        List<PtCoachOption> coaches = coachApiService.listByProduct(benefit.getProductId(), benefit.getStoreId());
+        if (benefit.getCoachId() == null) {
+            return coaches;
+        }
+        // 受赠或后台绑定教练的权益只能预约指定教练；返回与提交两端都做约束。
+        List<PtCoachOption> bound = new ArrayList<PtCoachOption>();
+        for (PtCoachOption coach : coaches) {
+            if (benefit.getCoachId().equals(coach.getId())) {
+                bound.add(coach);
+                break;
+            }
+        }
+        return bound;
     }
 
     @Override
     public List<PtAvailableSlotVo> slots(Long memberId, Long benefitId, Long coachId, Long storeId, String date) {
         PtMemberPrivateBenefitEntity benefit = checkOwnBenefit(memberId, benefitId);
+        validateBenefitCoach(benefit, coachId);
         PtProduct product = loadProductRule(benefit.getProductId());
         LocalDate targetDate = parseDate(date);
         List<PtScheduleWindowVo> windows = ptPrivateAppointmentDao.querySchedules(
@@ -120,6 +133,7 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     public Map<String, Object> book(Long memberId, Long benefitId, Long coachId, Long storeId,
                                     String date, String startTime, String endTime) {
         PtMemberPrivateBenefitEntity benefit = checkOwnBenefit(memberId, benefitId);
+        validateBenefitCoach(benefit, coachId);
         return doBook(benefit, coachId, storeId, date, startTime, endTime, memberId);
     }
 
@@ -213,6 +227,10 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     private void settlePerLessonCommission(PtPrivateAppointmentEntity apt) {
         PtPrivateOrderEntity order = ptPrivateOrderDao.queryObject(apt.getOrderId());
         if (order == null || apt.getCoachId() == null) {
+            return;
+        }
+        // 赠送订单金额为零且明确不进入任何提成链路，固定课时费规则也必须跳过。
+        if (Integer.valueOf(1).equals(order.getOrderSource())) {
             return;
         }
         if (ptCoachMonthlyCommissionRuleDao.countMonthlyProduct(order.getProductId()) > 0) {
@@ -356,7 +374,7 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
             throw new RRException("教练只能为自己门店的会员代约");
         }
         // 自动取该会员该商品先到期的可用权益
-        PtMemberPrivateBenefitEntity benefit = ptPrivateAppointmentDao.selectUsableBenefit(memberId, productId);
+        PtMemberPrivateBenefitEntity benefit = ptPrivateAppointmentDao.selectUsableBenefit(memberId, productId, coachId);
         if (benefit == null) {
             throw new RRException(CodeAndMsg.ERROR_LESSON_NOT_ENOUGH);
         }
@@ -401,6 +419,7 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         if (coachId == null || storeId == null) {
             throw new RRException(CodeAndMsg.ERROR_LACK_PARAM);
         }
+        validateBenefitCoach(benefit, coachId);
         // 剩余课时前置校验(freeze 锁内还会复核,这里给出更早更准的错误码)
         if (benefit.getRemainingLessons() == null || benefit.getRemainingLessons() < 1) {
             throw new RRException(CodeAndMsg.ERROR_LESSON_NOT_ENOUGH);
@@ -529,6 +548,12 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
             throw new RRException(CodeAndMsg.ERROR_BENEFIT_EXPIRED);
         }
         return benefit;
+    }
+
+    private void validateBenefitCoach(PtMemberPrivateBenefitEntity benefit, Long coachId) {
+        if (benefit != null && benefit.getCoachId() != null && !benefit.getCoachId().equals(coachId)) {
+            throw new RRException("该权益只能预约指定教练");
+        }
     }
 
     /** 商品预约规则行(不过滤上架状态:下架不影响已购权益) */

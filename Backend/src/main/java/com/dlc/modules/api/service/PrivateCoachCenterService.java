@@ -8,6 +8,8 @@ public interface PrivateCoachCenterService {
 
     Map<String, Object> mine(Long userId);
 
+    Map<String, Object> members(Long userId, Integer page, Integer limit, String keyword);
+
     void updateProfile(Long userId, String coachName, String mobile, Integer gender,
                        String avatarUrl, String intro);
 

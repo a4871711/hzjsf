@@ -23,6 +23,14 @@ public class PrivateCoachCenterController extends BaseController {
         return R.reOk(privateCoachCenterService.mine(getUserId(request)));
     }
 
+    /** 当前普通私教负责的会员；归属只认会员权益上的服务教练。 */
+    @RequestMapping("/members")
+    public R members(Integer page, Integer limit, String keyword,
+                     HttpServletRequest request) {
+        return R.reOk(privateCoachCenterService.members(
+                getUserId(request), page, limit, keyword));
+    }
+
     /** 修改本人可自助维护的基础资料，不开放等级、门店、状态和绑定关系。 */
     @RequestMapping("/updateProfile")
     public R updateProfile(String coachName, String mobile, Integer gender,

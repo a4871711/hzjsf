@@ -62,7 +62,7 @@ public class SysPtCoachController extends AbstractController {
         params.remove("order");
 
         List<PtCoachEntity> list = sysPtCoachService.queryList(params);
-        String[] titles = {"编号", "姓名", "手机", "绑定会员ID", "绑定会员", "所属门店", "等级", "状态", "排序", "创建时间"};
+        String[] titles = {"编号", "姓名", "手机", "教练类型", "绑定会员ID", "绑定会员", "所属门店", "等级", "状态", "排序", "创建时间"};
         String[][] values = buildExportValues(list);
         String fileName = "教练列表_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".xlsx";
         XSSFWorkbook workbook = ExportExcel.getXSSFWorkbook("教练列表", titles, values);
@@ -150,19 +150,20 @@ public class SysPtCoachController extends AbstractController {
 
     private String[][] buildExportValues(List<PtCoachEntity> list) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String[][] values = new String[list.size()][10];
+        String[][] values = new String[list.size()][11];
         for (int i = 0; i < list.size(); i++) {
             PtCoachEntity coach = list.get(i);
             values[i][0] = valueOf(coach.getCoachNo());
             values[i][1] = valueOf(coach.getCoachName());
             values[i][2] = valueOf(coach.getMobile());
-            values[i][3] = coach.getUserId() == null ? "" : String.valueOf(coach.getUserId());
-            values[i][4] = valueOf(coach.getBoundMemberName());
-            values[i][5] = valueOf(coach.getStoreNames());
-            values[i][6] = valueOf(coach.getCoachLevel());
-            values[i][7] = statusText(coach.getStatus());
-            values[i][8] = coach.getSortNo() == null ? "" : String.valueOf(coach.getSortNo());
-            values[i][9] = coach.getCreatedAt() == null ? "" : dateFormat.format(coach.getCreatedAt());
+            values[i][3] = Integer.valueOf(2).equals(coach.getCoachType()) ? "自由教练" : "私教";
+            values[i][4] = coach.getUserId() == null ? "" : String.valueOf(coach.getUserId());
+            values[i][5] = valueOf(coach.getBoundMemberName());
+            values[i][6] = valueOf(coach.getStoreNames());
+            values[i][7] = valueOf(coach.getCoachLevel());
+            values[i][8] = statusText(coach.getStatus());
+            values[i][9] = coach.getSortNo() == null ? "" : String.valueOf(coach.getSortNo());
+            values[i][10] = coach.getCreatedAt() == null ? "" : dateFormat.format(coach.getCreatedAt());
         }
         return values;
     }

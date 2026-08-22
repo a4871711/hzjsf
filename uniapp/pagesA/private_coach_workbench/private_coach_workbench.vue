@@ -61,7 +61,7 @@
 			<text class="empty-tip">请联系管理员在后台“教练管理”中绑定会员账号</text>
 		</view>
 
-		<coach-tabbar v-if="isCoach" active="home" />
+		<coach-tabbar v-if="isCoach" active="home" :coach-type="coach && coach.coachType" />
 
 	</view>
 </template>

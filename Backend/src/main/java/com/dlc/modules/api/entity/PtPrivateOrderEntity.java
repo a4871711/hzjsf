@@ -76,6 +76,15 @@ public class PtPrivateOrderEntity implements Serializable {
     private Integer payStatus;
     /** 订单状态:0待支付 1首付已付 2已结清 3已取消 4已退款 */
     private Integer orderStatus;
+    /** 订单来源:0正常购买 1赠送 */
+    private Integer orderSource;
+    /** 赠送来源订单ID */
+    private Long sourceOrderId;
+    /** 赠送来源权益ID */
+    private Long sourceBenefitId;
+    /** 赠课请求幂等号 */
+    private String giftRequestNo;
+    private String remark;
     private Date paidAt;
     private Date settledAt;
     private Date cancelAt;
@@ -182,6 +191,21 @@ public class PtPrivateOrderEntity implements Serializable {
 
     public Integer getOrderStatus() { return orderStatus; }
     public void setOrderStatus(Integer orderStatus) { this.orderStatus = orderStatus; }
+
+    public Integer getOrderSource() { return orderSource; }
+    public void setOrderSource(Integer orderSource) { this.orderSource = orderSource; }
+
+    public Long getSourceOrderId() { return sourceOrderId; }
+    public void setSourceOrderId(Long sourceOrderId) { this.sourceOrderId = sourceOrderId; }
+
+    public Long getSourceBenefitId() { return sourceBenefitId; }
+    public void setSourceBenefitId(Long sourceBenefitId) { this.sourceBenefitId = sourceBenefitId; }
+
+    public String getGiftRequestNo() { return giftRequestNo; }
+    public void setGiftRequestNo(String giftRequestNo) { this.giftRequestNo = giftRequestNo; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
 
     public Date getPaidAt() { return paidAt; }
     public void setPaidAt(Date paidAt) { this.paidAt = paidAt; }

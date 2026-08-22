@@ -83,7 +83,8 @@ public interface PtPrivateAppointmentDao {
 
     /** 代约取会员对该商品当前可用权益:status=1 未过期 remaining>=1,先到期先用 */
     PtMemberPrivateBenefitEntity selectUsableBenefit(@Param("memberId") Long memberId,
-                                                     @Param("productId") Long productId);
+                                                     @Param("productId") Long productId,
+                                                     @Param("coachId") Long coachId);
 
     /** 教练最近预约(后台教练详情只读抽屉用,联表回填会员/商品/门店名),按上课时间倒序取 limit 条 */
     List<PtPrivateAppointmentEntity> queryRecentByCoach(@Param("coachId") Long coachId,
@@ -91,6 +92,19 @@ public interface PtPrivateAppointmentDao {
 
     /** 教练首页今日私教课程，包含已预约、已取消、已完成和爽约，按开始时间升序展示 */
     List<PtPrivateAppointmentEntity> queryTodayByCoach(@Param("coachId") Long coachId);
+
+    /** 当前处于预约开门时间窗内的预约，优先最近开课的一条。 */
+    PtPrivateAppointmentEntity queryCurrentDoorAppointment(@Param("memberId") Long memberId);
+
+    /** 下一条尚未到开门时间的有效预约。 */
+    PtPrivateAppointmentEntity queryNextDoorAppointment(@Param("memberId") Long memberId);
+
+    /** 当日刚超过开门时间窗的预约，用于返回明确的已失效原因。 */
+    PtPrivateAppointmentEntity queryExpiredTodayDoorAppointment(@Param("memberId") Long memberId);
+
+    /** 扫码时按预约ID和会员重新取数，禁止只信二维码内容。 */
+    PtPrivateAppointmentEntity queryDoorAppointmentById(@Param("appointmentId") Long appointmentId,
+                                                         @Param("memberId") Long memberId);
 
     /* ==================== 第5/7步护栏回填(sys 侧删除/改排班引用校验) ==================== */
 

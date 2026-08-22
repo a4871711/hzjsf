@@ -253,6 +253,20 @@
 					}
 				},
 				{
+					"path": "private_coach_members/private_coach_members",
+					"style": {
+						"navigationBarTitleText": "服务会员",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
+					"path": "private_coach_gift/private_coach_gift",
+					"style": {
+						"navigationBarTitleText": "自由教练赠课",
+						"enablePullDownRefresh": true
+					}
+				},
+				{
 					"path": "private_coach_mine/private_coach_mine",
 					"style": {
 						"navigationBarTitleText": "我的",

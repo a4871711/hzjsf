@@ -1,9 +1,9 @@
 <template>
-	<view class="coach-tabbar">
+	<view class="coach-tabbar" v-if="identityReady">
 		<view
 			class="coach-tab"
 			:class="{ active: item.key === active }"
-			v-for="item in tabs"
+			v-for="item in visibleTabs"
 			:key="item.key"
 			@click="navigate(item)"
 		>
@@ -18,24 +18,67 @@
 </template>
 
 <script>
+	import { getPrivateCoachWorkbench } from '@/api/private-training.js'
+
 	export default {
 		props: {
 			active: {
 				type: String,
 				default: 'home'
+			},
+			coachType: {
+				type: [Number, String],
+				default: null
 			}
 		},
 		data() {
 			return {
+				identityCoachType: null,
+				identityResolved: false,
 				tabs: [
 					{ key: 'home', label: '首页', icon: 'home', activeIcon: 'home-fill', url: '/pagesA/private_coach_workbench/private_coach_workbench' },
 					{ key: 'schedule', label: '日程', icon: 'calendar', activeIcon: 'calendar-fill', url: '/pagesA/private_coach_schedule/private_coach_schedule' },
-					{ key: 'members', label: '会员', icon: 'account', activeIcon: 'account-fill' },
+					{ key: 'members', label: '会员', icon: 'account', activeIcon: 'account-fill', url: '/pagesA/private_coach_members/private_coach_members' },
+					{ key: 'gift', label: '赠课', icon: 'gift', activeIcon: 'gift-fill', url: '/pagesA/private_coach_gift/private_coach_gift' },
 					{ key: 'mine', label: '我的', icon: 'setting', activeIcon: 'setting-fill', url: '/pagesA/private_coach_mine/private_coach_mine' }
 				]
 			}
 		},
+		computed: {
+			identityReady() {
+				return this.hasCoachType(this.coachType) || this.identityResolved;
+			},
+			visibleTabs() {
+				const source = this.hasCoachType(this.coachType) ? this.coachType : this.identityCoachType;
+				// 自由教练只有赠课；普通私教保留原导航并恢复会员入口。
+				if (Number(source) === 2) {
+					return this.tabs.filter(item => item.key === 'gift');
+				}
+				return this.tabs.filter(item => item.key !== 'gift');
+			}
+		},
+		created() {
+			if (this.hasCoachType(this.coachType)) {
+				this.identityResolved = true;
+				return;
+			}
+			this.loadCoachType();
+		},
 		methods: {
+			hasCoachType(value) {
+				return value !== null && value !== undefined && value !== '';
+			},
+			loadCoachType() {
+				getPrivateCoachWorkbench().then(res => {
+					const data = res.data || {};
+					this.identityCoachType = data.coach ? data.coach.coachType : null;
+				}).catch(() => {
+					// 身份接口失败时保留原导航，避免影响其他类型教练。
+					this.identityCoachType = null;
+				}).then(() => {
+					this.identityResolved = true;
+				});
+			},
 			navigate(item) {
 				if (!item || item.key === this.active) return;
 				if (!item.url) {

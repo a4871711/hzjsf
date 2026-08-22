@@ -1,8 +1,8 @@
 <template>
 	<view class="detail-page" v-if="loaded">
 		<view class="status-card">
-			<view class="status">{{ statusText(order.orderStatus) }}</view>
-			<view class="status-tip">{{ statusTip(order.orderStatus) }}</view>
+			<view class="status">{{ statusText(order.orderStatus, order.orderSource) }}</view>
+			<view class="status-tip">{{ statusTip(order.orderStatus, order.orderSource) }}</view>
 		</view>
 
 		<view class="card">
@@ -25,9 +25,11 @@
 		<view class="card">
 			<view class="section-title">订单信息</view>
 			<view class="row"><text>订单号</text><text class="copy" @click="copyNo">{{ order.orderNo }} 复制</text></view>
+			<view class="row"><text>订单来源</text><text>{{ Number(order.orderSource) === 1 ? '赠送' : '正常购买' }}</text></view>
+			<view class="row" v-if="order.remark"><text>备注</text><text>{{ order.remark }}</text></view>
 			<view class="row"><text>下单时间</text><text>{{ formatTime(order.createdAt) }}</text></view>
 			<view class="row" v-if="order.paidAt"><text>支付时间</text><text>{{ formatTime(order.paidAt) }}</text></view>
-			<view class="row"><text>支付方式</text><text>{{ payMethodText(order.payMethod) }}</text></view>
+			<view class="row"><text>支付方式</text><text>{{ Number(order.orderSource) === 1 ? '赠送' : payMethodText(order.payMethod) }}</text></view>
 		</view>
 
 		<view class="button" v-if="Number(order.orderStatus) === 2" @click="goBenefits">查看私教权益</view>
@@ -66,10 +68,12 @@
 			copyNo() {
 				uni.setClipboardData({ data: String(this.order.orderNo || '') });
 			},
-			statusText(status) {
+			statusText(status, source) {
+				if (Number(source) === 1) return '赠送订单';
 				return ({ 0: '等待支付', 1: '首付已付', 2: '订单已结清', 3: '订单已取消', 4: '订单已退款' })[Number(status)] || '订单状态未知';
 			},
-			statusTip(status) {
+			statusTip(status, source) {
+				if (Number(source) === 1) return '赠送已生效，无需支付且不支持退款';
 				return ({
 					0: '可返回订单列表继续支付或取消',
 					1: '分期订单已完成首付',

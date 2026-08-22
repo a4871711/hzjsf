@@ -121,6 +121,8 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
             }
         }
         if (entity.getStatus() == null) { entity.setStatus(1); }
+        if (entity.getCoachType() == null) { entity.setCoachType(1); }
+        validateCoachType(entity.getCoachType());
         if (entity.getSortNo() == null) { entity.setSortNo(0); }
         Date now = new Date();
         entity.setCreatedAt(now);
@@ -172,6 +174,9 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
             if (ptCoachDao.countByMobile(entity.getMobile(), entity.getId()) > 0) {
                 throw new RRException("手机号已被占用");
             }
+        }
+        if (entity.getCoachType() != null) {
+            validateCoachType(entity.getCoachType());
         }
         // 更新接口未携带该字段时保持原值；显式传空字符串时按清空证书处理。
         if (entity.getCertificateUrls() != null) {
@@ -253,6 +258,12 @@ public class SysPtCoachServiceImpl implements SysPtCoachService {
             throw new RRException("手机号不能为空");
         }
         validateMobile(e.getMobile());
+    }
+
+    private void validateCoachType(Integer coachType) {
+        if (!Integer.valueOf(1).equals(coachType) && !Integer.valueOf(2).equals(coachType)) {
+            throw new RRException("教练类型非法，只允许1私教或2自由教练");
+        }
     }
 
     private void validateMobile(String mobile) {

@@ -114,6 +114,7 @@ export default {
         mobile: '',
         storeId: '',
         status: '',
+        coachType: '',
         coachLevel: '',
         createTime: []
       },
@@ -121,6 +122,10 @@ export default {
         { type: 'input', placeholder: '教练姓名', prop: 'coachName', width: 160 },
         { type: 'input', placeholder: '手机号', prop: 'mobile', width: 160 },
         { type: 'select', placeholder: '所属门店', prop: 'storeId', width: 180, options: [] },
+        { type: 'select', placeholder: '教练类型', prop: 'coachType', width: 140, options: [
+          { value: 1, label: '私教' },
+          { value: 2, label: '自由教练' }
+        ] },
         { type: 'select',
           placeholder: '教练状态',
           prop: 'status',
@@ -148,8 +153,9 @@ export default {
         { label: '头像', type: 'html', width: 70, html: (row) => this.avatarHtml(row) },
         { label: '姓名', prop: 'coachName', width: 90 },
         { label: '手机', prop: 'mobile', width: 120 },
+        { label: '类型', prop: 'coachType', width: 90, formatter: e => this.coachTypeText(e.coachType) },
         { label: '绑定账号', type: 'html', width: 180, html: (row) => this.bindingHtml(row) },
-        { label: '所属门店', type: 'html', html: (row) => this.storeTagsHtml(row) },
+        { label: '所属门店', type: 'html', width: 240, html: (row) => this.storeTagsHtml(row) },
         { label: '等级', prop: 'coachLevel', width: 100, formatter: e => e.coachLevel || '-' },
         { label: '状态', type: 'tag', width: 80, prop: 'status', theme: (row) => this.statusTheme(row.status), formatter: e => this.statusText(e.status) },
         { label: '排序', prop: 'sortNo', width: 70 },
@@ -175,6 +181,10 @@ export default {
       formCols: [
         { type: 'input', label: '教练姓名', width: 320, prop: 'coachName' },
         { type: 'input', label: '手机号', width: 320, prop: 'mobile' },
+        { type: 'radio', label: '教练类型', prop: 'coachType', radios: [
+          { value: 1, label: '私教' },
+          { value: 2, label: '自由教练' }
+        ] },
         { type: 'radio',
           label: '性别',
           prop: 'gender',
@@ -212,6 +222,9 @@ export default {
         storeIds: [
           { required: true, type: 'array', message: '请选择所属门店', trigger: 'change' }
         ],
+        coachType: [
+          { required: true, message: '请选择教练类型', trigger: 'change' }
+        ],
         status: [
           { required: true, message: '请选择教练状态', trigger: 'change' }
         ]
@@ -247,6 +260,7 @@ export default {
         id: '',
         coachName: '',
         mobile: '',
+        coachType: 1,
         gender: 1,
         avatarUrl: '',
         coachLevel: '',
@@ -262,6 +276,9 @@ export default {
     // ===== 展示辅助 =====
     statusText (s) {
       return s === 1 ? '正常' : s === 2 ? '停用' : s === 3 ? '离职' : '-'
+    },
+    coachTypeText (type) {
+      return Number(type) === 2 ? '自由教练' : Number(type) === 1 ? '私教' : '-'
     },
     statusTheme (s) {
       return s === 1 ? 'success' : s === 2 ? 'info' : 'danger'
@@ -311,6 +328,7 @@ export default {
         mobile: this.searchData.mobile,
         storeId: this.searchData.storeId,
         status: this.searchData.status,
+        coachType: this.searchData.coachType,
         coachLevel: this.searchData.coachLevel
       }
       if (page !== undefined) params.page = page
@@ -338,7 +356,7 @@ export default {
       this.getData()
     },
     reset () {
-      this.searchData = { coachName: '', mobile: '', storeId: '', status: '', coachLevel: '', createTime: [] }
+      this.searchData = { coachName: '', mobile: '', storeId: '', status: '', coachType: '', coachLevel: '', createTime: [] }
       this.pagination.offset = 1
       this.getData()
     },

@@ -13,7 +13,8 @@
         original_amount, payable_amount, paid_amount, refund_amount, discount_amount,
         marketing_type, marketing_activity_id, marketing_activity_name,
         coupon_id, member_coupon_id, coupon_name, coupon_discount_amount,
-        pay_method, pay_status, order_status,
+        pay_method, pay_status, order_status, order_source,
+        source_order_id, source_benefit_id, gift_request_no, remark,
         paid_at, settled_at, cancel_at, refund_at,
         created_by, created_at, updated_by, updated_at, deleted
     </sql>
@@ -23,6 +24,21 @@
         FROM pt_private_order
         WHERE id = #{value} AND deleted = 0
         LIMIT 1
+    </select>
+
+    <select id="selectByGiftRequestNo" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_order
+        WHERE gift_request_no = #{giftRequestNo} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByGiftRequestNoForUpdate" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pt_private_order
+        WHERE gift_request_no = #{giftRequestNo} AND deleted = 0
+        LIMIT 1
+        FOR UPDATE
     </select>
 
     <select id="selectByOrderNo" resultType="com.dlc.modules.api.entity.PtPrivateOrderEntity">
@@ -51,6 +67,27 @@
              #{marketingType}, #{marketingActivityId}, #{marketingActivityName},
              #{couponId}, #{memberCouponId}, #{couponName}, #{couponDiscountAmount},
              #{payMethod}, #{payStatus}, #{orderStatus}, #{createdBy})
+    </insert>
+
+    <!-- 赠送订单在同一业务事务中直接进入已结清状态，不触发支付、库存、券和提成链路。 -->
+    <insert id="saveGift" parameterType="com.dlc.modules.api.entity.PtPrivateOrderEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pt_private_order
+            (order_no, member_id, member_name, member_mobile,
+             product_id, product_name, product_type_id, product_type_name, service_type, store_id, coach_id,
+             lesson_count, duration_minutes, validity_days,
+             original_amount, payable_amount, paid_amount, refund_amount, discount_amount,
+             marketing_type, coupon_discount_amount, pay_method, pay_status, order_status,
+             order_source, source_order_id, source_benefit_id, gift_request_no, remark,
+             paid_at, settled_at, created_by, updated_by)
+        VALUES
+            (#{orderNo}, #{memberId}, #{memberName}, #{memberMobile},
+             #{productId}, #{productName}, #{productTypeId}, #{productTypeName}, #{serviceType}, #{storeId}, #{coachId},
+             #{lessonCount}, #{durationMinutes}, #{validityDays},
+             #{originalAmount}, #{payableAmount}, #{paidAmount}, #{refundAmount}, #{discountAmount},
+             #{marketingType}, #{couponDiscountAmount}, #{payMethod}, #{payStatus}, #{orderStatus},
+             #{orderSource}, #{sourceOrderId}, #{sourceBenefitId}, #{giftRequestNo}, #{remark},
+             #{paidAt}, #{settledAt}, #{createdBy}, #{updatedBy})
     </insert>
 
     <!-- 限购口径:已支付+待支付(0待支付/1首付已付/2已结清),已取消/已退款不占限购额度 -->
@@ -254,6 +291,14 @@
         WHERE id = #{id} AND deleted = 0
         LIMIT 1
         FOR UPDATE
+    </select>
+
+    <select id="sumGiftedLessonsBySourceOrder" resultType="int">
+        SELECT IFNULL(SUM(lesson_count), 0)
+        FROM pt_private_order
+        WHERE source_order_id = #{sourceOrderId}
+          AND order_source = 1
+          AND deleted = 0
     </select>
 
     <!-- ==================== 第16步 定时任务:超时未付自动取消 ==================== -->

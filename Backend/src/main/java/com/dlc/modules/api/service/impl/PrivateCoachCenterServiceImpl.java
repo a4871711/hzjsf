@@ -18,6 +18,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,59 @@ public class PrivateCoachCenterServiceImpl implements PrivateCoachCenterService 
         YearMonth currentMonth = YearMonth.now();
         result.put("incomeSummary", coachApiDao.queryCoachIncomeSummary(
                 coachId, monthStart(currentMonth), nextMonthStart(currentMonth)));
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> members(Long userId, Integer page, Integer limit, String keyword) {
+        Long coachId = boundPrivateCoachId(userId);
+        int pageNo = positive(page, 1);
+        int pageSize = Math.min(positive(limit, 15), 30);
+        int offset = (pageNo - 1) * pageSize;
+        String normalizedKeyword = StringUtils.trimToNull(keyword);
+        if (normalizedKeyword != null && normalizedKeyword.length() > 50) {
+            throw new RRException("会员搜索内容不能超过50个字符");
+        }
+
+        List<Map<String, Object>> list = coachApiDao.queryCoachMembers(
+                coachId, normalizedKeyword, offset, pageSize);
+        // 先分页会员，再批量读取本页权益，避免每个会员单独执行一次查询。
+        List<Long> memberIds = new ArrayList<>();
+        for (Map<String, Object> member : list) {
+            Object memberId = member.get("memberId");
+            if (!(memberId instanceof Number)) {
+                throw new RRException("会员权益数据异常");
+            }
+            memberIds.add(((Number) memberId).longValue());
+        }
+        Map<Long, List<Map<String, Object>>> benefitsByMember = new HashMap<>();
+        if (!memberIds.isEmpty()) {
+            List<Map<String, Object>> benefits = coachApiDao.queryCoachMemberBenefits(coachId, memberIds);
+            for (Map<String, Object> benefit : benefits) {
+                Object memberId = benefit.get("memberId");
+                if (!(memberId instanceof Number)) {
+                    throw new RRException("会员权益明细数据异常");
+                }
+                Long key = ((Number) memberId).longValue();
+                if (!benefitsByMember.containsKey(key)) {
+                    benefitsByMember.put(key, new ArrayList<Map<String, Object>>());
+                }
+                benefitsByMember.get(key).add(benefit);
+            }
+        }
+        for (Map<String, Object> member : list) {
+            Long memberId = ((Number) member.get("memberId")).longValue();
+            List<Map<String, Object>> benefits = benefitsByMember.get(memberId);
+            member.put("benefits", benefits == null
+                    ? java.util.Collections.emptyList() : benefits);
+        }
+        int total = coachApiDao.countCoachMembers(coachId, normalizedKeyword);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", list);
+        result.put("total", total);
+        result.put("page", pageNo);
+        result.put("limit", pageSize);
+        result.put("hasMore", offset + list.size() < total);
         return result;
     }
 
@@ -226,6 +280,23 @@ public class PrivateCoachCenterServiceImpl implements PrivateCoachCenterService 
         Object id = coach.get("id");
         if (!(id instanceof Number)) {
             throw new RRException("教练身份数据异常");
+        }
+        return ((Number) id).longValue();
+    }
+
+    /** 会员页只属于普通私教；自由教练只有赠课能力。 */
+    private Long boundPrivateCoachId(Long userId) {
+        Map<String, Object> coach = coachApiDao.queryBoundCoachByUserId(userId);
+        if (coach == null) {
+            throw new RRException("当前账号未绑定正常状态的私教");
+        }
+        Object id = coach.get("id");
+        Object coachType = coach.get("coachType");
+        if (!(id instanceof Number) || !(coachType instanceof Number)) {
+            throw new RRException("教练身份数据异常");
+        }
+        if (((Number) coachType).intValue() != 1) {
+            throw new RRException("仅私教可查看服务会员");
         }
         return ((Number) id).longValue();
     }

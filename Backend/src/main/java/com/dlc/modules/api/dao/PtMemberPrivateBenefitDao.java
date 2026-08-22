@@ -47,6 +47,9 @@ public interface PtMemberPrivateBenefitDao {
     /** 退款冲减:total-=n,remaining-=n(同步减 total 保恒等式,不动 frozen);条件 remaining>=n */
     int refundDeductLessons(@Param("id") Long id, @Param("n") int n);
 
+    /** 赠课扣减来源权益：total/remaining 同减，保持课时恒等式。 */
+    int giftDeductLessons(@Param("id") Long id, @Param("n") int n);
+
     /** 核销后收口:remaining=0 且 frozen=0 时 1生效中→2已用完 */
     int markUsedUp(@Param("id") Long id);
 

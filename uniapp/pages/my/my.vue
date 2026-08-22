@@ -175,6 +175,7 @@
 					latitude: this.$store.state.latilongi.latitude,
 					longitude: this.$store.state.latilongi.longitude,
 					isCoach: false,
+					coachType: null,
 					vipInfo: {}, //vip信息
 			}
 		},
@@ -200,7 +201,8 @@
 				} else {
 					this.isLogin = false;
 					this.isCoach = false;
-				this.userInfo = null;
+					this.coachType = null;
+					this.userInfo = null;
 			}
 
 		},
@@ -210,17 +212,21 @@
 					this.config.Toast('当前账号未绑定教练身份');
 					return;
 				}
-				uni.navigateTo({
-					url: '/pagesA/private_coach_workbench/private_coach_workbench'
-				});
+				// 自由教练只开放赠课，其他教练仍进入原工作台。
+				const url = Number(this.coachType) === 2
+					? '/pagesA/private_coach_gift/private_coach_gift'
+					: '/pagesA/private_coach_workbench/private_coach_workbench';
+				uni.navigateTo({ url });
 			},
 			async loadCoachIdentity() {
 				try {
 					const res = await getPrivateCoachWorkbench();
 					this.isCoach = !!(res.data && res.data.isCoach);
+					this.coachType = res.data && res.data.coach ? res.data.coach.coachType : null;
 				} catch (e) {
 					// 身份识别失败不影响会员中心主流程，只隐藏教练入口。
 					this.isCoach = false;
+					this.coachType = null;
 				}
 			},
 			getPhoneNumber(e) {

@@ -16,7 +16,6 @@ import com.dlc.modules.api.entity.PtMemberPrivateBenefitEntity;
 import com.dlc.modules.api.entity.PtPrivateOrderCouponRelEntity;
 import com.dlc.modules.api.entity.PtPrivateOrderEntity;
 import com.dlc.modules.api.entity.PtProduct;
-import com.dlc.modules.api.service.GroupToPrivateScanService;
 import com.dlc.modules.api.service.IncomePayDetailService;
 import com.dlc.modules.api.service.MemberPrivateBenefitService;
 import com.dlc.modules.api.service.MkCouponService;
@@ -85,8 +84,6 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
     private MkCouponService mkCouponService;
     @Autowired
     private PtInstallmentService ptInstallmentService;
-    @Autowired
-    private GroupToPrivateScanService groupToPrivateScanService;
     @Autowired
     private SysCoachFeeRuleService sysCoachFeeRuleService;
     @Autowired
@@ -482,13 +479,6 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         // 附赠团课权益发放(商品配置 pt_product_group_benefit 启用时,一单只发一次)
         grantGroupBenefit(order);
 
-        // 第22步 团课转私教自动转化:会员购买私教后,若其在高意向名单(follow_status<2)则标记已转化+追加自动跟进流水。
-        // try/catch 包裹不回滚主支付流程(转化标记是运营辅助,失败仅记日志,幂等由 autoMarkConverted 条件UPDATE兜底)。
-        try {
-            groupToPrivateScanService.autoConvertOnPaid(order);
-        } catch (Exception e) {
-            log.error("私教订单回调:团课转私教自动转化失败(不影响主流程) orderNo={}", orderNo, e);
-        }
         return 1;
     }
 
@@ -507,6 +497,9 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         if (order == null) {
             throw new RRException(CodeAndMsg.ERROR_PT_ORDER_NOT_EXIST);
         }
+        if (Integer.valueOf(1).equals(order.getOrderSource())) {
+            throw new RRException("赠送订单不支持退款");
+        }
         if (order.getOrderStatus() == null || (order.getOrderStatus() != 1 && order.getOrderStatus() != 2)) {
             // 仅 1首付已付 / 2已结清 可退;待支付/已取消/已退款一律拒绝
             throw new RRException(CodeAndMsg.ERROR_PT_ORDER_STATUS);
@@ -524,7 +517,20 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         }
         BigDecimal paid = scale(order.getPaidAmount());
         BigDecimal refunded = scale(order.getRefundAmount());
-        BigDecimal refundable = paid.subtract(refunded);
+        int giftedLessons = ptPrivateOrderDao.sumGiftedLessonsBySourceOrder(orderId);
+        BigDecimal giftedAmount = BigDecimal.ZERO;
+        if (giftedLessons > 0) {
+            if (order.getLessonCount() == null || order.getLessonCount() <= 0) {
+                throw new RRException("来源订单课时数据异常，无法计算退款上限");
+            }
+            // 已赠课时即时转为受赠人权益，按订单实付单价折算后永久排除出来源订单可退款金额。
+            giftedAmount = paid.multiply(new BigDecimal(giftedLessons))
+                    .divide(new BigDecimal(order.getLessonCount()), 2, RoundingMode.HALF_UP);
+        }
+        BigDecimal refundable = paid.subtract(refunded).subtract(giftedAmount);
+        if (refundable.compareTo(BigDecimal.ZERO) < 0) {
+            refundable = BigDecimal.ZERO;
+        }
         if (amount.compareTo(refundable) > 0) {
             throw new RRException("退款金额超出可退上限" + refundable.toPlainString() + "元");
         }

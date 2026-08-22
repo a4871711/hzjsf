@@ -67,7 +67,7 @@
     <select id="queryBoundCoachByUserId" resultType="java.util.LinkedHashMap">
         select c.id, c.coach_no as coachNo, c.coach_name as coachName, c.mobile,
                c.user_id as userId, c.avatar_url as avatarUrl, c.coach_level as coachLevel,
-               c.intro, c.status,
+               c.intro, c.status, c.coach_type as coachType,
                (select group_concat(s.storeName order by r.store_id)
                   from pt_coach_store_rel r
                   left join store_address sa on sa.storeAddrId = r.store_id
@@ -113,6 +113,93 @@
                   AND d.transactionTime &gt;= DATE_FORMAT(CURDATE(), '%Y-%m-01')
                   AND d.transactionTime &lt; DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)
             ), 0), 2) AS expectedLessonFee
+    </select>
+
+    <!--
+        教练会员归属以权益 coach_id 为唯一依据，不接受客户端 coachId。
+        同一会员可能持有多条权益，因此先按会员聚合，避免页面出现重复会员。
+    -->
+    <select id="queryCoachMembers" resultType="java.util.LinkedHashMap">
+        SELECT u.userId AS memberId,
+               u.nickname AS memberName,
+               u.phone AS memberMobile,
+               u.headImgUrl AS headImgUrl,
+               COUNT(b.id) AS benefitCount,
+               SUM(CASE WHEN b.status = 1
+                             AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())
+                        THEN 1 ELSE 0 END) AS activeBenefitCount,
+               IFNULL(SUM(CASE WHEN b.status = 1
+                                    AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())
+                               THEN b.remaining_lessons ELSE 0 END), 0) AS remainingLessons,
+               IFNULL(SUM(CASE WHEN b.status = 1
+                                    AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())
+                               THEN b.frozen_lessons ELSE 0 END), 0) AS frozenLessons,
+               GROUP_CONCAT(DISTINCT CASE WHEN b.status = 1
+                                                AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())
+                                           THEN p.product_name END
+                            ORDER BY p.product_name SEPARATOR '、') AS activeProductNames,
+               GROUP_CONCAT(DISTINCT CASE WHEN b.status = 1
+                                                AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())
+                                           THEN s.storeName END
+                            ORDER BY s.storeName SEPARATOR '、') AS activeStoreNames,
+               MAX(COALESCE(b.updated_at, b.created_at)) AS lastBenefitAt
+        FROM pt_member_private_benefit b
+        INNER JOIN user_info u ON u.userId = b.member_id AND u.isDel = 0
+        LEFT JOIN pt_product p ON p.id = b.product_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = b.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE b.coach_id = #{coachId}
+        <if test="keyword != null and keyword != ''">
+            AND (u.nickname LIKE concat('%', #{keyword}, '%')
+                 OR u.phone LIKE concat('%', #{keyword}, '%')
+                 OR CAST(u.userId AS CHAR) LIKE concat('%', #{keyword}, '%'))
+        </if>
+        GROUP BY u.userId, u.nickname, u.phone, u.headImgUrl
+        ORDER BY activeBenefitCount DESC, lastBenefitAt DESC, memberId DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countCoachMembers" resultType="int">
+        SELECT COUNT(DISTINCT b.member_id)
+        FROM pt_member_private_benefit b
+        INNER JOIN user_info u ON u.userId = b.member_id AND u.isDel = 0
+        WHERE b.coach_id = #{coachId}
+        <if test="keyword != null and keyword != ''">
+            AND (u.nickname LIKE concat('%', #{keyword}, '%')
+                 OR u.phone LIKE concat('%', #{keyword}, '%')
+                 OR CAST(u.userId AS CHAR) LIKE concat('%', #{keyword}, '%'))
+        </if>
+    </select>
+
+    <!-- 本页会员的权益明细一次查完；同一课程的不同权益不合并，保留各自课时和有效期。 -->
+    <select id="queryCoachMemberBenefits" resultType="java.util.LinkedHashMap">
+        SELECT b.id AS benefitId,
+               b.benefit_no AS benefitNo,
+               b.member_id AS memberId,
+               b.product_id AS productId,
+               COALESCE(p.product_name, o.product_name) AS productName,
+               b.store_id AS storeId,
+               COALESCE(s.storeName, sa.storeName) AS storeName,
+               b.total_lessons AS totalLessons,
+               b.used_lessons AS usedLessons,
+               b.frozen_lessons AS frozenLessons,
+               b.remaining_lessons AS remainingLessons,
+               b.status,
+               DATE_FORMAT(b.effective_at, '%Y-%m-%d %H:%i:%s') AS effectiveAt,
+               DATE_FORMAT(b.expire_at, '%Y-%m-%d %H:%i:%s') AS expireAt
+        FROM pt_member_private_benefit b
+        LEFT JOIN pt_private_order o ON o.id = b.order_id
+        LEFT JOIN pt_product p ON p.id = b.product_id
+        LEFT JOIN store_address sa ON sa.storeAddrId = b.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE b.coach_id = #{coachId}
+          AND b.member_id IN
+        <foreach collection="memberIds" item="memberId" open="(" separator="," close=")">
+            #{memberId}
+        </foreach>
+        ORDER BY b.member_id ASC,
+                 (b.status = 1 AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())) DESC,
+                 b.id DESC
     </select>
 
     <!--

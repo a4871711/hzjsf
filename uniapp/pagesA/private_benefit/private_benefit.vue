@@ -9,9 +9,11 @@
 			<view class="card" v-for="item in list" :key="item.benefitId">
 				<view class="head">
 					<view class="name">{{ item.productName || '私教课程' }}</view>
+					<text class="source" v-if="Number(item.orderSource) === 1">赠送</text>
 					<text class="status" :class="item.statusClassName">{{ item.statusLabel }}</text>
 				</view>
 				<view class="store">{{ item.storeName || '适用门店' }} · {{ Number(item.serviceType) === 2 ? '一对多' : '一对一' }}</view>
+				<view class="gift-coach" v-if="Number(item.orderSource) === 1">仅可预约赠送教练：{{ item.coachName || '--' }}</view>
 				<view class="lesson-box">
 					<view><text>{{ item.remainingLessons || 0 }}</text><text>剩余可约</text></view>
 					<view><text>{{ item.frozenLessons || 0 }}</text><text>已预约</text></view>
@@ -154,9 +156,11 @@
 	.head { display: flex; align-items: center; }
 	.name { flex: 1; color: #222; font-size: 32rpx; font-weight: 900; }
 	.status { font-size: 23rpx; font-weight: 700; }
+	.source { margin-right: 16rpx; padding: 5rpx 14rpx; color: #E15B00; background: #FFF1E8; border-radius: 20rpx; font-size: 21rpx; font-weight: 700; }
 	.status.is-active { color: #2FA65A; }
 	.status.is-gray { color: #999; }
 	.store { margin-top: 10rpx; color: #888; font-size: 23rpx; }
+	.gift-coach { margin-top: 12rpx; color: #E15B00; font-size: 23rpx; }
 	.lesson-box { display: flex; margin: 28rpx 0 18rpx; padding: 24rpx 10rpx; background: #FFF7F1; border-radius: 14rpx; }
 	.lesson-box view { width: 25%; display: flex; flex-direction: column; align-items: center; color: #999; font-size: 20rpx; }
 	.lesson-box text:first-child { margin-bottom: 8rpx; color: #E15B00; font-size: 34rpx; font-weight: 900; }

@@ -98,6 +98,11 @@ export function getPrivateCoachWorkbench(params = {}) {
 	return post('/privateAppointment/coachWorkbench', params, true);
 }
 
+// 普通私教服务会员：后端按 token 绑定教练及会员权益 coach_id 过滤
+export function getPrivateCoachMembers(params = {}) {
+	return post('/privateCoachCenter/members', params, true);
+}
+
 // 教练固定周排班：与后台 /sys/schedule 共用 pt_coach_schedule 和业务校验
 export function getPrivateCoachSchedules(params = {}) {
 	return post('/privateCoachSchedule/list', params, true);
@@ -138,6 +143,23 @@ export function getPrivateCoachWithdrawalList(params = {}) {
 
 export function applyPrivateCoachWithdrawal(params = {}) {
 	return post('/privateCoachCenter/withdrawalApply', params, true);
+}
+
+// 自由教练赠课：身份始终由后端根据 token 绑定关系判断
+export function getGiftablePrivateBenefits(params = {}) {
+	return post('/privateCoachGift/giftableBenefits', params, true);
+}
+
+export function lookupPrivateGiftMember(params = {}) {
+	return post('/privateCoachGift/memberLookup', params, true);
+}
+
+export function giftPrivateLessons(params = {}) {
+	return post('/privateCoachGift/gift', params, true);
+}
+
+export function getPrivateGiftHistory(params = {}) {
+	return post('/privateCoachGift/history', params, true);
 }
 
 // 完课评价

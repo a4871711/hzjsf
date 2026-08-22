@@ -35,6 +35,9 @@
             <if test="status != null and status != ''">
                 AND c.status = #{status}
             </if>
+            <if test="coachType != null and coachType != ''">
+                AND c.coach_type = #{coachType}
+            </if>
             <if test="coachLevel != null and coachLevel != ''">
                 AND c.coach_level = #{coachLevel}
             </if>
@@ -85,6 +88,9 @@
             <if test="status != null and status != ''">
                 AND c.status = #{status}
             </if>
+            <if test="coachType != null and coachType != ''">
+                AND c.coach_type = #{coachType}
+            </if>
             <if test="coachLevel != null and coachLevel != ''">
                 AND c.coach_level = #{coachLevel}
             </if>
@@ -113,11 +119,11 @@
 
     <insert id="save" parameterType="com.dlc.modules.sys.entity.PtCoachEntity" useGeneratedKeys="true" keyProperty="id">
         insert into pt_coach
-        (`coach_no`, `coach_name`, `mobile`, `user_id`, `gender`, `avatar_url`, `coach_level`, `intro`,
+        (`coach_no`, `coach_name`, `mobile`, `user_id`, `coach_type`, `gender`, `avatar_url`, `coach_level`, `intro`,
          `certificate_urls`, `status`, `disable_reason`, `sort_no`,
          `created_by`, `created_at`, `updated_by`, `updated_at`)
         values
-        (#{coachNo}, #{coachName}, #{mobile}, #{userId}, #{gender}, #{avatarUrl}, #{coachLevel}, #{intro},
+        (#{coachNo}, #{coachName}, #{mobile}, #{userId}, #{coachType}, #{gender}, #{avatarUrl}, #{coachLevel}, #{intro},
          #{certificateUrls}, #{status}, #{disableReason}, #{sortNo},
          #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
     </insert>
@@ -128,6 +134,7 @@
             <if test="coachName != null">`coach_name` = #{coachName},</if>
             <if test="mobile != null">`mobile` = #{mobile},</if>
             <if test="userId != null">`user_id` = #{userId},</if>
+            <if test="coachType != null">`coach_type` = #{coachType},</if>
             <if test="gender != null">`gender` = #{gender},</if>
             <if test="avatarUrl != null">`avatar_url` = #{avatarUrl},</if>
             <if test="coachLevel != null">`coach_level` = #{coachLevel},</if>

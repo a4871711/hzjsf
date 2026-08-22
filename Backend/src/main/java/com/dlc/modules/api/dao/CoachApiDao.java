@@ -48,6 +48,19 @@ public interface CoachApiDao {
     /** 教练首页三项统计：本月已上课时、未来待上课时、本月已完成课程产生的预计课时费 */
     Map<String, Object> queryCoachHomeStats(@Param("coachId") Long coachId);
 
+    /** 普通私教负责的会员，按会员权益 coach_id 归属并按会员聚合。 */
+    List<Map<String, Object>> queryCoachMembers(@Param("coachId") Long coachId,
+                                                @Param("keyword") String keyword,
+                                                @Param("offset") Integer offset,
+                                                @Param("limit") Integer limit);
+
+    int countCoachMembers(@Param("coachId") Long coachId,
+                          @Param("keyword") String keyword);
+
+    /** 批量查询本页会员在当前教练名下的全部权益，避免逐会员查询。 */
+    List<Map<String, Object>> queryCoachMemberBenefits(@Param("coachId") Long coachId,
+                                                        @Param("memberIds") List<Long> memberIds);
+
     /** 私教收入汇总；仅统计 PT_LESSON_ / PT_SALE_ 流水，避免混入旧 coach 域同 ID 数据 */
     Map<String, Object> queryCoachIncomeSummary(@Param("coachId") Long coachId,
                                                  @Param("monthStart") String monthStart,

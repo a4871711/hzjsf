@@ -46,6 +46,8 @@
                b.store_id AS storeId,
                b.coach_id AS coachId,
                c.coach_name AS coachName,
+               o.order_source AS orderSource,
+               o.remark,
                COALESCE(p.product_name, o.product_name) AS productName,
                p.cover_url AS coverUrl,
                p.service_type AS serviceType,
@@ -129,6 +131,15 @@
         SET total_lessons = total_lessons - #{n},
             remaining_lessons = remaining_lessons - #{n}
         WHERE id = #{id} AND remaining_lessons &gt;= #{n}
+    </update>
+
+    <!-- 赠课只转出尚未冻结的剩余课时；total 与 remaining 同减，已用/冻结不变。 -->
+    <update id="giftDeductLessons">
+        UPDATE pt_member_private_benefit
+        SET total_lessons = total_lessons - #{n},
+            remaining_lessons = remaining_lessons - #{n},
+            updated_at = NOW()
+        WHERE id = #{id} AND status = 1 AND remaining_lessons &gt;= #{n}
     </update>
 
     <!-- 核销收口:仅生效中且无剩余无冻结才置已用完(已过期权益保持3) -->

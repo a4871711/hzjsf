@@ -68,7 +68,7 @@ public interface PrivateOrderService {
      * 流程:FOR UPDATE 锁订单行 → 幂等闸1 order_status=0 前置判断 → 记账 IncomePayDetail
      * → 幂等闸3 扣库存条件 UPDATE(活动单加扣活动表) → 券核销 3使用中→1已使用
      * → 支付方式分支【一次性微信/储值=结清 / 分期首付=部分支付并生成分期计划】
-     * → 幂等闸2 按 order_id 建权益(activate) → 附赠团课权益发放 → 团课转私教留桩(第22步)。
+     * → 幂等闸2 按 order_id 建权益(activate) → 附赠团课权益发放。
      * 微信可能重复回调:重复回调/异常单号返回 0 不抛错,回调链正常应答避免无限重试。
      *
      * @param orderNo       商户订单号(末位后缀 b)
@@ -81,7 +81,8 @@ public interface PrivateOrderService {
 
     /**
      * 后台退款冲减(第15步,sys 后台 /sys/privateOrder/refund 委托入口,单事务)。
-     * 流程:FOR UPDATE 锁单 → 校验 order_status∈{1首付已付,2已结清} 且 refundAmount≤paid-refund(锁内上限校验天然防重复提交)
+     * 流程:FOR UPDATE 锁单 → 拒绝赠送订单 → 校验 order_status∈{1首付已付,2已结清}
+     * 且 refundAmount≤paid-refund-已赠课时折算金额(锁内上限校验天然防重复提交)
      * → 冲减权益课时(refundLessons 缺省=剩余课时全冲,refundDeduct 只冲 remaining,不可冲到冻结/已用)
      * → 订单落退款(全额退→order_status=4/pay_status=3,部分退保持原状态) → 写退款流水(payType=9)
      * → 渠道退款放事务末:微信(1)走现有 wxRefund 通道,受理失败抛异常整体回滚;

@@ -26,8 +26,17 @@ public interface PtPrivateOrderDao {
     /** 按订单号查(detail 用,本人校验在 service 层做) */
     PtPrivateOrderEntity selectByOrderNo(@Param("orderNo") String orderNo);
 
+    /** 赠课幂等查询。 */
+    PtPrivateOrderEntity selectByGiftRequestNo(@Param("giftRequestNo") String giftRequestNo);
+
+    /** 锁定读取赠课幂等记录，用于并发二次确认。 */
+    PtPrivateOrderEntity selectByGiftRequestNoForUpdate(@Param("giftRequestNo") String giftRequestNo);
+
     /** 新建待支付订单(回填自增 id;order_no 撞唯一键由调用方重试) */
     int save(PtPrivateOrderEntity entity);
+
+    /** 直接写入零金额已结清赠送订单，不经过支付与库存流程。 */
+    int saveGift(PtPrivateOrderEntity entity);
 
     /**
      * 限购计数:该会员对该商品的已支付+待支付单数(order_status IN 0/1/2,不含已取消/已退款)。
@@ -109,6 +118,9 @@ public interface PtPrivateOrderDao {
 
     /** 行锁取订单(退款用):FOR UPDATE 串行化并发退款,金额上限校验在锁内天然防重复提交 */
     PtPrivateOrderEntity selectByIdForUpdate(@Param("id") Long id);
+
+    /** 来源订单已转赠课时；退款金额上限需按该课时比例扣除。 */
+    int sumGiftedLessonsBySourceOrder(@Param("sourceOrderId") Long sourceOrderId);
 
     /**
      * 退款落账:CAS(order_status IN (1,2) AND refund_amount=旧值),0行=并发已变须回滚。

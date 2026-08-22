@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlc.modules.api.dao.PrivateCoachGiftDao">
+
+    <!-- 只允许赠送本人正常购买且已结清的节次套餐，受赠获得的权益不能再次转赠。 -->
+    <select id="queryGiftableBenefits" resultType="java.util.LinkedHashMap">
+        SELECT b.id AS sourceBenefitId, b.benefit_no AS benefitNo,
+               o.id AS sourceOrderId, o.order_no AS sourceOrderNo,
+               o.product_id AS productId, o.product_name AS productName,
+               o.store_id AS storeId, s.storeName,
+               b.remaining_lessons AS remainingLessons,
+               b.expire_at AS expireAt
+        FROM pt_member_private_benefit b
+        INNER JOIN pt_private_order o ON o.id = b.order_id AND o.deleted = 0
+        LEFT JOIN store_address sa ON sa.storeAddrId = b.store_id
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE b.member_id = #{userId}
+          AND b.status = 1
+          AND b.remaining_lessons &gt; 0
+          AND (b.expire_at IS NULL OR b.expire_at &gt; NOW())
+          AND o.member_id = #{userId}
+          AND o.product_type_id = 2
+          AND o.pay_status = 2
+          AND o.order_status = 2
+          AND o.order_source = 0
+        ORDER BY (b.expire_at IS NULL) ASC, b.expire_at ASC, b.id ASC
+    </select>
+
+    <!-- 精确匹配完整会员ID或完整手机号，避免模糊枚举会员数据。 -->
+    <select id="queryMemberExact" resultType="java.util.LinkedHashMap">
+        SELECT u.userId AS userId, u.nickname, u.phone, u.headImgUrl,
+               u.nowStoreId AS storeId, s.storeName
+        FROM user_info u
+        LEFT JOIN store_address sa ON sa.storeAddrId = u.nowStoreId
+        LEFT JOIN store s ON s.storeId = sa.storeId
+        WHERE u.isDel = 0
+          AND (CAST(u.userId AS CHAR) = #{keyword} OR u.phone = #{keyword})
+        ORDER BY u.userId ASC
+        LIMIT 1
+    </select>
+
+    <select id="queryGiftHistory" resultType="java.util.LinkedHashMap">
+        SELECT o.id AS giftOrderId, o.order_no AS giftOrderNo,
+               o.member_id AS toMemberId, o.member_name AS toMemberName,
+               CASE WHEN LENGTH(o.member_mobile) &gt;= 7
+                    THEN CONCAT(LEFT(o.member_mobile, 3), '****', RIGHT(o.member_mobile, 4))
+                    ELSE o.member_mobile END AS toMemberMobile,
+               o.product_name AS productName,
+               o.lesson_count AS lessonCount, o.remark,
+               o.source_order_id AS sourceOrderId, o.source_benefit_id AS sourceBenefitId,
+               o.created_at AS createdAt, b.id AS targetBenefitId, b.expire_at AS expireAt
+        FROM pt_private_order o
+        LEFT JOIN pt_member_private_benefit b ON b.order_id = o.id
+        WHERE o.created_by = #{userId}
+          AND o.order_source = 1
+          AND o.deleted = 0
+        ORDER BY o.id DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countGiftHistory" resultType="int">
+        SELECT COUNT(*)
+        FROM pt_private_order
+        WHERE created_by = #{userId} AND order_source = 1 AND deleted = 0
+    </select>
+</mapper>

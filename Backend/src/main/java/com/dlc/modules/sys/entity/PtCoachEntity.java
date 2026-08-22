@@ -20,6 +20,8 @@ public class PtCoachEntity implements Serializable {
     private String mobile;
     /** 绑定的手机端会员账号 user_info.userId，一名教练最多绑定一个账号 */
     private Long userId;
+    /** 教练类型：1私教 2自由教练 */
+    private Integer coachType;
     /** 性别：1男 2女 0未知 */
     private Integer gender;
     private String avatarUrl;
@@ -66,6 +68,9 @@ public class PtCoachEntity implements Serializable {
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
+    public Integer getCoachType() { return coachType; }
+    public void setCoachType(Integer coachType) { this.coachType = coachType; }
 
     public Integer getGender() { return gender; }
     public void setGender(Integer gender) { this.gender = gender; }
