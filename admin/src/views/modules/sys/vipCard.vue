@@ -76,7 +76,7 @@ export default {
         { type: "input", label: "有效天数", width: 350, prop: "validityDays" },
         { type: "select", label: "适用门店", width: 350, prop: "storeAddrIds", multiple: true },
         { type: "select", label: "可绑定会员卡", width: 350, prop: "bindFitCardIds", multiple: true,
-          placeholder: '不选=不限制，任何会员均可购买' },
+          placeholder: '不选=未配置，不解锁任何权益类型会员卡' },
         { type: "switch", label: "显示实时购买人数", prop: "showBuyCount", values: [1, 0] },
         { type: "input", label: "展示基数/首发起算人数", width: 350, prop: "baseBuyCount" },
         { type: "input", label: "每多少人涨价", width: 350, prop: "stepNum", placeholder: "0=不动态涨价" },

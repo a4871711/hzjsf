@@ -31,6 +31,7 @@
                DATE_FORMAT(a.activity_end_date,   '%Y-%m-%d') AS activityEndDate,
                p.product_id AS productId, p.flash_sale_price AS flashSalePrice,
                p.activity_stock AS activityStock, p.sold_count AS soldCount,
+               (case a.biz_type when 2 then (select cardNature from fit_card where fitCardId = p.product_id) else 0 end) AS cardNature,
                <include refid="productNameCol"/> AS productName,
                <include refid="originPriceCol"/> AS originPrice
         FROM mk_flash_sale_activity a

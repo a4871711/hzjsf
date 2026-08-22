@@ -2,12 +2,15 @@ package com.dlc.modules.api.controller;
 
 import com.dlc.common.utils.R;
 import com.dlc.modules.api.service.ApiFlashSaleService;
+import com.dlc.modules.api.vo.UserInfoVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
- * 会员端限时秒杀(移动端)。首页秒杀卡片公开可看(不强制登录)。
+ * 会员端限时秒杀(移动端)。首页秒杀卡片公开可看(不强制登录)，权益类型会员卡按登录用户资格过滤。
  * 抢购下单复用各域现有下单接口(会员卡 /api/cardOrder/createOrder、权益卡 /api/vipCard/buy)，仅多传 flashSaleActivityId。
  *
  * @author claude
@@ -27,7 +30,9 @@ public class ApiFlashSaleController extends BaseController {
      * 空数组表示当前无秒杀，前端不渲染该区块。
      */
     @RequestMapping("/current")
-    public R current(Long storeAddrId) {
-        return R.reOk(apiFlashSaleService.queryCurrentCards(storeAddrId));
+    public R current(Long storeAddrId, HttpServletRequest request) {
+        UserInfoVo user = getUserVoIgnore(request);
+        Long userId = user == null ? null : user.getUserId();
+        return R.reOk(apiFlashSaleService.queryCurrentCards(storeAddrId, userId));
     }
 }

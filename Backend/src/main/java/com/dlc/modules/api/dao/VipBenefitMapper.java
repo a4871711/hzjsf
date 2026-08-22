@@ -54,6 +54,12 @@ public interface VipBenefitMapper {
     /** 该用户名下「正常且未过期」的有效权益卡数量(>0 即为权益会员) */
     int countValidByUser(@Param("userId") Long userId);
 
+    /**
+     * 该用户是否持有可购买指定会员卡的有效权益。
+     * 必须由权益卡 bind_fit_card_ids 明确绑定 fitCardId；未配置绑定关系不放行。
+     */
+    int countValidForFitCard(@Param("userId") Long userId, @Param("fitCardId") Long fitCardId);
+
     /** 取该用户最新一张「正常且未过期」的有效权益(与 countValidByUser 同条件,停卡按其 vip_card_id 找停卡规则) */
     VipBenefit selectLatestValidByUser(@Param("userId") Long userId);
 }

@@ -13,8 +13,9 @@ public interface ApiFlashSaleService {
     /**
      * 首页当前秒杀卡片（每个在投商品一张卡）：含 status(preheat/ongoing/soldout)、serverTime、startTime/endTime(当前窗口)。
      * storeAddrId 非空时按商品适用门店过滤（适用门店为空=通店不过滤）。
+     * 权益类型会员卡仅向持有匹配权益的 userId 展示；未登录或权益不匹配时隐藏。
      */
-    List<Map<String, Object>> queryCurrentCards(Long storeAddrId);
+    List<Map<String, Object>> queryCurrentCards(Long storeAddrId, Long userId);
 
     /**
      * 下单可买校验：命中活动+商品且当前处于可抢时段、有剩余库存则返回活动+商品信息

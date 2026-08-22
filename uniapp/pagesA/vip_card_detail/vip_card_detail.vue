@@ -60,7 +60,7 @@
 		<!-- 可购买会员卡(该权益卡绑定的专属会员卡,仅上架) -->
 		<view class="vc-section" v-if="card.bindFitCards && card.bindFitCards.length">
 			<view class="vc-sec-title">可购买会员卡</view>
-			<view class="vc-fc-tip" v-if="!card.hasBenefit">购买以下会员卡需先开通本权益卡</view>
+			<view class="vc-fc-tip" v-if="!card.heldThis">购买以下会员卡需先开通本权益卡</view>
 			<view class="vc-fc-list">
 				<view class="fc-item" v-for="fc in card.bindFitCards" :key="fc.fitCardId" @click="onBuyFitCard(fc)">
 					<view class="fc-name">{{ fc.cardName || '--' }}</view>
@@ -173,11 +173,11 @@
 			fcPrice(fc) {
 				return fc.cardPrice != null ? fc.cardPrice : 0;
 			},
-			// 点击绑定会员卡去购买:未持有效权益先提示;已持则跳下单页
+			// 点击绑定会员卡去购买:必须持有当前权益卡，持有其它权益不能解锁
 			onBuyFitCard(fc) {
 				if (!fc || !fc.fitCardId) return;
-				if (!this.card.hasBenefit) {
-					this.config.Toast('请先购买权益卡后再购买该会员卡');
+				if (!this.card.heldThis) {
+					this.config.Toast('请先开通当前权益后再购买该会员卡');
 					return;
 				}
 				// id 与 openVip 互斥(card_renewal.vue 内两者是两条门店解析路径:id=精确门店,

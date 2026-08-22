@@ -24,7 +24,7 @@ public class VipBenefitCard implements Serializable {
     private Integer validityDays;
     /** 适用门店ID(逗号分隔的 store_addr_id) */
     private String storeAddrIds;
-    /** 可绑定的会员卡ID列表(逗号分隔,取自 fit_card.fitCardId 且须为 cardNature=1 的权益卡性质记录);为空=不限制,任何会员均可购买 */
+    /** 可绑定的会员卡ID列表(逗号分隔,取自 fit_card.fitCardId 且须为 cardNature=1 的权益卡性质记录);为空=未配置,不解锁任何会员卡 */
     private String bindFitCardIds;
     /** 关联转让费用规则 */
     private Long feeRuleId;

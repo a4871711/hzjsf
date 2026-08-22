@@ -37,7 +37,7 @@ public interface SysVipCardService {
 
     /**
      * 校验"可绑定会员卡"配置字符串:每个 fitCardId 都必须存在且为权益卡性质(cardNature=1)。
-     * null/空字符串视为未配置,直接通过(不限制)。
+     * null/空字符串视为未配置,仅通过格式校验；购买时不解锁任何会员卡。
      */
     boolean isBindFitCardIdsValid(String bindFitCardIds);
 }

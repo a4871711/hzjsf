@@ -179,6 +179,15 @@ public class VipBenefitServiceImpl implements VipBenefitService {
     }
 
     @Override
+    public boolean hasValidBenefitForFitCard(Long userId, Long fitCardId) {
+        if (userId == null || fitCardId == null) {
+            return false;
+        }
+        // 权益类型会员卡只能由明确绑定它的有效权益解锁，不能用其它权益或空配置兜底。
+        return vipBenefitMapper.countValidForFitCard(userId, fitCardId) > 0;
+    }
+
+    @Override
     public VipBenefit latestValidBenefit(Long userId) {
         return userId == null ? null : vipBenefitMapper.selectLatestValidByUser(userId);
     }

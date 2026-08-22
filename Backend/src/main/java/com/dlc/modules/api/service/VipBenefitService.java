@@ -33,6 +33,9 @@ public interface VipBenefitService {
     /** 该用户是否为权益会员(名下有正常且未过期的权益);userId 为 null 时返回 false */
     boolean hasValidBenefit(Long userId);
 
+    /** 指定会员卡是否被该用户当前有效权益明确绑定；任一参数为空或绑定未配置时返回 false */
+    boolean hasValidBenefitForFitCard(Long userId, Long fitCardId);
+
     /** 该用户最新一张有效权益(与 hasValidBenefit 同口径);无/未登录返回 null */
     VipBenefit latestValidBenefit(Long userId);
 }

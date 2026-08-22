@@ -108,9 +108,8 @@ public class VipCardServiceImpl implements VipCardService {
         }
         // 该权益卡绑定的可购买会员卡(仅上架),供详情页"可购买会员卡"区块展示
         card.setBindFitCards(loadBindFitCards(card.getBindFitCardIds()));
-        // hasBenefit=持任意有效权益(用户级,控制绑定卡购买门槛);heldThis=持本卡(卡级,
-        // 控制顶部"已开通"——持卡A的用户看卡B详情不能显示"已开通")
-        card.setHasBenefit(held != null);
+        // hasBenefit/heldThis 都按当前权益卡判断：持卡A不能解锁卡B绑定的会员卡。
+        card.setHasBenefit(heldThis);
         card.setHeldThis(heldThis);
         // 适用门店名列表:详情页"适用哪些门店"弹窗展示
         card.setStoreNames(loadStoreNames(card.getStoreAddrIds()));

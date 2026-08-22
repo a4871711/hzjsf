@@ -91,19 +91,20 @@ public class CardOrderServiceImpl implements CardOrderService {
     @Override
     public Map<String,Object> createFitCardOrder(UserInfoVo user, Map<String, Object> params, int flag) {
         log.info("创建订单params："+ params +"========================");
-        // 权益类型会员卡(cardNature=1)须持有效权益卡才能购买/续费。校验放在本方法(手动下单与
+        Long fitCardId = Long.valueOf(String.valueOf(params.get("fitCardId")));
+        // 权益类型会员卡(cardNature=1)须持有明确绑定当前会员卡的有效权益才能购买/续费。校验放在本方法(手动下单与
         // 自动代扣 papAutoPay 的共用入口)而非 Controller,两条路径统一拦截;自动代扣被拦时
         // 异常由 papAutoPay 循环 catch,仅跳过该用户当日续费,不影响其他用户
-        FitCard natureCard = fitCardMapper.getFitCardInfo(Long.valueOf(String.valueOf(params.get("fitCardId"))));
+        FitCard natureCard = fitCardMapper.getFitCardInfo(fitCardId);
         if (natureCard != null && natureCard.getCardNature() != null && natureCard.getCardNature() == 1
-                && !vipBenefitService.hasValidBenefit(user.getUserId())) {
+                && !vipBenefitService.hasValidBenefitForFitCard(user.getUserId(), fitCardId)) {
             throw new RRException(CodeAndMsg.ERROR_FIT_CARD_NEED_BENEFIT);
         }
         CardOrder cardOrder = new CardOrder();
         //用户id
         cardOrder.setUserId(user.getUserId());
         //健身卡id
-        cardOrder.setCardId(Long.valueOf((String) params.get("fitCardId")));
+        cardOrder.setCardId(fitCardId);
         cardOrder.setType(Integer.valueOf(String.valueOf(params.get("type"))));
         //1:自动续费2：非自动续费
         cardOrder.setAutoPay(Integer.valueOf(String.valueOf(params.get("autoPay"))));

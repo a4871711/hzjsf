@@ -3,6 +3,7 @@ package com.dlc.modules.api.service.impl;
 import com.dlc.common.exception.RRException;
 import com.dlc.modules.api.dao.ApiFlashSaleDao;
 import com.dlc.modules.api.service.ApiFlashSaleService;
+import com.dlc.modules.api.service.VipBenefitService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,15 +30,22 @@ public class ApiFlashSaleServiceImpl implements ApiFlashSaleService {
 
     @Autowired
     private ApiFlashSaleDao apiFlashSaleDao;
+    @Autowired
+    private VipBenefitService vipBenefitService;
 
     @Override
-    public List<Map<String, Object>> queryCurrentCards(Long storeAddrId) {
+    public List<Map<String, Object>> queryCurrentCards(Long storeAddrId, Long userId) {
         List<Map<String, Object>> rows = apiFlashSaleDao.queryCurrentProductCards(storeAddrId);
         Date now = new Date();
         String serverTime = fmt(now);
         Map<Long, List<Map<String, Object>>> slotCache = new HashMap<>();
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map<String, Object> row : rows) {
+            // 首页秒杀属于独立购买入口：权益类型会员卡也必须按当前用户的精确绑定关系过滤。
+            if (toInt(row.get("bizType")) == 2 && toInt(row.get("cardNature")) == 1
+                    && !vipBenefitService.hasValidBenefitForFitCard(userId, toLong(row.get("productId")))) {
+                continue;
+            }
             int deliveryType = toInt(row.get("deliveryType"));
             List<Map<String, Object>> slots = null;
             if (deliveryType == 2) {
