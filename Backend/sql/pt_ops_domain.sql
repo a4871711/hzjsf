@@ -1,6 +1,6 @@
 -- =====================================================================
--- 私教 · 运营域建表(评价/续费预警/跨店/异常预警/团课转私教)
--- 评价2+续费预警3+跨店1+异常2+团课转私教3=11表;不含 pt_coach_fee_rule(归教练域,见总则0.11#1)
+-- 私教 · 运营域建表(评价/续费预警/异常预警)
+-- 评价2+续费预警3+异常2=7表;不含 pt_coach_fee_rule(归教练域,见总则0.11#1)
 -- 依据《私教需求文档》第21节 DDL + 《失历健身私教管理后台_详细实现文档》总则0.4/各域§2
 -- 字符集 utf8mb4；标 -- 【补充】 的列/索引为需求DDL未给、实现所需(评审项)
 -- 可在开发库执行(需确认非生产)
@@ -137,53 +137,3 @@ CREATE TABLE `pt_exception_warning_record` (
   KEY `idx_pt_exception_warning_record_period` (`period_start`, `period_end`),
   UNIQUE KEY `uk_exc_warn_dedup` (`rule_id`, `member_id`, `warning_type`, `period_start`, `period_end`) -- 【补充】
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='异常预警记录表';
-
-CREATE TABLE `pt_group_to_private_rule` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `rule_name` VARCHAR(100) NOT NULL COMMENT '规则名称',
-  `attendance_days` INT DEFAULT NULL COMMENT '出勤统计周期天数',
-  `attendance_threshold` INT DEFAULT NULL COMMENT '出勤次数阈值',
-  `purchase_days` INT DEFAULT NULL COMMENT '购课统计周期天数',
-  `purchase_threshold` INT DEFAULT NULL COMMENT '购课次数阈值',
-  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：1启用 0停用',
-  `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
-  `created_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '创建人ID',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人ID',
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_pt_group_to_private_rule_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团课转私教识别规则表';
-
-CREATE TABLE `pt_group_to_private_lead` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `member_id` BIGINT UNSIGNED NOT NULL COMMENT '会员ID',
-  `store_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '所属门店ID',
-  `rule_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '命中规则ID',
-  `attendance_count` INT NOT NULL DEFAULT 0 COMMENT '团课出勤次数',
-  `purchase_count` INT NOT NULL DEFAULT 0 COMMENT '团课购课次数',
-  `intention_reason` VARCHAR(255) DEFAULT NULL COMMENT '高意向原因',
-  `experience_coupon_status` TINYINT NOT NULL DEFAULT 0 COMMENT '体验券状态：0未发放 1已发放 2已使用',
-  `follow_status` TINYINT NOT NULL DEFAULT 0 COMMENT '跟进状态：0待跟进 1已跟进 2已转化 3已放弃',
-  `follow_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '跟进人ID',
-  `last_follow_time` DATETIME DEFAULT NULL COMMENT '最近跟进时间',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_pt_group_to_private_lead_member_id` (`member_id`),
-  KEY `idx_pt_group_to_private_lead_store_id` (`store_id`),
-  KEY `idx_pt_group_to_private_lead_follow_status` (`follow_status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团课转私教转化名单表';
-
-CREATE TABLE `pt_group_to_private_follow` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `lead_id` BIGINT UNSIGNED NOT NULL COMMENT '转化名单ID',
-  `member_id` BIGINT UNSIGNED NOT NULL COMMENT '会员ID',
-  `follow_status` TINYINT NOT NULL COMMENT '跟进状态：0待跟进 1已跟进 2已转化 3已放弃',
-  `follow_remark` VARCHAR(500) DEFAULT NULL COMMENT '跟进备注',
-  `operator_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '操作人ID',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_pt_group_to_private_follow_lead_id` (`lead_id`),
-  KEY `idx_pt_group_to_private_follow_member_id` (`member_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团课转私教跟进记录表';

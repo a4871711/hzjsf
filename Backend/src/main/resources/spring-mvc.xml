@@ -213,7 +213,6 @@
     <bean id="installmentOverdueTask" class="com.dlc.modules.api.schedule.InstallmentOverdueTask"></bean>
     <bean id="renewalWarningScanTask" class="com.dlc.modules.api.schedule.RenewalWarningScanTask"></bean>
     <bean id="exceptionWarningScanTask" class="com.dlc.modules.api.schedule.ExceptionWarningScanTask"></bean>
-    <bean id="groupToPrivateScanTask" class="com.dlc.modules.api.schedule.GroupToPrivateScanTask"></bean>
     <task:scheduled-tasks>
         <!--每隔1小时执行一次更新卡、商城、私教课、团体课订单状态(第16步扩展:含私教购买单超时取消+释放优惠券)-->
         <task:scheduled ref="updateOrderStatusTask" method="updateOrderStatus" cron="0 0 0/1 * * ?"/>
@@ -267,11 +266,6 @@
     <task:scheduled-tasks>
         <!--每天3点10分执行一次私教异常预警扫描(第22步:频繁取消/课时消耗异常按周期聚合达阈值,uk_exc_warn_dedup+ON DUPLICATE去重);错峰避开凌晨1点段及0/1/2/8整点既有任务-->
         <task:scheduled ref="exceptionWarningScanTask" method="scan" cron="0 10 3 * * ?"/>
-    </task:scheduled-tasks>
-
-    <task:scheduled-tasks>
-        <!--每天3点20分执行一次团课转私教高意向名单扫描(第22步:团课出勤/购课达阈值,uk_member_id+ON DUPLICATE去重不覆盖人工态);错峰避开3:10异常预警及0/1/2/8整点既有任务-->
-        <task:scheduled ref="groupToPrivateScanTask" method="scan" cron="0 20 3 * * ?"/>
     </task:scheduled-tasks>
 
     <!-- 注意：此处第二个 <mvc:annotation-driven> 声明会覆盖文件开头的 FastJson 配置（Spring bean 同名覆盖），
