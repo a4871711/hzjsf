@@ -124,7 +124,7 @@
 
 	<!--查询开门相关设置-->
 	<select id="queryOpenDoor" resultType="java.util.Map">
-		SELECT open_door, qrcode_valid
+			SELECT open_door, qrcode_valid, appointment_qr_enabled
 		FROM about_us limit 1
 	</select>
 

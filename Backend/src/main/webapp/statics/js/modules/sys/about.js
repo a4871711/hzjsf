@@ -24,7 +24,9 @@ $(function () {
             { label: '中文公司名', name: 'companyNameCHN', index: 'companyNameCHN', width: 50},
             { label: '英文公司名', name: 'companyNameENG', index: 'companyNameENG', width: 50},
             { label: '开门限制距离', name: 'openDoor', index: 'openDoor', width: 50},
-            { label: '开门二维码有效时间', name: 'qrcodeValid', index: 'qrcodeValid', width: 50}
+            { label: '开门二维码有效时间', name: 'qrcodeValid', index: 'qrcodeValid', width: 50},
+            { label: '预约开门码', name: 'appointmentQrEnabled', width: 40,
+                formatter: function (value) { return Number(value) === 1 ? '开启' : '关闭'; } }
         ],
         viewrecords: true,
         rowNum: 10,
@@ -142,6 +144,9 @@ var vm = new Vue({
         },
         saveOrUpdate: function (event) {
             vm.list.appImgUrl = $("#img img").attr("src");
+            if (vm.list.appointmentQrEnabled === undefined || vm.list.appointmentQrEnabled === null) {
+                vm.list.appointmentQrEnabled = 0;
+            }
             if (vm.validator()) {
                 return;
             }

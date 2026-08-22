@@ -2,6 +2,8 @@ package com.dlc.modules.sys.entity;
 
 import org.hibernate.validator.constraints.NotBlank;
 
+import javax.validation.constraints.NotNull;
+
 import java.io.Serializable;
 import java.util.Date;
 
@@ -60,6 +62,10 @@ public class SysAboutEntity implements Serializable{
 
     @NotBlank(message = "开门二维码有效时间")
     private String qrcodeValid;
+
+    /** 无会籍卡预约开门码：0关闭 1开启 */
+    @NotNull(message = "请选择无会籍卡预约开门码规则")
+    private Integer appointmentQrEnabled;
 
     public String getAppUrl() {
         return appUrl;
@@ -174,6 +180,14 @@ public class SysAboutEntity implements Serializable{
 
     public void setQrcodeValid(String qrcodeValid) {
         this.qrcodeValid = qrcodeValid;
+    }
+
+    public Integer getAppointmentQrEnabled() {
+        return appointmentQrEnabled;
+    }
+
+    public void setAppointmentQrEnabled(Integer appointmentQrEnabled) {
+        this.appointmentQrEnabled = appointmentQrEnabled;
     }
 
 

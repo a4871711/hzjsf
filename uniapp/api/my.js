@@ -91,6 +91,14 @@ export async function getOpenDoorQR(params = {}) {
 	return res.data;
 }
 
+// 开门码页面专用：会员卡优先，无有效卡时由后端按私教预约规则决策
+export async function getDoorAccessQR(params = {}) {
+	Request.isLogin = true;
+	Request.isError = false;
+	const res = await Request.post('/doorAccess/qrcode', params);
+	return res.data;
+}
+
 
 // 购卡记录
 export async function cardRecord(params = {}) {

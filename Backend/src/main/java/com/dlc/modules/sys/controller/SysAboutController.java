@@ -3,6 +3,7 @@ package com.dlc.modules.sys.controller;
 import com.dlc.common.utils.PageUtils;
 import com.dlc.common.utils.Query;
 import com.dlc.common.utils.R;
+import com.dlc.common.exception.RRException;
 import com.dlc.common.validator.ValidatorUtils;
 import com.dlc.modules.sys.entity.SysAboutEntity;
 import com.dlc.modules.sys.service.SysAboutService;
@@ -54,6 +55,7 @@ public class SysAboutController {
         entity.setCreateTime(new Date());
         //非空验证
         ValidatorUtils.validateEntity(entity);
+        validateAppointmentQrEnabled(entity.getAppointmentQrEnabled());
 
         sysAboutService.save(entity);
         return R.ok();
@@ -66,6 +68,7 @@ public class SysAboutController {
     @RequiresPermissions("sys:about:update")
     public R update(@RequestBody SysAboutEntity entity) {
         ValidatorUtils.validateEntity(entity);
+        validateAppointmentQrEnabled(entity.getAppointmentQrEnabled());
         sysAboutService.update(entity);//全部更新
         return R.ok();
     }
@@ -78,5 +81,11 @@ public class SysAboutController {
     public R delete(@RequestBody Long[] ids) {
         sysAboutService.deleteBatch(ids);
         return R.ok();
+    }
+
+    private void validateAppointmentQrEnabled(Integer value) {
+        if (!Integer.valueOf(0).equals(value) && !Integer.valueOf(1).equals(value)) {
+            throw new RRException("无会籍卡预约开门码规则非法，只允许0关闭或1开启");
+        }
     }
 }

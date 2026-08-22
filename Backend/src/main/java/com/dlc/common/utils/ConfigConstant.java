@@ -121,6 +121,8 @@ public class ConfigConstant {
     public static final String DEVICE = "hzjsf_device_";
     public static final String DEVICE_SUB = "hzjsf_device_sub_";
     public static final String DEVICE_RAND = "hzjsf_device_rand_";
+    /** 预约开门二维码随机码，key 后拼 appointmentId:userId。 */
+    public static final String APPOINTMENT_QR_RAND = "hzjsf_appointment_qr_rand_";
     /**商品缓存前缀*/
     public static final String GOODS = "hzjsf_goods_";
     //友盟+推送

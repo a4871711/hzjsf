@@ -14,6 +14,7 @@ import com.dlc.modules.api.dao.StoreAddressMapper;
 import com.dlc.modules.api.entity.OpenDoorRecord;
 import com.dlc.modules.api.entity.StoreDeviceV2;
 import com.dlc.modules.api.service.AboutUsService;
+import com.dlc.modules.api.service.DoorAccessService;
 import com.dlc.modules.api.service.StoreDeviceV2Service;
 import com.dlc.modules.api.vo.RidoVo;
 import com.dlc.modules.qd.utils.MD5Util;
@@ -47,6 +48,9 @@ public class WefitController extends BaseController{
 
     @Autowired
     private AboutUsService aboutUsService;
+
+    @Autowired
+    private DoorAccessService doorAccessService;
 
     @Autowired
     private OpenDoorRecordMapper openDoorRecordMapper;
@@ -139,6 +143,10 @@ public class WefitController extends BaseController{
 //            System.out.println("扫码开门参数效验A，vgdecoderesult=" + paramA[1]);
 //            System.out.println("扫码开门参数效验B，devicenumber=" + paramB[1]);
             String[] qrcodeData = paramA[1].split("-");
+            boolean appointmentQr = qrcodeData.length == 6 && qrcodeData[5].matches("A\\d+");
+            if ((!appointmentQr && qrcodeData.length != 5) || qrcodeData.length < 5) {
+                return code;
+            }
             String uid = qrcodeData[0].replace("hzjsf_", "");
             //条件一：二维码有效期
             Long validity = Long.parseLong(qrcodeData[1]) + validDoor * 1000; //二维码附带时间戳，有效时间五分钟
@@ -162,6 +170,11 @@ public class WefitController extends BaseController{
             	//openDoorRecord.setRemark("会员定位距离过远");
             	//openDoorRecordMapper.insert(openDoorRecord);
             	//return code;
+            }
+            // 预约二维码必须独立复核预约、门店、时间窗和随机码；不进入会员卡/次卡扣次分支。
+            if (appointmentQr) {
+                return checkAppointmentQrcode(code, qrcodeData, Long.parseLong(uid), scanStoreId,
+                        validity, distance, distanceDoor, openDoorRecord);
             }
             //条件三：检查会员卡有效期
             Long proxyId = deviceMapper.checkUserValidity(Long.parseLong(uid));
@@ -251,6 +264,43 @@ public class WefitController extends BaseController{
         	logger.error("扫码开门失败，参数：" + post, e);
             return code;
         }
+    }
+
+    private String checkAppointmentQrcode(String failCode, String[] qrcodeData, Long userId,
+                                           Long scanStoreId, Long validity, int distance, int distanceDoor,
+                                           OpenDoorRecord openDoorRecord) {
+        Long now = new Date().getTime();
+        if (validity < now) {
+            openDoorRecord.setRemark("二维码已过有效期");
+            openDoorRecordMapper.insert(openDoorRecord);
+            return failCode;
+        }
+        if (distance > distanceDoor) {
+            openDoorRecord.setRemark("距离过远");
+            openDoorRecordMapper.insert(openDoorRecord);
+            return failCode;
+        }
+        Map storeAddress = storeAddressMapper.queryStoreAddressByStoreId(scanStoreId);
+        if (storeAddress == null || storeAddress.isEmpty()) {
+            openDoorRecord.setRemark("门店数据异常");
+            openDoorRecordMapper.insert(openDoorRecord);
+            return failCode;
+        }
+        Long storeAddrId = parseLongOrZero(storeAddress.get("storeAddrId"));
+        Long appointmentId = Long.valueOf(qrcodeData[5].substring(1));
+        String reason = doorAccessService.validateAppointmentQr(userId, appointmentId, storeAddrId, qrcodeData[4]);
+        if (reason != null) {
+            openDoorRecord.setRemark(reason);
+            openDoorRecordMapper.insert(openDoorRecord);
+            return failCode;
+        }
+        // 预约开门没有办卡门店，设备门店按本次扫码门店记录，且不触发次卡扣次。
+        openDoorRecord.setDeviceStoreId(scanStoreId);
+        openDoorRecord.setResult(1);
+        openDoorRecord.setRemark("私教预约二维码开门");
+        openDoorRecordMapper.insert(openDoorRecord);
+        logger.info("预约二维码开门成功，appointmentId=" + appointmentId + ", userId=" + userId);
+        return "code=0000";
     }
 
     private static Long parseLongOrZero(Object value) {

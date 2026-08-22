@@ -18,13 +18,14 @@
     </resultMap>
     <sql id="Base_Column_List">
         app_img_url, app_name, app_url, app_url_ios, service_tel, create_time, version, companyNameCHN, companyNameENG,
-        open_door, qrcode_valid
+        open_door, qrcode_valid, appointment_qr_enabled
     </sql>
     <select id="queryList" resultType="com.dlc.modules.sys.entity.SysAboutEntity" parameterType="map">
         SELECT
             id AS id, app_img_url AS appImgUrl, app_name AS appName, app_url AS appUrl, app_url_ios as appUrlIos,
             service_tel AS serviceTel, create_time, version AS version, companyNameCHN AS companyNameCHN,
-            companyNameENG AS companyNameENG, open_door as openDoor, qrcode_valid as qrcodeValid
+            companyNameENG AS companyNameENG, open_door as openDoor, qrcode_valid as qrcodeValid,
+            appointment_qr_enabled as appointmentQrEnabled
         FROM about_us
         order BY #{ORDER }
         <if test="offset != null and limit != null">
@@ -51,7 +52,8 @@
 			`companyNameCHN`,
             `companyNameENG`,
             `open_door`,
-            `qrcode_valid`
+            `qrcode_valid`,
+            `appointment_qr_enabled`
         )
         VALUES
         (
@@ -63,7 +65,8 @@
             #{companyNameCHN},
             #{companyNameENG},
             #{openDoor},
-            #{qrcodeValid}
+            #{qrcodeValid},
+            #{appointmentQrEnabled}
         )
     </insert>
     <delete id="deleteBatch">
@@ -84,7 +87,8 @@
         companyNameCHN=#{companyNameCHN},
         companyNameENG=#{companyNameENG},
         open_door=#{openDoor},
-        qrcode_valid=#{qrcodeValid}
+        qrcode_valid=#{qrcodeValid},
+        appointment_qr_enabled=#{appointmentQrEnabled}
         WHERE  id=#{id}
     </update>
 </mapper>
