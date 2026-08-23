@@ -5,7 +5,7 @@
 			<view class="product-main">
 				<view class="product-head">
 					<text class="product-name">{{ product.productName || '私教课程' }}</text>
-					<text class="product-price">¥{{ priceText(quote.originalAmount || product.salePrice) }}</text>
+					<text class="product-price">¥{{ priceText(payableAmount) }}</text>
 				</view>
 				<view class="tag-row">
 					<text class="tag primary">私教课程</text>
@@ -51,8 +51,8 @@
 					<text class="muted">{{ selectedCoupon.label }} ›</text>
 				</view>
 			</picker>
-			<view class="price-row"><text>商品价格</text><text class="strong">¥{{ priceText(quote.originalAmount || product.salePrice) }}</text></view>
-			<view class="price-row"><text>优惠金额</text><text class="discount">- ¥{{ priceText(quote.discountAmount) }}</text></view>
+			<view class="price-row"><text>商品原价</text><text class="strong">¥{{ priceText(productOriginalAmount) }}</text></view>
+			<view class="price-row"><text>优惠金额</text><text class="discount">- ¥{{ priceText(displayDiscountAmount) }}</text></view>
 			<view class="price-row total no-border"><text>应付金额</text><text>¥{{ priceText(payableAmount) }}</text></view>
 		</view>
 
@@ -147,8 +147,20 @@
 			selectedCoupon() {
 				return this.couponOptions[this.couponIndex] || this.couponOptions[0];
 			},
+			productOriginalAmount() {
+				const amount = this.quote.productOriginalAmount;
+				return amount !== undefined && amount !== null ? amount : (this.product.salePrice || 0);
+			},
+			displayDiscountAmount() {
+				// 普通购买只展示权益优惠；活动购买继续展示活动价优惠，优惠券金额由优惠券行单独展示。
+				const amount = Number(this.marketingType) === 0
+					? this.quote.benefitDiscountAmount
+					: this.quote.activityDiscountAmount;
+				return amount !== undefined && amount !== null ? amount : 0;
+			},
 			payableAmount() {
-				return this.quote.payableAmount !== undefined ? this.quote.payableAmount : (this.product.salePrice || 0);
+				const amount = this.quote.payableAmount;
+				return amount !== undefined && amount !== null ? amount : (this.product.salePrice || 0);
 			},
 			installmentAvailable() {
 				return this.quote.installmentAvailable === true;

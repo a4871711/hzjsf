@@ -653,13 +653,19 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
         PriceResult priced = new PriceResult();
         priced.product = product;
         // 活动价不叠加权益价；普通购买按会员有效 VIP 权益匹配，命中多张时 SQL 取最低权益价。
-        priced.originalAmount = scale(product.getSalePrice());
+        priced.productOriginalAmount = scale(product.getSalePrice());
+        priced.originalAmount = priced.productOriginalAmount;
+        priced.benefitDiscountAmount = BigDecimal.ZERO;
         if (mkType == MARKETING_NONE) {
             Map<String, Object> benefitPrice = ptPrivateOrderDao.selectBestBenefitPrice(user.getUserId(), productId);
             if (benefitPrice != null) {
                 priced.benefitVipCardId = ((Number) benefitPrice.get("vipCardId")).longValue();
                 priced.benefitPrice = scale((BigDecimal) benefitPrice.get("benefitPrice"));
                 priced.originalAmount = priced.benefitPrice;
+                // 单独保留商品原价与权益优惠，避免零元权益价被前端回退成商品原价。
+                BigDecimal benefitDiscount = priced.productOriginalAmount.subtract(priced.benefitPrice);
+                priced.benefitDiscountAmount = benefitDiscount.compareTo(BigDecimal.ZERO) > 0
+                        ? scale(benefitDiscount) : BigDecimal.ZERO;
             }
         }
         priced.marketingType = mkType;
@@ -913,10 +919,13 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
     /** quote/create 共用的定价结果 */
     private static class PriceResult {
         PtProduct product;
-        /** 基础价快照(本期口径=sale_price) */
+        /** 商品销售原价，仅用于试算展示，不改变现有下单和优惠券计价口径 */
+        BigDecimal productOriginalAmount;
+        /** 现有计价基准：普通单命中权益时为权益价，否则为商品销售价 */
         BigDecimal originalAmount;
         Long benefitVipCardId;
         BigDecimal benefitPrice;
+        BigDecimal benefitDiscountAmount;
         BigDecimal payableAmount;
         BigDecimal couponDiscountAmount;
         BigDecimal activityDiscountAmount;
@@ -930,9 +939,11 @@ public class PrivateOrderServiceImpl implements PrivateOrderService {
             Map<String, Object> map = new HashMap<String, Object>();
             map.put("productId", product.getId());
             map.put("productName", product.getProductName());
+            map.put("productOriginalAmount", productOriginalAmount);
             map.put("originalAmount", originalAmount);
             map.put("benefitVipCardId", benefitVipCardId);
             map.put("benefitPrice", benefitPrice);
+            map.put("benefitDiscountAmount", benefitDiscountAmount);
             map.put("payableAmount", payableAmount);
             map.put("couponDiscountAmount", couponDiscountAmount);
             map.put("activityDiscountAmount", activityDiscountAmount);

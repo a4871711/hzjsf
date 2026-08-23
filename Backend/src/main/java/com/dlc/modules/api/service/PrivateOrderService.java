@@ -17,10 +17,11 @@ import java.util.Map;
 public interface PrivateOrderService {
 
     /**
-     * 试算:后端按当前商品价/活动价重算金额,券抵扣本步为桩(=0,第18步接真实算法)。
+     * 试算:后端按当前商品价、权益价或活动价重算金额，并计算可用优惠券抵扣。
      * 活动单(marketingType 1拼团/2秒杀)不叠加优惠券,传券直接 ERROR_COUPON_INVALID。
      *
-     * @return originalAmount/payableAmount/couponDiscountAmount/activityDiscountAmount/discountAmount 等明细
+     * @return productOriginalAmount/benefitDiscountAmount/originalAmount/payableAmount/
+     * couponDiscountAmount/activityDiscountAmount/discountAmount 等明细
      */
     Map<String, Object> quote(UserInfoVo user, Long productId, Long storeId,
                               Long memberCouponId, Integer marketingType, Long marketingActivityId);
