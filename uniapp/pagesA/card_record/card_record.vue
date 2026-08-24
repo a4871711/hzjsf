@@ -20,7 +20,7 @@
 				</view>
 				<view class="item">
 					<text class="item-l">实付金额</text>
-					<text class="item-r">￥{{item.paySum}}</text>
+					<text class="item-r">￥{{item.realPayment}}</text>
 				</view>
 				<view class="item">
 					<text class="item-l">支付方式</text>
