@@ -59,7 +59,7 @@
 					<text class="cp-rec__label">实际停卡天数</text>
 					<text class="cp-rec__val">{{ rec.actualDays }} 天</text>
 				</view>
-				<view v-if="rec.displayStatus === 0 || rec.displayStatus === 11" class="cp-rec__btn" :data-idx="idx" @click="onCancel">{{ rec.displayStatus === 11 ? '取消申请' : '恢复停卡' }}</view>
+				<view v-if="rec.displayStatus === 0 || rec.displayStatus === 11" class="cp-rec__btn" :data-idx="idx" @click="onCancel">立即取消停卡</view>
 			</view>
 			<view v-else-if="loaded" class="cp-tip">还没有停卡记录</view>
 		</view>
@@ -239,7 +239,9 @@
 					page: 1,
 					limit: 50
 				}).then((res) => {
-					this.records = (res.data && res.data.list) || [];
+					// 兼容后端未返回 displayStatus、以及 JSON 数字被转成字符串的情况。
+					// 操作按钮依赖该字段，缺失时必须由原始状态和计划时间还原，否则会把“立即取消/恢复”入口一起隐藏。
+					this.records = ((res.data && res.data.list) || []).map((rec) => this.normalizePauseRecord(rec));
 					this.loaded = true;
 					done && done();
 				}).catch((e) => {
@@ -247,6 +249,39 @@
 					this.config.Toast((e && e.message) || '加载失败');
 					done && done();
 				});
+			},
+			// 展示状态以后端派生值为准；旧接口缺字段时，按与后端 Mapper 相同的时间规则在前端补算。
+			normalizePauseRecord(rec) {
+				const normalized = Object.assign({}, rec);
+				const hasDisplayStatus = rec.displayStatus !== null && rec.displayStatus !== undefined && rec.displayStatus !== '';
+				if (hasDisplayStatus) {
+					normalized.displayStatus = Number(rec.displayStatus);
+					return normalized;
+				}
+
+				const status = Number(rec.status);
+				normalized.displayStatus = status;
+				if (status !== 0) return normalized;
+
+				const now = Date.now();
+				const startTime = this.toTimestamp(rec.startTime);
+				const endTime = this.toTimestamp(rec.endTime);
+				if (startTime !== null && startTime > now) {
+					normalized.displayStatus = 11;
+				} else if (endTime !== null && endTime <= now) {
+					normalized.displayStatus = 99;
+				}
+				return normalized;
+			},
+			// 小程序各运行环境对“yyyy-MM-dd HH:mm:ss”的解析不完全一致，转成斜杠格式后再解析。
+			toTimestamp(value) {
+				if (value === null || value === undefined || value === '') return null;
+				if (typeof value === 'number' || /^\d+$/.test(String(value))) {
+					const timestamp = Number(value);
+					return isNaN(timestamp) ? null : timestamp;
+				}
+				const timestamp = new Date(String(value).replace(/-/g, '/')).getTime();
+				return isNaN(timestamp) ? null : timestamp;
 			},
 			// 该卡是否满足停卡资格的展示态判断(真正校验仍在后端 precheck/apply):须当前确认是有效权益会员(isVipMember,
 			// 而非 precheckLoaded——后者会被网络抖动等无关失败一并置 false,见 isVipMember 定义处注释) 且这张卡是权益卡性质
@@ -405,10 +440,10 @@
 				const pending = rec.displayStatus === 11;
 				const that = this;
 				uni.showModal({
-					title: pending ? '取消申请' : '恢复停卡',
+					title: '立即取消停卡',
 					content: pending
-						? '确认取消本次停卡申请？尚未开始停卡，已顺延的天数将全部扣回，付费停卡费用不退还。'
-						: '确认恢复本次停卡？恢复后卡立即可用，按实际已停天数顺延有效期，付费停卡费用不退还。',
+						? '确认立即取消本次停卡？尚未开始停卡，已顺延的天数将全部扣回，付费停卡费用不退还。'
+						: '确认立即取消本次停卡？取消后卡立即可用，按实际已停天数顺延有效期，付费停卡费用不退还。',
 					success: (r) => {
 						if (!r.confirm) return;
 						that.submitting = true;
@@ -416,7 +451,7 @@
 							pauseId: rec.pauseId
 						}).then(() => {
 							that.submitting = false;
-							that.config.Toast(pending ? '已取消停卡申请' : '已恢复，卡可正常使用');
+							that.config.Toast(pending ? '已取消停卡' : '已取消停卡，会员卡可正常使用');
 							that.loadRecords();
 							that.loadPrecheck();
 						}).catch((e) => {
