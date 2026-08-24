@@ -91,7 +91,7 @@
 			this.benefitId = options.benefitId || '';
 			this.productId = options.productId || '';
 			this.preferredStoreId = options.storeId || '';
-			this.productName = decodeURIComponent(options.productName || '私教课程');
+			this.productName = this.decodeProductName(options.productName);
 			this.dailyLessonLimit = Number(options.dailyLessonLimit || 1);
 			this.today = this.formatDate(new Date());
 			this.date = this.today;
@@ -101,6 +101,20 @@
 			this.loadOptions();
 		},
 		methods: {
+			decodeProductName(value) {
+				let decoded = String(value || '私教课程');
+				// 兼容路由自动解码后仍保留一层编码的历史名称；限制次数，避免误改正常包含百分号的文本。
+				for (let i = 0; i < 2; i += 1) {
+					try {
+						const next = decodeURIComponent(decoded);
+						if (next === decoded) break;
+						decoded = next;
+					} catch (e) {
+						break;
+					}
+				}
+				return decoded || '私教课程';
+			},
 			loadOptions() {
 				if (!this.benefitId || !this.productId) {
 					this.config.Toast('权益信息不完整');
