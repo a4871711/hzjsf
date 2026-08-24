@@ -171,7 +171,15 @@
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="课时数量" prop="lessonCount">
-                <el-input v-model="form.lessonCount" placeholder="必填，>0" />
+                <div class="lesson-count-setting">
+                  <el-input v-model="form.lessonCount" placeholder="必填，>0" />
+                  <el-switch
+                    v-model="form.lessonCountVisible"
+                    :active-value="1"
+                    :inactive-value="0"
+                    title="控制微信小程序和手机端商品详情是否显示课时数量" />
+                  <span class="lesson-count-visible-text">{{ form.lessonCountVisible === 1 ? '显示' : '不显示' }}</span>
+                </div>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -589,6 +597,7 @@ export default {
         benefitPrices: [],
         newUserPrice: '',
         lessonCount: '',
+        lessonCountVisible: 1,
         durationMinutes: 60,
         validityLong: 0, // 前端辅助：0=按天数 1=长期(-1)
         validityDays: 365,
@@ -1138,6 +1147,21 @@ export default {
 }
 .benefit-price-delete {
   color: #f56c6c;
+}
+.lesson-count-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  .el-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+.lesson-count-visible-text {
+  flex: none;
+  min-width: 36px;
+  color: #606266;
+  font-size: 12px;
 }
 .cover-uploader {
   ::v-deep .el-upload {

@@ -34,6 +34,8 @@ public class PtProduct implements Serializable {
     private BigDecimal memberPrice;
     private BigDecimal newUserPrice;
     private Integer lessonCount;
+    /** 手机端是否显示课时数量：0否 1是 */
+    private Integer lessonCountVisible;
     private Integer durationMinutes;
     /** 有效期天数；-1 表示长期 */
     private Integer validityDays;
@@ -116,6 +118,9 @@ public class PtProduct implements Serializable {
 
     public Integer getLessonCount() { return lessonCount; }
     public void setLessonCount(Integer lessonCount) { this.lessonCount = lessonCount; }
+
+    public Integer getLessonCountVisible() { return lessonCountVisible; }
+    public void setLessonCountVisible(Integer lessonCountVisible) { this.lessonCountVisible = lessonCountVisible; }
 
     public Integer getDurationMinutes() { return durationMinutes; }
     public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }

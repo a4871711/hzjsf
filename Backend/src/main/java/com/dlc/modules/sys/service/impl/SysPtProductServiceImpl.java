@@ -136,6 +136,10 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (entity.getDailyLessonLimit() == null) {
             entity.setDailyLessonLimit(old.getDailyLessonLimit());
         }
+        // 兼容旧后台或其他调用方未提交新开关：保留商品当前配置，不能把已隐藏状态重置为显示。
+        if (entity.getLessonCountVisible() == null) {
+            entity.setLessonCountVisible(old.getLessonCountVisible());
+        }
         normalizeVisibleGroups(entity, true);
         validateBase(entity);
         applyDefaults(entity);
@@ -248,6 +252,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         copy.setMemberPrice(src.getMemberPrice());
         copy.setNewUserPrice(src.getNewUserPrice());
         copy.setLessonCount(src.getLessonCount());
+        copy.setLessonCountVisible(src.getLessonCountVisible());
         copy.setDurationMinutes(src.getDurationMinutes());
         copy.setValidityDays(src.getValidityDays());
         copy.setRefundType(src.getRefundType());
@@ -388,6 +393,11 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (e.getLessonCount() == null || e.getLessonCount() <= 0) {
             throw new RRException("课时数量必须大于0");
         }
+        if (e.getLessonCountVisible() != null
+                && !Integer.valueOf(0).equals(e.getLessonCountVisible())
+                && !Integer.valueOf(1).equals(e.getLessonCountVisible())) {
+            throw new RRException("手机端课时显示开关不合法");
+        }
         if (e.getValidityDays() == null || (e.getValidityDays() != -1 && e.getValidityDays() <= 0)) {
             throw new RRException("有效期不合法（长期请填 -1）");
         }
@@ -514,6 +524,8 @@ public class SysPtProductServiceImpl implements SysPtProductService {
 
     private void applyDefaults(PtProductEntity e) {
         if (e.getSoldCount() == null) { e.setSoldCount(0); }
+        // 历史商品及旧调用方默认保持原有展示效果，避免升级后课时数量突然消失。
+        if (e.getLessonCountVisible() == null) { e.setLessonCountVisible(1); }
         if (e.getListingStatus() == null) { e.setListingStatus(0); }
         if (e.getSortNo() == null) { e.setSortNo(0); }
         if (e.getRefundType() == null) { e.setRefundType(2); }

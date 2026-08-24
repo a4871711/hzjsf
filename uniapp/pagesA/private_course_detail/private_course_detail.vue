@@ -13,7 +13,9 @@
 				<text class="price-number">{{ priceText(currentPrice) }}</text>
 				<text class="origin" v-if="Number(product.originalPrice) > Number(currentPrice)">原价 ¥{{ priceText(product.originalPrice) }}</text>
 			</view>
-			<view class="price-meta">{{ product.lessonCount || 0 }} 课时 · {{ validityText(product.validityDays) }}有效</view>
+			<view class="price-meta">
+				<text v-if="isLessonCountVisible">{{ product.lessonCount || 0 }} 课时 · </text>{{ validityText(product.validityDays) }}有效
+			</view>
 			<view class="discount" v-if="Number(quote.discountAmount) > 0">已优惠 ¥{{ priceText(quote.discountAmount) }}</view>
 		</view>
 
@@ -28,7 +30,7 @@
 		</view>
 
 		<view class="section info-card">
-			<view class="info-row"><text>课时数量</text><text>{{ product.lessonCount || 0 }} 节</text></view>
+			<view class="info-row" v-if="isLessonCountVisible"><text>课时数量</text><text>{{ product.lessonCount || 0 }} 节</text></view>
 			<view class="info-row"><text>单次时长</text><text>{{ product.durationMinutes || 0 }} 分钟 / 节</text></view>
 			<view class="info-row"><text>有效期</text><text>{{ validityDetailText(product.validityDays) }}</text></view>
 			<view class="info-row store-info-row">
@@ -154,6 +156,10 @@
 			}
 		},
 		computed: {
+			isLessonCountVisible() {
+				// 兼容后端升级前未返回该字段的情况：只有明确配置为 0 时才隐藏。
+				return Number(this.product.lessonCountVisible) !== 0;
+			},
 			selectedStore() {
 				return this.stores[this.storeIndex] || null;
 			},

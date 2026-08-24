@@ -89,7 +89,7 @@
         (`product_no`, `product_name`, `product_subtitle`, `product_type_id`, `service_type`,
          `category_id`, `category_name`, `cover_url`, `product_intro`, `product_detail`, `target_desc`,
          `original_price`, `sale_price`, `member_price`, `new_user_price`,
-         `lesson_count`, `duration_minutes`, `validity_days`,
+         `lesson_count`, `lesson_count_visible`, `duration_minutes`, `validity_days`,
          `refund_type`, `refund_rule`, `visible_groups`, `purchase_limit`, `sale_stock`, `sold_count`,
          `booking_gap_minutes`, `booking_capacity`, `daily_lesson_limit`, `latest_booking_hours`, `latest_free_cancel_hours`,
          `no_show_deduct`, `coach_confirm_required`,
@@ -99,7 +99,7 @@
         (#{productNo}, #{productName}, #{productSubtitle}, #{productTypeId}, #{serviceType},
          #{categoryId}, #{categoryName}, #{coverUrl}, #{productIntro}, #{productDetail}, #{targetDesc},
          #{originalPrice}, #{salePrice}, #{memberPrice}, #{newUserPrice},
-         #{lessonCount}, #{durationMinutes}, #{validityDays},
+         #{lessonCount}, #{lessonCountVisible}, #{durationMinutes}, #{validityDays},
          #{refundType}, #{refundRule}, #{visibleGroups}, #{purchaseLimit}, #{saleStock}, #{soldCount},
          #{bookingGapMinutes}, #{bookingCapacity}, #{dailyLessonLimit}, #{latestBookingHours}, #{latestFreeCancelHours},
          #{noShowDeduct}, #{coachConfirmRequired},
@@ -125,6 +125,7 @@
             <if test="memberPrice != null">`member_price` = #{memberPrice},</if>
             <if test="newUserPrice != null">`new_user_price` = #{newUserPrice},</if>
             <if test="lessonCount != null">`lesson_count` = #{lessonCount},</if>
+            <if test="lessonCountVisible != null">`lesson_count_visible` = #{lessonCountVisible},</if>
             <if test="durationMinutes != null">`duration_minutes` = #{durationMinutes},</if>
             <if test="validityDays != null">`validity_days` = #{validityDays},</if>
             <if test="refundType != null">`refund_type` = #{refundType},</if>
