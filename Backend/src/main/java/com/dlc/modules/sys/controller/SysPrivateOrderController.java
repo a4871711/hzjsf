@@ -47,8 +47,9 @@ public class SysPrivateOrderController extends AbstractController {
         Query query = new Query(params);
         List<Map<String, Object>> list = sysPrivateOrderService.queryList(query);
         int total = sysPrivateOrderService.queryTotal(query);
+        Map<String, Object> stats = sysPrivateOrderService.queryStats(query);
         PageUtils pageUtil = new PageUtils(list, total, query.getLimit(), query.getPage());
-        return R.ok().put("page", pageUtil);
+        return R.ok().put("page", pageUtil).put("stats", stats);
     }
 
     /**

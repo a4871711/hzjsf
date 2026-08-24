@@ -43,8 +43,9 @@ public class SysPtProductController extends AbstractController {
         Query query = new Query(params);
         List<PtProductEntity> list = sysPtProductService.queryList(query);
         int total = sysPtProductService.queryTotal(query);
+        Map<String, Object> stats = sysPtProductService.queryStats(query);
         PageUtils pageUtil = new PageUtils(list, total, query.getLimit(), query.getPage());
-        return R.ok().put("page", pageUtil);
+        return R.ok().put("page", pageUtil).put("stats", stats);
     }
 
     /**

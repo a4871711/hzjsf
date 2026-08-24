@@ -2,6 +2,40 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.dlc.modules.sys.dao.PtProductDao">
 
+    <!-- 商品列表、总数和统计共用筛选，保证搜索条件及门店数据权限口径一致。 -->
+    <sql id="Filter">
+        <where>
+            p.deleted = 0
+            <if test="productName != null and productName != ''">
+                AND p.product_name LIKE concat('%',#{productName},'%')
+            </if>
+            <if test="productTypeId != null and productTypeId != ''">
+                AND p.product_type_id = #{productTypeId}
+            </if>
+            <if test="serviceType != null and serviceType != ''">
+                AND p.service_type = #{serviceType}
+            </if>
+            <if test="listingStatus != null and listingStatus != ''">
+                AND p.listing_status = #{listingStatus}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                AND p.created_at &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND p.created_at &lt;= #{endTime}
+            </if>
+            <if test="storeId != null and storeId != ''">
+                AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
+            </if>
+            <if test="coachId != null and coachId != ''">
+                AND p.id IN (select product_id from pt_product_coach_rel where coach_id = #{coachId})
+            </if>
+            <if test="storeIds != null and storeIds != ''">
+                AND p.id IN (select product_id from pt_product_store_rel where store_id in (${storeIds}))
+            </if>
+        </where>
+    </sql>
+
     <select id="queryObject" resultType="com.dlc.modules.sys.entity.PtProductEntity">
         select p.*, (select type_name from pt_product_type where id = p.product_type_id) as typeName
         from pt_product p where p.id = #{value}
@@ -20,36 +54,7 @@
                left join pt_coach c on c.id = r.coach_id and c.deleted = 0
               where r.product_id = p.id) as coachNames
         from pt_product p
-        <where>
-            p.deleted = 0
-            <if test="productName != null and productName != ''">
-                AND p.product_name LIKE concat('%',#{productName},'%')
-            </if>
-            <if test="productTypeId != null and productTypeId != ''">
-                AND p.product_type_id = #{productTypeId}
-            </if>
-            <if test="serviceType != null and serviceType != ''">
-                AND p.service_type = #{serviceType}
-            </if>
-            <if test="listingStatus != null and listingStatus != ''">
-                AND p.listing_status = #{listingStatus}
-            </if>
-            <if test="beginTime != null and beginTime != ''">
-                AND p.created_at &gt;= #{beginTime}
-            </if>
-            <if test="endTime != null and endTime != ''">
-                AND p.created_at &lt;= #{endTime}
-            </if>
-            <if test="storeId != null and storeId != ''">
-                AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
-            </if>
-            <if test="coachId != null and coachId != ''">
-                AND p.id IN (select product_id from pt_product_coach_rel where coach_id = #{coachId})
-            </if>
-            <if test="storeIds != null and storeIds != ''">
-                AND p.id IN (select product_id from pt_product_store_rel where store_id in (${storeIds}))
-            </if>
-        </where>
+        <include refid="Filter"/>
         <choose>
             <when test="sidx != null and sidx.trim() != ''">
                 order by ${sidx} ${order}
@@ -65,36 +70,18 @@
 
     <select id="queryTotal" resultType="int">
         select count(*) from pt_product p
-        <where>
-            p.deleted = 0
-            <if test="productName != null and productName != ''">
-                AND p.product_name LIKE concat('%',#{productName},'%')
-            </if>
-            <if test="productTypeId != null and productTypeId != ''">
-                AND p.product_type_id = #{productTypeId}
-            </if>
-            <if test="serviceType != null and serviceType != ''">
-                AND p.service_type = #{serviceType}
-            </if>
-            <if test="listingStatus != null and listingStatus != ''">
-                AND p.listing_status = #{listingStatus}
-            </if>
-            <if test="beginTime != null and beginTime != ''">
-                AND p.created_at &gt;= #{beginTime}
-            </if>
-            <if test="endTime != null and endTime != ''">
-                AND p.created_at &lt;= #{endTime}
-            </if>
-            <if test="storeId != null and storeId != ''">
-                AND p.id IN (select product_id from pt_product_store_rel where store_id = #{storeId})
-            </if>
-            <if test="coachId != null and coachId != ''">
-                AND p.id IN (select product_id from pt_product_coach_rel where coach_id = #{coachId})
-            </if>
-            <if test="storeIds != null and storeIds != ''">
-                AND p.id IN (select product_id from pt_product_store_rel where store_id in (${storeIds}))
-            </if>
-        </where>
+        <include refid="Filter"/>
+    </select>
+
+    <select id="queryStats" resultType="java.util.LinkedHashMap" parameterType="map">
+        SELECT COUNT(1) AS productCount,
+               IFNULL(SUM(CASE WHEN p.listing_status = 1 THEN 1 ELSE 0 END), 0) AS listedCount,
+               IFNULL(SUM(CASE WHEN p.listing_status = 0 THEN 1 ELSE 0 END), 0) AS unlistedCount,
+               IFNULL(SUM(CASE WHEN p.sale_stock IS NOT NULL
+                                    AND IFNULL(p.sold_count, 0) &gt;= p.sale_stock
+                               THEN 1 ELSE 0 END), 0) AS soldOutCount
+        FROM pt_product p
+        <include refid="Filter"/>
     </select>
 
     <insert id="save" parameterType="com.dlc.modules.sys.entity.PtProductEntity" useGeneratedKeys="true" keyProperty="id">

@@ -111,6 +111,16 @@
         <include refid="Filter"/>
     </select>
 
+    <select id="queryStats" resultType="java.util.LinkedHashMap" parameterType="map">
+        SELECT COUNT(1) AS orderCount,
+               IFNULL(SUM(CASE WHEN o.pay_status IN (1, 2, 3) THEN 1 ELSE 0 END), 0) AS paidOrderCount,
+               IFNULL(SUM(CASE WHEN o.pay_status IN (1, 2, 3)
+                               THEN IFNULL(o.paid_amount, 0) ELSE 0 END), 0) AS paidAmount,
+               IFNULL(SUM(IFNULL(o.refund_amount, 0)), 0) AS refundAmount
+        FROM pt_private_order o
+        <include refid="Filter"/>
+    </select>
+
     <!-- 详情:storeIds 过滤在 SQL 内收口,越权/不存在返回 null(controller 按 404 处理) -->
     <select id="queryDetail" resultType="java.util.LinkedHashMap">
         SELECT <include refid="Columns"/>

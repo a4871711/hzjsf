@@ -15,6 +15,9 @@ public interface SysPrivateOrderService {
 
     int queryTotal(Map<String, Object> params);
 
+    /** 按列表筛选及门店权限统计订单、已支付订单、实付和退款金额。 */
+    Map<String, Object> queryStats(Map<String, Object> params);
+
     /** 详情(订单+权益课时+券明细);查不到或不在 storeIds 门店范围返回 null(controller 按 404 处理) */
     Map<String, Object> queryDetail(Long id, String storeIds);
 

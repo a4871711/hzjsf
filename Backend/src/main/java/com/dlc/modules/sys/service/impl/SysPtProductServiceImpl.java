@@ -84,6 +84,11 @@ public class SysPtProductServiceImpl implements SysPtProductService {
     }
 
     @Override
+    public Map<String, Object> queryStats(Map<String, Object> map) {
+        return ptProductDao.queryStats(map);
+    }
+
+    @Override
     public void save(PtProductEntity entity) {
         normalizeVisibleGroups(entity, false);
         validateBase(entity);

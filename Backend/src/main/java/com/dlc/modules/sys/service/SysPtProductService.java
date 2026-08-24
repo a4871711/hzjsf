@@ -19,6 +19,9 @@ public interface SysPtProductService {
 
     int queryTotal(Map<String, Object> map);
 
+    /** 按列表筛选及门店权限统计商品总数、上下架和售罄数量。 */
+    Map<String, Object> queryStats(Map<String, Object> map);
+
     void save(PtProductEntity entity);
 
     void update(PtProductEntity entity);

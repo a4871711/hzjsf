@@ -68,6 +68,11 @@ public class SysPrivateOrderServiceImpl implements SysPrivateOrderService {
     }
 
     @Override
+    public Map<String, Object> queryStats(Map<String, Object> params) {
+        return sysPrivateOrderDao.queryStats(params);
+    }
+
+    @Override
     public Map<String, Object> queryDetail(Long id, String storeIds) {
         Map<String, Object> detail = sysPrivateOrderDao.queryDetail(id, storeIds);
         if (detail != null) {

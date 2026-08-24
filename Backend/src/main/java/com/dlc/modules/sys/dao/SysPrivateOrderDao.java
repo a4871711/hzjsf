@@ -24,6 +24,9 @@ public interface SysPrivateOrderDao {
 
     int queryTotal(Map<String, Object> params);
 
+    /** 按列表同口径汇总订单数量与支付、退款金额。 */
+    Map<String, Object> queryStats(Map<String, Object> params);
+
     /** 详情(含权益课时/门店名);storeIds 过滤在 SQL 内收口,越权/不存在返回 null → 404 */
     Map<String, Object> queryDetail(@Param("id") Long id, @Param("storeIds") String storeIds);
 

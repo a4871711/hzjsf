@@ -4,6 +4,15 @@
       <h2 class="page-title">购买记录</h2>
       <p class="page-sub">私教商品购买订单查看、后台手工新增、退款与关联数据删除</p>
     </div>
+    <el-row :gutter="16" class="stat-row">
+      <el-col :xs="12" :sm="6" v-for="(card, idx) in statCards" :key="idx">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-label">{{ card.label }}</div>
+          <div class="stat-value" :style="{ color: card.color }">{{ card.value }}</div>
+          <div class="stat-unit">{{ card.unit }}</div>
+        </el-card>
+      </el-col>
+    </el-row>
     <r-search ref="search" :searchData="searchData" :searchForm="searchForm" :searchHandle="searchHandle" />
     <r-table
       :isSelection="false"
@@ -265,6 +274,12 @@ export default {
         { label: "导出", type: "primary", icon: "el-icon-download", handle: e => this.exportData() },
       ],
       tableData: [],
+      orderStats: {
+        orderCount: 0,
+        paidOrderCount: 0,
+        paidAmount: 0,
+        refundAmount: 0
+      },
       tableCols: [
         { label: "订单编号", prop: "orderNo", width: 180 },
         { label: "订单来源", prop: "orderSource", width: 90, formatter: e => this.sourceText(e.orderSource) },
@@ -341,6 +356,19 @@ export default {
     };
   },
   computed: {
+    statCards() {
+      var stats = this.orderStats || {};
+      var money = function(value) {
+        var amount = Number(value);
+        return '¥' + (isFinite(amount) ? amount : 0).toFixed(2);
+      };
+      return [
+        { label: '订单总数（筛选结果）', value: Number(stats.orderCount) || 0, unit: '单', color: '#409EFF' },
+        { label: '已支付订单', value: Number(stats.paidOrderCount) || 0, unit: '单', color: '#67C23A' },
+        { label: '实付金额', value: money(stats.paidAmount), unit: '', color: '#E6A23C' },
+        { label: '退款金额', value: money(stats.refundAmount), unit: '', color: '#F56C6C' }
+      ];
+    },
     // 本单还可退金额 = 已付 - 已退 - 已赠课时按实付单价折算金额
     refundableAmount() {
       if (!this.refundRow) return 0;
@@ -426,6 +454,12 @@ export default {
         var list = (res.page && res.page.list) || [];
         this.tableData = list;
         this.pagination.total = res.page ? res.page.totalCount : 0;
+        this.orderStats = Object.assign({
+          orderCount: 0,
+          paidOrderCount: 0,
+          paidAmount: 0,
+          refundAmount: 0
+        }, res.stats || {});
       } finally {
         this.tableLoading = false;
       }
@@ -673,6 +707,13 @@ export default {
 .page-head { margin-bottom: 12px; }
 .page-title { margin: 0; font-size: 20px; }
 .page-sub { margin: 4px 0 0; color: #909399; font-size: 13px; }
+.stat-row { margin-bottom: 16px; }
+.stat-card {
+  text-align: center;
+  .stat-label { font-size: 13px; color: #909399; }
+  .stat-value { font-size: 26px; font-weight: 700; margin: 8px 0 2px; }
+  .stat-unit { font-size: 12px; color: #c0c4cc; }
+}
 .detail-wrap { padding: 0 20px 20px; }
 .detail-section-title { font-weight: bold; color: #303133; margin: 18px 0 10px; padding-left: 8px; border-left: 3px solid #409EFF; }
 .detail-row { line-height: 32px; color: #606266; }

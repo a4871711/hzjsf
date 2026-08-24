@@ -5,6 +5,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Map;
+
 /**
  * 私教商品主表 Dao
  *
@@ -13,6 +15,9 @@ import org.springframework.stereotype.Repository;
 @Mapper
 @Repository
 public interface PtProductDao extends BaseDao<PtProductEntity> {
+
+    /** 按商品列表同口径统计总数、上下架和售罄数量。 */
+    Map<String, Object> queryStats(Map<String, Object> params);
 
     /** 统计某编号前缀已有的商品数，用于撞号兜底重试 */
     int countByNoPrefix(@Param("prefix") String prefix);

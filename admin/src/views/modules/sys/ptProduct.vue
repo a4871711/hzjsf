@@ -6,7 +6,7 @@
       <div class="page-desc">维护私教商品主数据：基础信息、价格权益、课时有效期、预约规则、适用门店/教练、分期与附赠团课配置，支持上架/下架、复制。上架前需通过后端上架校验（门店、可约教练、售价、课时等）。</div>
     </div>
 
-    <!-- 统计卡片行：后端 list 未返回 stat，此处按「当前页数据」前端汇总 -->
+    <!-- 商品状态统计：由后端按当前筛选条件和门店权限汇总，不受分页影响。 -->
     <el-row :gutter="16" class="stat-row">
       <el-col :xs="12" :sm="6" v-for="(card, idx) in statCards" :key="idx">
         <el-card class="stat-card" shadow="hover">
@@ -466,6 +466,12 @@ export default {
         { label: '导出', icon: 'el-icon-download', handle: e => this.exportData() }
       ],
       tableData: [],
+      productStats: {
+        productCount: 0,
+        listedCount: 0,
+        unlistedCount: 0,
+        soldOutCount: 0
+      },
       tableCols: [
         { label: '编号', prop: 'productNo', width: 140 },
         { label: '封面', type: 'image', prop: 'coverUrl', width: 80 },
@@ -534,19 +540,12 @@ export default {
   },
   computed: {
     statCards () {
-      var total = this.tableData.length
-      var priceSum = 0
-      var listedNum = 0
-      this.tableData.forEach(function (r) {
-        priceSum += Number(r.salePrice) || 0
-        if (r.listingStatus === 1) listedNum++
-      })
-      var avg = total ? (priceSum / total) : 0
+      var stats = this.productStats || {}
       return [
-        { label: '商品总数（当前页）', value: total, unit: '个', color: '#409eff' },
-        { label: '总售价金额', value: '¥' + priceSum.toFixed(2), unit: '', color: '#e6a23c' },
-        { label: '均价', value: '¥' + avg.toFixed(2), unit: '', color: '#67c23a' },
-        { label: '已上架数', value: listedNum, unit: '个', color: '#f56c6c' }
+        { label: '商品总数（筛选结果）', value: Number(stats.productCount) || 0, unit: '个', color: '#409eff' },
+        { label: '已上架数', value: Number(stats.listedCount) || 0, unit: '个', color: '#67c23a' },
+        { label: '未上架数', value: Number(stats.unlistedCount) || 0, unit: '个', color: '#909399' },
+        { label: '已售罄数', value: Number(stats.soldOutCount) || 0, unit: '个', color: '#f56c6c' }
       ]
     },
     availableGroupProductOptions () {
@@ -668,6 +667,12 @@ export default {
         var page = res.page || {}
         this.tableData = page.list || []
         this.pagination.total = page.totalCount || 0
+        this.productStats = Object.assign({
+          productCount: 0,
+          listedCount: 0,
+          unlistedCount: 0,
+          soldOutCount: 0
+        }, res.stats || {})
       } finally {
         this.tableLoading = false
       }
