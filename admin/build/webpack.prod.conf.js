@@ -65,7 +65,8 @@ const webpackConfig = merge(baseWebpackConfig, {
       filename: process.env.NODE_ENV === 'testing'
         ? 'index.html'
         : config.build.index,
-      template: 'index.html',
+      // 生产环境使用动态版本资源入口，避免影响本地开发所需的静态插件加载。
+      template: 'index.prod.html',
       inject: false,
       minify: {
         removeComments: true,
