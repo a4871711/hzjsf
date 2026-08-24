@@ -98,7 +98,10 @@
           AND order_status IN (0, 1, 2) AND deleted = 0
     </select>
 
-    <!-- 一个会员可同时持有多张有效 VIP 权益；同一商品命中多张时按权益价最低、关系ID最小确定唯一结果。 -->
+    <!--
+        权益价需同时满足：持有有效 VIP 权益、至少有一笔已完成的场地卡订单。
+        场地卡只校验成功购卡记录，不校验 validityDate；多张有效 VIP 权益仍取最低权益价。
+    -->
     <select id="selectBestBenefitPrice" resultType="java.util.HashMap">
         SELECT r.vip_card_id AS vipCardId, r.benefit_price AS benefitPrice
         FROM pt_product_benefit_price r
@@ -110,6 +113,12 @@
                 AND b.vip_card_id = r.vip_card_id
                 AND b.status = 0
                 AND (b.expire_time IS NULL OR b.expire_time &gt; NOW())
+          )
+          AND EXISTS (
+              SELECT 1
+              FROM card_order co
+              WHERE co.userId = #{memberId}
+                AND co.status = 4
           )
         ORDER BY r.benefit_price ASC, r.id ASC
         LIMIT 1
