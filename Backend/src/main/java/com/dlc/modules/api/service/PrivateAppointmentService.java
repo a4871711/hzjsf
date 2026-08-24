@@ -22,6 +22,12 @@ public interface PrivateAppointmentService {
     List<PtCoachOption> coaches(Long memberId, Long benefitId);
 
     /**
+     * 本人选择教练后可上课门店：商品适用门店与教练所属门店取交集。
+     * 此处不要求指定日期存在排班，排班与余量由 slots 接口实时计算。
+     */
+    List<Map<String, Object>> stores(Long memberId, Long benefitId, Long coachId);
+
+    /**
      * 某教练某日可约时段:排班窗口按 duration+gap 切片,过滤 latest_booking_hours 内过近时段,
      * 余量 = 容量(一对一恒1) - countOccupied,仅返回余量>0 的时段。storeId 可为 null(不限门店)。
      */

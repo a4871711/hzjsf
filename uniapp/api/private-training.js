@@ -77,6 +77,10 @@ export function getPrivateCoaches(params = {}) {
 	return post('/privateAppointment/coaches', params, true);
 }
 
+export function getPrivateAppointmentStores(params = {}) {
+	return post('/privateAppointment/stores', params, true);
+}
+
 export function getPrivateSlots(params = {}) {
 	return post('/privateAppointment/slots', params, true);
 }

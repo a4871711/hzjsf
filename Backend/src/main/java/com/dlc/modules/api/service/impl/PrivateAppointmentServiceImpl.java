@@ -100,6 +100,14 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     }
 
     @Override
+    public List<Map<String, Object>> stores(Long memberId, Long benefitId, Long coachId) {
+        PtMemberPrivateBenefitEntity benefit = checkOwnBenefit(memberId, benefitId);
+        validateBenefitCoach(benefit, coachId);
+        // 门店候选不绑定具体日期，避免把“当天无排班”误判成“教练不支持该门店”。
+        return coachApiDao.queryBookingStores(benefit.getProductId(), coachId);
+    }
+
+    @Override
     public List<PtAvailableSlotVo> slots(Long memberId, Long benefitId, Long coachId, Long storeId, String date) {
         PtMemberPrivateBenefitEntity benefit = checkOwnBenefit(memberId, benefitId);
         validateBenefitCoach(benefit, coachId);

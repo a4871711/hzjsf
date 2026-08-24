@@ -39,6 +39,10 @@ public interface CoachApiDao {
     /** 教练所属门店ID集合，用于校验前端传入 storeId 合法性 */
     List<Long> queryCoachStoreIds(Long coachId);
 
+    /** 会员预约选定教练后可选门店：商品适用门店与教练所属门店交集，不按排班过滤 */
+    List<Map<String, Object>> queryBookingStores(@Param("productId") Long productId,
+                                                 @Param("coachId") Long coachId);
+
     /** 教练端排班表单可选门店（ID 统一为 store_address.storeAddrId） */
     List<Map<String, Object>> queryCoachStores(Long coachId);
 

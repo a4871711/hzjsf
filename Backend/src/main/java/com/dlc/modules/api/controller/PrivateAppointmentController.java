@@ -36,6 +36,19 @@ public class PrivateAppointmentController extends BaseController {
     }
 
     /**
+     * 本人某权益选择指定教练后可上课的门店。
+     * 门店只按商品适用范围与教练所属门店取交集，具体日期是否有排班仍由 slots 接口判断。
+     */
+    @RequestMapping("/stores")
+    public R stores(Long benefitId, Long coachId, HttpServletRequest request) {
+        if (benefitId == null || coachId == null) {
+            return R.reError("缺少参数 benefitId/coachId");
+        }
+        Long userId = getUserId(request);
+        return R.reOk(privateAppointmentService.stores(userId, benefitId, coachId));
+    }
+
+    /**
      * 某教练某日可约时段(含余量);storeId 可选,不传则返回该商品适用门店 ∩ 教练门店的全部窗口。
      * 余量口径与 book 下单护栏共用同一条 COUNT SQL。
      */

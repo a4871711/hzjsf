@@ -54,6 +54,38 @@
         select store_id from pt_coach_store_rel where coach_id = #{value}
     </select>
 
+    <!--
+        预约门店只表示教练的服务范围，不按具体日期排班过滤。
+        时段是否可约继续由 querySchedules 与预约提交校验负责，避免前后端口径漂移。
+    -->
+    <select id="queryBookingStores" resultType="java.util.LinkedHashMap">
+        select distinct sa.storeAddrId as storeId,
+               sa.storeId as parentStoreId,
+               coalesce(s.storeName, sa.storeName) as storeName,
+               sa.storeAddrDetail as storeAddress,
+               sa.phone as phone,
+               s.hours as businessHours,
+               s.storeImgUrl as storeImage
+        from pt_product_store_rel psr
+        inner join pt_coach_store_rel csr
+                on csr.store_id = psr.store_id and csr.coach_id = #{coachId}
+        inner join pt_coach c
+                on c.id = csr.coach_id and c.status = 1 and c.deleted = 0
+        inner join store_address sa
+                on sa.storeAddrId = psr.store_id and sa.status = 1
+        inner join store s
+                on s.storeId = sa.storeId and s.status = 1
+        where psr.product_id = #{productId}
+          and (
+                not exists (select 1 from pt_product_coach_rel where product_id = #{productId})
+                or exists (
+                    select 1 from pt_product_coach_rel
+                    where product_id = #{productId} and coach_id = #{coachId}
+                )
+              )
+        order by sa.storeAddrId asc
+    </select>
+
     <select id="queryCoachStores" resultType="java.util.LinkedHashMap">
         select r.store_id as storeId, s.storeName as storeName
         from pt_coach_store_rel r

@@ -11,8 +11,9 @@
 			<picker :range="coaches" range-key="coachName" :value="coachIndex" @change="onCoachChange">
 				<view class="picker-row"><text>教练</text><view>{{ selectedCoach ? selectedCoach.coachName : '暂无可约教练' }} ›</view></view>
 			</picker>
-			<picker :range="stores" range-key="storeName" :value="storeIndex" @change="onStoreChange">
-				<view class="picker-row"><text>上课门店</text><view>{{ selectedStore ? selectedStore.storeName : '暂无可用门店' }} ›</view></view>
+			<picker :range="stores" range-key="storeName" :value="storeIndex"
+				:disabled="loadingStores || !selectedCoach || !stores.length" @change="onStoreChange">
+				<view class="picker-row"><text>上课门店</text><view>{{ storePickerText }}</view></view>
 			</picker>
 			<picker mode="date" :value="date" :start="today" :end="maxDate" @change="onDateChange">
 				<view class="picker-row no-border"><text>上课日期</text><view>{{ date }} ›</view></view>
@@ -42,7 +43,7 @@
 <script>
 	import {
 		getPrivateCoaches,
-		getPrivateProductStores,
+		getPrivateAppointmentStores,
 		getPrivateSlots,
 		bookPrivateAppointment
 	} from '@/api/private-training.js'
@@ -64,7 +65,10 @@
 				maxDate: '',
 				slots: [],
 				slotIndex: -1,
+				loadingStores: false,
 				loadingSlots: false,
+				storeRequestSeq: 0,
+				slotRequestSeq: 0,
 				submitting: false
 			}
 		},
@@ -77,6 +81,10 @@
 			},
 			selectedSlot() {
 				return this.slots[this.slotIndex] || null;
+			},
+			storePickerText() {
+				if (this.loadingStores) return '正在加载门店...';
+				return this.selectedStore ? this.selectedStore.storeName + ' ›' : '暂无可用门店';
 			}
 		},
 		onLoad(options) {
@@ -101,22 +109,24 @@
 				uni.showLoading({ title: '加载中' });
 				getPrivateCoaches({ benefitId: this.benefitId }).then((res) => {
 					this.coaches = res.data || [];
-					return getPrivateProductStores({ id: this.productId });
-				}).then((res) => {
-					this.stores = res.data || [];
-					const preferred = String(this.preferredStoreId || '');
-					const index = this.stores.findIndex((item) => String(item.storeId) === preferred);
-					this.storeIndex = index >= 0 ? index : 0;
+					this.coachIndex = 0;
 					uni.hideLoading();
-					this.loadSlots();
+					if (!this.selectedCoach) {
+						this.clearStoresAndSlots();
+						return;
+					}
+					this.loadStores(this.preferredStoreId);
 				}).catch((e) => {
 					uni.hideLoading();
+					this.coaches = [];
+					this.clearStoresAndSlots();
 					this.config.Toast((e && e.message) || '可约信息加载失败');
 				});
 			},
 			onCoachChange(e) {
+				const previousStoreId = this.selectedStore ? this.selectedStore.storeId : '';
 				this.coachIndex = Number(e.detail.value || 0);
-				this.loadSlots();
+				this.loadStores(previousStoreId);
 			},
 			onStoreChange(e) {
 				this.storeIndex = Number(e.detail.value || 0);
@@ -126,10 +136,58 @@
 				this.date = e.detail.value;
 				this.loadSlots();
 			},
+			clearStoresAndSlots() {
+				this.storeRequestSeq += 1;
+				this.slotRequestSeq += 1;
+				this.stores = [];
+				this.storeIndex = 0;
+				this.slots = [];
+				this.slotIndex = -1;
+				this.loadingStores = false;
+				this.loadingSlots = false;
+			},
+			loadStores(preferredStoreId) {
+				const coach = this.selectedCoach;
+				this.slotRequestSeq += 1;
+				this.slots = [];
+				this.slotIndex = -1;
+				this.loadingSlots = false;
+				this.stores = [];
+				this.storeIndex = 0;
+				if (!coach) {
+					this.loadingStores = false;
+					return;
+				}
+				const requestSeq = ++this.storeRequestSeq;
+				this.loadingStores = true;
+				getPrivateAppointmentStores({
+					benefitId: this.benefitId,
+					coachId: coach.id
+				}).then((res) => {
+					if (requestSeq !== this.storeRequestSeq) return;
+					this.stores = res.data || [];
+					const preferred = String(preferredStoreId || '');
+					const index = this.stores.findIndex((item) => String(item.storeId) === preferred);
+					this.storeIndex = index >= 0 ? index : 0;
+					this.loadingStores = false;
+					this.loadSlots();
+				}).catch((e) => {
+					if (requestSeq !== this.storeRequestSeq) return;
+					this.loadingStores = false;
+					this.stores = [];
+					this.storeIndex = 0;
+					this.config.Toast((e && e.message) || '门店加载失败');
+				});
+			},
 			loadSlots() {
 				this.slots = [];
 				this.slotIndex = -1;
-				if (!this.selectedCoach || !this.selectedStore || !this.date) return;
+				if (!this.selectedCoach || !this.selectedStore || !this.date) {
+					this.slotRequestSeq += 1;
+					this.loadingSlots = false;
+					return;
+				}
+				const requestSeq = ++this.slotRequestSeq;
 				this.loadingSlots = true;
 				getPrivateSlots({
 					benefitId: this.benefitId,
@@ -137,9 +195,11 @@
 					storeId: this.selectedStore.storeId,
 					date: this.date
 				}).then((res) => {
+					if (requestSeq !== this.slotRequestSeq) return;
 					this.slots = res.data || [];
 					this.loadingSlots = false;
 				}).catch((e) => {
+					if (requestSeq !== this.slotRequestSeq) return;
 					this.loadingSlots = false;
 					this.config.Toast((e && e.message) || '时段加载失败');
 				});
