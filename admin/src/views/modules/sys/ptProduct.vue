@@ -239,11 +239,15 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="每日预约上限" prop="dailyLessonLimit">
-                <el-input v-model="form.dailyLessonLimit" placeholder="默认 1，范围 1-99">
-                  <template slot="append">节/人</template>
-                </el-input>
-                <span class="tip">同一会员同一商品每天最多可预约的课时，取消后释放额度</span>
+              <el-form-item label="上课频次限制">
+                <div class="lesson-limit-setting">
+                  <span>每</span>
+                  <el-input v-model="form.lessonLimitPeriodDays" placeholder="1" />
+                  <span>天最多上</span>
+                  <el-input v-model="form.dailyLessonLimit" placeholder="1" />
+                  <span>节</span>
+                </div>
+                <span class="tip">从每份权益生效日起按固定周期计算，已取消预约不占额度</span>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -538,7 +542,10 @@ export default {
           { required: true, message: '请输入单节时长', trigger: 'blur' }
         ],
         dailyLessonLimit: [
-          { required: true, message: '请输入每日预约上限', trigger: 'blur' }
+          { required: true, message: '请输入周期预约上限', trigger: 'blur' }
+        ],
+        lessonLimitPeriodDays: [
+          { required: true, message: '请输入预约周期天数', trigger: 'blur' }
         ],
         storeIds: [
           { required: true, type: 'array', min: 1, message: '请至少选择一个适用门店', trigger: 'change' }
@@ -608,6 +615,7 @@ export default {
         saleStock: '',
         bookingGapMinutes: 0,
         bookingCapacity: 1,
+        lessonLimitPeriodDays: 1,
         dailyLessonLimit: 1,
         latestBookingHours: 2,
         latestFreeCancelHours: 2,
@@ -875,6 +883,7 @@ export default {
       data.visibleGroups = JSON.stringify(f.visibleGroupsArr || [])
       // 一对一强制单时段 1
       if (Number(f.serviceType) === 1) data.bookingCapacity = 1
+      data.lessonLimitPeriodDays = f.lessonLimitPeriodDays === '' ? '' : Number(f.lessonLimitPeriodDays)
       data.dailyLessonLimit = f.dailyLessonLimit === '' ? '' : Number(f.dailyLessonLimit)
       data.memberPrice = null
       data.benefitPrices = (f.benefitPrices || []).map(function (item) {
@@ -911,9 +920,14 @@ export default {
           }
           benefitCardIds[String(benefitItem.vipCardId)] = true
         }
+        var lessonLimitPeriodDays = Number(f.lessonLimitPeriodDays)
+        if (lessonLimitPeriodDays % 1 !== 0 || lessonLimitPeriodDays < 1 || lessonLimitPeriodDays > 3650) {
+          this.$message.error('预约周期天数必须为 1-3650 之间的整数')
+          return
+        }
         var dailyLessonLimit = Number(f.dailyLessonLimit)
         if (dailyLessonLimit % 1 !== 0 || dailyLessonLimit < 1 || dailyLessonLimit > 99) {
-          this.$message.error('每日预约上限必须为 1-99 之间的整数')
+          this.$message.error('周期预约上限必须为 1-99 之间的整数')
           return
         }
         if (f.installmentEnabled === 1) {
@@ -1162,6 +1176,16 @@ export default {
   min-width: 36px;
   color: #606266;
   font-size: 12px;
+}
+.lesson-limit-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #606266;
+  white-space: nowrap;
+  .el-input {
+    width: 78px;
+  }
 }
 .cover-uploader {
   ::v-deep .el-upload {

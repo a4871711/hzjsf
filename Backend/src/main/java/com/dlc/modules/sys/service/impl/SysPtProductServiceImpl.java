@@ -136,6 +136,9 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (entity.getDailyLessonLimit() == null) {
             entity.setDailyLessonLimit(old.getDailyLessonLimit());
         }
+        if (entity.getLessonLimitPeriodDays() == null) {
+            entity.setLessonLimitPeriodDays(old.getLessonLimitPeriodDays());
+        }
         // 兼容旧后台或其他调用方未提交新开关：保留商品当前配置，不能把已隐藏状态重置为显示。
         if (entity.getLessonCountVisible() == null) {
             entity.setLessonCountVisible(old.getLessonCountVisible());
@@ -263,6 +266,7 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         copy.setSoldCount(0);
         copy.setBookingGapMinutes(src.getBookingGapMinutes());
         copy.setBookingCapacity(src.getBookingCapacity());
+        copy.setLessonLimitPeriodDays(src.getLessonLimitPeriodDays());
         copy.setDailyLessonLimit(src.getDailyLessonLimit());
         copy.setLatestBookingHours(src.getLatestBookingHours());
         copy.setLatestFreeCancelHours(src.getLatestFreeCancelHours());
@@ -401,9 +405,13 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (e.getValidityDays() == null || (e.getValidityDays() != -1 && e.getValidityDays() <= 0)) {
             throw new RRException("有效期不合法（长期请填 -1）");
         }
+        if (e.getLessonLimitPeriodDays() != null
+                && (e.getLessonLimitPeriodDays() < 1 || e.getLessonLimitPeriodDays() > 3650)) {
+            throw new RRException("预约周期天数必须为1-3650天");
+        }
         if (e.getDailyLessonLimit() != null
                 && (e.getDailyLessonLimit() < 1 || e.getDailyLessonLimit() > 99)) {
-            throw new RRException("每日预约上限必须为1-99节");
+            throw new RRException("周期预约上限必须为1-99节");
         }
         if (Integer.valueOf(1).equals(e.getRefundType()) && StringUtils.isBlank(e.getRefundRule())) {
             throw new RRException("支持退款时必须填写退款规则");
@@ -526,6 +534,8 @@ public class SysPtProductServiceImpl implements SysPtProductService {
         if (e.getSoldCount() == null) { e.setSoldCount(0); }
         // 历史商品及旧调用方默认保持原有展示效果，避免升级后课时数量突然消失。
         if (e.getLessonCountVisible() == null) { e.setLessonCountVisible(1); }
+        // 周期天数默认 1，确保历史商品仍保持原来的“每日预约上限”语义。
+        if (e.getLessonLimitPeriodDays() == null) { e.setLessonLimitPeriodDays(1); }
         if (e.getListingStatus() == null) { e.setListingStatus(0); }
         if (e.getSortNo() == null) { e.setSortNo(0); }
         if (e.getRefundType() == null) { e.setRefundType(2); }

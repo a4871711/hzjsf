@@ -62,7 +62,9 @@
 						<text class="tag">{{ serviceTypeText(item.serviceType) }}</text>
 						<text class="tag" v-if="item.categoryName">{{ item.categoryName }}</text>
 					</view>
-					<view class="course-meta">{{ item.lessonCount || 0 }} 课时 · 单次 {{ item.durationMinutes || 0 }} 分钟 · {{ validityText(item.validityDays) }}</view>
+					<view class="course-meta">
+						<text v-if="Number(item.lessonCountVisible) !== 0">{{ item.lessonCount || 0 }} 课时 · </text>单次 {{ item.durationMinutes || 0 }} 分钟 · {{ validityText(item.validityDays) }}
+					</view>
 					<view class="store-text ellipsis">适用门店：{{ item.storeNames || '进入详情查看' }}</view>
 					<view class="price-row">
 						<text class="price-label">课程价</text>
@@ -98,7 +100,7 @@
 				courseKinds: [
 					{ label: '全部', value: '' },
 					{ label: '私教课程', value: 'private' },
-					{ label: '团课', value: 'group' },
+					{ label: '小班课', value: 'group' },
 					{ label: '体验课', value: 'experience' }
 				],
 				courseKind: '',
@@ -304,7 +306,7 @@
 				this.openDetail(item);
 			},
 			courseKindText(item) {
-				if (item.typeName === '团课') return '团课';
+				if (item.typeName === '团课' || item.typeName === '小班课') return '小班课';
 				if (item.typeName === '体验服务') return '体验课';
 				return '私教课程';
 			},

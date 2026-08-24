@@ -11,7 +11,9 @@
 					<text class="tag primary">私教课程</text>
 					<text class="tag">{{ serviceTypeText(product.serviceType) }}</text>
 				</view>
-				<view class="product-meta">{{ product.lessonCount || 0 }} 课时 · 单次 {{ product.durationMinutes || 0 }} 分钟 · 有效期 {{ validityText(product.validityDays) }}</view>
+				<view class="product-meta">
+					<text v-if="Number(product.lessonCountVisible) !== 0">{{ product.lessonCount || 0 }} 课时 · </text>单次 {{ product.durationMinutes || 0 }} 分钟 · 有效期 {{ validityText(product.validityDays) }}
+				</view>
 			</view>
 		</view>
 

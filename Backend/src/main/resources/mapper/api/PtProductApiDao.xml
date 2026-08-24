@@ -10,7 +10,7 @@
         p.lesson_count, p.lesson_count_visible, p.duration_minutes, p.validity_days,
         p.refund_type, p.refund_rule, p.purchase_limit, p.sale_stock, p.sold_count,
         p.listing_at,
-        p.booking_gap_minutes, p.booking_capacity, p.daily_lesson_limit,
+        p.booking_gap_minutes, p.booking_capacity, p.lesson_limit_period_days, p.daily_lesson_limit,
         p.latest_booking_hours, p.latest_free_cancel_hours,
         p.no_show_deduct, p.coach_confirm_required, p.sort_no,
         (select is_enabled from pt_installment_rule where product_id = p.id) as installmentEnabled,
@@ -36,13 +36,13 @@
             <when test="courseKind == 'private'">
                 AND p.product_type_id NOT IN (
                     SELECT id FROM pt_product_type
-                    WHERE deleted = 0 AND type_name IN ('体验服务', '团课')
+                    WHERE deleted = 0 AND type_name IN ('体验服务', '团课', '小班课')
                 )
             </when>
             <when test="courseKind == 'group'">
                 AND p.product_type_id IN (
                     SELECT id FROM pt_product_type
-                    WHERE deleted = 0 AND type_name = '团课'
+                    WHERE deleted = 0 AND type_name IN ('团课', '小班课')
                 )
             </when>
             <when test="courseKind == 'experience'">

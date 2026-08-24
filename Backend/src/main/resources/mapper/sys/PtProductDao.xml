@@ -91,7 +91,7 @@
          `original_price`, `sale_price`, `member_price`, `new_user_price`,
          `lesson_count`, `lesson_count_visible`, `duration_minutes`, `validity_days`,
          `refund_type`, `refund_rule`, `visible_groups`, `purchase_limit`, `sale_stock`, `sold_count`,
-         `booking_gap_minutes`, `booking_capacity`, `daily_lesson_limit`, `latest_booking_hours`, `latest_free_cancel_hours`,
+         `booking_gap_minutes`, `booking_capacity`, `lesson_limit_period_days`, `daily_lesson_limit`, `latest_booking_hours`, `latest_free_cancel_hours`,
          `no_show_deduct`, `coach_confirm_required`,
          `listing_status`, `listing_at`, `unlisting_at`, `sort_no`,
          `created_by`, `created_at`, `updated_by`, `updated_at`)
@@ -101,7 +101,7 @@
          #{originalPrice}, #{salePrice}, #{memberPrice}, #{newUserPrice},
          #{lessonCount}, #{lessonCountVisible}, #{durationMinutes}, #{validityDays},
          #{refundType}, #{refundRule}, #{visibleGroups}, #{purchaseLimit}, #{saleStock}, #{soldCount},
-         #{bookingGapMinutes}, #{bookingCapacity}, #{dailyLessonLimit}, #{latestBookingHours}, #{latestFreeCancelHours},
+         #{bookingGapMinutes}, #{bookingCapacity}, #{lessonLimitPeriodDays}, #{dailyLessonLimit}, #{latestBookingHours}, #{latestFreeCancelHours},
          #{noShowDeduct}, #{coachConfirmRequired},
          #{listingStatus}, #{listingAt}, #{unlistingAt}, #{sortNo},
          #{createdBy}, #{createdAt}, #{updatedBy}, #{updatedAt})
@@ -135,6 +135,7 @@
             <if test="saleStock != null">`sale_stock` = #{saleStock},</if>
             <if test="bookingGapMinutes != null">`booking_gap_minutes` = #{bookingGapMinutes},</if>
             <if test="bookingCapacity != null">`booking_capacity` = #{bookingCapacity},</if>
+            <if test="lessonLimitPeriodDays != null">`lesson_limit_period_days` = #{lessonLimitPeriodDays},</if>
             <if test="dailyLessonLimit != null">`daily_lesson_limit` = #{dailyLessonLimit},</if>
             <if test="latestBookingHours != null">`latest_booking_hours` = #{latestBookingHours},</if>
             <if test="latestFreeCancelHours != null">`latest_free_cancel_hours` = #{latestFreeCancelHours},</if>

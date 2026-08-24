@@ -35,6 +35,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -419,7 +420,7 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
     /* ==================== 私有主流程 ==================== */
 
     /**
-     * 预约主流程(单事务):时段合法性 → 会员行锁判每日上限 → 路线A预约行锁
+     * 预约主流程(单事务):时段合法性 → 会员行锁判固定周期上限 → 路线A预约行锁
      * → 同一口径 COUNT 判余量 → INSERT 占位(路线B) → freeze。
      */
     private Map<String, Object> doBook(PtMemberPrivateBenefitEntity benefit, Long coachId, Long storeId,
@@ -460,16 +461,21 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         String normEnd = reqEnd.format(TIME_FMT);
         int lessonCount = 1;
 
-        // 先锁会员行，串行化同会员跨教练/门店/权益的并发预约，防止同时突破每日上限。
+        // 先锁会员行，串行化同会员跨教练/门店/权益的并发预约，防止同时突破周期上限。
         userInfoMapper.lockUser(benefit.getMemberId());
-        int dailyUsedLessons = 0;
-        List<Integer> occupiedLessons = ptPrivateAppointmentDao.listMemberProductDayLessonsForUpdate(
-                benefit.getMemberId(), benefit.getProductId(), date);
+        int periodDays = lessonLimitPeriodDaysOf(product);
+        LocalDate periodStart = lessonLimitPeriodStart(benefit.getEffectiveAt(), targetDate, periodDays);
+        LocalDate periodEndExclusive = periodStart.plusDays(periodDays);
+        int periodUsedLessons = 0;
+        List<Integer> occupiedLessons = ptPrivateAppointmentDao.listBenefitPeriodLessonsForUpdate(
+                benefit.getId(), periodStart.format(DATE_FMT), periodEndExclusive.format(DATE_FMT));
         for (Integer occupiedLesson : occupiedLessons) {
-            dailyUsedLessons += occupiedLesson == null ? 1 : occupiedLesson;
+            periodUsedLessons += occupiedLesson == null ? 1 : occupiedLesson;
         }
-        if (dailyUsedLessons + lessonCount > dailyLessonLimitOf(product)) {
-            throw new RRException(CodeAndMsg.ERROR_DAILY_LESSON_LIMIT);
+        int periodLessonLimit = dailyLessonLimitOf(product);
+        if (periodUsedLessons + lessonCount > periodLessonLimit) {
+            throw new RRException("该权益每" + periodDays + "天最多预约" + periodLessonLimit
+                    + "节，本周期已预约" + periodUsedLessons + "节");
         }
 
         // 路线A(主):锁同教练同日行,串行化后 COUNT 才可信;间隙锁保证"当日无记录"时也能拦并发插入
@@ -581,10 +587,35 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
         return product.getBookingCapacity() == null ? 1 : product.getBookingCapacity();
     }
 
-    /** 历史商品或未迁移数据的空/异常值按 1 节处理，避免反制约定失效。 */
+    /** 历史商品或未迁移数据的空/异常周期按 1 天处理，保持原“每日上限”语义。 */
+    private int lessonLimitPeriodDaysOf(PtProduct product) {
+        return product.getLessonLimitPeriodDays() == null || product.getLessonLimitPeriodDays() < 1
+                ? 1 : product.getLessonLimitPeriodDays();
+    }
+
+    /** 历史商品或未迁移数据的空/异常上限按 1 节处理，避免限制失效。 */
     private int dailyLessonLimitOf(PtProduct product) {
         return product.getDailyLessonLimit() == null || product.getDailyLessonLimit() < 1
                 ? 1 : product.getDailyLessonLimit();
+    }
+
+    /**
+     * 按权益生效日切分固定自然日周期。周期左闭右开，例如 8 月 10 日起每 30 天，
+     * 第一期为 [8 月 10 日, 9 月 9 日)，9 月 9 日进入下一期。
+     */
+    static LocalDate lessonLimitPeriodStart(Date effectiveAt, LocalDate targetDate, int periodDays) {
+        if (effectiveAt == null) {
+            throw new RRException("权益生效时间缺失，无法计算预约周期");
+        }
+        if (targetDate == null || periodDays < 1) {
+            throw new RRException("预约周期配置不合法");
+        }
+        LocalDate effectiveDate = new java.sql.Date(effectiveAt.getTime()).toLocalDate();
+        long offsetDays = ChronoUnit.DAYS.between(effectiveDate, targetDate);
+        if (offsetDays < 0) {
+            throw new RRException("预约日期不能早于权益生效日期");
+        }
+        return effectiveDate.plusDays((offsetDays / periodDays) * periodDays);
     }
 
     private int latestBookingHoursOf(PtProduct product) {
@@ -604,15 +635,25 @@ public class PrivateAppointmentServiceImpl implements PrivateAppointmentService 
                                          LocalDate targetDate, LocalDateTime cutoff) {
         int duration = product.getDurationMinutes() == null ? 60 : product.getDurationMinutes();
         int gap = product.getBookingGapMinutes() == null ? 0 : product.getBookingGapMinutes();
+        if (duration <= 0) {
+            throw new RRException("私教商品单节时长必须大于0分钟");
+        }
+        if (gap < 0) {
+            throw new RRException("私教预约间隔不能小于0分钟");
+        }
         List<SlotPoint> points = new ArrayList<>();
         for (PtScheduleWindowVo w : windows) {
-            LocalTime cursor = parseTime(w.getStartTime());
-            LocalTime windowEnd = parseTime(w.getEndTime());
+            LocalDateTime cursor = LocalDateTime.of(targetDate, parseTime(w.getStartTime()));
+            LocalDateTime windowEnd = LocalDateTime.of(targetDate, parseTime(w.getEndTime()));
+            if (!cursor.isBefore(windowEnd)) {
+                throw new RRException("教练排班结束时间必须晚于开始时间");
+            }
+            // 使用带日期的时间推进，避免 LocalTime 超过午夜后回绕并形成无限循环。
             while (!cursor.plusMinutes(duration).isAfter(windowEnd)) {
-                LocalTime slotStart = cursor;
-                LocalTime slotEnd = cursor.plusMinutes(duration);
-                if (cutoff == null || !LocalDateTime.of(targetDate, slotStart).isBefore(cutoff)) {
-                    points.add(new SlotPoint(w.getStoreId(), slotStart, slotEnd));
+                LocalDateTime slotStart = cursor;
+                LocalDateTime slotEnd = cursor.plusMinutes(duration);
+                if (cutoff == null || !slotStart.isBefore(cutoff)) {
+                    points.add(new SlotPoint(w.getStoreId(), slotStart.toLocalTime(), slotEnd.toLocalTime()));
                 }
                 cursor = slotEnd.plusMinutes(gap);
             }
