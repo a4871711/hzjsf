@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -95,10 +96,17 @@ public class CardOrderServiceImpl implements CardOrderService {
         // 权益类型会员卡(cardNature=1)须持有明确绑定当前会员卡的有效权益才能购买/续费。校验放在本方法(手动下单与
         // 自动代扣 papAutoPay 的共用入口)而非 Controller,两条路径统一拦截;自动代扣被拦时
         // 异常由 papAutoPay 循环 catch,仅跳过该用户当日续费,不影响其他用户
+        // fitCardId 来自下单参数；重新查询 fit_card，不能信任客户端自行声明 cardNature/cardType。
         FitCard natureCard = fitCardMapper.getFitCardInfo(fitCardId);
-        if (natureCard != null && natureCard.getCardNature() != null && natureCard.getCardNature() == 1
-                && !vipBenefitService.hasValidBenefitForFitCard(user.getUserId(), fitCardId)) {
-            throw new RRException(CodeAndMsg.ERROR_FIT_CARD_NEED_BENEFIT);
+        VipBenefit purchaseBenefit = null;
+        if (natureCard != null && Integer.valueOf(1).equals(natureCard.getCardNature())) {
+            if (!vipBenefitService.hasValidBenefitForFitCard(user.getUserId(), fitCardId)) {
+                throw new RRException(CodeAndMsg.ERROR_FIT_CARD_NEED_BENEFIT);
+            }
+            // cardType=0 表示月卡。系统只允许持有一张有效权益，因此直接取该会员当前有效权益的到期日做购买边界判断。
+            if (Integer.valueOf(0).equals(natureCard.getCardType())) {
+                purchaseBenefit = vipBenefitService.latestValidBenefit(user.getUserId());
+            }
         }
         CardOrder cardOrder = new CardOrder();
         //用户id
@@ -145,6 +153,12 @@ public class CardOrderServiceImpl implements CardOrderService {
         BigDecimal paySum = new BigDecimal(String.valueOf(params.get("paySum")));
         cardOrder.setPaySum(paySum);
         cardOrder.setBuyCount(Integer.parseInt(String.valueOf(params.get("buyCount"))));
+        if (purchaseBenefit != null) {
+            // validityDate 是本次下单完成后的会员卡到期日；validity 是单张月卡天数；buyCount 是本次购买张数。
+            // 三个值都在 Service 内统一校验，使手动购买与自动续费复用同一套限制。
+            validateBenefitMonthlyCardLimit(purchaseBenefit, cardOrder.getValidityDate(),
+                    natureCard.getValidity(), cardOrder.getBuyCount());
+        }
         //优惠券id
         if ( params.get("couponId") != null && StringUtils.isNotBlank(params.get("couponId").toString()) ){
             cardOrder.setCouponId(Long.valueOf(params.get("couponId").toString()));
@@ -215,6 +229,51 @@ public class CardOrderServiceImpl implements CardOrderService {
             return map;
         }
         return null;
+    }
+
+    /**
+     * 校验权益性质月卡的购买数量和购买周期是否仍落在当前权益有效期内。
+     *
+     * <p>本项目的 {@code nextValidityDate} 表示本次下单后的会员卡到期日，且到期日当天仍可使用，
+     * 因此本次购买周期的起始日为：{@code nextValidityDate - (validityDays - 1)}。
+     * 起始日晚于权益到期日，说明本次购买已经跨出权益范围；例如权益 8 月 19 日到期，
+     * 月卡每张 30 天，本次到期日为 9 月 18 日时，周期起始日仍是 8 月 20 日，必须拒绝。</p>
+     *
+     * @param benefit 当前会员唯一一张有效权益，使用其 expireTime 判断购买边界
+     * @param nextValidityDate 本次下单完成后的会员卡到期日，来源于下单参数 validityDate
+     * @param validityDays 单张月卡的有效天数，来源于 fit_card.validity
+     * @param buyCount 本次购买张数，来源于下单参数 buyCount，最多为 12
+     */
+    static void validateBenefitMonthlyCardLimit(VipBenefit benefit, Date nextValidityDate,
+                                                Integer validityDays, Integer buyCount) {
+        // 任一边界数据缺失或为非法值时明确拒绝，避免绕过权益期限校验继续创建订单。
+        if (benefit == null || benefit.getExpireTime() == null || nextValidityDate == null
+                || validityDays == null || validityDays <= 0 || buyCount == null || buyCount <= 0) {
+            throw new RRException(CodeAndMsg.ERROR_FIT_CARD_MONTH_LIMIT);
+        }
+        // buyCount 是本次下单张数，12 张上限在创建订单前拦截。
+        if (buyCount > 12) {
+            throw new RRException(CodeAndMsg.ERROR_FIT_CARD_MONTH_LIMIT);
+        }
+
+        // 日期统一归零后只比较自然日，不让订单或权益记录中的时分秒改变边界结果。
+        Calendar nextPeriodStart = Calendar.getInstance();
+        nextPeriodStart.setTime(startOfDay(nextValidityDate));
+        nextPeriodStart.add(Calendar.DAY_OF_MONTH, -(validityDays - 1));
+        if (nextPeriodStart.getTime().after(startOfDay(benefit.getExpireTime()))) {
+            throw new RRException(CodeAndMsg.ERROR_FIT_CARD_MONTH_LIMIT);
+        }
+    }
+
+    /** 购买限制按自然日比较，忽略订单和权益记录中的时分秒。 */
+    private static Date startOfDay(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
     /**
      *  @Auther:YD

@@ -100,12 +100,33 @@ public class CardPauseServiceImpl implements CardPauseService {
 
     // ====================== 停卡预检 ======================
 
-    @Override
-    public Map<String, Object> precheck(Long userId, Long cardOrderId) {
-        // 权益会员校验:仅持有有效 VIP 权益卡(正常且未过期)的会员可停卡
-        if (vipBenefitMapper.countValidByUser(userId) <= 0) {
+    /**
+     * 取得会员当前已生效的权益，作为免费停卡和付费停卡的共同前置条件。
+     *
+     * <p>{@code selectLatestValidByUser} 先按 status=0、未过期口径查当前权益；但 status=0 只表示支付后已激活，
+     * 权益仍可能因为旧会员卡顺延而在未来生效，所以还必须单独校验 vip_benefit.start_time。</p>
+     *
+     * @param userId 登录 token 对应的会员 ID
+     * @return 已到生效时间的当前权益
+     * @throws RRException 无有效权益，或权益尚未到生效时间时抛出明确业务异常
+     */
+    private VipBenefit requireEffectiveBenefit(Long userId) {
+        VipBenefit benefit = vipBenefitMapper.selectLatestValidByUser(userId);
+        if (benefit == null) {
             throw new RRException(CodeAndMsg.ERROR_PAUSE_NOT_VIP_MEMBER);
         }
+        // startTime 对应 vip_benefit.start_time；为空也视为不可用，避免异常历史数据绕过停卡资格校验。
+        Date startTime = benefit.getStartTime();
+        if (startTime == null || startTime.after(new Date())) {
+            throw new RRException(CodeAndMsg.ERROR_PAUSE_BENEFIT_NOT_EFFECTIVE);
+        }
+        return benefit;
+    }
+
+    @Override
+    public Map<String, Object> precheck(Long userId, Long cardOrderId) {
+        // 预检用于打开申请弹层：先拦截未生效权益，避免页面展示免费额度或付费档位后才报错。
+        requireEffectiveBenefit(userId);
         // 指定卡时(申请弹层打开前的按卡预检):须为权益卡性质,否则该卡不支持停卡,与 apply() 的校验保持一致
         if (cardOrderId != null) {
             Integer cardNature = cardPauseRecordMapper.selectCardNatureByOrderId(cardOrderId, userId);
@@ -229,10 +250,8 @@ public class CardPauseServiceImpl implements CardPauseService {
 
     @Override
     public Map<String, Object> apply(Long userId, Long cardOrderId, Integer pauseType, Integer pauseDays, Integer tierIndex) {
-        // 权益会员校验
-        if (vipBenefitMapper.countValidByUser(userId) <= 0) {
-            throw new RRException(CodeAndMsg.ERROR_PAUSE_NOT_VIP_MEMBER);
-        }
+        // 正式提交必须再次校验，防止跳过预检直接调用接口，也覆盖预检后到提交前权益状态发生变化的情况。
+        requireEffectiveBenefit(userId);
         // 行锁被停的卡,串行化同卡并发停卡
         CardOrder card = cardPauseRecordMapper.selectCardForUpdate(cardOrderId);
         // 卡不存在 / 不属于本人 / 非生效中 / 已过期 → 不可停卡

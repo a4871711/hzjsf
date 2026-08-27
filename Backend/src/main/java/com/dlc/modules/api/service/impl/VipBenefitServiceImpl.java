@@ -137,12 +137,15 @@ public class VipBenefitServiceImpl implements VipBenefitService {
             // 找不到对应权益单/卡,异常订单,幂等返回不报错
             return 0;
         }
-        Date now = new Date();
+        // 支付回调时间可能带任意时分秒，先归一为服务端所在时区的购买日零点，后续只按自然日计算。
+        Date purchaseDay = startOfDay(new Date());
         int days = card.getValidityDays() == null ? 0 : card.getValidityDays();
-        // 顺延天数取下单时快照的会员卡剩余天数:start=now+defer、expire=now+(defer+有效天数),时分秒=回调当刻
+        // 权益有效期只按自然日计算：无旧卡时购买日生效；有旧卡时从旧卡到期日次日生效。
+        // 到期日包含在有效期内，例如360天权益的到期日=start+359天，落库为当天23:59:59。
         int defer = deferDaysByOrderNo(orderNo);
-        Date start = addDays(now, defer);
-        Date expire = addDays(now, defer + days);
+        // start/expire 最终写入 vip_benefit.start_time、expire_time；defer 是下单时保存的旧会员卡占用自然日数快照。
+        Date start = addDays(purchaseDay, defer);
+        Date expire = days <= 0 ? start : endOfDay(addDays(start, days - 1));
 
         // 幂等核心:仅 status=9 待支付时才激活;重复回调/并发命中 0 行直接返回,不再记账/计数
         int rows = vipBenefitMapper.activate(orderNo, start, expire);
@@ -212,6 +215,31 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         return c.getTime();
     }
 
+    /**
+     * 归一到服务端默认时区所在自然日的 0 点。
+     * 项目数据库和旧逻辑都使用 {@link Date}，这里沿用服务端时区，避免支付回调时分秒影响权益生效日。
+     */
+    private Date startOfDay(Date date) {
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        return c.getTime();
+    }
+
+    /** 归一到自然日 23:59:59.999，使 expire_time 所在当天完整计入权益有效期。 */
+    private Date endOfDay(Date date) {
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        c.set(Calendar.HOUR_OF_DAY, 23);
+        c.set(Calendar.MINUTE, 59);
+        c.set(Calendar.SECOND, 59);
+        c.set(Calendar.MILLISECOND, 999);
+        return c.getTime();
+    }
+
     /** 按订单号取下单时快照的顺延天数(null/无记录记 0) */
     private int deferDaysByOrderNo(String orderNo) {
         VipBenefit vb = vipBenefitMapper.selectByOrderNo(orderNo);
@@ -222,8 +250,11 @@ public class VipBenefitServiceImpl implements VipBenefitService {
     }
 
     /**
-     * 会员卡剩余整天数(下单时快照用):无有效会员卡/已过期 → 0;
-     * 否则按日期(各截断到当天0点)算 会员卡到期日 - 今天 的正天数。
+     * 计算当前会员卡仍占用的自然日数，并在购买权益时保存为 defer_days 快照。
+     *
+     * <p>无有效会员卡或会员卡已过期时返回 0，权益从购买日生效；否则首尾日期都计入。
+     * 例如今天是 8 月 19 日，会员卡 8 月 20 日到期，占用 19、20 两个自然日，返回 2，
+     * 新权益从 8 月 21 日开始，避免与旧会员卡有效期重叠。</p>
      */
     private int remainDaysOfMembership(Long userId) {
         Device dev = deviceMapper.selectUserValidity(userId);
@@ -233,17 +264,12 @@ public class VipBenefitServiceImpl implements VipBenefitService {
         long todayMs = truncateToDay(new Date());
         long expireMs = truncateToDay(dev.getValidityDate());
         long diffDays = (expireMs - todayMs) / (24L * 60 * 60 * 1000);
-        return diffDays > 0 ? (int) diffDays : 0;
+        // diffDays 是两个零点之间的间隔；加 1 才能把今天这个仍可使用的自然日包含进来。
+        return diffDays >= 0 ? (int) diffDays + 1 : 0;
     }
 
     /** 截断到当天 0 点的毫秒值(忽略时分秒) */
     private long truncateToDay(Date date) {
-        Calendar c = Calendar.getInstance();
-        c.setTime(date);
-        c.set(Calendar.HOUR_OF_DAY, 0);
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-        c.set(Calendar.MILLISECOND, 0);
-        return c.getTimeInMillis();
+        return startOfDay(date).getTime();
     }
 }
